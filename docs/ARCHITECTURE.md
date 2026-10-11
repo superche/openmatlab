@@ -108,14 +108,14 @@ relational ops, `function` / `if` / `for` / `while` / `end`,
 | No path/functions | `FunctionResolver` + `ToolboxPath` |
 | No composition root | `runtime.Session` |
 
-## QA system (five layers)
+## QA system (five layers, off-the-shelf preferred)
 
-See `docs/QA.md` for the layered design:
+See `docs/QA.md`:
 
 1. Features — `docs/feature_map.yaml` → `openmatlab features`
-2. Cases — `docs/test_catalog.yaml` → `openmatlab cases`
-3. Environments — `tests/{unit,conformance,interactive}`
-4. Tooling — pytest + `openmatlab test`
-5. Defects — `docs/defects/` → `openmatlab defects`
+2. Cases — pytest + `docs/test_catalog.yaml` → `openmatlab cases`
+3. Environments — `tests/{unit,conformance,interactive}` (Playwright/Selenium only for future web UI)
+4. Tooling — pytest · coverage · gh → `openmatlab test`
+5. Defects — **GitHub Issues** canonical → `gh issue` / `openmatlab defects`
 
 Also: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.

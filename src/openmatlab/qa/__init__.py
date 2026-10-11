@@ -1,7 +1,6 @@
-"""QA helpers: feature map, test catalog, defects (layers 1/2/5)."""
+"""QA helpers: feature map, test catalog; defects → GitHub Issues via gh."""
 
 from openmatlab.qa.catalog import TestCatalog, load_test_catalog
-from openmatlab.qa.defects import DefectIndex, load_defect_index
 from openmatlab.qa.feature_map import FeatureMap, load_feature_map
 
 __all__ = [
@@ -9,6 +8,4 @@ __all__ = [
     "load_feature_map",
     "TestCatalog",
     "load_test_catalog",
-    "DefectIndex",
-    "load_defect_index",
 ]

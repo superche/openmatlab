@@ -73,11 +73,11 @@ test_cases:
     status: active
     env: unit
 
-  - id: tc.qa_defects_index
+  - id: tc.qa_defects_gh_bridge
     kind: unit
-    title: defects index.yaml loads
+    title: defects CLI points at GitHub Issues / gh
     features: [qa.defects]
-    impl: tests/unit/test_defects.py::test_defects_index_loads
+    impl: tests/unit/test_defects.py::test_defects_help_mentions_github
     status: active
     env: unit
 

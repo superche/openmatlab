@@ -1,4 +1,4 @@
-"""CLI — QA/dev: status, features, cases, defects, test runner."""
+"""CLI — QA/dev: status, features, cases, defects→gh, test→pytest."""
 
 from __future__ import annotations
 
@@ -10,17 +10,18 @@ from typing import List, Optional
 from openmatlab import __version__
 
 _STATUS = """\
-OpenMATLAB {version} — architecture + layered QA stage (clean-room / public specs)
+OpenMATLAB {version} — architecture + layered QA (off-the-shelf preferred)
 
 Packages: host · lang · runtime · numerics · graphics · libs · qa
 
 QA layers (docs/QA.md):
-  1. Features     docs/feature_map.yaml     → openmatlab features
-  2. Cases        docs/test_catalog.yaml    → openmatlab cases
+  1. Features     docs/feature_map.yaml      → openmatlab features
+  2. Cases        pytest + test_catalog.yaml → openmatlab cases
   3. Environments tests/{{unit,conformance,interactive}}
-  4. Tooling      pytest + this CLI         → openmatlab test
-  5. Defects      docs/defects/             → openmatlab defects
+  4. Tooling      pytest · coverage · gh     → openmatlab test
+  5. Defects      GitHub Issues (canonical)  → openmatlab defects / gh issue
 
+Interactive UI later: Playwright/Selenium only when a web workbench exists.
 Eval not wired. Architecture: docs/ARCHITECTURE.md
 """
 
@@ -113,12 +114,14 @@ def _cmd_cases(args: argparse.Namespace) -> int:
 
 
 def _cmd_defects(args: argparse.Namespace) -> int:
-    from openmatlab.qa.defects import load_defect_index
+    from openmatlab.qa.defects import format_help, list_issues
 
-    index = load_defect_index()
-    rows = index.filter(status=args.status)
-    print(index.format_table(rows))
-    return 0
+    print(format_help())
+    state = args.status or "open"
+    # map common aliases
+    if state in ("all",):
+        state = "all"
+    return list_issues(label=args.label, state=state)
 
 
 def _cmd_test(args: argparse.Namespace) -> int:
@@ -179,8 +182,16 @@ def main(argv: Optional[List[str]] = None) -> None:
     p_cases.add_argument("--feature", default=None, help="Filter by feature id")
     p_cases.set_defaults(func=_cmd_cases)
 
-    p_def = sub.add_parser("defects", help="Layer 5: defect index")
-    p_def.add_argument("--status", default=None)
+    p_def = sub.add_parser(
+        "defects",
+        help="Layer 5: list GitHub Issues via gh (canonical tracker)",
+    )
+    p_def.add_argument(
+        "--status",
+        default="open",
+        help="Issue state passed to gh (open|closed|all)",
+    )
+    p_def.add_argument("--label", default=None, help="Filter by GitHub label")
     p_def.set_defaults(func=_cmd_defects)
 
     p_test = sub.add_parser("test", help="Layer 4: run pytest by environment")

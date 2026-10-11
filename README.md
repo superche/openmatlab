@@ -19,11 +19,11 @@ pip install -e ".[dev]"
 openmatlab status                 # five-layer QA blurb
 openmatlab features               # layer 1: capability map
 openmatlab cases                  # layer 2: use/test cases
-openmatlab defects                # layer 5: defect index
-openmatlab test --suite unit      # layer 3+4: unit environment
+openmatlab defects                # layer 5: GitHub Issues via gh
+openmatlab test --suite unit      # layer 3+4: pytest
 ```
 
-QA: `docs/QA.md` (layers) · `docs/feature_map.yaml` · `docs/test_catalog.yaml` · `docs/WORKFLOW.md`
+QA: `docs/QA.md` · Issues = canonical defects · `docs/feature_map.yaml` · `docs/test_catalog.yaml` · `docs/WORKFLOW.md`
 
 ### Non-goals
 

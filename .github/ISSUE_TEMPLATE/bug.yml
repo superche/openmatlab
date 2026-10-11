@@ -1,0 +1,42 @@
+name: Bug
+description: Incorrect behavior once implemented (or tooling/docs bug)
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: feature_ids
+    attributes:
+      label: feature_ids
+      description: IDs from docs/feature_map.yaml (one per line)
+      placeholder: |
+        runtime.workspace
+    validations:
+      required: false
+  - type: textarea
+    id: case_ids
+    attributes:
+      label: case_ids
+      description: IDs from docs/test_catalog.yaml if any
+    validations:
+      required: false
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Primary package layer
+      options: [host, lang, runtime, numerics, graphics, libs, qa, docs]
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Repro
+      description: Commands, pytest node ids, logs
+    validations:
+      required: true

@@ -1,229 +1,129 @@
-# Quality Assurance System (Layered)
+# Quality Assurance System (Layered, off-the-shelf preferred)
 
-OpenMATLAB QA is an **explicit five-layer system**. Architecture/docs/stubs stage:
-no full language/runtime. Aligns with `host` / `lang` / `runtime` / `numerics` /
-`graphics` / `libs` / `qa`.
+OpenMATLAB QA is a **five-layer** system. Prefer **existing tools** (GitHub
+Issues, `gh`, pytest, coverage; later Selenium/Playwright for web UI) over
+bespoke trackers. Architecture/docs stage — no full language/runtime.
 
-Clean-room only — no MATLAB binary RE. Optional future conformance sources:
-public language docs and public Octave behavior.
+Packages: `host` / `lang` / `runtime` / `numerics` / `graphics` / `libs` / `qa`.
+
+Clean-room — no MATLAB binary RE. Optional conformance: public docs / Octave.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. Work / ticket / defect system                              │
-│    gaps & bugs → triage → feature_map / test_catalog updates  │
+│ 5. Work / defects     → GitHub Issues + gh (+ issue templates)│
 ├─────────────────────────────────────────────────────────────┤
-│ 4. Test tooling                                               │
-│    pytest · openmatlab CLI · qa loaders · (future CI)         │
+│ 4. Test tooling       → pytest, coverage, gh, openmatlab CLI │
 ├─────────────────────────────────────────────────────────────┤
-│ 3. Test environments                                          │
-│    unit · conformance/golden · interactive · fixtures         │
+│ 3. Test environments  → unit / conformance / interactive     │
 ├─────────────────────────────────────────────────────────────┤
-│ 2. Test case / use-case management                            │
-│    docs/test_catalog.yaml · use_cases/ · links to tests       │
+│ 2. Test / use cases   → pytest nodes + docs/test_catalog.yaml│
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Feature management                                         │
-│    docs/feature_map.yaml · capability status · depends_on     │
+│ 1. Features           → docs/feature_map.yaml (inventory)    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-| Layer | Ownership | Source of truth | CLI / tooling seam |
-|-------|-----------|-----------------|--------------------|
-| **1. Features** | Product + architecture | `docs/feature_map.yaml` | `openmatlab features` |
-| **2. Cases** | QA + domain | `docs/test_catalog.yaml` | `openmatlab cases` |
-| **3. Environments** | QA eng | `tests/{unit,conformance,interactive,fixtures}` | `openmatlab test --suite …` |
-| **4. Tooling** | Eng | `openmatlab.qa.*`, pytest, pyproject | `openmatlab status\|features\|cases\|test` |
-| **5. Work/defects** | All | `docs/defects/` + workflow | `openmatlab defects` (index) |
-
-Human indexes: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.
+| Layer | Canonical system | Custom (kept thin) | Why custom at all |
+|-------|------------------|--------------------|-------------------|
+| **1 Features** | (optional later: GitHub Projects) | `docs/feature_map.yaml` | Capability inventory + status before Issues scale; agent-friendly |
+| **2 Cases** | **pytest** node ids | `docs/test_catalog.yaml` links | Cross-link features ↔ tests without a ticket DB |
+| **3 Envs** | pytest markers + dirs | layout under `tests/` | Standard layout; not a new framework |
+| **4 Tooling** | **pytest**, **coverage**, **gh** | `openmatlab` CLI wrappers | Thin DX only |
+| **5 Defects** | **GitHub Issues** | templates + label conventions | **No** in-repo defect ledger |
 
 ---
 
 ## Layer 1 — Feature management
 
-**Purpose:** Inventory *what the product can/should do*, by package layer, with
-implementation status — independent of any single test file.
+**Artifact:** `docs/feature_map.yaml` · index `docs/FEATURE_MAP.md`  
+**CLI:** `openmatlab features`  
+**Loader:** `openmatlab.qa.feature_map`
 
-**Artifacts**
-
-| Path | Role |
-|------|------|
-| `docs/feature_map.yaml` | Machine-readable capability inventory |
-| `docs/FEATURE_MAP.md` | Human index + update rules |
-| `openmatlab.qa.feature_map` | Load / validate / filter / format |
-
-**Schema (feature row)**
-
-```yaml
-- id: layer.capability_snake    # stable
-  layer: host|lang|runtime|numerics|graphics|libs|qa
-  name: title
-  status: planned|stub|partial|done|wontfix
-  spec: docs/…                  # optional
-  tests: [path…]                # optional links (not source of truth)
-  cases: [case.id…]             # optional links into test_catalog
-  protocols: [dotted.Name…]
-  depends_on: [feature.id…]
-  notes: text
-```
-
-**Rules**
-
-- Same PR that adds a Protocol/stub updates `feature_map.yaml`.
-- Stable `id`s; rename = breaking (prefer new id + `wontfix` old).
-- Features describe **capabilities**; test cases (layer 2) describe **checks**.
+Status: `planned|stub|partial|done|wontfix`. Stable `id`s. Same PR updates map
+when adding Protocols/stubs. Optional later: mirror epics on GitHub Projects.
 
 ---
 
 ## Layer 2 — Test case / use-case management
 
-**Purpose:** Inventory *what we verify* and *which user journeys matter*, linked
-up to features and down to concrete pytest nodes / goldens.
-
-**Artifacts**
-
-| Path | Role |
-|------|------|
-| `docs/test_catalog.yaml` | Catalog of use cases + test cases |
-| `docs/TEST_CATALOG.md` | Human index |
-| `docs/use_cases/*.md` | Optional narrative use-case briefs |
-| `openmatlab.qa.catalog` | Load / validate / filter |
-
-**Two record kinds in one catalog**
-
-1. **`use_case`** — actor + goal (e.g. “interactive matrix multiply and plot”)
-2. **`test_case`** — verifiable check (unit assert, golden, interactive smoke)
-
-```yaml
-use_cases:
-  - id: uc.interactive_matrix_plot
-    title: …
-    actor: scientific user
-    goal: …
-    features: [lang.matrix_literal, graphics.plot_mvp, host.display_policy]
-    priority: p0|p1|p2
-
-test_cases:
-  - id: tc.workspace_frames
-    kind: unit|conformance|interactive
-    title: …
-    features: [runtime.workspace]
-    use_cases: []                  # optional
-    impl: tests/unit/test_architecture.py::test_workspace_frames
-    status: planned|stub|active|deprecated
-    env: unit                      # which environment (layer 3)
-```
-
-**Rules**
-
-- Every `active` test_case should have `impl` pointing at a real node when code exists.
-- `planned` cases may lack `impl` (backlog).
-- Prefer many small `test_case` ids over one mega-case when Array/parser land.
+**Canonical execution:** pytest.  
+**Catalog:** `docs/test_catalog.yaml` (use_cases + test_cases with `impl: path::node`).  
+**CLI:** `openmatlab cases`  
+**Do not** invent a separate ticket system for cases — Issues track *work*;
+catalog tracks *what is verified*.
 
 ---
 
 ## Layer 3 — Test environments
 
-**Purpose:** *Where* and *how* cases run — isolation, markers, fixtures, CI gates.
-
 ```
-tests/
-  unit/                 # fast, no GUI
-  conformance/          # golden / public-spec
-    golden/             # expected outputs
-  interactive/          # plot/REPL smoke
-  fixtures/             # shared inputs (.m snippets, JSON arrays later)
-  conftest.py           # markers, fixtures
+tests/unit/            # pytest -m unit        (CLI/REPL/logic — default gate)
+tests/conformance/     # pytest -m conformance (golden / public-spec)
+tests/interactive/     # pytest -m interactive (smoke; optional in CI)
+tests/fixtures/
 ```
 
-| Environment | Marker | Default CI | Notes |
-|-------------|--------|------------|-------|
-| unit | `unit` | **required** | architecture, map/catalog load, Workspace |
-| conformance | `conformance` | required once non-empty | goldens self-authored / public-spec; optional Octave notes |
-| interactive | `interactive` | optional / scheduled | may need display; `needs_matplotlib` |
+| Environment | Tooling preference |
+|-------------|-------------------|
+| unit | **pytest** (in-process) |
+| conformance | **pytest** + golden files under `conformance/golden/` |
+| CLI smoke | **pytest** + `subprocess` (not Selenium) |
+| interactive REPL | pytest subprocess / pexpect-style later — still not browser |
+| **Future web workbench UI** | **Playwright or Selenium** — only when a browser UI exists |
 
-Extra markers: `slow`, `needs_numpy`, `needs_matplotlib`.
-
-**Golden policy:** OpenMATLAB-generated or public-spec expected outputs — never
-proprietary MATLAB dumps via RE. Octave cross-check = documented delta, not
-silent oracle until tolerances exist.
+**Today’s product is CLI/REPL** — do **not** add Selenium/Playwright until there
+is a web UI. Goldens are self-authored / public-spec; never proprietary MATLAB RE.
 
 ---
 
 ## Layer 4 — Test tooling
 
-**Purpose:** Operators to load inventories, run suites, and (later) CI.
+| Tool | Use |
+|------|-----|
+| **pytest** | All automated tests |
+| **coverage** (`pytest-cov`) | Optional `[dev]` — line coverage for `src/openmatlab` |
+| **gh** | Issues / PRs (layer 5) |
+| **openmatlab** CLI | `status` · `features` · `cases` · `defects` (→ gh) · `test` (→ pytest) |
+| Playwright / Selenium | Deferred — future web workbench only |
 
-| Tool | Role |
-|------|------|
-| `pytest` + `[tool.pytest.ini_options]` | Runner + markers |
-| `openmatlab status` | Architecture + QA blurb |
-| `openmatlab features` | Dump layer-1 map |
-| `openmatlab cases` | Dump layer-2 catalog |
-| `openmatlab test --suite …` | Subprocess pytest by environment |
-| `openmatlab defects` | List defect index (layer 5) |
-| `openmatlab.qa.feature_map` / `catalog` / `defects` | Library loaders |
-| `openmatlab.qa.paths` | Resolve `docs/*` from editable install |
+```bash
+pip install -e ".[dev]"
+openmatlab test --suite unit
+pytest -m unit --cov=openmatlab --cov-report=term-missing   # when pytest-cov installed
+```
 
-CLI does **not** reimplement pytest; `test` always delegates.
-
-Reserved: `-e` / script eval → exit 2 until evaluator leaves stub.
+`openmatlab test` **subprocess**-es pytest; it does not reimplement a runner.
 
 ---
 
-## Layer 5 — Work / ticket / defect system
+## Layer 5 — Work / defects (GitHub Issues)
 
-**Purpose:** Close the loop: failure or gap → tracked work → feature/case updates.
+**Canonical:** GitHub Issues.  
+**CLI:** `gh issue …` or `openmatlab defects` (lists via `gh` if available).  
+**Bridge only:** `.github/ISSUE_TEMPLATE/` (bug/gap) with `feature_ids` / `case_ids`
+fields; labels `layer:*`, `bug|gap|epic|chore`.  
+**Removed as source of truth:** in-repo `D####.md` / `defects/index.yaml` ledgers.
 
-**Flow**
+See `docs/WORKFLOW.md` and `docs/defects/README.md` (pointer page only).
 
 ```
-test fail / user gap / review finding
-        │
-        ▼
-docs/defects/DXXXX.md  (or tracker URL noted therein)
-        │
-        ├─► triage: bug | gap | epic | chore
-        ├─► link feature_ids[] + test_case ids[]
-        ├─► set severity / status
-        ▼
-fix code + update feature_map status + activate/add test_cases
-        │
-        ▼
-defect → status: closed (keep file for history)
+pytest fail / gap / review
+       → gh issue create (template)
+       → link feature_ids + case_ids
+       → PR updates feature_map + catalog
+       → close issue
 ```
-
-**Artifacts**
-
-| Path | Role |
-|------|------|
-| `docs/WORKFLOW.md` | Triage rules, states, ownership |
-| `docs/defects/README.md` | Index conventions |
-| `docs/defects/TEMPLATE.md` | New defect template |
-| `docs/defects/D0001.md` … | One file per open/closed item (light, in-repo) |
-| `docs/defects/index.yaml` | Machine index for `openmatlab defects` |
-| `openmatlab.qa.defects` | Load index |
-
-**States:** `open` → `accepted` → `in_progress` → `resolved` → `closed`  
-(or `wontfix` / `duplicate`)
-
-**In-repo vs GitHub Issues:** In-repo YAML/md is the **portable source** for
-agents/CI. GitHub Issues remain optional mirrors; if both exist, defect file
-holds canonical `feature_ids` / `case_ids` links.
 
 ---
 
-## Adversarial scaling (Array / parser land)
+## Adversarial notes
 
 | Risk | Mitigation |
 |------|------------|
-| Features ≠ tests conflated | Layer 1 vs 2 separated; cross-link by id only |
-| Catalog bitrots | `openmatlab cases` + unit validate unique ids / known feature refs |
-| Goldens = MATLAB RE | Explicit policy in layer 3 |
-| CLI becomes second pytest | Layer 4 delegates |
-| Defects orphaned from map | Layer 5 requires `feature_ids` on accepted defects |
-| Flat tests/ won’t scale | Environments split now |
+| Second ticket DB drifts from GitHub | Issues canonical; docs/defects is pointer only |
+| Selenium forced too early | Explicitly deferred until web UI |
+| Catalog vs Issues confusion | Cases = verification inventory; Issues = work items |
+| Feature YAML vs Projects | YAML stays inventory; Projects optional later |
 
 ## Related
 
-- `docs/ARCHITECTURE.md` — product seams  
-- Package `openmatlab.qa` — loaders only (no numerics/graphics)
+`docs/ARCHITECTURE.md` · `docs/FEATURE_MAP.md` · `docs/TEST_CATALOG.md` · `docs/WORKFLOW.md`

@@ -1,81 +1,56 @@
-"""Load docs/defects/index.yaml (QA layer 5)."""
+"""Layer 5 bridge: prefer GitHub Issues via `gh` (no in-repo defect DB)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-from openmatlab.qa.paths import repo_root
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    yaml = None  # type: ignore
+import shutil
+import subprocess
+import sys
+from typing import List, Optional
 
 
-def defects_index_path() -> Path:
-    return repo_root() / "docs" / "defects" / "index.yaml"
+def gh_available() -> bool:
+    return shutil.which("gh") is not None
 
 
-@dataclass
-class Defect:
-    id: str
-    title: str
-    status: str
-    type: str
-    severity: str = "s2"
-    feature_ids: List[str] = field(default_factory=list)
-    case_ids: List[str] = field(default_factory=list)
-    package: str = ""
-    file: Optional[str] = None
+def format_help() -> str:
+    return """\
+OpenMATLAB defects → GitHub Issues (canonical)
+
+  gh issue list
+  gh issue list --label gap
+  gh issue create
+  # templates: .github/ISSUE_TEMPLATE/ (bug, gap)
+  # include feature_ids from docs/feature_map.yaml
+  # include case_ids from docs/test_catalog.yaml
+
+See docs/WORKFLOW.md and docs/defects/README.md
+"""
 
 
-@dataclass
-class DefectIndex:
-    version: int
-    defects: List[Defect]
-    raw: Dict[str, Any] = field(default_factory=dict)
-
-    def filter(self, *, status: Optional[str] = None) -> List[Defect]:
-        rows = self.defects
-        if status:
-            rows = [d for d in rows if d.status == status]
-        return rows
-
-    def format_table(self, rows: Optional[List[Defect]] = None) -> str:
-        items = rows if rows is not None else self.defects
-        lines = [
-            f"{'ID':<8} {'STATUS':<12} {'TYPE':<8} {'SEV':<4} TITLE",
-            "-" * 72,
-        ]
-        for d in items:
-            lines.append(
-                f"{d.id:<8} {d.status:<12} {d.type:<8} {d.severity:<4} {d.title}"
-            )
-        lines.append(f"\n{len(items)} defects")
-        return "\n".join(lines)
-
-
-def load_defect_index(path: Optional[Path] = None) -> DefectIndex:
-    if yaml is None:
-        raise RuntimeError('PyYAML required. pip install -e ".[dev]"')
-    path = path or defects_index_path()
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    defects = [
-        Defect(
-            id=d["id"],
-            title=d.get("title", d["id"]),
-            status=d.get("status", "open"),
-            type=d.get("type", "gap"),
-            severity=d.get("severity", "s2"),
-            feature_ids=list(d.get("feature_ids") or []),
-            case_ids=list(d.get("case_ids") or []),
-            package=d.get("package", ""),
-            file=d.get("file"),
+def list_issues(
+    *,
+    label: Optional[str] = None,
+    state: str = "open",
+    limit: int = 20,
+) -> int:
+    """Run `gh issue list`. Return process exit code (127 if gh missing)."""
+    if not gh_available():
+        print(format_help(), file=sys.stderr)
+        print(
+            "error: `gh` not found on PATH; install GitHub CLI or use the web UI",
+            file=sys.stderr,
         )
-        for d in (data.get("defects") or [])
+        return 127
+    cmd: List[str] = [
+        "gh",
+        "issue",
+        "list",
+        "--state",
+        state,
+        "--limit",
+        str(limit),
     ]
-    return DefectIndex(
-        version=int(data.get("version", 1)), defects=defects, raw=data
-    )
+    if label:
+        cmd.extend(["--label", label])
+    print("Running:", " ".join(cmd), file=sys.stderr)
+    return subprocess.call(cmd)

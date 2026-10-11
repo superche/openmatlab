@@ -1,0 +1,30 @@
+name: Gap
+description: Missing capability vs feature_map (architecture / MVP backlog)
+title: "[gap] "
+labels: ["gap"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+    validations:
+      required: true
+  - type: textarea
+    id: feature_ids
+    attributes:
+      label: feature_ids (from docs/feature_map.yaml)
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Primary package layer
+      options: [host, lang, runtime, numerics, graphics, libs, qa, docs]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+    validations:
+      required: true

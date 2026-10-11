@@ -4,7 +4,7 @@
 
 Dump: `openmatlab features`  
 Full QA system: [`QA.md`](QA.md) (five layers)  
-Cases: [`TEST_CATALOG.md`](TEST_CATALOG.md) · Defects: [`WORKFLOW.md`](WORKFLOW.md)
+Cases: [`TEST_CATALOG.md`](TEST_CATALOG.md) · Defects: GitHub Issues ([`WORKFLOW.md`](WORKFLOW.md))
 
 ## How to update
 
@@ -22,4 +22,4 @@ Cases: [`TEST_CATALOG.md`](TEST_CATALOG.md) · Defects: [`WORKFLOW.md`](WORKFLOW
 | numerics | ArrayBackend stub | NumPyArrayBackend + Array |
 | graphics | GraphicsBackend stub | Matplotlib plot MVP |
 | libs | ToolboxPath list ops | find_mfile + .m load |
-| qa | five-layer system (map/catalog/envs/tooling/defects) | denser conformance cases |
+| qa | five-layer system; Issues+pytest+gh | denser conformance cases |

@@ -33,7 +33,7 @@ features:
     spec: docs/QA.md
     tests: [tests/unit/test_cli_qa.py]
     cases: [tc.cli_features]
-    notes: "status/features/cases/defects/test; eval not wired"
+    notes: "status/features/cases/defects→gh/test→pytest; eval not wired"
 
   - id: host.cli.version
     layer: host
@@ -237,11 +237,11 @@ features:
 
   - id: qa.defects
     layer: qa
-    name: Defect index load / workflow
+    name: GitHub Issues workflow (gh bridge)
     status: partial
     spec: docs/WORKFLOW.md
     tests: [tests/unit/test_defects.py]
-    notes: "Layer 5 in-repo defects"
+    notes: "Canonical tracker = GitHub Issues; CLI wraps gh"
 
   - id: qa.layered_system
     layer: qa
@@ -249,3 +249,4 @@ features:
     status: partial
     spec: docs/QA.md
     tests: [tests/unit/test_catalog.py, tests/unit/test_defects.py, tests/unit/test_feature_map.py]
+    notes: "Off-the-shelf Issues/pytest/gh; YAML inventories only"
