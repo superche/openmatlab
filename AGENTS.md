@@ -44,6 +44,14 @@ Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：
 
 细则见 `docs/PROCESS.md` § Epic acceptance。
 
+
+### Residual Issues（强制）
+
+Epic 验收时，`EPIC-NNN.md` 中列出的 residual / non-goal **必须**落成 GitHub Issues
+（`gap`/`chore` + layer；body 链回 parent epic；在 epic 上评论 URL 表）。
+细则见 `docs/PROCESS.md` § Residual Issues。已由后续 epic 认领的 residual 可只链该 epic。
+
+
 ## 每次迭代清单
 
 1. 更新 `feature_map` + `test_catalog`（+ 相关 Gherkin）

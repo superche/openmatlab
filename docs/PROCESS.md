@@ -116,6 +116,24 @@ In addition to the Issue/PR DoD above:
 
 Example: [`acceptance/EPIC-001.md`](acceptance/EPIC-001.md).
 
+
+## Residual Issues (mandatory)
+
+Every epic acceptance package **must** file GitHub Issues for residual /
+non-goal items called out in that epic’s `docs/acceptance/EPIC-NNN.md`
+(and any “known gap” called incomplete in the conditional-pass notes).
+
+Rules:
+
+1. One Issue per coherent residual (or a small tightly-related cluster).
+2. Labels: `gap` (or `chore` if docs-only); layer label; body links **parent epic**.
+3. Comment on the epic with a table of residual Issue URLs when filing.
+4. EPIC-NNN.md may summarize residuals, but **Issues are canonical** for
+   tracking — prose-only residuals are not enough.
+5. Residuals already owned by a later epic board may link that epic instead
+   of duplicating a gap Issue.
+
+
 ## Feature status criteria
 
 `docs/feature_map.yaml` statuses are **claims**, not vibes. Use:
