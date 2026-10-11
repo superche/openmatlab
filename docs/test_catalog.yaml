@@ -138,3 +138,28 @@ test_cases:
     impl: tests/bdd/test_architecture_bdd.py
     status: active
     env: unit
+
+  - id: tc.numpy_scalar_1x1
+    kind: unit
+    title: Scalar from_scalar is 1x1 Array
+    features: [numerics.array_value, numerics.numpy_backend]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_numpy_backend.py::test_scalar_is_1x1
+    status: active
+    env: unit
+
+  - id: tc.numpy_matmul
+    kind: unit
+    title: matmul and elem_mul on 2x2
+    features: [numerics.numpy_backend]
+    impl: tests/unit/test_numpy_backend.py::test_matmul_and_elem_mul
+    status: active
+    env: unit
+
+  - id: tc.bdd_array_scalar
+    kind: unit
+    title: Gherkin — scalar 1x1 via NumPy backend
+    features: [numerics.array_value, qa.pytest_bdd]
+    impl: tests/bdd/test_array_numpy_bdd.py
+    status: active
+    env: unit

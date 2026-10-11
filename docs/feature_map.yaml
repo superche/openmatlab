@@ -118,9 +118,10 @@ features:
   - id: runtime.value_array_protocol
     layer: runtime
     name: Value / Array protocols (scalar as 1x1)
-    status: stub
+    status: done
     protocols: [openmatlab.runtime.value.Value, openmatlab.runtime.value.Array]
-    tests: [tests/unit/test_architecture.py]
+    tests: [tests/unit/test_architecture.py, tests/unit/test_numpy_backend.py]
+    notes: "Satisfied by NDArrayValue (LSP)"
 
   - id: runtime.workspace
     layer: runtime
@@ -151,20 +152,25 @@ features:
   - id: numerics.array_backend
     layer: numerics
     name: ArrayBackend protocol
-    status: stub
+    status: done
     protocols: [openmatlab.numerics.backend.ArrayBackend]
+    notes: "Implemented by NumPyArrayBackend"
 
   - id: numerics.numpy_backend
     layer: numerics
     name: NumPyArrayBackend
-    status: stub
+    status: partial
     depends_on: [numerics.array_backend, runtime.value_array_protocol]
+    tests: [tests/unit/test_numpy_backend.py, tests/bdd/test_array_numpy_bdd.py]
+    notes: "Core ops live; complex/sparse later"
 
   - id: numerics.array_value
     layer: numerics
     name: Concrete Array value type
-    status: planned
+    status: partial
     depends_on: [runtime.value_array_protocol, numerics.numpy_backend]
+    tests: [tests/unit/test_numpy_backend.py]
+    notes: "NDArrayValue in numerics/; scalar as 1x1"
 
   # --- graphics ---
   - id: graphics.backend

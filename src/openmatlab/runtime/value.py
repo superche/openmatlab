@@ -2,6 +2,9 @@
 
 MATLAB-like semantics treat numerics as arrays; a scalar is a 1×1 array.
 Do NOT reintroduce dict[str, float] as the primary eval result type.
+
+Concrete arrays live in openmatlab.numerics (e.g. NDArrayValue) so runtime
+stays free of a hard NumPy dependency (KISS / low coupling).
 """
 
 from __future__ import annotations
@@ -40,10 +43,3 @@ class Array(Value, Protocol):
     def backend_buffer(self) -> Any:
         """Escape hatch to ArrayBackend storage (e.g. numpy.ndarray)."""
         ...
-
-
-class UnimplementedValue:
-    """Placeholder concrete type so imports/type checks have an anchor."""
-
-    def matlab_class(self) -> str:
-        return "unimplemented"
