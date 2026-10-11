@@ -43,8 +43,11 @@ _JUXTAPOSE_START = frozenset(
     {
         TokenType.NUMBER,
         TokenType.IDENT,
+        TokenType.STRING,
+        TokenType.CHAR,
         TokenType.LPAREN,
         TokenType.LBRACKET,
+        TokenType.LBRACE,
     }
 )
 
@@ -349,7 +352,7 @@ class Parser:
         if tok.type == TokenType.NUMBER:
             self.advance()
             return NumberLiteral(value=float(tok.value))
-        if tok.type == TokenType.STRING:
+        if tok.type in (TokenType.STRING, TokenType.CHAR):
             self.advance()
             return StringLiteral(value=tok.value)
         if tok.type == TokenType.IDENT:

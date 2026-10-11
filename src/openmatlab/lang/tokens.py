@@ -13,6 +13,7 @@ class TokenType(Enum):
     # --- implemented / planned soon ---
     NUMBER = auto()
     STRING = auto()  # double-quoted "..." (MVP)
+    CHAR = auto()  # single-quoted '...' (context-sensitive vs transpose)
     IDENT = auto()
     PLUS = auto()
     MINUS = auto()

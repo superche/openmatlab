@@ -404,3 +404,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.char_literal
+    kind: unit
+    title: single-quote char vs transpose
+    features: [lang.char_literal, runtime.char_value]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_char_literal.py
+    status: active
+    env: unit
+

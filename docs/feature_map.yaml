@@ -87,6 +87,22 @@ features:
     tests: [tests/unit/test_lexer.py]
     notes: "Matrix MVP + if/for/while/break/end + STRING; continue/cells later [done ITER-024; #34]"
 
+
+  - id: lang.char_literal
+    layer: lang
+    name: Single-quoted char literals (vs transpose)
+    status: partial
+    depends_on: [lang.lexer, lang.parser, runtime.char_value]
+    notes: "Context-sensitive '; '' escape (#64)"
+    tests: [tests/unit/test_char_literal.py, tests/bdd/test_char_literal_bdd.py]
+
+  - id: runtime.char_value
+    layer: runtime
+    name: CharValue carrier for ' and \" literals
+    status: partial
+    depends_on: [runtime.evaluator]
+    notes: "Shared CharValue; no string class (#64)"
+    tests: [tests/unit/test_char_literal.py]
   - id: lang.parser
     layer: lang
     name: Parser parse()
