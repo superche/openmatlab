@@ -35,10 +35,14 @@ pytest
 
 ### Roadmap
 
-1. **Parser** — MATLAB-like syntax from public language docs — **done (minimal subset)**
-2. **Runtime** — interpreter / execution model — **done (scalar env + eval)**
-3. **Core math** — arrays, linear algebra, common numeric APIs — *next*
-4. **Plotting** — basic visualization layer — *planned*
+See `docs/ARCHITECTURE.md` for the calibrated (matrix-first workbench) plan.
+
+1. **Parser** — MATLAB-like syntax from public language docs — **scalar subset done**; matrix/index/colon/`.*` next
+2. **Runtime** — Array-first values + workspace — **scalar prototype only** (not product-ready)
+3. **Core math** — arrays, linear algebra (NumPy-backed OK) — *next after Value/Array*
+4. **Host display + plotting** — `;` suppress, pretty-print, `plot` MVP — *MVP-critical*
+5. **Functions / path / toolboxes** — *later*
+6. **Simulink-class** — *non-goal / far future*
 
 ### License
 
@@ -72,10 +76,14 @@ MIT © Shaw Che / superche, 2026
 
 ### 路线图
 
-1. **解析器** — 基于公开语言文档 — **已完成（最小子集）**
-2. **运行时** — 解释器 / 执行模型 — **已完成（标量环境）**
-3. **核心数学** — 数组、线性代数 — *下一步*
-4. **绘图** — 基础可视化 — *计划中*
+详细标定架构见 `docs/ARCHITECTURE.md`（矩阵优先工作台）。
+
+1. **解析器** — 公开语言文档 — **标量子集已完成**；矩阵/下标/冒号/`.*` 下一步
+2. **运行时** — Array-first 值 + 工作区 — **仅标量原型**（未达产品 MVP）
+3. **核心数学** — 数组、线性代数（可用 NumPy 后端）— *在 Value/Array 之后*
+4. **交互显示 + 绘图** — `;` 抑制输出、矩阵打印、`plot` MVP — *MVP 关键*
+5. **函数 / 路径 / 工具箱** — *稍后*
+6. **Simulink 类** — *非目标 / 远期*
 
 ### 许可证
 
