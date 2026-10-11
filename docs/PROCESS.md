@@ -101,6 +101,10 @@ child Issues closed and CI green.
 - Land via PR; required check **`test`** must pass; merge to `main`.
 - Comment on the epic Issue with a link to the evidence file on `main`
   (e.g. `docs/acceptance/EPIC-001.md`).
+- **Tip SHAs:** record both (1) **functional tip** — last commit where ordered
+  acceptance code landed; (2) **evidence merge tip** — commit that merged
+  `EPIC-NNN.md` onto `main`. Re-run instructions for the doc itself should
+  checkout the evidence tip (or `main`), not only the functional tip.
 
 ### DoD addendum (epics)
 
