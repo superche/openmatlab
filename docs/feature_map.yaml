@@ -235,7 +235,7 @@ features:
     name: zeros / ones / eye / linspace builtins
     status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "FunctionResolver builtins via libs.numeric_builtins; vector-size form N/A (#44) [done per ITER-047]"
+    notes: "FunctionResolver builtins via libs.numeric_builtins; nan/NaN (#55); vector-size form N/A (#44) [done per ITER-047]"
     tests: [tests/unit/test_elmat_builtins.py, tests/bdd/test_elmat_bdd.py]
 
   - id: libs.elmat_shape
@@ -251,7 +251,7 @@ features:
     name: sum / prod / mean / min / max
     status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "first non-singleton dim; [m,i]=max; max(A,B); NaN-omit default N/A (#45) [done per ITER-047]"
+    notes: "first non-singleton dim; [m,i]=max; max(A,B); default omitnan (#45+#55); flag strings N/A [done per ITER-047]"
     tests: [tests/unit/test_reductions.py, tests/bdd/test_reductions_bdd.py]
 
   - id: libs.elfun

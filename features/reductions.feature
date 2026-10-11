@@ -15,3 +15,10 @@ Feature: Reductions
     Given a fresh session
     When I evaluate "t = sum(sum([1 2; 3 4]));"
     Then variable "t" equals 10
+
+  @needs_numpy
+  Scenario: max skips NaN by default
+    Given a fresh session
+    When I evaluate "v = max([1 nan() 4]);"
+    Then variable "v" equals 4
+

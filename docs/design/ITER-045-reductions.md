@@ -1,4 +1,4 @@
-# Design: reductions sum/prod/mean/min/max (Issue #45)
+# Design: reductions sum/prod/mean/min/max (Issue #45 + #55)
 
 **Epic:** #43 · **KISS / public MATLAB doc semantics**
 
@@ -9,8 +9,9 @@
 - `0×0` empty input: `sum([])=0`, `prod([])=1`, `mean([])=NaN` (MATLAB special case).
 - `max/min(A)`: `nargout 2` → `[m, i]` with **1-based** index of first extremum.
 - `max/min(A, B)`: elementwise with scalar broadcast. `max(A, [], dim)` supported.
+- **NaN (default omitnan, #55):** reduce forms skip NaN; all-NaN → NaN and `i=1`.
+  Two-arg form uses `fmax`/`fmin` (prefer non-NaN; both NaN → NaN).
 - Lives in `libs.numeric_builtins`; registered via the same seam as #44.
 
 ## Non-goals
-NaN-omit default of MATLAB `max/min` (NumPy NaN propagation for now — residual), `'omitnan'`
-flags, `'all'`, `cumsum`, complex magnitudes.
+Explicit flag strings (`'omitnan'` / `'includenan'` / `'all'`), `cumsum`, complex magnitudes.

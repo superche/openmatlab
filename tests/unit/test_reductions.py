@@ -76,3 +76,46 @@ def test_reduction_bad_args():
         ReplSession(s).run_line("max([1 2], [1 2 3])")
     with pytest.raises(EvalError):
         ReplSession(s).run_line("sum([1 2], 0)")
+
+
+def test_max_min_skip_nan_by_default():
+    """MATLAB default: omitnan. Do not weaken."""
+    s = _ws("v = max([1 nan() 3]); w = min([1 nan() 3]);")
+    assert _g(s, "v")[0, 0] == 3
+    assert _g(s, "w")[0, 0] == 1
+
+
+def test_max_all_nan_returns_nan_and_index_one():
+    s = _ws("[m, i] = max([nan() nan()]); [n, j] = min([nan(); nan()]);")
+    assert math.isnan(_g(s, "m")[0, 0]) and _g(s, "i")[0, 0] == 1
+    assert math.isnan(_g(s, "n")[0, 0]) and _g(s, "j")[0, 0] == 1
+
+
+def test_max_index_skips_nan_first_occurrence():
+    s = _ws("[m, i] = max([nan() 2 5 nan() 5]);")
+    assert _g(s, "m")[0, 0] == 5 and _g(s, "i")[0, 0] == 3
+
+
+def test_max_matrix_columns_skip_nan():
+    s = _ws("A = [1 nan(); nan() 4]; c = max(A); [r, k] = max(A, [], 2);")
+    assert np.array_equal(_g(s, "c"), [[1, 4]])
+    assert np.array_equal(_g(s, "r"), [[1], [4]])
+    assert np.array_equal(_g(s, "k"), [[1], [2]])
+
+
+def test_max_min_two_arg_prefer_non_nan():
+    s = _ws(
+        "e = max([1 nan() 3], [nan() 2 nan()]); "
+        "f = min([1 nan()], [nan() 2]); "
+        "g = max(nan(), nan());"
+    )
+    assert np.array_equal(_g(s, "e"), [[1, 2, 3]])
+    assert np.array_equal(_g(s, "f"), [[1, 2]])
+    assert math.isnan(_g(s, "g")[0, 0])
+
+
+def test_nan_constructor():
+    s = _ws("a = nan(); b = NaN(2, 3);")
+    assert math.isnan(_g(s, "a")[0, 0])
+    assert _g(s, "b").shape == (2, 3) and np.isnan(_g(s, "b")).all()
+
