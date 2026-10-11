@@ -628,3 +628,12 @@ test_cases:
     impl: tests/unit/test_cellfun.py
     status: active
     env: unit
+
+  - id: tc.cell_paren_assign
+    kind: unit
+    title: cell paren assign and multi-index delete
+    features: [runtime.cell_paren_assign]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cell_paren_assign.py
+    status: active
+    env: unit

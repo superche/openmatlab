@@ -486,6 +486,15 @@ features:
     notes: "M2 C10 final; apply handle per cell (#276)"
     tests: [tests/unit/test_cellfun.py, tests/bdd/test_cellfun_bdd.py]
 
+
+  - id: runtime.cell_paren_assign
+    layer: runtime
+    name: cell paren assign/delete
+    status: done
+    depends_on: [runtime.array_delete_empty, lang.cell_assign]
+    notes: "c(i)={v}/c(i,j)=[] (#287); multi-element residual #110"
+    tests: [tests/unit/test_cell_paren_assign.py, tests/bdd/test_cell_paren_assign_bdd.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)
