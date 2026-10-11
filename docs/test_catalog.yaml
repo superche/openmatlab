@@ -592,3 +592,12 @@ test_cases:
     impl: tests/unit/test_logical_index.py
     status: active
     env: unit
+
+  - id: tc.delete_empty
+    kind: unit
+    title: delete via empty indexed assignment
+    features: [runtime.array_delete_empty]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_delete_empty.py
+    status: active
+    env: unit

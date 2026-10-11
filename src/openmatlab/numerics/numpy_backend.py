@@ -252,6 +252,8 @@ class NumPyArrayBackend:
             return flat.astype(np.int64)
 
         def _apply_rhs(n: int) -> Any:
+            if vbuf.size == 0:
+                raise NumericsError("set_index: internal empty RHS")
             if vbuf.size == 1:
                 return np.full(n, float(vbuf.reshape(-1)[0]), dtype=np.float64)
             if vbuf.size != n:
@@ -260,9 +262,50 @@ class NumPyArrayBackend:
                 )
             return np.asarray(vbuf, dtype=np.float64).reshape(-1, order="F")
 
+        def _delete_linear(flat: Any, drop_0based: Any) -> Array:
+            """Remove 0-based indices; preserve vector orientation."""
+            keep = np.ones(flat.size, dtype=bool)
+            drop_0based = np.unique(np.asarray(drop_0based, dtype=np.int64).reshape(-1))
+            if np.any(drop_0based < 0) or np.any(drop_0based >= flat.size):
+                raise NumericsError("set_index: delete index out of range")
+            keep[drop_0based] = False
+            kept = flat[keep]
+            rows, cols = (data.shape + (1, 1))[:2]
+            if kept.size == 0:
+                if rows == 1 and cols >= 1:
+                    return NDArrayValue(kept.reshape(1, 0))
+                return NDArrayValue(kept.reshape(0, 1))
+            if rows == 1:
+                return NDArrayValue(kept.reshape(1, -1))
+            if cols == 1:
+                return NDArrayValue(kept.reshape(-1, 1))
+            # matrix linear delete → column (MATLAB)
+            return NDArrayValue(kept.reshape(-1, 1))
+
         if len(indices) == 1:
             ind_a = _as_nd(indices[0])
             flat = np.asarray(data, order="F").reshape(-1, order="F").copy()
+            if vbuf.size == 0:
+                # A(i)=[] delete
+                if self._is_logical(ind_a):
+                    m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(
+                        -1, order="F"
+                    )
+                    if m.size != flat.size:
+                        raise NumericsError(
+                            f"set_index: logical mask numel ({m.size}) != array numel ({flat.size})"
+                        )
+                    drop = np.nonzero(m)[0]
+                else:
+                    k = _as_1based_int_vec(
+                        ind_a.backend_buffer(), label="linear index"
+                    )
+                    if np.any(k > flat.size):
+                        raise NumericsError(
+                            f"set_index: linear index exceeds numel ({flat.size})"
+                        )
+                    drop = k - 1
+                return _delete_linear(flat, drop)
             if self._is_logical(ind_a):
                 m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
                 if m.size != flat.size:
@@ -292,6 +335,19 @@ class NumPyArrayBackend:
             )
             if np.any(r > data.shape[0]) or np.any(c > data.shape[1]):
                 raise NumericsError("set_index: subscript exceeds array dimensions")
+            if vbuf.size == 0:
+                # A(i,:)=[] or A(:,j)=[] when one subscript is all indices
+                rows_n, cols_n = data.shape[0], data.shape[1]
+                if r.size == rows_n and np.array_equal(np.sort(r), np.arange(1, rows_n + 1)):
+                    # deleting columns c
+                    keep_c = [j for j in range(cols_n) if (j + 1) not in set(c.tolist())]
+                    return NDArrayValue(data[:, keep_c].astype(np.float64))
+                if c.size == cols_n and np.array_equal(np.sort(c), np.arange(1, cols_n + 1)):
+                    keep_r = [i for i in range(rows_n) if (i + 1) not in set(r.tolist())]
+                    return NDArrayValue(data[keep_r, :].astype(np.float64))
+                raise NumericsError(
+                    "set_index: empty assign delete needs A(i,:)=[] or A(:,j)=[]"
+                )
             n = int(r.size * c.size)
             rhs_flat = _apply_rhs(n)
             block = rhs_flat.reshape((r.size, c.size), order="F")
