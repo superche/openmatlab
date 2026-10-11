@@ -30,6 +30,7 @@ dev = [
     "pytest-cov>=4",
     "pytest-bdd>=7",
     "numpy>=1.24",
+    "matplotlib>=3.7",
 ]
 numpy = ["numpy>=1.24"]
 plot = ["matplotlib>=3.7"]

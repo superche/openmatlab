@@ -39,7 +39,9 @@ def test_session_composition():
     s = Session.create_default()
     assert s.workspace.depth() == 1
     assert s.functions.path is s.path
-    assert isinstance(s.plots, StubPlotSurface)
+    from openmatlab.host.plot_surface import HostPlotSurface, StubPlotSurface
+
+    assert isinstance(s.plots, (StubPlotSurface, HostPlotSurface))
     assert isinstance(s.path, ToolboxPath)
     # Issue #4: default session wires NumPy + ConsoleDisplay when available
     if s.numerics is None:
