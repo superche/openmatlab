@@ -47,10 +47,13 @@ introduced for C02/C04/C06/C07/C08/C09/C10/C11 when their epics land.
 ## Residual priority (open Issues on M2)
 
 - **p0** (blocks exit): #191 #192 #193 #162 #120 #109 #119 #108
-- **p1** (in exit criteria / high-value breadth): #227 #217 #218 #207 #209 #97 #81 #110 #83 #69 #80 #142 #184 #172
-- **p2** (post-M2 or nice-to-have): #228 #229 #219 #208 #197 #198 #182 #183 #174 #173 #164 #153 #152 #151 #141 #140 #130 #78 #74 #72 #71
+- **p1** (in exit criteria / high-value breadth): #237 #238 #227 #217 #218 #207 #209 #97 #81 #110 #83 #69 #80 #142 #184 #172
+- **p2** (post-M2 or nice-to-have): #239 #228 #229 #219 #208 #197 #198 #182 #183 #174 #173 #164 #153 #152 #151 #141 #140 #130 #78 #74 #72 #71
 
 ## Progress snapshot
+
+After Epic #19: **7/11** criteria met. Next epic: **C06** (#120/#109, p0).
+
 
 After Epic #18: **6/11** criteria met. Next epic: **C07** (#162, p0).
 
