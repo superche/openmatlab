@@ -140,17 +140,17 @@ features:
   - id: lang.array_assign
     layer: lang
     name: Indexed array assignment A(i)=v
-    status: partial
+    status: done
     depends_on: [lang.parser, numerics.numpy_backend]
-    notes: "A(i,j)/A(k)=scalar; COW set_index; OOB error (#116)"
+    notes: "A(i,j)/A(k)=scalar; COW set_index; OOB error (#116) [done per ITER-117]"
     tests: [tests/unit/test_array_assign.py, tests/bdd/test_array_assign_bdd.py]
 
   - id: numerics.array_set
     layer: numerics
     name: ArrayBackend.set_index
-    status: partial
+    status: done
     depends_on: [numerics.numpy_backend]
-    notes: "1-based copy-on-write element set (#116)"
+    notes: "1-based copy-on-write element set (#116) [done per ITER-117]"
     tests: [tests/unit/test_array_assign.py]
   - id: lang.cell_paren_index
     layer: lang
