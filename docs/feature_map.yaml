@@ -522,6 +522,15 @@ features:
     notes: "A(L,:), A(:,L), A(L1,L2) read/assign (#317)"
     tests: [tests/unit/test_logical_index_2d.py, tests/bdd/test_logical_index_2d_bdd.py]
 
+
+  - id: libs.logical_true_false
+    layer: libs
+    name: logical / true / false
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "Epic #28 (#327); absorbs #238 #321"
+    tests: [tests/unit/test_logical_pack.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)

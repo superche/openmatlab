@@ -486,6 +486,37 @@ def _cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 
+def _logical(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """Cast to logical (nonzero → true)."""
+    _arity("logical", args, 1, 1)
+    b = _buf("logical", args[0])
+    out = NDArrayValue(np.asarray(b != 0, dtype=bool))
+    return (out,)
+
+
+def _true_false(name: str, fill: bool):
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, 0, 2)
+        if not args:
+            return (NDArrayValue(np.asarray([[fill]], dtype=bool)),)
+        if len(args) == 1:
+            b = _buf(name, args[0])
+            if b.size == 1:
+                n = _dim(name, args[0])
+                return (NDArrayValue(np.full((n, n), fill, dtype=bool)),)
+            # size vector
+            flat = b.reshape(-1, order="F")
+            dims = [max(0, int(x)) for x in flat[:2]]
+            while len(dims) < 2:
+                dims.append(1)
+            return (NDArrayValue(np.full((dims[0], dims[1]), fill, dtype=bool)),)
+        m, n = _dim(name, args[0]), _dim(name, args[1])
+        return (NDArrayValue(np.full((m, n), fill, dtype=bool)),)
+
+    return _fn
+
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -503,6 +534,9 @@ BUILTINS: Dict[str, Builtin] = {
     "unique": _unique,
     "issorted": _issorted,
     "cellfun": _cellfun,
+    "logical": _logical,
+    "true": _true_false("true", True),
+    "false": _true_false("false", False),
     "size": _size,
     "numel": _numel,
     "length": _length,
