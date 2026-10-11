@@ -125,8 +125,17 @@ class Evaluator:
         if isinstance(expr, ast.Name):
             try:
                 return self.workspace.get(expr.id)
-            except KeyError as exc:
-                raise EvalError(f"Undefined variable: {expr.id}") from exc
+            except KeyError:
+                # MATLAB: unbound name may be a zero-arg function/builtin (NaN, pi, …)
+                try:
+                    results = self._invoke_call(expr, [], nargout=1)
+                except EvalError as exc:
+                    raise EvalError(f"Undefined variable: {expr.id}") from exc
+                if results is None:
+                    raise EvalError(f"Undefined variable: {expr.id}")
+                if not results:
+                    return self.numerics.from_nested([])
+                return results[0]
         if isinstance(expr, ast.UnaryOp):
             v = self._require_array(self.eval_expr(expr.operand), "unary")
             if expr.op == "+":

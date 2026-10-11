@@ -113,6 +113,17 @@ def _nan(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(np.full(_shape2("nan", args), np.nan)),)
 
 
+def _inf(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """MATLAB Inf/inf — scalar or filled array of +Inf."""
+    return (_wrap(np.full(_shape2("Inf", args), np.inf)),)
+
+
+def _pi(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """MATLAB pi — ratio of circle circumference to diameter."""
+    _arity("pi", args, 0, 0)
+    return (_wrap(np.pi),)
+
+
 # ----- shape queries -----
 
 
@@ -401,6 +412,9 @@ BUILTINS: Dict[str, Builtin] = {
     "linspace": _linspace,
     "nan": _nan,
     "NaN": _nan,
+    "inf": _inf,
+    "Inf": _inf,
+    "pi": _pi,
     "cell": _cell,
     "cumsum": _cumsum,
     "sort": _sort,

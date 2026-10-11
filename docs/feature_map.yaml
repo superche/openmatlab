@@ -137,6 +137,13 @@ features:
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
 
+  - id: runtime.name_zero_arg_constants
+    layer: runtime
+    name: bare NaN/Inf/pi via zero-arg builtins
+    status: done
+    depends_on: [runtime.evaluator, libs.elmat_constructors]
+    notes: "M2 C04 met; Name unbound → 0-arg resolve; Inf/pi builtins (#214)"
+    tests: [tests/unit/test_name_zero_arg.py, tests/bdd/test_name_zero_arg_bdd.py]
   - id: lang.index_colon_all
     layer: lang
     name: bare colon A(i,:) / A(:)
