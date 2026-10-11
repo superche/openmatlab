@@ -27,13 +27,13 @@ What works today:
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
-- Indexed array assignment `A(i)=v` / `A(i,j)=v` / range `A(1:n)=…` (copy-on-write `set_index`; scalar broadcast; numel-matched RHS); `end` / `1:end` / `end-1` in subscripts
+- Indexed array assignment `A(i)=v` / `A(i,j)=v` / range `A(1:n)=…` (copy-on-write `set_index`; scalar broadcast; numel-matched RHS); `end` / `1:end` / `end-1` / bare `:` (`A(i,:)`, `A(:)`) in subscripts
 - Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace (incl. size-vector `zeros([m n])`), size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan; cumsum/sort/find
 
 Residual non-parity (later): rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
 Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Epic #9 residuals: Issues on closed [#126](https://github.com/superche/openmatlab/issues/126). Epic #10 residuals: Issues on closed [#136](https://github.com/superche/openmatlab/issues/136). Epic #11 residuals: Issues on closed [#147](https://github.com/superche/openmatlab/issues/147). Epic #12 residuals: Issues on closed [#158](https://github.com/superche/openmatlab/issues/158). Next axis: **\`end\` in indexing** — Epic #13 (absorbs #163).
 
-Epic #15 residuals: Issues on closed [#188](https://github.com/superche/openmatlab/issues/188). Next epic by M2 rule: **C02 bare colon** (#191) — Epic #16. See [M2-octave-breadth.md](milestones/M2-octave-breadth.md).
+Epic #15 residuals: Issues on closed [#188](https://github.com/superche/openmatlab/issues/188). Epic #16 residuals: Issues on [#203](https://github.com/superche/openmatlab/issues/203). Next by M2 rule: **C04** (#192). See [M2-octave-breadth.md](milestones/M2-octave-breadth.md).
 
 Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3).
 
