@@ -178,45 +178,61 @@ class NumPyArrayBackend:
 
 
     def set_index(self, a: Array, indices: Sequence[Array], value: Array) -> Array:
-        """1-based copy-on-write set of a single element (scalar value)."""
+        """1-based copy-on-write set; scalar or matching-numel RHS; range LHS ok."""
         aa = _as_nd(a)
         vv = _as_nd(value)
-        vbuf = vv.backend_buffer()
-        if vbuf.size != 1:
-            raise NumericsError("set_index: RHS must be scalar in this MVP")
-        scalar = float(vbuf.reshape(-1)[0])
-        data = aa.backend_buffer().copy()
-        if len(indices) == 1:
-            # linear column-major
-            ind = _as_nd(indices[0]).backend_buffer()
-            if ind.size != 1:
-                raise NumericsError("set_index: linear index must be scalar")
-            k = int(ind.reshape(-1)[0])
-            if k != float(ind.reshape(-1)[0]) or k < 1:
+        vbuf = self._np.asarray(vv.backend_buffer(), dtype=self._np.float64)
+        data = self._np.asarray(aa.backend_buffer(), dtype=self._np.float64).copy()
+        np = self._np
+
+        def _as_1based_int_vec(buf: Any, *, label: str) -> Any:
+            flat = np.asarray(buf, dtype=np.float64).reshape(-1)
+            if flat.size == 0:
+                raise NumericsError(f"set_index: empty {label}")
+            if np.any(flat != np.floor(flat)) or np.any(flat < 1):
                 raise NumericsError("set_index: indices must be positive integers")
-            flat = self._np.asarray(data, order="F").reshape(-1, order="F").copy()
-            if k > flat.size:
+            return flat.astype(np.int64)
+
+        def _apply_rhs(n: int) -> Any:
+            if vbuf.size == 1:
+                return np.full(n, float(vbuf.reshape(-1)[0]), dtype=np.float64)
+            if vbuf.size != n:
                 raise NumericsError(
-                    f"set_index: linear index {k} exceeds numel ({flat.size})"
+                    f"set_index: RHS numel ({vbuf.size}) != LHS numel ({n})"
                 )
-            flat[k - 1] = scalar
+            return np.asarray(vbuf, dtype=np.float64).reshape(-1, order="F")
+
+        if len(indices) == 1:
+            k = _as_1based_int_vec(
+                _as_nd(indices[0]).backend_buffer(), label="linear index"
+            )
+            flat = np.asarray(data, order="F").reshape(-1, order="F").copy()
+            if np.any(k > flat.size):
+                raise NumericsError(
+                    f"set_index: linear index exceeds numel ({flat.size})"
+                )
+            flat[k - 1] = _apply_rhs(int(k.size))
             out = flat.reshape(data.shape, order="F").copy()
-            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+            return NDArrayValue(np.asarray(out, dtype=np.float64))
+
         if len(indices) == 2:
-            py_idx = []
-            for ind in indices:
-                buf = _as_nd(ind).backend_buffer()
-                if buf.size != 1:
-                    raise NumericsError("set_index: subscripts must be scalar")
-                i = int(buf.reshape(-1)[0])
-                if i != float(buf.reshape(-1)[0]) or i < 1:
-                    raise NumericsError("set_index: indices must be positive integers")
-                py_idx.append(i - 1)
+            r = _as_1based_int_vec(
+                _as_nd(indices[0]).backend_buffer(), label="row subscript"
+            )
+            c = _as_1based_int_vec(
+                _as_nd(indices[1]).backend_buffer(), label="col subscript"
+            )
+            if np.any(r > data.shape[0]) or np.any(c > data.shape[1]):
+                raise NumericsError("set_index: subscript exceeds array dimensions")
+            n = int(r.size * c.size)
+            rhs_flat = _apply_rhs(n)
+            block = rhs_flat.reshape((r.size, c.size), order="F")
             try:
-                data[tuple(py_idx)] = scalar
+                data[np.ix_(r - 1, c - 1)] = block
             except IndexError as exc:
                 raise NumericsError(f"set_index: {exc}") from exc
             return NDArrayValue(data)
+
         raise NumericsError("set_index: only 1 or 2 subscripts supported")
 
     def raw(self, a: Array) -> Any:

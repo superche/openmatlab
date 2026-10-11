@@ -512,3 +512,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.array_assign_range
+    kind: unit
+    title: range / non-scalar indexed assignment
+    features: [runtime.array_assign_range]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_array_assign_range.py
+    status: active
+    env: unit
+
