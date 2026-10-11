@@ -41,13 +41,13 @@ M-plugins is **done** only when **all** of the following hold on `main`:
 | # | Criterion | Priority | Tracking | Status |
 |---|-----------|----------|----------|--------|
 | P01 | Contract + milestone docs locked on `main` | p0 | #349 (this PR) | **met** |
-| P02 | Manifest load/validate + schema tests | p0 | #350 | pending |
-| P03 | Slot registry + contribute/unload by plugin id | p0 | #351 | pending |
-| P04 | Activation predicates + ExtensionContext | p0 | #352 | pending |
-| P05 | Extension Host API v0 (`commands` / `path` / `window` smoke) | p0 | #353 | pending |
-| P06 | Discovery: plugin path + entry points group | p1 | #354 | pending |
-| P07 | CLI `plugins` list + sample community plugin demo | p1 | #355 | pending |
-| P08 | Fault isolation + engines semver range enforcement | p1 | #356 | pending |
+| P02 | Manifest load/validate + schema tests | p0 | #350 | **met** |
+| P03 | Slot registry + contribute/unload by plugin id | p0 | #351 | **met** |
+| P04 | Activation predicates + ExtensionContext | p0 | #352 | **met** |
+| P05 | Extension Host API v0 (`commands` / `path` / `window` smoke) | p0 | #353 | **met** |
+| P06 | Discovery: plugin path + entry points group | p1 | #354 | **met** |
+| P07 | CLI `plugins` list + sample community plugin demo | p1 | #355 | **met** |
+| P08 | Fault isolation + engines semver range enforcement | p1 | #356 | **met** |
 
 ## Non-goals (explicit)
 
@@ -63,5 +63,5 @@ After exit: richer UI slots, out-of-process host, signed plugins — file as
 
 ## Progress snapshot
 
-After contract PR: **1 / 8** criteria met (P01). Epic **#349**; children #350–#356.
-Next epic work: **P02** (#350).
+After host PR: **8 / 8** criteria met (P01–P08). Epic **#349** open for user acceptance; children #350–#356 closable when CI merged.
+Acceptance: `docs/acceptance/EPIC-349.md` (follow-up PR).

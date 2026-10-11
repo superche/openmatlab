@@ -66,6 +66,63 @@ features:
     notes: "run_line + bind_runtime; bare openmatlab enters REPL [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- lang ---
+
+  - id: host.extensions.manifest
+    layer: host
+    name: Plugin manifest load/validate (YAML/JSON)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P02 (#350); unknown contributes keys warn"
+    tests: [tests/unit/extensions/test_manifest.py]
+
+  - id: host.extensions.slots
+    layer: host
+    name: Host slot registry contribute/unload
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P03 (#351)"
+    tests: [tests/unit/extensions/test_slots.py]
+
+  - id: host.extensions.activation
+    layer: host
+    name: Activation predicates + ExtensionContext
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P04 (#352); fault isolation"
+    tests: [tests/unit/extensions/test_activation_host.py]
+
+  - id: host.extensions.api
+    layer: host
+    name: Extension Host API v0 (commands/path/window)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P05 (#353); api_version 0.1.0"
+    tests: [tests/unit/extensions/test_activation_host.py]
+
+  - id: host.extensions.discovery
+    layer: host
+    name: Plugin discovery (path + entry points)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P06 (#354); OPENMATLAB_PLUGIN_PATH"
+    tests: [tests/unit/extensions/test_discovery.py]
+
+  - id: host.cli.plugins
+    layer: host
+    name: CLI openmatlab plugins list
+    status: partial
+    spec: docs/milestones/M-plugins.md
+    notes: "Epic #349 / P07 (#355); sample demos/plugins/community.signal"
+    tests: [tests/unit/extensions/test_cli_plugins.py]
+
+  - id: host.extensions.engines
+    layer: host
+    name: engines.openmatlab SemVer + fault isolation
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P08 (#356)"
+    tests: [tests/unit/extensions/test_engines.py, tests/unit/extensions/test_activation_host.py]
+
   - id: lang.tokens_reserved
     layer: lang
     name: TokenType vocabulary incl. matrix-reserved

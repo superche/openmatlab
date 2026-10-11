@@ -673,3 +673,48 @@ test_cases:
     impl: tests/unit/test_logical_pack.py
     status: active
     env: unit
+
+  - id: tc.extensions_manifest
+    kind: unit
+    title: plugin manifest schema valid/invalid
+    features: [host.extensions.manifest]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_manifest.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_slots
+    kind: unit
+    title: slot contribute unload by plugin id
+    features: [host.extensions.slots]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_slots.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_host
+    kind: unit
+    title: activation host API fault engines
+    features: [host.extensions.activation, host.extensions.api, host.extensions.engines]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_activation_host.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_discovery
+    kind: unit
+    title: plugin path and entry point discovery
+    features: [host.extensions.discovery]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_discovery.py
+    status: active
+    env: unit
+
+  - id: tc.cli_plugins
+    kind: unit
+    title: openmatlab plugins CLI
+    features: [host.cli.plugins]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_cli_plugins.py
+    status: active
+    env: unit
