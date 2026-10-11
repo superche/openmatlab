@@ -556,3 +556,12 @@ test_cases:
     impl: tests/conformance/test_m2_conformance.py
     status: active
     env: unit
+
+  - id: tc.bare_colon
+    kind: unit
+    title: bare colon subscript read/assign
+    features: [lang.index_colon_all]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_bare_colon.py
+    status: active
+    env: unit

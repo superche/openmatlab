@@ -287,6 +287,14 @@ class Evaluator:
                 if i >= len(shape):
                     raise EvalError(f"{label}: too many subscripts")
                 end_val = float(shape[i])
+            # Bare ":" → 1:end for this dim (or 1:numel for linear)
+            if (
+                isinstance(aexpr, ast.ColonExpr)
+                and aexpr.start is None
+                and aexpr.stop is None
+            ):
+                idxs.append(self.numerics.colon(1.0, end_val, 1.0))
+                continue
             self._end_stack.append(end_val)
             try:
                 idxs.append(self._require_array(self.eval_expr(aexpr), label))

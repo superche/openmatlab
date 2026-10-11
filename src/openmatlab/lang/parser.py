@@ -343,6 +343,10 @@ class Parser:
         return BinOp(op=op.value, left=left, right=right)
 
     def parse_colon(self) -> Expr:
+        # Bare ":" in subscript → all indices for that dim / linear A(:)
+        if self.current().type == TokenType.COLON and self._in_subscript > 0:
+            self.advance()
+            return ColonExpr(start=None, stop=None, step=None)
         first = self.parse_add()
         if not self.match(TokenType.COLON):
             return first
