@@ -1,38 +1,24 @@
-"""Interactive display policy — semicolon suppress, ans, pretty-print.
-
-In MATLAB-like REPLs, a trailing ';' suppresses printing; otherwise the
-host shows the result (and may bind ans). This seam must exist before
-plots and matrix pretty-print land.
-"""
+"""Interactive display policy — semicolon suppress, ans, pretty-print."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, TextIO, runtime_checkable
 
 if TYPE_CHECKING:
     from openmatlab.runtime.value import Value
+    from openmatlab.runtime.workspace import Workspace
 
 
 @runtime_checkable
 class DisplayPolicy(Protocol):
-    """Host-facing display contract."""
+    def should_print(self, suppress: bool) -> bool: ...
 
-    def should_print(self, suppress: bool) -> bool:
-        """Return False when statement semicolon requested suppression."""
-        ...
+    def show(self, value: Value, *, name: Optional[str] = None) -> None: ...
 
-    def show(self, value: Value, *, name: Optional[str] = None) -> None:
-        """Pretty-print a runtime value (matrices, scalars-as-1x1, …)."""
-        ...
-
-    def bind_ans(self, value: Value) -> None:
-        """Optionally bind ans in the base workspace after a displayed expr."""
-        ...
+    def bind_ans(self, value: Value) -> None: ...
 
 
 class NullDisplay:
-    """Architecture stub: no-op display (used until REPL pretty-print lands)."""
-
     def should_print(self, suppress: bool) -> bool:
         return not suppress
 
@@ -41,3 +27,53 @@ class NullDisplay:
 
     def bind_ans(self, value: object) -> None:
         return None
+
+
+class ConsoleDisplay:
+    """Pretty-print Arrays; optionally bind ans into a workspace."""
+
+    def __init__(
+        self,
+        workspace: Optional["Workspace"] = None,
+        stream: Optional[TextIO] = None,
+    ) -> None:
+        import sys
+
+        self.workspace = workspace
+        self.stream = stream or sys.stdout
+
+    def should_print(self, suppress: bool) -> bool:
+        return not suppress
+
+    def bind_ans(self, value: object) -> None:
+        if self.workspace is not None:
+            self.workspace.set("ans", value)  # type: ignore[arg-type]
+
+    def show(self, value: object, *, name: Optional[str] = None) -> None:
+        label = name if name is not None else "ans"
+        text = _format_value(value)
+        self.stream.write(f"{label} =\n\n{text}\n\n")
+        self.stream.flush()
+
+
+def _format_value(value: object) -> str:
+    try:
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+        from openmatlab.runtime.value import Array
+
+        if isinstance(value, Array):
+            buf = value.backend_buffer()
+            if value.is_scalar():
+                v = float(buf.reshape(-1)[0])
+                if v == int(v) and abs(v) < 1e15:
+                    return str(int(v))
+                return repr(v)
+            try:
+                import numpy as np
+
+                return str(np.asarray(buf))
+            except Exception:
+                return str(buf)
+    except Exception:
+        pass
+    return str(value)

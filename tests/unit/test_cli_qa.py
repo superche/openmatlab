@@ -11,12 +11,13 @@ def test_version_flag():
     assert ei.value.code == 0
 
 
-def test_eval_reserved_exit_2(capsys):
+def test_eval_one_liner(capsys):
+    pytest.importorskip("numpy")
     with pytest.raises(SystemExit) as ei:
-        main(["-e", "1+1"])
-    assert ei.value.code == 2
-    err = capsys.readouterr().err
-    assert "not wired" in err
+        main(["-e", "1 + 2 * 3"])
+    assert ei.value.code == 0
+    out = capsys.readouterr().out
+    assert "7" in out
 
 
 def test_features_subcommand(capsys):

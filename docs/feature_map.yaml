@@ -33,7 +33,7 @@ features:
     spec: docs/QA.md
     tests: [tests/unit/test_cli_qa.py]
     cases: [tc.cli_features]
-    notes: "status/features/cases/defects→gh/test→pytest; eval not wired"
+    notes: "status/features/cases/defects/test; -e and REPL evaluate"
 
   - id: host.cli.version
     layer: host
@@ -44,10 +44,11 @@ features:
   - id: host.display_policy
     layer: host
     name: DisplayPolicy (semicolon suppress, ans, pretty-print)
-    status: stub
+    status: partial
     spec: docs/ARCHITECTURE.md
-    tests: [tests/unit/test_architecture.py]
+    tests: [tests/unit/test_evaluator.py]
     protocols: [openmatlab.host.display.DisplayPolicy]
+    notes: "ConsoleDisplay"
 
   - id: host.plot_surface
     layer: host
@@ -58,9 +59,9 @@ features:
   - id: host.repl
     layer: host
     name: Interactive REPL session
-    status: stub
-    tests: []
-    notes: "ReplSession.run_line raises NotImplementedError"
+    status: partial
+    tests: [tests/unit/test_evaluator.py]
+    notes: "run_line wired; bare openmatlab enters REPL"
 
   # --- lang ---
   - id: lang.tokens_reserved
@@ -146,13 +147,16 @@ features:
     layer: runtime
     name: Session composition root
     status: partial
-    tests: [tests/unit/test_architecture.py]
+    tests: [tests/unit/test_architecture.py, tests/unit/test_evaluator.py]
+    notes: "create_default wires NumPy + ConsoleDisplay"
 
   - id: runtime.evaluator
     layer: runtime
     name: AST evaluator
-    status: stub
+    status: partial
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
+    tests: [tests/unit/test_evaluator.py]
+    notes: "Matrix MVP; no function files yet"
 
   # --- numerics ---
   - id: numerics.array_backend

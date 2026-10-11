@@ -104,5 +104,53 @@ class NumPyArrayBackend:
             out = data.T
         return NDArrayValue(self._np.asarray(out))
 
+    def power(self, a: Array, b: Array, *, elementwise: bool = True) -> Array:
+        aa, bb = _as_nd(a), _as_nd(b)
+        if elementwise:
+            out = aa.backend_buffer() ** bb.backend_buffer()
+        else:
+            raise NumericsError("matrix power (^) not implemented yet")
+        return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+
+    def colon(self, start: float, stop: float, step: float = 1.0) -> Array:
+        if step == 0:
+            raise NumericsError("colon: step must be non-zero")
+        vals = self._np.arange(start, stop + (step * 0.25), step, dtype=self._np.float64)
+        # inclusive stop like MATLAB when it lands on grid
+        if vals.size == 0:
+            return NDArrayValue(vals.reshape(1, 0))
+        # trim overshoot
+        if step > 0:
+            vals = vals[vals <= stop + 1e-12]
+        else:
+            vals = vals[vals >= stop - 1e-12]
+        return NDArrayValue(vals.reshape(1, -1))
+
+    def index(self, a: Array, indices: Sequence[Array]) -> Array:
+        """1-based MATLAB-like subscript into ndarray."""
+        aa = _as_nd(a)
+        data = aa.backend_buffer()
+        py_idx = []
+        for ind in indices:
+            buf = _as_nd(ind).backend_buffer()
+            if buf.size == 1:
+                i = int(buf.reshape(-1)[0])
+                if i < 1:
+                    raise NumericsError(f"index: 1-based index out of range: {i}")
+                py_idx.append(i - 1)
+            else:
+                flat = buf.astype(self._np.int64).reshape(-1)
+                if self._np.any(flat < 1):
+                    raise NumericsError("index: indices must be >= 1")
+                py_idx.append(flat - 1)
+        try:
+            out = data[tuple(py_idx)]
+        except IndexError as exc:
+            raise NumericsError(f"index: {exc}") from exc
+        out = self._np.asarray(out, dtype=self._np.float64)
+        if out.ndim == 0:
+            out = out.reshape(1, 1)
+        return NDArrayValue(out)
+
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()
