@@ -1,8 +1,9 @@
-"""OpenMATLAB: clean-room MATLAB-compatible language/runtime from public specs."""
+"""OpenMATLAB: clean-room MATLAB-compatible workbench (architecture stage).
 
-__version__ = "0.0.1"
+Matrix-first scientific computing — public specs only; no reverse engineering
+of proprietary MATLAB binaries.
+"""
 
-from openmatlab.evaluator import run
-from openmatlab.parser import parse
+__version__ = "0.0.2"
 
-__all__ = ["__version__", "parse", "run"]
+__all__ = ["__version__"]

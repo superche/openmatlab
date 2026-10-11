@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmatlab"
-version = "0.0.1"
+version = "0.0.2"
 description = "Open MATLAB-compatible language, runtime, and libraries (clean-room / public specs)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -18,10 +18,13 @@ classifiers = [
 ]
 
 [project.scripts]
-openmatlab = "openmatlab.cli:main"
+openmatlab = "openmatlab.host.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
+# Optional backends — not required at architecture stage
+numpy = ["numpy>=1.24"]
+plot = ["matplotlib>=3.7"]
