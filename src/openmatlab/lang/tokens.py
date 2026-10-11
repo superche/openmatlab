@@ -41,6 +41,7 @@ class TokenType(Enum):
     RBRACE = auto()  # }
     COMMA = auto()
     COLON = auto()  # 1:n , indexing ranges
+    AT = auto()  # @ function handle
     TILDE = auto()  # ~
     REL_LT = auto()
     REL_LE = auto()

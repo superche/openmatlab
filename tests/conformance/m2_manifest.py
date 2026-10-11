@@ -18,6 +18,6 @@ CRITERIA = {
     "C07": ("c07_logical_indexing", "p0", [162], "met"),
     "C08": ("c08_grow_on_assign", "p0", [119, 108], "met"),
     "C09": ("c09_unique_issorted", "p1", [97], "met"),
-    "C10": ("c10_cellfun", "p1", [81], "pending"),
+    "C10": ("c10_cellfun", "p1", [81], "met"),
     "C11": ("c11_scalar_power_script", "p0", [193], "met"),
 }

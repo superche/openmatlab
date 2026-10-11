@@ -112,6 +112,13 @@ class Evaluator:
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
     def eval_expr(self, expr: ast.Expr) -> Value:
+        if isinstance(expr, ast.FuncHandleExpr):
+            from openmatlab.runtime.function_handle import FunctionHandleValue
+            try:
+                fn = self.functions.resolve(expr.name)
+            except Exception as e:
+                raise EvalError(f"function handle: undefined function '{expr.name}'") from e
+            return FunctionHandleValue(name=expr.name, fn=fn)
         if isinstance(expr, ast.EndExpr):
             if not self._end_stack:
                 raise EvalError("end outside of an indexing expression")
