@@ -270,3 +270,12 @@ test_cases:
     impl: tests/bdd/test_mfile_bdd.py
     status: active
     env: unit
+
+  - id: tc.addpath_which
+    kind: unit
+    title: Language addpath + which + .m call
+    features: [libs.toolbox_path, runtime.evaluator]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_addpath_which.py::test_addpath_which_and_call
+    status: active
+    env: unit

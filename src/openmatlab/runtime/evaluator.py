@@ -59,19 +59,20 @@ class Evaluator:
             )
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
-    def eval_expr(self, expr: ast.Expr) -> Array:
+    def eval_expr(self, expr: ast.Expr) -> Value:
         if isinstance(expr, ast.NumberLiteral):
             return self.numerics.from_scalar(expr.value)
+        if isinstance(expr, ast.StringLiteral):
+            from openmatlab.runtime.char_value import CharValue
+
+            return CharValue(expr.value)
         if isinstance(expr, ast.Name):
             try:
-                val = self.workspace.get(expr.id)
+                return self.workspace.get(expr.id)
             except KeyError as exc:
                 raise EvalError(f"Undefined variable: {expr.id}") from exc
-            if not isinstance(val, Array):
-                raise EvalError(f"Variable {expr.id!r} is not an Array")
-            return val
         if isinstance(expr, ast.UnaryOp):
-            v = self.eval_expr(expr.operand)
+            v = self._require_array(self.eval_expr(expr.operand), "unary")
             if expr.op == "+":
                 return v
             if expr.op == "-":
@@ -86,7 +87,8 @@ class Evaluator:
             return self._eval_colon(expr)
         if isinstance(expr, ast.TransposeExpr):
             return self.numerics.transpose(
-                self.eval_expr(expr.operand), conjugate=expr.conjugate
+                self._require_array(self.eval_expr(expr.operand), "transpose"),
+                conjugate=expr.conjugate,
             )
         if isinstance(expr, ast.IndexExpr):
             return self._eval_call_or_index(expr.target, list(expr.indices))
@@ -94,12 +96,22 @@ class Evaluator:
             return self._eval_call_or_index(expr.func, list(expr.args))
         raise EvalError(f"Unknown expression: {type(expr)!r}")
 
-    def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Array:
+    def _require_array(self, val: Value, ctx: str) -> Array:
+        if not isinstance(val, Array):
+            raise EvalError(f"{ctx}: expected Array, got {type(val).__name__}")
+        return val
+
+    def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
         # Unbound name(args): builtins / .m functions before indexing
         if isinstance(target_expr, ast.Name) and not self._name_bound(target_expr.id):
             n = target_expr.id
-            if n.lower() == "plot":
+            key = n.lower()
+            if key == "plot":
                 return self._builtin_plot(arg_exprs)
+            if key == "addpath":
+                return self._builtin_addpath(arg_exprs)
+            if key == "which":
+                return self._builtin_which(arg_exprs)
             try:
                 fn = self.functions.resolve(n)
             except LookupError as exc:
@@ -112,9 +124,19 @@ class Evaluator:
             if not isinstance(out, Array):
                 raise EvalError(f"{n}: function did not return an Array")
             return out
-        target = self.eval_expr(target_expr)
-        idxs = [self.eval_expr(a) for a in arg_exprs]
+        target = self._require_array(self.eval_expr(target_expr), "index")
+        idxs = [
+            self._require_array(self.eval_expr(a), "index") for a in arg_exprs
+        ]
         return self.numerics.index(target, idxs)
+
+    def _string_arg(self, expr: ast.Expr, fname: str) -> str:
+        from openmatlab.runtime.char_value import CharValue
+
+        val = self.eval_expr(expr)
+        if isinstance(val, CharValue):
+            return val.text
+        raise EvalError(f"{fname}: expected string literal (double quotes)")
 
     def _name_bound(self, name: str) -> bool:
         try:
@@ -126,16 +148,39 @@ class Evaluator:
     def _builtin_plot(self, arg_exprs: List[ast.Expr]) -> Array:
         if self.plots is None:
             raise EvalError("plot: no PlotSurface on this Session")
-        args = [self.eval_expr(a) for a in arg_exprs]
+        args = [
+            self._require_array(self.eval_expr(a), "plot") for a in arg_exprs
+        ]
         handle = self.plots.plot(*args)
         try:
             return self.numerics.from_scalar(float(handle))
         except (TypeError, ValueError):
             return self.numerics.from_scalar(1.0)
 
+    def _builtin_addpath(self, arg_exprs: List[ast.Expr]) -> Value:
+        from openmatlab.runtime.char_value import CharValue
+
+        if not arg_exprs:
+            raise EvalError("addpath: expected at least one directory")
+        if self.functions.path is None:
+            raise EvalError("addpath: no ToolboxPath on FunctionResolver")
+        last = ""
+        for a in arg_exprs:
+            last = self._string_arg(a, "addpath")
+            self.functions.path.addpath(last)
+        return CharValue(last)
+
+    def _builtin_which(self, arg_exprs: List[ast.Expr]) -> Value:
+        from openmatlab.runtime.char_value import CharValue
+
+        if len(arg_exprs) != 1:
+            raise EvalError("which: expected one name string")
+        name = self._string_arg(arg_exprs[0], "which")
+        return CharValue(self.functions.which(name))
+
     def _eval_binop(self, expr: ast.BinOp) -> Array:
-        left = self.eval_expr(expr.left)
-        right = self.eval_expr(expr.right)
+        left = self._require_array(self.eval_expr(expr.left), "binop")
+        right = self._require_array(self.eval_expr(expr.right), "binop")
         op = expr.op
         n = self.numerics
         if op == "+":
@@ -163,7 +208,7 @@ class Evaluator:
         for row in expr.rows:
             out_row: List[float] = []
             for cell in row:
-                val = self.eval_expr(cell)
+                val = self._require_array(self.eval_expr(cell), "matrix")
                 if not val.is_scalar():
                     raise EvalError(
                         "Matrix literal cells must be scalar in this MVP"
@@ -175,11 +220,17 @@ class Evaluator:
     def _eval_colon(self, expr: ast.ColonExpr) -> Array:
         if expr.start is None or expr.stop is None:
             raise EvalError("Colon requires start and stop")
-        start = self._as_float(self.eval_expr(expr.start))
-        stop = self._as_float(self.eval_expr(expr.stop))
+        start = self._as_float(
+            self._require_array(self.eval_expr(expr.start), "colon")
+        )
+        stop = self._as_float(
+            self._require_array(self.eval_expr(expr.stop), "colon")
+        )
         step = 1.0
         if expr.step is not None:
-            step = self._as_float(self.eval_expr(expr.step))
+            step = self._as_float(
+                self._require_array(self.eval_expr(expr.step), "colon")
+            )
         return self.numerics.colon(start, stop, step)
 
     def _as_float(self, val: Array) -> float:

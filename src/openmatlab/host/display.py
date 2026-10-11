@@ -58,6 +58,13 @@ class ConsoleDisplay:
 
 def _format_value(value: object) -> str:
     try:
+        from openmatlab.runtime.char_value import CharValue
+
+        if isinstance(value, CharValue):
+            return value.text
+    except Exception:
+        pass
+    try:
         from openmatlab.numerics.ndarray_value import NDArrayValue
         from openmatlab.runtime.value import Array
 

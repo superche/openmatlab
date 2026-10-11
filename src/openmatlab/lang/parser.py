@@ -16,6 +16,7 @@ from openmatlab.lang.ast_nodes import (
     Name,
     NumberLiteral,
     Program,
+    StringLiteral,
     Stmt,
     TransposeExpr,
     UnaryOp,
@@ -233,6 +234,9 @@ class Parser:
         if tok.type == TokenType.NUMBER:
             self.advance()
             return NumberLiteral(value=float(tok.value))
+        if tok.type == TokenType.STRING:
+            self.advance()
+            return StringLiteral(value=tok.value)
         if tok.type == TokenType.IDENT:
             self.advance()
             return Name(id=tok.value)

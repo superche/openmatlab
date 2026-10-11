@@ -23,6 +23,11 @@ class NumberLiteral(AstNode):
 
 
 @dataclass(frozen=True)
+class StringLiteral(AstNode):
+    value: str  # double-quoted MVP string
+
+
+@dataclass(frozen=True)
 class Name(AstNode):
     id: str
 
@@ -82,6 +87,7 @@ class CallExpr(AstNode):
 
 Expr = Union[
     NumberLiteral,
+    StringLiteral,
     Name,
     BinOp,
     UnaryOp,
