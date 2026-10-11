@@ -565,6 +565,7 @@ class Evaluator:
 
     def _eval_relational(self, op: str, left: Array, right: Array) -> Array:
         import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
 
         a = np.asarray(left.backend_buffer(), dtype=float)
         b = np.asarray(right.backend_buffer(), dtype=float)
@@ -582,14 +583,12 @@ class Evaluator:
             r = a != b
         else:
             raise EvalError(f"Unknown relational op: {op}")
-        r = np.asarray(r, dtype=float)
-        if r.shape == ():
-            return self.numerics.from_scalar(float(r))
-        if r.ndim == 1:
-            return self.numerics.from_nested([list(map(float, r.tolist()))])
-        return self.numerics.from_nested(
-            [list(map(float, row)) for row in r.tolist()]
-        )
+        r = np.asarray(r, dtype=bool)
+        if r.ndim == 0:
+            r = r.reshape(1, 1)
+        elif r.ndim == 1:
+            r = r.reshape(1, -1)
+        return NDArrayValue(r)
 
     def _truthy(self, val: Value) -> bool:
         arr = self._require_array(val, "condition")

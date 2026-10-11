@@ -583,3 +583,12 @@ test_cases:
     impl: tests/unit/test_matrix_power.py
     status: active
     env: unit
+
+  - id: tc.logical_index
+    kind: unit
+    title: logical indexing read and assign
+    features: [runtime.logical_index]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_logical_index.py
+    status: active
+    env: unit
