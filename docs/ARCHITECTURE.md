@@ -12,10 +12,10 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epic [#1](https://github.com/superche/openmatlab/issues/1) MVP fill order + Epic [#19](https://github.com/superche/openmatlab/issues/19) workbench depth.
-Seams remain Protocol-first; language is a **matrix+control MVP**, not full MATLAB.
+**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break).
+Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
-Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md).
+Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md).
 
 What works today:
 
@@ -25,8 +25,9 @@ What works today:
 - CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test`)
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
+- `while`/`break`; script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 
-Residual non-parity (later): `while`/`break`, single-quoted char/cells, rich toolboxes, full interactive GUI tweak loop.
+Residual non-parity (later): `continue`, single-quoted char/cells, rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
 
 ## Package layout
 
@@ -95,7 +96,7 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-**Not yet:** single-quoted char vectors/cells, `while`/`break`/`continue`,
+**Not yet:** single-quoted char vectors/cells, `continue`,
 scripts without `function`, nested functions, `nargin`/`nargout` specials.
 
 ## Non-goals
