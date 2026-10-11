@@ -10,14 +10,25 @@ OpenMATLAB is a **clean-room** project. Implementation is driven solely by:
 
 **We do not** reverse-engineer proprietary MATLAB binaries, object code, or closed-source internals.
 
+## Current implementation (scalar subset)
+
+| Module | Role |
+|--------|------|
+| `lexer.py` | Tokenize numbers, idents, operators, `( )`, `=`, `;`, newlines, `%` comments |
+| `parser.py` | Recursive-descent → AST (`Number`, `Name`, `BinOp`, `UnaryOp`, `Assign`, `ExprStmt`) |
+| `evaluator.py` | Evaluate AST against a `dict` environment (float scalars) |
+| `cli.py` / `__main__.py` | REPL, `-e`, script file |
+
+Precedence: `*` `/` bind tighter than `+` `-`; unary `+`/`-` on factors; parentheses group.
+
 ## High-level layers (planned)
 
-| Layer | Role |
-|-------|------|
-| **Parser** | Tokenize and parse MATLAB-like source from public grammar/docs |
-| **Runtime** | Evaluate AST / IR; manage scopes, arrays, and control flow |
-| **Core math** | Numeric arrays, linear algebra, common math builtins |
-| **Plotting** | Optional visualization on top of the runtime |
+| Layer | Role | Status |
+|-------|------|--------|
+| **Parser** | Tokenize and parse MATLAB-like source | Minimal subset done |
+| **Runtime** | Evaluate AST; scopes / arrays | Scalars done |
+| **Core math** | Numeric arrays, linear algebra | Next |
+| **Plotting** | Optional visualization | Planned |
 
 ## Compatibility stance
 

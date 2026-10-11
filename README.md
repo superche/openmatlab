@@ -18,12 +18,27 @@
 - No use of reverse-engineering tools (e.g. IDA, Ghidra, Hopper) against MATLAB
 - Not a drop-in replacement for MathWorks MATLAB products
 
-### Roadmap (sketch)
+### Current status (v0.0.1)
 
-1. **Parser** — MATLAB-like syntax from public language docs  
-2. **Runtime** — interpreter / execution model  
-3. **Core math** — arrays, linear algebra, common numeric APIs  
-4. **Plotting** — basic visualization layer  
+**Done / in progress — scalar expression subset:**
+
+- Lexer + parser: numbers, identifiers, `+ - * /`, parentheses, `a = expr`, `;` / newlines, `%` comments
+- AST evaluator with variable environment (scalars)
+- CLI / REPL: `openmatlab`, `python -m openmatlab`, `-e CODE`, script files
+
+```bash
+pip install -e ".[dev]"
+openmatlab -e "a = 1 + 2 * 3; a"
+python -m openmatlab   # REPL
+pytest
+```
+
+### Roadmap
+
+1. **Parser** — MATLAB-like syntax from public language docs — **done (minimal subset)**
+2. **Runtime** — interpreter / execution model — **done (scalar env + eval)**
+3. **Core math** — arrays, linear algebra, common numeric APIs — *next*
+4. **Plotting** — basic visualization layer — *planned*
 
 ### License
 
@@ -47,12 +62,20 @@ MIT © Shaw Che / superche, 2026
 - 不使用逆向工具分析 MATLAB
 - 不是 MathWorks MATLAB 产品的官方替代品
 
-### 路线图（概要）
+### 当前状态（v0.0.1）
 
-1. **解析器** — 基于公开语言文档的 MATLAB 风格语法  
-2. **运行时** — 解释器 / 执行模型  
-3. **核心数学** — 数组、线性代数、常用数值 API  
-4. **绘图** — 基础可视化层  
+**已完成 / 进行中 — 标量表达式子集：**
+
+- 词法/语法：数字、标识符、四则运算、括号、赋值、`;`/换行、`%` 注释
+- AST 求值与变量环境（标量）
+- CLI / REPL：`openmatlab`、`python -m openmatlab`、`-e`、脚本文件
+
+### 路线图
+
+1. **解析器** — 基于公开语言文档 — **已完成（最小子集）**
+2. **运行时** — 解释器 / 执行模型 — **已完成（标量环境）**
+3. **核心数学** — 数组、线性代数 — *下一步*
+4. **绘图** — 基础可视化 — *计划中*
 
 ### 许可证
 
