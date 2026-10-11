@@ -1,4 +1,4 @@
-"""Char / string MVP value (double-quoted literals, which/addpath results)."""
+"""Char / string MVP value (single- and double-quoted literals, which/addpath)."""
 
 from __future__ import annotations
 

@@ -31,8 +31,10 @@ _VALUE_END = {
     TokenType.NUMBER,
     TokenType.IDENT,
     TokenType.STRING,
+    TokenType.CHAR,
     TokenType.RPAREN,
     TokenType.RBRACKET,
+    TokenType.RBRACE,
     TokenType.TRANSPOSE,
     TokenType.CTC_TRANSPOSE,
     TokenType.KW_END,
@@ -56,14 +58,14 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
     out: List[Token] = []
     stack: List[TokenType] = []
     for tok in toks:
-        if tok.type in (TokenType.LBRACKET, TokenType.LPAREN):
+        if tok.type in (TokenType.LBRACKET, TokenType.LPAREN, TokenType.LBRACE):
             stack.append(tok.type)
-        elif tok.type in (TokenType.RBRACKET, TokenType.RPAREN) and stack:
+        elif tok.type in (TokenType.RBRACKET, TokenType.RPAREN, TokenType.RBRACE) and stack:
             stack.pop()
         elif (
             tok.type in (TokenType.PLUS, TokenType.MINUS)
             and stack
-            and stack[-1] == TokenType.LBRACKET
+            and stack[-1] in (TokenType.LBRACKET, TokenType.LBRACE)
             and out
             and out[-1].type in _VALUE_END
         ):
@@ -82,6 +84,8 @@ def _iter_tokens(source: str) -> Iterator[Token]:
     col = 1
     n = len(source)
     bracket_depth = 0
+    brace_depth = 0
+    last_sig: TokenType | None = None
 
     def peek(offset: int = 0) -> str:
         j = i + offset
@@ -96,10 +100,12 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             continue
 
         if ch == "\n":
-            if bracket_depth > 0:
-                yield Token(TokenType.SEMICOLON, ";", line, col)
+            if bracket_depth > 0 or brace_depth > 0:
+                tok = Token(TokenType.SEMICOLON, ";", line, col)
             else:
-                yield Token(TokenType.NEWLINE, "\n", line, col)
+                tok = Token(TokenType.NEWLINE, "\n", line, col)
+            yield tok
+            # NEWLINE / row-sep does not update last_sig (transpose can follow across NL)
             i += 1
             line += 1
             col = 1
@@ -149,7 +155,9 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 raise LexerError("Unterminated string", start_line, start_col)
             i += 1
             col += 1
-            yield Token(TokenType.STRING, "".join(chars), start_line, start_col)
+            tok = Token(TokenType.STRING, "".join(chars), start_line, start_col)
+            yield tok
+            last_sig = tok.type
             continue
 
         # Dot-operators: .* ./ .\ .^ .'
@@ -162,7 +170,9 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "^": TokenType.DOT_HAT,
                 "'": TokenType.CTC_TRANSPOSE,
             }
-            yield Token(mapping[nxt], "." + nxt, start_line, start_col)
+            tok = Token(mapping[nxt], "." + nxt, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             i += 2
             col += 2
             continue
@@ -195,7 +205,9 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 while i < n and source[i].isdigit():
                     i += 1
                     col += 1
-            yield Token(TokenType.NUMBER, source[start:i], start_line, start_col)
+            tok = Token(TokenType.NUMBER, source[start:i], start_line, start_col)
+            yield tok
+            last_sig = tok.type
             continue
 
         if ch.isalpha() or ch == "_":
@@ -217,7 +229,9 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "break": TokenType.KW_BREAK,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
-            yield Token(typ, word, start_line, start_col)
+            tok = Token(typ, word, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             continue
 
         # Relational / multi-char before '=' / '<' / '>' / '~'
@@ -229,17 +243,23 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             ">=": TokenType.REL_GE,
         }
         if two in two_map:
-            yield Token(two_map[two], two, start_line, start_col)
+            tok = Token(two_map[two], two, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             i += 2
             col += 2
             continue
         if ch == "<":
-            yield Token(TokenType.REL_LT, ch, start_line, start_col)
+            tok = Token(TokenType.REL_LT, ch, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             i += 1
             col += 1
             continue
         if ch == ">":
-            yield Token(TokenType.REL_GT, ch, start_line, start_col)
+            tok = Token(TokenType.REL_GT, ch, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             i += 1
             col += 1
             continue
@@ -261,15 +281,54 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             ";": TokenType.SEMICOLON,
             ",": TokenType.COMMA,
             ":": TokenType.COLON,
-            "'": TokenType.TRANSPOSE,
         }
+        # Context-sensitive single quote: transpose vs char literal
+        if ch == "'":
+            if last_sig is not None and last_sig in _VALUE_END:
+                tok = Token(TokenType.TRANSPOSE, "'", start_line, start_col)
+                yield tok
+                last_sig = tok.type
+                i += 1
+                col += 1
+                continue
+            # Char literal '…' with '' escape
+            i += 1
+            col += 1
+            chars: List[str] = []
+            while i < n:
+                if source[i] == "'":
+                    if i + 1 < n and source[i + 1] == "'":
+                        chars.append("'")
+                        i += 2
+                        col += 2
+                        continue
+                    i += 1
+                    col += 1
+                    tok = Token(TokenType.CHAR, "".join(chars), start_line, start_col)
+                    yield tok
+                    last_sig = tok.type
+                    break
+                if source[i] == chr(10):
+                    raise LexerError("Unterminated char literal", start_line, start_col)
+                chars.append(source[i])
+                i += 1
+                col += 1
+            else:
+                raise LexerError("Unterminated char literal", start_line, start_col)
+            continue
         if ch in singles:
             typ = singles[ch]
             if ch == "[":
                 bracket_depth += 1
             elif ch == "]":
                 bracket_depth = max(0, bracket_depth - 1)
-            yield Token(typ, ch, start_line, start_col)
+            elif ch == "{":
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth = max(0, brace_depth - 1)
+            tok = Token(typ, ch, start_line, start_col)
+            yield tok
+            last_sig = tok.type
             i += 1
             col += 1
             continue
