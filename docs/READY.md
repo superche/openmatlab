@@ -5,8 +5,13 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY for development planning** (Issues → Gherkin → implement → CI/local gates),  
-with **one human step** to turn on GitHub Actions workflows (blocked by OAuth `workflow` scope).
+**READY — public repo; branch protection on; Issues kickoff done.**  
+Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope).
+
+- **Visibility:** PUBLIC — https://github.com/superche/openmatlab  
+- **Branch protection (`main`):** required status check \`CI / test\` (enforce_admins)  
+- **Iteration board:** GitHub Issues (Projects API needs \`project\` scope — use label filters)  
+- **Epic:** https://github.com/superche/openmatlab/issues/1  
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -31,7 +36,7 @@ with **one human step** to turn on GitHub Actions workflows (blocked by OAuth `w
 
 ## BLOCKED / human steps
 
-### 1. Enable CI workflow (required for PR gates)
+### 1. Enable CI workflow (required — protection already requires `CI / test`)
 
 Current `gh` token scopes: `gist`, `read:org`, `repo` — **no `workflow`**.  
 Creating/updating `.github/workflows/*.yml` is refused.
@@ -70,3 +75,20 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 ## Next phase entry
 
 Start with Issues labeled `gap` + `layer:*`, add/extend Gherkin, implement Array/parser per `ARCHITECTURE.md` MVP order, keep YAML inventories in sync in the same PR.
+
+## Project management kickoff
+
+| Item | URL / command |
+|------|----------------|
+| Epic | https://github.com/superche/openmatlab/issues/1 |
+| Array + NumPy | https://github.com/superche/openmatlab/issues/2 |
+| Matrix lexer/parser | https://github.com/superche/openmatlab/issues/3 |
+| Evaluator + display | https://github.com/superche/openmatlab/issues/4 |
+| Plot MVP | https://github.com/superche/openmatlab/issues/5 |
+| Function path | https://github.com/superche/openmatlab/issues/6 |
+| Open gaps view | https://github.com/superche/openmatlab/issues?q=is%3Aissue+is%3Aopen+label%3Agap |
+| List CLI | `gh issue list --label gap` |
+
+GitHub **Projects** board: blocked without \`gh auth refresh -s project,read:project\`. Issues + labels are the board until then.
+
+**First coding iteration:** start with #2 (Array + NumPyArrayBackend), then #3.
