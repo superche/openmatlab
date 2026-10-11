@@ -26,7 +26,8 @@ class MatplotlibGraphicsBackend:
     def __init__(self, *, interactive: bool = False) -> None:
         import matplotlib
 
-        if not interactive:
+        self._interactive = bool(interactive)
+        if not self._interactive:
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
@@ -66,8 +67,14 @@ class MatplotlibGraphicsBackend:
             self._plt.close(self._figures[idx])
 
     def show(self) -> None:
-        # Agg: no interactive window; no-op is correct for CI
+        """Block/show windows when interactive; no-op under Agg (CI)."""
+        if self._interactive and self._figures:
+            self._plt.show()
         return None
+
+    @property
+    def interactive(self) -> bool:
+        return self._interactive
 
     @property
     def last_figure(self) -> Any:

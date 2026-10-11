@@ -169,6 +169,10 @@ class Evaluator:
             if nargout != 1:
                 raise EvalError("which: only one output supported")
             return (self._builtin_which(arg_exprs),)
+        if key in ("show", "drawnow"):
+            if nargout != 1:
+                raise EvalError(f"{key}: only one output supported")
+            return (self._builtin_show(arg_exprs),)
         try:
             fn = self.functions.resolve(n)
         except LookupError as exc:
@@ -227,6 +231,16 @@ class Evaluator:
             raise EvalError("which: expected one name string")
         name = self._string_arg(arg_exprs[0], "which")
         return CharValue(self.functions.which(name))
+
+    def _builtin_show(self, arg_exprs: List[ast.Expr]) -> Array:
+        if arg_exprs:
+            raise EvalError("show/drawnow: expected no arguments")
+        if self.plots is None:
+            raise EvalError("show: no PlotSurface on this Session")
+        show = getattr(self.plots, "show", None)
+        if callable(show):
+            show()
+        return self.numerics.from_scalar(1.0)
 
     def _eval_binop(self, expr: ast.BinOp) -> Array:
         left = self._require_array(self.eval_expr(expr.left), "binop")

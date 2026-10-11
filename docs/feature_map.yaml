@@ -56,7 +56,7 @@ features:
     status: partial
     protocols: [openmatlab.host.plot_surface.PlotSurface]
     tests: [tests/unit/test_plot.py]
-    notes: "HostPlotSurface → MatplotlibGraphicsBackend"
+    notes: "HostPlotSurface.plot/close/show → MatplotlibGraphicsBackend"
 
   - id: host.repl
     layer: host
@@ -155,7 +155,7 @@ features:
     name: Session composition root
     status: partial
     tests: [tests/unit/test_architecture.py, tests/unit/test_evaluator.py]
-    notes: "create_default wires NumPy + ConsoleDisplay + Matplotlib Agg"
+    notes: "create_default wires NumPy + display + plot; interactive_plots/env/CI policy"
 
   - id: runtime.evaluator
     layer: runtime
@@ -202,7 +202,7 @@ features:
     status: partial
     depends_on: [graphics.backend, host.plot_surface]
     tests: [tests/unit/test_plot.py]
-    notes: "Agg headless default; plot(y)/plot(x,y); interactive later"
+    notes: "Agg default; OPENMATLAB_PLOT_INTERACTIVE + show/drawnow; CI forces Agg"
 
   - id: graphics.plot_mvp
     layer: graphics
@@ -210,7 +210,7 @@ features:
     status: partial
     depends_on: [graphics.matplotlib, runtime.evaluator]
     tests: [tests/unit/test_plot.py, tests/bdd/test_plot_bdd.py]
-    notes: "Builtin plot via unbound name; returns scalar 1 (MVP)"
+    notes: "plot + show/drawnow builtins; Agg CI-safe; interactive via env/Session"
 
   # --- libs ---
   - id: libs.toolbox_path
