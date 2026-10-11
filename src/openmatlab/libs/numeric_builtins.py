@@ -175,13 +175,29 @@ def _axis_arg(name: str, v: Value) -> int:
 
 def _make_reduce(name: str, op, empty_value: float):
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-        _arity(name, args, 1, 2)
-        b = _buf(name, args[0])
-        if len(args) == 1 and b.shape == (0, 0):
+        vals, flags = _peel_flags(name, args, {"omitnan", "includenan", "all"})
+        _arity(name, vals, 1, 2)
+        b = _buf(name, vals[0])
+        if "all" in flags:
+            flat = b.reshape(-1, order="F")
+            if "omitnan" in flags or (name in ("sum", "prod", "mean") and "includenan" not in flags and np.any(np.isnan(flat))):
+                # MATLAB sum omitnan by flag; default sum includes nan
+                pass
+            if "omitnan" in flags:
+                if name == "sum":
+                    return (_wrap(np.nansum(flat)),)
+                if name == "prod":
+                    return (_wrap(np.nanprod(flat)),)
+                if name == "mean":
+                    return (_wrap(np.nanmean(flat)),)
+            return (_wrap(op(flat)),)
+        if len(vals) == 1 and b.shape == (0, 0):
             return (_wrap(empty_value),)
-        ax = _axis_arg(name, args[1]) if len(args) == 2 else _default_axis(b)
+        ax = _axis_arg(name, vals[1]) if len(vals) == 2 else _default_axis(b)
         if ax >= b.ndim:
             return (_wrap(b),)
+        if "omitnan" in flags and name == "sum":
+            return (_wrap(np.nansum(b, axis=ax, keepdims=True)),)
         return (_wrap(op(b, axis=ax, keepdims=True)),)
 
     return _fn
@@ -208,7 +224,7 @@ def _nan_argmin(a: np.ndarray, axis: int) -> np.ndarray:
 
 
 def _make_extremum(name: str, *, which: str):
-    """MATLAB-default omitnan for max/min (flag strings remain non-goals)."""
+    """MATLAB-default omitnan; explicit omitnan/includenan/all flags (#69)."""
     if which == "max":
         nan_reduce = np.nanmax
         arg_op = _nan_argmax
@@ -219,20 +235,30 @@ def _make_extremum(name: str, *, which: str):
         pair_op = np.fmin
 
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-        _arity(name, args, 1, 3)
-        a = _buf(name, args[0])
-        if len(args) == 2:
+        vals, flags = _peel_flags(name, args, {"omitnan", "includenan", "all"})
+        _arity(name, vals, 1, 3)
+        use_nan = "includenan" in flags  # default omitnan
+        a = _buf(name, vals[0])
+        reduce_op = (np.max if which == "max" else np.min) if use_nan else nan_reduce
+        if "all" in flags:
+            flat = a.reshape(-1, order="F")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                with np.errstate(all="ignore"):
+                    v = (np.max(flat) if which == "max" else np.min(flat)) if use_nan else nan_reduce(flat)
+            return (_wrap(v),)
+        if len(vals) == 2:
             if nargout > 1:
                 raise BuiltinError(f"{name}: two-matrix form returns one output")
-            b = _buf(name, args[1])
+            b = _buf(name, vals[1])
             try:
                 return (_wrap(pair_op(a, b)),)
             except ValueError as exc:
                 raise BuiltinError(f"{name}: {exc}") from exc
-        if len(args) == 3:
-            if _buf(name, args[1]).size != 0:
+        if len(vals) == 3:
+            if _buf(name, vals[1]).size != 0:
                 raise BuiltinError(f"{name}: use {name}(A, [], dim) for a dimension")
-            ax = _axis_arg(name, args[2])
+            ax = _axis_arg(name, vals[2])
         else:
             ax = _default_axis(a)
         if a.size == 0:
@@ -244,11 +270,11 @@ def _make_extremum(name: str, *, which: str):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             with np.errstate(all="ignore"):
-                vals = nan_reduce(a, axis=ax, keepdims=True)
+                out_vals = reduce_op(a, axis=ax, keepdims=True)
         if nargout <= 1:
-            return (_wrap(vals),)
+            return (_wrap(out_vals),)
         idx = np.expand_dims(arg_op(a, axis=ax), ax) + 1.0
-        return (_wrap(vals), _wrap(idx))
+        return (_wrap(out_vals), _wrap(idx))
 
     return _fn
 
@@ -309,6 +335,22 @@ def _cumsum(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         return (_wrap(b),)
     return (_wrap(np.cumsum(b, axis=ax)),)
 
+
+
+
+def _peel_flags(name: str, args: Sequence[Value], allowed: set) -> tuple:
+    """Split trailing char flags from args; return (value_args, flags_set)."""
+    flags = set()
+    vals = list(args)
+    while vals:
+        f = _char_flag(vals[-1])
+        if f is None:
+            break
+        if f not in allowed:
+            raise BuiltinError(f"{name}: unknown option '{f}'")
+        flags.add(f)
+        vals.pop()
+    return vals, flags
 
 
 def _char_flag(v: Value):
@@ -406,10 +448,8 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    """Sorted unique values (MATLAB unique default, no flags)."""
+    """Sorted unique; optional [C,ia,ic]=unique(A)."""
     _arity("unique", args, 1, 1)
-    if nargout > 1:
-        raise BuiltinError("unique: multiple outputs not supported yet")
     b = _buf("unique", args[0])
     if b.ndim == 0:
         b = b.reshape(1, 1)
@@ -417,72 +457,115 @@ def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         b = b.reshape(1, -1)
     rows, cols = b.shape[:2]
     flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
-    # np.unique sorts ascending; NaNs last (close enough for MVP)
-    u = np.unique(flat)
     if flat.size == 0:
-        if rows == 1:
-            return (NDArrayValue(np.zeros((1, 0), dtype=np.float64)),)
-        return (NDArrayValue(np.zeros((0, 1), dtype=np.float64)),)
+        empty = NDArrayValue(np.zeros((1, 0) if rows == 1 else (0, 1), dtype=np.float64))
+        if nargout <= 1:
+            return (empty,)
+        return (empty, empty, empty)
+    u, ia0, ic0 = np.unique(flat, return_index=True, return_inverse=True)
     if rows == 1 and cols >= 1:
-        return (NDArrayValue(u.reshape(1, -1)),)
-    # column vector or matrix → column
-    return (NDArrayValue(u.reshape(-1, 1)),)
+        C = NDArrayValue(u.reshape(1, -1))
+    else:
+        C = NDArrayValue(u.reshape(-1, 1))
+    if nargout <= 1:
+        return (C,)
+    ia = NDArrayValue((ia0.astype(np.float64) + 1.0).reshape(-1, 1))
+    if nargout == 2:
+        return (C, ia)
+    ic = NDArrayValue((ic0.astype(np.float64) + 1.0).reshape(-1, 1))
+    return (C, ia, ic)
 
 
 def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    """True if non-decreasing along vector / first non-singleton dim."""
-    _arity("issorted", args, 1, 1)
+    """issorted(A) / issorted(A,'descend'); matrix → all columns."""
+    _arity("issorted", args, 1, 2)
     b = _buf("issorted", args[0])
     if b.ndim == 0:
         b = b.reshape(1, 1)
     elif b.ndim == 1:
         b = b.reshape(1, -1)
-    if b.size <= 1:
-        ok = True
-    else:
-        # vectorize: flatten along first non-singleton
-        if b.shape[0] == 1 or b.shape[1] == 1:
-            flat = b.reshape(-1, order="F")
+    descend = False
+    if len(args) == 2:
+        f = _char_flag(args[1])
+        if f == "descend":
+            descend = True
+        elif f == "ascend":
+            descend = False
         else:
-            # matrix without dim: MATLAB checks columns? Actually issorted(M) for
-            # matrix without 'rows' checks each column... For MVP treat as
-            # column-major flatten (document residual).
-            flat = b.reshape(-1, order="F")
-        d = np.diff(flat.astype(np.float64))
-        # NaN in diff → not sorted
-        ok = bool(np.all(d >= 0) and not np.any(np.isnan(d)))
-    out = NDArrayValue(np.asarray([[ok]], dtype=bool))
-    return (out,)
+            raise BuiltinError("issorted: flag must be 'ascend' or 'descend'")
+
+    def _vec_sorted(v: np.ndarray) -> bool:
+        if v.size <= 1:
+            return True
+        d = np.diff(v.astype(np.float64))
+        if np.any(np.isnan(d)):
+            return False
+        return bool(np.all(d <= 0) if descend else np.all(d >= 0))
+
+    if b.shape[0] == 1 or b.shape[1] == 1:
+        ok = _vec_sorted(b.reshape(-1, order="F"))
+    else:
+        # columns
+        ok = all(_vec_sorted(b[:, j]) for j in range(b.shape[1]))
+    return (NDArrayValue(np.asarray([[ok]], dtype=bool)),)
 
 
 
 def _cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    """Apply function handle to each cell (UniformOutput=true MVP)."""
+    """cellfun(fh, C) or cellfun(fh, C, 'UniformOutput', false)."""
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.function_handle import FunctionHandleValue
 
-    _arity("cellfun", args, 2, 2)
+    if len(args) < 2:
+        raise BuiltinError("cellfun: expected at least 2 arguments")
     fh = args[0]
     cell = args[1]
     if not isinstance(fh, FunctionHandleValue):
         raise BuiltinError("cellfun: expected function handle as first argument")
     if not isinstance(cell, CellValue):
         raise BuiltinError("cellfun: expected cell array as second argument")
+    uniform = True
+    i = 2
+    while i < len(args):
+        f = _char_flag(args[i])
+        if f and f.lower() == "uniformoutput":
+            if i + 1 >= len(args):
+                raise BuiltinError("cellfun: UniformOutput needs a value")
+            # false → 0, true → 1 / logical
+            flag = args[i + 1]
+            if isinstance(flag, Array):
+                uniform = bool(float(np.asarray(flag.backend_buffer()).reshape(-1)[0]))
+            else:
+                raise BuiltinError("cellfun: UniformOutput value must be numeric/logical")
+            i += 2
+        else:
+            raise BuiltinError(f"cellfun: unsupported option {f!r}")
     rows, cols = cell.shape
-    out = np.zeros((rows, cols), dtype=np.float64)
+    if uniform:
+        out = np.zeros((rows, cols), dtype=np.float64)
+        for i in range(rows):
+            for j in range(cols):
+                results = fh.call([cell.get(i, j)], nargout=1)
+                if not results:
+                    raise BuiltinError("cellfun: function returned no outputs")
+                r0 = results[0]
+                if not isinstance(r0, Array):
+                    raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
+                buf = np.asarray(r0.backend_buffer(), dtype=np.float64)
+                if buf.size != 1:
+                    raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
+                out[i, j] = float(buf.reshape(-1)[0])
+        return (_wrap(out),)
+    # UniformOutput false → cell of results
+    grid = []
     for i in range(rows):
+        row = []
         for j in range(cols):
             results = fh.call([cell.get(i, j)], nargout=1)
-            if not results:
-                raise BuiltinError("cellfun: function returned no outputs")
-            r0 = results[0]
-            if not isinstance(r0, Array):
-                raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
-            buf = np.asarray(r0.backend_buffer(), dtype=np.float64)
-            if buf.size != 1:
-                raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
-            out[i, j] = float(buf.reshape(-1)[0])
-    return (_wrap(out),)
+            row.append(results[0] if results else CellValue.empty(0, 0))
+        grid.append(tuple(row))
+    return (CellValue(rows=tuple(grid)),)
+
 
 
 
