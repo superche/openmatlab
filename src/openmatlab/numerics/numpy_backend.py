@@ -152,6 +152,14 @@ class NumPyArrayBackend:
         out = self._np.asarray(out, dtype=self._np.float64)
         if out.ndim == 0:
             out = out.reshape(1, 1)
+        elif out.ndim == 1 and len(py_idx) == 2:
+            # MATLAB: A(i, jvec) → 1×n row; A(ivec, j) → m×1 column
+            r_vec = not isinstance(py_idx[0], (int, self._np.integer))
+            c_vec = not isinstance(py_idx[1], (int, self._np.integer))
+            if (not r_vec) and c_vec:
+                out = out.reshape(1, -1)
+            elif r_vec and (not c_vec):
+                out = out.reshape(-1, 1)
         return NDArrayValue(out)
 
     def _linear_index(self, data: Any, ind: Any) -> Array:
