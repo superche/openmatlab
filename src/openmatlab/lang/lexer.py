@@ -24,7 +24,56 @@ class LexerError(Exception):
 
 
 def tokenize(source: str) -> List[Token]:
-    return list(_iter_tokens(source))
+    return _split_signed_matrix_elements(source, list(_iter_tokens(source)))
+
+
+_VALUE_END = {
+    TokenType.NUMBER,
+    TokenType.IDENT,
+    TokenType.STRING,
+    TokenType.RPAREN,
+    TokenType.RBRACKET,
+    TokenType.TRANSPOSE,
+    TokenType.CTC_TRANSPOSE,
+    TokenType.KW_END,
+}
+
+
+def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]:
+    """Inside [ ] (not nested in parens), `a -b` starts a new element.
+
+    MATLAB rule: a +/- with whitespace before and none after, following a
+    value, separates matrix elements. Implemented by inserting a COMMA.
+    """
+    line_starts = [0]
+    for idx, ch in enumerate(source):
+        if ch == "\n":
+            line_starts.append(idx + 1)
+
+    def offset(tok: Token) -> int:
+        return line_starts[tok.line - 1] + tok.column - 1
+
+    out: List[Token] = []
+    stack: List[TokenType] = []
+    for tok in toks:
+        if tok.type in (TokenType.LBRACKET, TokenType.LPAREN):
+            stack.append(tok.type)
+        elif tok.type in (TokenType.RBRACKET, TokenType.RPAREN) and stack:
+            stack.pop()
+        elif (
+            tok.type in (TokenType.PLUS, TokenType.MINUS)
+            and stack
+            and stack[-1] == TokenType.LBRACKET
+            and out
+            and out[-1].type in _VALUE_END
+        ):
+            off = offset(tok)
+            before = source[off - 1] if off > 0 else ""
+            after = source[off + 1] if off + 1 < len(source) else ""
+            if before in " \t" and after not in " \t":
+                out.append(Token(TokenType.COMMA, ",", tok.line, tok.column))
+        out.append(tok)
+    return out
 
 
 def _iter_tokens(source: str) -> Iterator[Token]:
