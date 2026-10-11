@@ -360,7 +360,8 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
             b = b.reshape(-1, 1)
     rows, cols = b.shape
     flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
-    mask = (flat != 0) & ~np.isnan(flat)
+    # MATLAB: NaN is nonzero (isnan alone is true for find)
+    mask = flat != 0
     lin0 = np.nonzero(mask)[0]
     if len(args) >= 2:
         k = _dim("find", args[1])
@@ -374,6 +375,9 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     def colvec(data) -> NDArrayValue:
         arr = np.asarray(data, dtype=np.float64).reshape(-1)
         if arr.size == 0:
+            # MATLAB: find([0 0]) → 1×0; find([]) / column → 0×1
+            if row_input:
+                return NDArrayValue(np.zeros((1, 0), dtype=np.float64))
             return NDArrayValue(np.zeros((0, 1), dtype=np.float64))
         if row_input:  # MATLAB: row-vector input → row-vector output
             return NDArrayValue(arr.reshape(1, -1))
