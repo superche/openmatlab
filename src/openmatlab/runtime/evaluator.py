@@ -53,6 +53,10 @@ class Evaluator:
             return value
         if isinstance(stmt, ast.MultiAssign):
             return self._eval_multi_assign(stmt)
+        if isinstance(stmt, ast.IfStmt):
+            return self._eval_if(stmt)
+        if isinstance(stmt, ast.ForStmt):
+            return self._eval_for(stmt)
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
@@ -245,6 +249,8 @@ class Evaluator:
             return n.power(left, right, elementwise=True)
         if op == "^":
             return n.power(left, right, elementwise=False)
+        if op in ("<", "<=", ">", ">=", "==", "~="):
+            return self._eval_relational(op, left, right)
         raise EvalError(f"Unknown binary op: {op}")
 
     def _eval_matrix(self, expr: ast.MatrixLiteral) -> Array:
@@ -283,3 +289,65 @@ class Evaluator:
         if not val.is_scalar():
             raise EvalError("Expected scalar")
         return float(val.backend_buffer().reshape(-1)[0])
+
+    def _eval_relational(self, op: str, left: Array, right: Array) -> Array:
+        import numpy as np
+
+        a = np.asarray(left.backend_buffer(), dtype=float)
+        b = np.asarray(right.backend_buffer(), dtype=float)
+        if op == "<":
+            r = a < b
+        elif op == "<=":
+            r = a <= b
+        elif op == ">":
+            r = a > b
+        elif op == ">=":
+            r = a >= b
+        elif op == "==":
+            r = a == b
+        elif op == "~=":
+            r = a != b
+        else:
+            raise EvalError(f"Unknown relational op: {op}")
+        r = np.asarray(r, dtype=float)
+        if r.shape == ():
+            return self.numerics.from_scalar(float(r))
+        if r.ndim == 1:
+            return self.numerics.from_nested([list(map(float, r.tolist()))])
+        return self.numerics.from_nested(
+            [list(map(float, row)) for row in r.tolist()]
+        )
+
+    def _truthy(self, val: Value) -> bool:
+        arr = self._require_array(val, "condition")
+        if arr.numel() == 0:
+            return False
+        import numpy as np
+
+        buf = np.asarray(arr.backend_buffer(), dtype=float).reshape(-1)
+        return bool(np.all(buf != 0))
+
+    def _eval_if(self, stmt: ast.IfStmt) -> Value:
+        last: Value = self.numerics.from_scalar(0.0)
+        for branch in stmt.branches:
+            if self._truthy(self.eval_expr(branch.condition)):
+                for s in branch.body:
+                    last = self.eval_stmt(s)
+                return last
+        if stmt.else_body is not None:
+            for s in stmt.else_body:
+                last = self.eval_stmt(s)
+        return last
+
+    def _eval_for(self, stmt: ast.ForStmt) -> Value:
+        iterable = self._require_array(self.eval_expr(stmt.iterable), "for")
+        import numpy as np
+
+        vals = np.asarray(iterable.backend_buffer(), dtype=float).reshape(-1)
+        last: Value = self.numerics.from_scalar(0.0)
+        for x in vals:
+            self.workspace.set(stmt.var, self.numerics.from_scalar(float(x)))
+            for s in stmt.body:
+                last = self.eval_stmt(s)
+        return last
+

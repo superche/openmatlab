@@ -85,14 +85,14 @@ features:
     name: Lexer tokenize()
     status: partial
     tests: [tests/unit/test_lexer.py]
-    notes: "Matrix MVP + KW_FUNCTION/END + double-quoted STRING; no cells/single-quote strings"
+    notes: "Matrix MVP + function/if/else/elseif/for/end + STRING; while/cells later"
 
   - id: lang.parser
     layer: lang
     name: Parser parse()
     status: partial
     tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix MVP + function defs + MultiAssign [a,b]=f(...); control-flow later"
+    notes: "Matrix MVP + function + MultiAssign + IfStmt/ForStmt; while later"
 
   - id: lang.matrix_literal
     layer: lang
@@ -163,7 +163,7 @@ features:
     status: partial
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
     tests: [tests/unit/test_evaluator.py]
-    notes: "Matrix MVP + .m calls + multi-assign [a,b]=f; no control-flow yet"
+    notes: "Matrix MVP + .m + multi-assign + if/elseif/else + for; while N/A"
 
   # --- numerics ---
   - id: numerics.array_backend
