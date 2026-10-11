@@ -137,6 +137,13 @@ features:
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
 
+  - id: runtime.array_grow_assign
+    layer: runtime
+    name: grow-on-assign A(i)= / c{i}=
+    status: done
+    depends_on: [runtime.array_assign_range, lang.cell_assign]
+    notes: "M2 C08 met; zero-fill grow linear/2-sub; cell content grow (#254)"
+    tests: [tests/unit/test_grow_assign.py, tests/bdd/test_grow_assign_bdd.py]
   - id: runtime.array_delete_empty
     layer: runtime
     name: delete via A(i)=[] / c(i)=[]

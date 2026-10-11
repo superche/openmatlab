@@ -292,12 +292,69 @@ class Evaluator:
             raise EvalError(
                 f"cell assign: expected cell, got {type(cell).__name__}"
             )
+        value = self.eval_expr(stmt.value)
+        cell = self._cell_grow_for_assign(cell, list(stmt.target.indices))
         i0, j0 = self._cell_subscripts(
             cell, list(stmt.target.indices), "cell assign"
         )
-        value = self.eval_expr(stmt.value)
         self.workspace.set(name, cell.with_set(i0, j0, value))
         return value
+
+    def _cell_grow_for_assign(self, cell: "object", idx_exprs: list) -> "object":
+        """Expand cell grid so subscripts fit (MATLAB c{k}= grow)."""
+        from openmatlab.runtime.cell_value import CellValue
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+        import numpy as np
+
+        assert isinstance(cell, CellValue)
+        rows, cols = cell.shape
+        blank = NDArrayValue(np.zeros((0, 0), dtype=np.float64))
+        idxs = [self.eval_expr(i) for i in idx_exprs]
+
+        def _as_int(v: Value) -> int:
+            arr = self._require_array(v, "cell assign")
+            if not arr.is_scalar():
+                raise EvalError("cell assign: expected scalar index")
+            x = float(arr.backend_buffer().reshape(-1)[0])
+            if x != int(x) or x < 1:
+                raise EvalError("cell assign: indices must be positive integers")
+            return int(x)
+
+        if len(idxs) == 1:
+            k = _as_int(idxs[0])
+            if k <= cell.numel() and not (rows == 0 and cols == 0):
+                return cell  # in-bounds linear — no reshape
+            if rows == 0 and cols == 0:
+                need_r, need_c = 1, k
+            elif rows == 1:
+                need_r, need_c = 1, max(cols, k)
+            elif cols == 1:
+                need_r, need_c = max(rows, k), 1
+            else:
+                # OOB linear on 2-D cell → column of length k
+                flat = []
+                for j in range(cols):
+                    for i in range(rows):
+                        flat.append(cell.get(i, j))
+                while len(flat) < k:
+                    flat.append(blank)
+                return CellValue(rows=tuple((v,) for v in flat[:k]))
+        elif len(idxs) == 2:
+            i = _as_int(idxs[0])
+            j = _as_int(idxs[1])
+            if i <= rows and j <= cols:
+                return cell
+            need_r, need_c = max(rows, i), max(cols, j)
+        else:
+            raise EvalError("cell assign: only 1 or 2 subscripts supported")
+
+        if need_r == rows and need_c == cols:
+            return cell
+        grid = [[blank for _ in range(need_c)] for _ in range(need_r)]
+        for i in range(min(rows, need_r)):
+            for j in range(min(cols, need_c)):
+                grid[i][j] = cell.get(i, j)
+        return CellValue(rows=tuple(tuple(r) for r in grid))
 
     def _cell_subscripts(
         self, cell: "object", idx_exprs: list, label: str

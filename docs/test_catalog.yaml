@@ -601,3 +601,12 @@ test_cases:
     impl: tests/unit/test_delete_empty.py
     status: active
     env: unit
+
+  - id: tc.grow_assign
+    kind: unit
+    title: grow-on-assign arrays and cells
+    features: [runtime.array_grow_assign]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_grow_assign.py
+    status: active
+    env: unit

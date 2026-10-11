@@ -235,6 +235,20 @@ class NumPyArrayBackend:
             return NDArrayValue(picked.reshape(-1, 1))
         return NDArrayValue(picked.reshape(-1, 1))
 
+
+    def _grown_vector_shape(self, data: Any, new_numel: int) -> tuple:
+        """Orientation after linear grow: row stays row, else column."""
+        rows, cols = (self._np.asarray(data).shape + (1, 1))[:2]
+        if rows == 1:
+            return (1, int(new_numel))
+        return (int(new_numel), 1)
+
+    def _grow_linear_flat(self, data: Any, flat: Any, need: int) -> Any:
+        np = self._np
+        grown = np.zeros(need, dtype=np.float64)
+        grown[: flat.size] = flat
+        return grown
+
     def set_index(self, a: Array, indices: Sequence[Array], value: Array) -> Array:
         """1-based copy-on-write set; scalar or matching-numel RHS; range LHS ok."""
         aa = _as_nd(a)
@@ -318,10 +332,13 @@ class NumPyArrayBackend:
                 k = _as_1based_int_vec(
                     ind_a.backend_buffer(), label="linear index"
                 )
-                if np.any(k > flat.size):
-                    raise NumericsError(
-                        f"set_index: linear index exceeds numel ({flat.size})"
-                    )
+                need = int(np.max(k))
+                if need > flat.size:
+                    flat = self._grow_linear_flat(data, flat, need)
+                    flat[k - 1] = _apply_rhs(int(k.size))
+                    rows, cols = self._grown_vector_shape(data, flat.size)
+                    out = flat.reshape((rows, cols), order="F").copy()
+                    return NDArrayValue(np.asarray(out, dtype=np.float64))
                 flat[k - 1] = _apply_rhs(int(k.size))
             out = flat.reshape(data.shape, order="F").copy()
             return NDArrayValue(np.asarray(out, dtype=np.float64))
@@ -333,8 +350,12 @@ class NumPyArrayBackend:
             c = _as_1based_int_vec(
                 _as_nd(indices[1]).backend_buffer(), label="col subscript"
             )
-            if np.any(r > data.shape[0]) or np.any(c > data.shape[1]):
-                raise NumericsError("set_index: subscript exceeds array dimensions")
+            need_r = int(np.max(r))
+            need_c = int(np.max(c))
+            if need_r > data.shape[0] or need_c > data.shape[1]:
+                grown = np.zeros((need_r, need_c), dtype=np.float64)
+                grown[: data.shape[0], : data.shape[1]] = data
+                data = grown
             if vbuf.size == 0:
                 # A(i,:)=[] or A(:,j)=[] when one subscript is all indices
                 rows_n, cols_n = data.shape[0], data.shape[1]

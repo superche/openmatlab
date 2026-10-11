@@ -47,11 +47,14 @@ def test_read_after_write():
     assert float(s.workspace.get("x").backend_buffer().reshape(-1)[0]) == 3
 
 
-def test_oob():
+def test_oob_grows():
+    """EPIC-021 / #119: OOB assign grows with zero fill (was error in Epic #8)."""
     s = Session.create_default()
-    ReplSession(s).run_line("A = [1 2];")
-    with pytest.raises(EvalError, match="exceeds|set_index|out"):
-        ReplSession(s).run_line("A(5) = 1;")
+    ReplSession(s).run_line("A = [1 2]; A(5) = 1;")
+    import numpy as np
+    assert np.asarray(s.workspace.get("A").backend_buffer()).tolist() == [
+        [1.0, 2.0, 0.0, 0.0, 1.0]
+    ]
 
 
 def test_cell_assign_still_works():
