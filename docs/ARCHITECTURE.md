@@ -12,10 +12,10 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break).
+**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins).
 Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
-Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md).
+Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md).
 
 What works today:
 
@@ -26,6 +26,7 @@ What works today:
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`; script `.m` via `load_mfile`/`eval_script` + language `run("…")`
+- Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod
 
 Residual non-parity (later): `continue`, single-quoted char/cells, rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
 
@@ -58,6 +59,7 @@ src/openmatlab/
     matplotlib_backend.py MatplotlibGraphicsBackend (Agg default)
   libs/           # path / toolboxes
     path.py         ToolboxPath (addpath / find_mfile)
+    numeric_builtins.py core numeric builtins (elmat / reductions / elfun)
   qa/             # feature_map / catalog / defects→gh bridges
 ```
 
