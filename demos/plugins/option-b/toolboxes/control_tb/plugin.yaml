@@ -1,0 +1,5 @@
+id: control
+kind: domain
+label: Control Systems
+provides:
+  commands: control_tb.commands:register
