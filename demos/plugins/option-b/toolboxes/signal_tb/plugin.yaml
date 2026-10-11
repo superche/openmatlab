@@ -1,0 +1,7 @@
+id: signal
+kind: domain
+label: Signal Processing
+provides:
+  commands: signal_tb.commands:register
+  ui_panels: signal_tb.ui.panels:contribute
+  ux: signal_tb.ux:customize
