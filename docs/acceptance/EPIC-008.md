@@ -3,7 +3,7 @@
 **Epic:** [#115 Indexed array assignment](https://github.com/superche/openmatlab/issues/115)  
 **Scope issues:** [#116](https://github.com/superche/openmatlab/issues/116) · [#117](https://github.com/superche/openmatlab/issues/117) · absorbs [#111](https://github.com/superche/openmatlab/issues/111)  
 **Functional tip** (step 1, PR #118): `7b9a5a33fc98797c0ab42f1259df30b2e0f614ce`  
-**Evidence merge tip:** *(stamped after this doc merges)*  
+**Evidence merge tip** (EPIC-008 + sync merged, PR #123): `8ebaaa3d0115712b69b7f9235edaaf524599d4b5`  
 **Captured:** 2026-10-11 18:52 CST on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
@@ -16,7 +16,7 @@
 | Step | Issue | PR | Merge commit | CI `test` |
 |------|-------|-----|--------------|-----------|
 | 1 | #116 array assign | [#118](https://github.com/superche/openmatlab/pull/118) | `7b9a5a33fc98797c0ab42f1259df30b2e0f614ce` | pass |
-| 2–4 | #117 sync + EPIC-008 | *(this PR)* | evidence merge tip | required |
+| 2–4 | #117 sync + EPIC-008 | [#123](https://github.com/superche/openmatlab/pull/123) | `8ebaaa3d0115712b69b7f9235edaaf524599d4b5` | pass |
 
 ## Feature map
 
@@ -61,7 +61,7 @@ z =
 ## How to re-run
 
 ```bash
-git checkout 7b9a5a33fc98797c0ab42f1259df30b2e0f614ce
+git checkout 8ebaaa3d0115712b69b7f9235edaaf524599d4b5   # evidence tip (functional: `7b9a5a33fc98797c0ab42f1259df30b2e0f614ce`)
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
 openmatlab -e "A = [1 2; 3 4]; A(2,1) = 9; x = A(2,1)"
