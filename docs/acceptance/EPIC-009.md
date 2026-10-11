@@ -3,7 +3,7 @@
 **Epic:** [#126 Loop continue statement](https://github.com/superche/openmatlab/issues/126)  
 **Scope issues:** [#127](https://github.com/superche/openmatlab/issues/127) · [#128](https://github.com/superche/openmatlab/issues/128)  
 **Functional tip** (step 1, PR #129): `214b9a55114f907ac67b7742cd68696daae264ac`  
-**Evidence merge tip:** *(stamped after this doc merges)*  
+**Evidence merge tip** (EPIC-009 + sync merged, PR #133): `ba81bf1059eb4ea99a853b1144fe343fdb55c832`  
 **Captured:** 2026-10-11 18:58 CST on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
@@ -16,7 +16,7 @@
 | Step | Issue | PR | Merge commit | CI `test` |
 |------|-------|-----|--------------|-----------|
 | 1 | #127 continue | [#129](https://github.com/superche/openmatlab/pull/129) | `214b9a55114f907ac67b7742cd68696daae264ac` | pass |
-| 2–4 | #128 sync + EPIC-009 | *(this PR)* | evidence merge tip | required |
+| 2–4 | #128 sync + EPIC-009 | [#133](https://github.com/superche/openmatlab/pull/133) | `ba81bf1059eb4ea99a853b1144fe343fdb55c832` | pass |
 
 ## Feature map
 
@@ -66,7 +66,7 @@ error: continue outside of a for or while loop
 ## How to re-run
 
 ```bash
-git checkout 214b9a55114f907ac67b7742cd68696daae264ac
+git checkout ba81bf1059eb4ea99a853b1144fe343fdb55c832   # evidence tip (functional: `214b9a55114f907ac67b7742cd68696daae264ac`)
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
 openmatlab -e "s = 0; for i = 1:5; if i == 3; continue; end; s = s + i; end; s"
