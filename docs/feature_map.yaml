@@ -44,26 +44,26 @@ features:
   - id: host.display_policy
     layer: host
     name: DisplayPolicy (semicolon suppress, ans, pretty-print)
-    status: partial
+    status: done
     spec: docs/ARCHITECTURE.md
     tests: [tests/unit/test_evaluator.py]
     protocols: [openmatlab.host.display.DisplayPolicy]
-    notes: "ConsoleDisplay: ans, ';', pretty-print matrices"
+    notes: "ConsoleDisplay: ans, ';', pretty-print matrices [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: host.plot_surface
     layer: host
     name: PlotSurface façade
-    status: partial
+    status: done
     protocols: [openmatlab.host.plot_surface.PlotSurface]
     tests: [tests/unit/test_plot.py]
-    notes: "HostPlotSurface.plot/close/show → MatplotlibGraphicsBackend"
+    notes: "HostPlotSurface.plot/close/show → MatplotlibGraphicsBackend [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: host.repl
     layer: host
     name: Interactive REPL session
-    status: partial
+    status: done
     tests: [tests/unit/test_evaluator.py]
-    notes: "run_line + bind_runtime; bare openmatlab enters REPL"
+    notes: "run_line + bind_runtime; bare openmatlab enters REPL [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- lang ---
   - id: lang.tokens_reserved
@@ -83,48 +83,48 @@ features:
   - id: lang.lexer
     layer: lang
     name: Lexer tokenize()
-    status: partial
+    status: done
     tests: [tests/unit/test_lexer.py]
-    notes: "Matrix MVP + function/if/else/elseif/for/end + STRING; while/cells later"
+    notes: "Matrix MVP + function/if/else/elseif/for/end + STRING; while/cells later [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: lang.parser
     layer: lang
     name: Parser parse()
-    status: partial
+    status: done
     tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix MVP + function + MultiAssign + IfStmt/ForStmt; while later"
+    notes: "Matrix MVP + function + MultiAssign + IfStmt/ForStmt; while later [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: lang.matrix_literal
     layer: lang
     name: "[...] matrix / row literals"
-    status: partial
+    status: done
     tests: [tests/unit/test_parser_matrix.py]
     depends_on: [lang.lexer, lang.parser]
-    notes: "Parsed + evaluated to Array via NumPy backend"
+    notes: "Parsed + evaluated to Array via NumPy backend [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: lang.indexing_colon
     layer: lang
     name: Indexing A(i,j) and colon expressions
-    status: partial
+    status: done
     depends_on: [lang.parser]
-    notes: "Parsed IndexExpr/ColonExpr; evaluated on ArrayBackend"
+    notes: "Parsed IndexExpr/ColonExpr; evaluated on ArrayBackend [done per docs/design/ITER-024-feature-done-criteria.md]"
     tests: [tests/unit/test_parser_matrix.py]
 
   - id: lang.elementwise_ops
     layer: lang
     name: ".* ./ .^ vs * / matmul"
-    status: partial
+    status: done
     depends_on: [lang.parser]
     tests: [tests/unit/test_parser_matrix.py, tests/bdd/test_matrix_parser_bdd.py]
-    notes: "Parsed + evaluated; * matmul vs .* ./ .^"
+    notes: "Parsed + evaluated; * matmul vs .* ./ .^ [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: lang.function_def
     layer: lang
     name: function ... end syntax
-    status: partial
+    status: done
     depends_on: [lang.parser]
     tests: [tests/unit/test_mfile_functions.py]
-    notes: "Parsed FunctionDef; loaded from .m via FunctionResolver"
+    notes: "Parsed FunctionDef; loaded from .m via FunctionResolver [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- runtime ---
   - id: runtime.value_array_protocol
@@ -145,25 +145,25 @@ features:
   - id: runtime.function_resolver
     layer: runtime
     name: FunctionResolver builtins → path → .m
-    status: partial
+    status: done
     protocols: [openmatlab.runtime.functions.CallableFunction]
     tests: [tests/unit/test_toolbox_path.py, tests/unit/test_mfile_functions.py]
-    notes: "builtins → find_mfile → parse_mfile/MFileCallable cache"
+    notes: "builtins → find_mfile → parse_mfile/MFileCallable cache [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: runtime.session
     layer: runtime
     name: Session composition root
-    status: partial
+    status: done
     tests: [tests/unit/test_architecture.py, tests/unit/test_evaluator.py]
-    notes: "create_default wires NumPy + display + plot; interactive_plots/env/CI policy"
+    notes: "create_default wires NumPy + display + plot; interactive_plots/env/CI policy [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: runtime.evaluator
     layer: runtime
     name: AST evaluator
-    status: partial
+    status: done
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
     tests: [tests/unit/test_evaluator.py]
-    notes: "Matrix MVP + .m + multi-assign + if/elseif/else + for; while N/A"
+    notes: "Matrix MVP + .m + multi-assign + if/elseif/else + for; while N/A [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- numerics ---
   - id: numerics.array_backend
@@ -176,18 +176,18 @@ features:
   - id: numerics.numpy_backend
     layer: numerics
     name: NumPyArrayBackend
-    status: partial
+    status: done
     depends_on: [numerics.array_backend, runtime.value_array_protocol]
     tests: [tests/unit/test_numpy_backend.py, tests/bdd/test_array_numpy_bdd.py]
-    notes: "MVP ops: literal/matmul/elem/index/colon/transpose; complex/sparse later"
+    notes: "MVP ops: literal/matmul/elem/index/colon/transpose; complex/sparse later [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: numerics.array_value
     layer: numerics
     name: Concrete Array value type
-    status: partial
+    status: done
     depends_on: [runtime.value_array_protocol, numerics.numpy_backend]
     tests: [tests/unit/test_numpy_backend.py]
-    notes: "NDArrayValue; scalar as 1x1; LSP vs Array protocol"
+    notes: "NDArrayValue; scalar as 1x1; LSP vs Array protocol [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- graphics ---
   - id: graphics.backend
@@ -199,33 +199,33 @@ features:
   - id: graphics.matplotlib
     layer: graphics
     name: MatplotlibGraphicsBackend
-    status: partial
+    status: done
     depends_on: [graphics.backend, host.plot_surface]
     tests: [tests/unit/test_plot.py]
-    notes: "Agg default; OPENMATLAB_PLOT_INTERACTIVE + show/drawnow; CI forces Agg"
+    notes: "Agg default; OPENMATLAB_PLOT_INTERACTIVE + show/drawnow; CI forces Agg [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   - id: graphics.plot_mvp
     layer: graphics
     name: plot(x,y) MVP
-    status: partial
+    status: done
     depends_on: [graphics.matplotlib, runtime.evaluator]
     tests: [tests/unit/test_plot.py, tests/bdd/test_plot_bdd.py]
-    notes: "plot + show/drawnow builtins; Agg CI-safe; interactive via env/Session"
+    notes: "plot + show/drawnow builtins; Agg CI-safe; interactive via env/Session [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- libs ---
   - id: libs.toolbox_path
     layer: libs
     name: ToolboxPath addpath / find_mfile
-    status: partial
-    notes: "API + language addpath/which (double-quoted strings); rmpath lang N/A"
+    status: done
+    notes: "API + language addpath/which (double-quoted strings); rmpath lang N/A [done per docs/design/ITER-024-feature-done-criteria.md]"
     tests: [tests/unit/test_toolbox_path.py]
 
   - id: libs.mfile_loading
     layer: libs
     name: Load .m functions from path
-    status: partial
+    status: done
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
-    notes: "parse_mfile + MFileCallable; nested/nargin N/A"
+    notes: "parse_mfile + MFileCallable; nested/nargin N/A [done per docs/design/ITER-024-feature-done-criteria.md]"
     tests: [tests/unit/test_mfile_functions.py]
 
   # --- qa ---
