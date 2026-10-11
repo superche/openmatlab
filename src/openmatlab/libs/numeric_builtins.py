@@ -7,6 +7,7 @@ Installed into ``FunctionResolver.builtins`` via ``register_numeric_builtins``.
 from __future__ import annotations
 
 from typing import Callable, Dict, List, Sequence
+import warnings
 
 import numpy as np
 
@@ -89,6 +90,11 @@ def _linspace(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(np.linspace(a, b, n).reshape(1, n)),)
 
 
+def _nan(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """MATLAB nan/NaN — scalar or filled array of NaNs (needed for omitnan max/min)."""
+    return (_wrap(np.full(_shape2("nan", args), np.nan)),)
+
+
 # ----- shape queries -----
 
 
@@ -160,7 +166,29 @@ def _mean_op(b: np.ndarray, axis: int, keepdims: bool) -> np.ndarray:
     return np.mean(b, axis=axis, keepdims=keepdims)
 
 
-def _make_extremum(name: str, reduce_op, arg_op, pair_op):
+def _nan_argmax(a: np.ndarray, axis: int) -> np.ndarray:
+    """1-based-ready 0-based index of first non-NaN max; all-NaN → 0 (→ MATLAB i=1)."""
+    masked = np.where(np.isnan(a), -np.inf, a)
+    return np.argmax(masked, axis=axis)
+
+
+def _nan_argmin(a: np.ndarray, axis: int) -> np.ndarray:
+    """1-based-ready 0-based index of first non-NaN min; all-NaN → 0 (→ MATLAB i=1)."""
+    masked = np.where(np.isnan(a), np.inf, a)
+    return np.argmin(masked, axis=axis)
+
+
+def _make_extremum(name: str, *, which: str):
+    """MATLAB-default omitnan for max/min (flag strings remain non-goals)."""
+    if which == "max":
+        nan_reduce = np.nanmax
+        arg_op = _nan_argmax
+        pair_op = np.fmax
+    else:
+        nan_reduce = np.nanmin
+        arg_op = _nan_argmin
+        pair_op = np.fmin
+
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         _arity(name, args, 1, 3)
         a = _buf(name, args[0])
@@ -184,7 +212,10 @@ def _make_extremum(name: str, reduce_op, arg_op, pair_op):
         if ax >= a.ndim:
             ones = np.ones(a.shape)
             return (_wrap(a),) if nargout <= 1 else (_wrap(a), _wrap(ones))
-        vals = reduce_op(a, axis=ax, keepdims=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            with np.errstate(all="ignore"):
+                vals = nan_reduce(a, axis=ax, keepdims=True)
         if nargout <= 1:
             return (_wrap(vals),)
         idx = np.expand_dims(arg_op(a, axis=ax), ax) + 1.0
@@ -234,14 +265,16 @@ BUILTINS: Dict[str, Builtin] = {
     "ones": _ones,
     "eye": _eye,
     "linspace": _linspace,
+    "nan": _nan,
+    "NaN": _nan,
     "size": _size,
     "numel": _numel,
     "length": _length,
     "sum": _make_reduce("sum", np.sum, 0.0),
     "prod": _make_reduce("prod", np.prod, 1.0),
     "mean": _make_reduce("mean", _mean_op, float("nan")),
-    "max": _make_extremum("max", np.max, np.argmax, np.maximum),
-    "min": _make_extremum("min", np.min, np.argmin, np.minimum),
+    "max": _make_extremum("max", which="max"),
+    "min": _make_extremum("min", which="min"),
     "abs": _make_unary("abs", np.abs),
     "sqrt": _make_unary("sqrt", np.sqrt, nonneg=True),
     "exp": _make_unary("exp", np.exp),

@@ -15,7 +15,8 @@ Per PROCESS § Feature status criteria. Non-goals do **not** block `done`.
 ## libs.reductions → done
 - Observable: `sum/prod/mean` default first non-singleton dim + `dim`; empty specials; `max/min` with `[m,i]` 1-based, `(A,B)`, `(A,[],dim)`
 - Tests: `tests/unit/test_reductions.py`, `tests/bdd/test_reductions_bdd.py`
-- Non-goals: MATLAB NaN-omit default for max/min, `'omitnan'`, `'all'`
+- NaN: default omitnan (#55); all-NaN → NaN / i=1; max(A,B) prefers non-NaN
+- Non-goals: explicit `'omitnan'`/`'includenan'`/`'all'` flag strings
 
 ## libs.elfun → done
 - Observable: `abs sqrt exp log sin cos floor ceil round mod`, MATLAB `round` + `mod`, real-domain errors
