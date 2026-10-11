@@ -64,6 +64,23 @@ Card each Issue; do **not** invent a second in-repo ticket DB.
 - Dump: `openmatlab features`.
 
 
+
+## Work tracking — GitHub Issues only (mandatory)
+
+**All** actionable work items (features, gaps, bugs, chores, residuals, milestone
+follow-ups, and any other todos) **must** be managed as **GitHub Issues** on this
+repository.
+
+Disallowed as the system of record:
+
+- Agent-local todo lists / scratch checklists that never become Issues
+- Docs-only todo sections that are not mirrored by Issues
+- In-chat task lists without corresponding Issues
+
+Docs (`PROCESS`, `ARCHITECTURE`, `EPIC-NNN`, milestone pages) may **summarize**
+or **link** Issues; they do not replace them. When an agent discovers work, it
+opens or updates an Issue (with labels + milestone) before or as it acts.
+
 ## Milestones (roadmap)
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
