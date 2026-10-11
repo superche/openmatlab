@@ -610,3 +610,12 @@ test_cases:
     impl: tests/unit/test_grow_assign.py
     status: active
     env: unit
+
+  - id: tc.unique_issorted
+    kind: unit
+    title: unique and issorted builtins
+    features: [libs.unique, libs.issorted]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_unique_issorted.py
+    status: active
+    env: unit
