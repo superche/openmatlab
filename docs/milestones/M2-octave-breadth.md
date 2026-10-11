@@ -28,7 +28,7 @@ met when its script actually passes.
 | C07 | Logical indexing read + LHS `v(v<0)=0` | c07_logical_indexing | p0 | #162 | pending |
 | C06 | Delete `v(i)=[]` (arrays; cells #109) | c06_delete_elements | p0 | #120 #109 | pending |
 | C08 | Grow on OOB assign `v(4)=7` (cells #108) | c08_grow_on_assign | p0 | #119 #108 | pending |
-| C05 | `sort(...,'descend')`, `find(...,k,'first'/'last')` | c05_sort_find_options | p1 | #95 #96 | pending → Epic #15 |
+| C05 | `sort(...,'descend')`, `find(...,k,'first'/'last')` | c05_sort_find_options | p1 | #95 #96 | **met** (Epic #15) |
 | C09 | `unique`, `issorted` | c09_unique_issorted | p1 | #97 | pending |
 | C10 | `cellfun` + function handles `@f` | c10_cellfun | p1 | #81 | pending |
 | C01 | Control flow (if/for/while/break/continue/switch) | c01_control_flow | p0 | — | met |

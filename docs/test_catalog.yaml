@@ -539,3 +539,20 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.sort_find_flags
+    kind: unit
+    title: sort descend + find first/last
+    features: [libs.sort_find_flags]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_sort_find_flags.py
+    status: active
+    env: unit
+
+  - id: tc.m2_conformance
+    kind: conformance
+    title: M2 Octave-breadth conformance scripts (strict xfail for unmet)
+    features: [libs.sort_find_flags]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/conformance/test_m2_conformance.py
+    status: active
+    env: unit
