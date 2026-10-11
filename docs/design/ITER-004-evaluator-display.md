@@ -1,4 +1,4 @@
-# ITER-004 Design: Evaluator + DisplayPolicy (draft)
+# ITER-004 Design: Evaluator + DisplayPolicy (implemented)
 
 **Issue:** #4 · Depends on: #2 Array, #3 parser
 

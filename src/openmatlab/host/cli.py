@@ -22,7 +22,7 @@ QA layers (docs/QA.md):
   5. Defects      GitHub Issues (canonical)  → openmatlab defects / gh issue
 
 Interactive UI later: Playwright/Selenium only when a web workbench exists.
-Eval not wired. Architecture: docs/ARCHITECTURE.md
+Eval: openmatlab -e "..." · REPL when no args. docs/ARCHITECTURE.md
 """
 
 
@@ -143,6 +143,51 @@ def _cmd_test(args: argparse.Namespace) -> int:
     return subprocess.call(cmd)
 
 
+def _eval_code(source: str) -> int:
+    """Evaluate one-liner / snippet with default Session."""
+    from openmatlab.host.repl import ReplSession
+    from openmatlab.lang.lexer import LexerError
+    from openmatlab.lang.parser import ParseError
+    from openmatlab.runtime.evaluator import EvalError
+
+    try:
+        ReplSession().run_line(source)
+        return 0
+    except (LexerError, ParseError, EvalError, ImportError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+def _run_repl() -> int:
+    from openmatlab.host.repl import ReplSession
+    from openmatlab.lang.lexer import LexerError
+    from openmatlab.lang.parser import ParseError
+    from openmatlab.runtime.evaluator import EvalError
+
+    print(f"OpenMATLAB {__version__} — matrix-first subset (Ctrl-D to exit)")
+    repl = ReplSession()
+    if repl.session.numerics is None:
+        print("error: NumPy required for REPL (pip install -e \".[dev]\")", file=sys.stderr)
+        return 1
+    while True:
+        try:
+            line = input(">> ")
+        except EOFError:
+            print()
+            break
+        except KeyboardInterrupt:
+            print()
+            break
+        if not line.strip():
+            continue
+        try:
+            repl.run_line(line)
+        except (LexerError, ParseError, EvalError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+    return 0
+
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="openmatlab",
@@ -155,7 +200,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "-e",
         "--eval",
         metavar="CODE",
-        help="(Reserved) evaluate CODE — not wired yet",
+        help="Evaluate CODE and print result (unless suppressed with ;)",
     )
     parser.add_argument("--status", action="store_true", help="Print QA/architecture status")
     parser.add_argument("--features", action="store_true", help="Dump feature map")
@@ -207,12 +252,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if args.eval is not None:
-        print(
-            "openmatlab: expression evaluation not wired "
-            "(architecture stage). Try: openmatlab status",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+        sys.exit(_eval_code(args.eval))
 
     if args.command and getattr(args, "func", None):
         sys.exit(args.func(args))
@@ -223,7 +263,11 @@ def main(argv: Optional[List[str]] = None) -> None:
         )
         sys.exit(_cmd_features(ns))
 
-    sys.exit(_cmd_status(args))
+    if args.status:
+        sys.exit(_cmd_status(args))
+
+    # No subcommand: interactive REPL
+    sys.exit(_run_repl())
 
 
 if __name__ == "__main__":

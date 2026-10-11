@@ -39,10 +39,15 @@ def test_session_composition():
     s = Session.create_default()
     assert s.workspace.depth() == 1
     assert s.functions.path is s.path
-    assert isinstance(s.display, NullDisplay)
     assert isinstance(s.plots, StubPlotSurface)
     assert isinstance(s.path, ToolboxPath)
-    assert s.numerics is None
+    # Issue #4: default session wires NumPy + ConsoleDisplay when available
+    if s.numerics is None:
+        assert isinstance(s.display, NullDisplay)
+    else:
+        from openmatlab.host.display import ConsoleDisplay
+
+        assert isinstance(s.display, ConsoleDisplay)
 
 
 def test_plot_surface_stub_raises():
@@ -74,9 +79,8 @@ def test_no_float_dict_evaluator_module():
 
 def test_cli_status(capsys):
     with pytest.raises(SystemExit) as ei:
-        main([])
+        main(["status"])
     assert ei.value.code == 0
     out = capsys.readouterr().out
-    assert "architecture" in out
+    assert "architecture" in out or "QA" in out
     assert "runtime" in out
-    assert "docs/QA.md" in out

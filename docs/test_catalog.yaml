@@ -187,3 +187,28 @@ test_cases:
     impl: tests/bdd/test_matrix_parser_bdd.py
     status: active
     env: unit
+
+  - id: tc.eval_arithmetic
+    kind: unit
+    title: Eval 1+2*3 displays 7
+    features: [runtime.evaluator, host.display_policy]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_evaluator.py::test_arithmetic_and_ans_display
+    status: active
+    env: unit
+
+  - id: tc.eval_suppress
+    kind: unit
+    title: Trailing semicolon suppresses display
+    features: [host.display_policy, runtime.evaluator]
+    impl: tests/unit/test_evaluator.py::test_suppress_semicolon
+    status: active
+    env: unit
+
+  - id: tc.bdd_evaluator
+    kind: unit
+    title: Gherkin evaluator smoke
+    features: [runtime.evaluator, qa.pytest_bdd]
+    impl: tests/bdd/test_evaluator_bdd.py
+    status: active
+    env: unit
