@@ -12,7 +12,7 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins).
+**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan).
 Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
 Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md).
@@ -26,9 +26,10 @@ What works today:
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`; script `.m` via `load_mfile`/`eval_script` + language `run("…")`
-- Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod
+- Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan
 
-Residual non-parity (later): `continue`, single-quoted char/cells, rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
+Residual non-parity (later): `continue`, rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
+Next axis: **single-quoted char + cell arrays** (Epic #5).
 
 ## Package layout
 
