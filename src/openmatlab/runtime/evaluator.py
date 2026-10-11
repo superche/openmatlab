@@ -193,7 +193,8 @@ class Evaluator:
         try:
             results = list(fn(args, nargout=nargout))
         except ValueError as exc:  # builtin argument errors (e.g. BuiltinError)
-            raise EvalError(f"{n}: {exc}") from exc
+            msg = str(exc)
+            raise EvalError(msg if msg.startswith(f"{n}:") else f"{n}: {msg}") from exc
         for i, out in enumerate(results):
             if not isinstance(out, Array):
                 raise EvalError(f"{n}: output {i} is not an Array")

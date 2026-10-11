@@ -57,3 +57,11 @@ def test_real_domain_errors():
         ReplSession(s).run_line("log([1 -2])")
     with pytest.raises(EvalError, match="dimensions"):
         ReplSession(s).run_line("mod([1 2 3], [1 2])")
+
+
+def test_builtin_error_message_not_duplicated():
+    s = Session.create_default()
+    with pytest.raises(EvalError) as info:
+        ReplSession(s).run_line("sqrt(-1)")
+    assert str(info.value).count("sqrt:") == 1
+

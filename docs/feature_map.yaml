@@ -233,33 +233,33 @@ features:
   - id: libs.elmat_constructors
     layer: libs
     name: zeros / ones / eye / linspace builtins
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "FunctionResolver builtins via libs.numeric_builtins; vector-size form N/A (#44)"
+    notes: "FunctionResolver builtins via libs.numeric_builtins; vector-size form N/A (#44) [done per ITER-047]"
     tests: [tests/unit/test_elmat_builtins.py, tests/bdd/test_elmat_bdd.py]
 
   - id: libs.elmat_shape
     layer: libs
     name: size / numel / length builtins
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver]
-    notes: "size(A), size(A,d), [m,n]=size(A); 2-D only (#44)"
+    notes: "size(A), size(A,d), [m,n]=size(A); 2-D only (#44) [done per ITER-047]"
     tests: [tests/unit/test_elmat_builtins.py]
 
   - id: libs.reductions
     layer: libs
     name: sum / prod / mean / min / max
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "first non-singleton dim; [m,i]=max; max(A,B); NaN-omit default N/A (#45)"
+    notes: "first non-singleton dim; [m,i]=max; max(A,B); NaN-omit default N/A (#45) [done per ITER-047]"
     tests: [tests/unit/test_reductions.py, tests/bdd/test_reductions_bdd.py]
 
   - id: libs.elfun
     layer: libs
     name: abs / sqrt / exp / log / sin / cos / floor / ceil / round / mod
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "real domain (neg sqrt/log -> error); MATLAB round + mod semantics (#46)"
+    notes: "real domain (neg sqrt/log -> error); MATLAB round + mod semantics (#46) [done per ITER-047]"
     tests: [tests/unit/test_elfun.py, tests/bdd/test_elfun_bdd.py]
   - id: qa.feature_map
     layer: qa
