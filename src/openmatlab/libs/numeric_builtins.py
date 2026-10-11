@@ -57,13 +57,31 @@ def _arity(name: str, args: Sequence[Value], lo: int, hi: int) -> None:
 
 
 def _shape2(name: str, args: Sequence[Value]) -> tuple:
+    """Resolve zeros/ones/eye/nan/cell size args (scalar, m,n, or size vector)."""
     _arity(name, args, 0, 2)
     if not args:
         return (1, 1)
-    if len(args) == 1:
+    if len(args) == 2:
+        return (_dim(name, args[0]), _dim(name, args[1]))
+    # single arg: scalar → square; size vector → MATLAB sz semantics
+    b = _buf(name, args[0])
+    if b.size == 1:
         n = _dim(name, args[0])
         return (n, n)
-    return (_dim(name, args[0]), _dim(name, args[1]))
+    flat = b.reshape(-1, order="F")
+    if flat.size > 2:
+        raise BuiltinError(
+            f"{name}: N-D size vectors (numel>{2}) not supported yet"
+        )
+    dims: List[int] = []
+    for x in flat:
+        if float(x) != int(x):
+            raise BuiltinError(f"{name}: size arguments must be integers")
+        dims.append(max(0, int(x)))
+    # numel==1 already handled above; keep defensive square if reached
+    if len(dims) == 1:
+        return (dims[0], dims[0])
+    return (dims[0], dims[1])
 
 
 # ----- constructors -----

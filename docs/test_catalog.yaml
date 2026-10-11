@@ -530,3 +530,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.elmat_size_vector
+    kind: unit
+    title: zeros/ones/eye size-vector constructors
+    features: [libs.elmat_size_vector]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_elmat_size_vector.py
+    status: active
+    env: unit
+
