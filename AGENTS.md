@@ -24,6 +24,16 @@
 - **禁止**为了让流水线变绿而削弱 / 篡改用例去迁就错误实现。
 - 若需求本身要改：在 **Issue/PR 中写明理由**，同步改 feature map / catalog / Gherkin，再改代码。
 
+## Epic Done（验收证据强制）
+
+Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：
+
+1. 在 `docs/acceptance/EPIC-NNN.md` 写清可度量验收证据（真实命令输出，禁止编造）
+2. 证据至少含：关联 Issues/PRs、tip SHA、CI check **`test`** 链接、pytest markers 结果、关键 `feature_map` 状态、CLI/烟雾演示
+3. 在 epic Issue 上评论证据文档路径（及合并后的 blob/URL）
+
+细则见 `docs/PROCESS.md` § Epic acceptance。
+
 ## 每次迭代清单
 
 1. 更新 `feature_map` + `test_catalog`（+ 相关 Gherkin）

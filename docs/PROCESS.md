@@ -85,6 +85,32 @@ An Issue / PR is done only if:
       status synced if capability changed
 - [ ] No secrets committed; clean-room rules respected (no MATLAB RE)
 - [ ] PR template QA checklist completed
+- [ ] **Epics only:** acceptance evidence `docs/acceptance/EPIC-NNN.md` + Issue comment (see below)
+
+## Epic acceptance (mandatory)
+
+Closing an **epic** Issue requires an acceptance-evidence artifact, not only
+child Issues closed and CI green.
+
+### Artifact
+
+- Path: `docs/acceptance/EPIC-NNN.md` (NNN = epic number, zero-padded)
+- Must include **measurable** checks with **pasted real command output**
+  (CLI demos, `pytest -m "unit or bdd"` summary, `feature_map` statuses,
+  PR/CI URLs, tip SHA). Do **not** invent transcript text.
+- Land via PR; required check **`test`** must pass; merge to `main`.
+- Comment on the epic Issue with a link to the evidence file on `main`
+  (e.g. `docs/acceptance/EPIC-001.md`).
+
+### DoD addendum (epics)
+
+In addition to the Issue/PR DoD above:
+
+- [ ] `docs/acceptance/EPIC-NNN.md` merged
+- [ ] Epic Issue comment links the evidence
+- [ ] Residual / non-goals explicitly listed if MVP is intentionally partial
+
+Example: [`acceptance/EPIC-001.md`](acceptance/EPIC-001.md).
 
 ## Branch protection (manual repo settings)
 
