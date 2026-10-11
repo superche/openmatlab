@@ -120,6 +120,79 @@ def _length(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(0 if b.size == 0 else max(b.shape)),)
 
 
+
+# ----- reductions -----
+
+
+def _default_axis(b: np.ndarray) -> int:
+    for ax, n in enumerate(b.shape):
+        if n != 1:
+            return ax
+    return 0
+
+
+def _axis_arg(name: str, v: Value) -> int:
+    d = _dim(name, v)
+    if d < 1:
+        raise BuiltinError(f"{name}: dimension must be a positive integer")
+    return d - 1
+
+
+def _make_reduce(name: str, op, empty_value: float):
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, 1, 2)
+        b = _buf(name, args[0])
+        if len(args) == 1 and b.shape == (0, 0):
+            return (_wrap(empty_value),)
+        ax = _axis_arg(name, args[1]) if len(args) == 2 else _default_axis(b)
+        if ax >= b.ndim:
+            return (_wrap(b),)
+        return (_wrap(op(b, axis=ax, keepdims=True)),)
+
+    return _fn
+
+
+def _mean_op(b: np.ndarray, axis: int, keepdims: bool) -> np.ndarray:
+    if b.shape[axis] == 0:
+        shape = list(b.shape)
+        shape[axis] = 1
+        return np.full(shape, np.nan)
+    return np.mean(b, axis=axis, keepdims=keepdims)
+
+
+def _make_extremum(name: str, reduce_op, arg_op, pair_op):
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, 1, 3)
+        a = _buf(name, args[0])
+        if len(args) == 2:
+            if nargout > 1:
+                raise BuiltinError(f"{name}: two-matrix form returns one output")
+            b = _buf(name, args[1])
+            try:
+                return (_wrap(pair_op(a, b)),)
+            except ValueError as exc:
+                raise BuiltinError(f"{name}: {exc}") from exc
+        if len(args) == 3:
+            if _buf(name, args[1]).size != 0:
+                raise BuiltinError(f"{name}: use {name}(A, [], dim) for a dimension")
+            ax = _axis_arg(name, args[2])
+        else:
+            ax = _default_axis(a)
+        if a.size == 0:
+            empty = _wrap(np.zeros((0, 0)))
+            return (empty,) if nargout <= 1 else (empty, empty)
+        if ax >= a.ndim:
+            ones = np.ones(a.shape)
+            return (_wrap(a),) if nargout <= 1 else (_wrap(a), _wrap(ones))
+        vals = reduce_op(a, axis=ax, keepdims=True)
+        if nargout <= 1:
+            return (_wrap(vals),)
+        idx = np.expand_dims(arg_op(a, axis=ax), ax) + 1.0
+        return (_wrap(vals), _wrap(idx))
+
+    return _fn
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -128,6 +201,11 @@ BUILTINS: Dict[str, Builtin] = {
     "size": _size,
     "numel": _numel,
     "length": _length,
+    "sum": _make_reduce("sum", np.sum, 0.0),
+    "prod": _make_reduce("prod", np.prod, 1.0),
+    "mean": _make_reduce("mean", _mean_op, float("nan")),
+    "max": _make_extremum("max", np.max, np.argmax, np.maximum),
+    "min": _make_extremum("min", np.min, np.argmin, np.minimum),
 }
 
 
