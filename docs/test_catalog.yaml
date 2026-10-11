@@ -431,3 +431,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.cumsum
+    kind: unit
+    title: cumsum along default/dim
+    features: [libs.cumsum]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cumsum.py
+    status: active
+    env: unit
+

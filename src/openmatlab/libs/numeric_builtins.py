@@ -269,6 +269,18 @@ def _cell(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (CellValue.empty(m, n),)
 
 
+
+def _cumsum(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("cumsum", args, 1, 2)
+    b = _buf("cumsum", args[0])
+    if b.size == 0:
+        return (_wrap(b),)
+    ax = _axis_arg("cumsum", args[1]) if len(args) == 2 else _default_axis(b)
+    if ax >= b.ndim:
+        return (_wrap(b),)
+    return (_wrap(np.cumsum(b, axis=ax)),)
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -277,6 +289,7 @@ BUILTINS: Dict[str, Builtin] = {
     "nan": _nan,
     "NaN": _nan,
     "cell": _cell,
+    "cumsum": _cumsum,
     "size": _size,
     "numel": _numel,
     "length": _length,
