@@ -288,3 +288,20 @@ test_cases:
     impl: tests/unit/test_multi_assign.py::test_eval_multi_return
     status: active
     env: unit
+
+  - id: tc.control_for_sum
+    kind: unit
+    title: for i=1:4 accumulates sum
+    features: [runtime.evaluator, lang.parser]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_control_flow.py::test_eval_for_sum
+    status: active
+    env: unit
+
+  - id: tc.control_if_else
+    kind: unit
+    title: if/else branches
+    features: [runtime.evaluator, lang.parser]
+    impl: tests/unit/test_control_flow.py::test_eval_if_else
+    status: active
+    env: unit

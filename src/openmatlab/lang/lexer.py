@@ -160,9 +160,37 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             keywords = {
                 "function": TokenType.KW_FUNCTION,
                 "end": TokenType.KW_END,
+                "if": TokenType.KW_IF,
+                "else": TokenType.KW_ELSE,
+                "elseif": TokenType.KW_ELSEIF,
+                "for": TokenType.KW_FOR,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
             yield Token(typ, word, start_line, start_col)
+            continue
+
+        # Relational / multi-char before '=' / '<' / '>' / '~'
+        two = ch + peek(1)
+        two_map = {
+            "==": TokenType.REL_EQ,
+            "~=": TokenType.REL_NE,
+            "<=": TokenType.REL_LE,
+            ">=": TokenType.REL_GE,
+        }
+        if two in two_map:
+            yield Token(two_map[two], two, start_line, start_col)
+            i += 2
+            col += 2
+            continue
+        if ch == "<":
+            yield Token(TokenType.REL_LT, ch, start_line, start_col)
+            i += 1
+            col += 1
+            continue
+        if ch == ">":
+            yield Token(TokenType.REL_GT, ch, start_line, start_col)
+            i += 1
+            col += 1
             continue
 
         singles = {

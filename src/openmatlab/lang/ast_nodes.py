@@ -134,5 +134,26 @@ class FunctionDef(AstNode):
     body: Sequence["Stmt"]
 
 
-Stmt = Union[Assign, MultiAssign, ExprStmt, FunctionDef]
+@dataclass(frozen=True)
+class IfBranch(AstNode):
+    """One if/elseif branch: condition + body."""
+
+    condition: Expr
+    body: Sequence["Stmt"]
+
+
+@dataclass(frozen=True)
+class IfStmt(AstNode):
+    branches: Sequence[IfBranch]  # if + elseif
+    else_body: Optional[Sequence["Stmt"]] = None
+
+
+@dataclass(frozen=True)
+class ForStmt(AstNode):
+    var: str
+    iterable: Expr
+    body: Sequence["Stmt"]
+
+
+Stmt = Union[Assign, MultiAssign, ExprStmt, FunctionDef, IfStmt, ForStmt]
 Program = List[Stmt]

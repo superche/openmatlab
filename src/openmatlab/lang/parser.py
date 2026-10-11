@@ -10,7 +10,10 @@ from openmatlab.lang.ast_nodes import (
     ColonExpr,
     Expr,
     ExprStmt,
+    ForStmt,
     FunctionDef,
+    IfBranch,
+    IfStmt,
     IndexExpr,
     MultiAssign,
     MatrixLiteral,
@@ -90,6 +93,10 @@ class Parser:
     def parse_statement(self) -> Stmt:
         if self.current().type == TokenType.KW_FUNCTION:
             return self.parse_function_def()
+        if self.current().type == TokenType.KW_IF:
+            return self.parse_if()
+        if self.current().type == TokenType.KW_FOR:
+            return self.parse_for()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)
@@ -182,12 +189,74 @@ class Parser:
             names.append(self.expect(TokenType.IDENT).value)
         return names
 
+    def parse_if(self) -> IfStmt:
+        self.expect(TokenType.KW_IF)
+        cond = self.parse_expression()
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            pass
+        then_body = self._parse_block(
+            TokenType.KW_ELSEIF, TokenType.KW_ELSE, TokenType.KW_END
+        )
+        branches: List[IfBranch] = [IfBranch(condition=cond, body=tuple(then_body))]
+        while self.current().type == TokenType.KW_ELSEIF:
+            self.advance()
+            c = self.parse_expression()
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+            body = self._parse_block(
+                TokenType.KW_ELSEIF, TokenType.KW_ELSE, TokenType.KW_END
+            )
+            branches.append(IfBranch(condition=c, body=tuple(body)))
+        else_body = None
+        if self.current().type == TokenType.KW_ELSE:
+            self.advance()
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+            else_body = tuple(self._parse_block(TokenType.KW_END))
+        self.expect(TokenType.KW_END)
+        return IfStmt(branches=tuple(branches), else_body=else_body)
+
+    def parse_for(self) -> ForStmt:
+        self.expect(TokenType.KW_FOR)
+        var = self.expect(TokenType.IDENT).value
+        self.expect(TokenType.ASSIGN)
+        iterable = self.parse_expression()
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            pass
+        body = self._parse_block(TokenType.KW_END)
+        self.expect(TokenType.KW_END)
+        return ForStmt(var=var, iterable=iterable, body=tuple(body))
+
+    def _parse_block(self, *end_types: TokenType) -> List[Stmt]:
+        body: List[Stmt] = []
+        ends = set(end_types)
+        while self.current().type not in ends and self.current().type != TokenType.EOF:
+            body.append(self.parse_statement())
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+        return body
+
     def _trailing_suppress(self) -> bool:
         """True if statement ends with ';' before newline/EOF (not inside matrix)."""
         return self.match(TokenType.SEMICOLON) is not None
 
     def parse_expression(self) -> Expr:
-        return self.parse_colon()
+        return self.parse_relational()
+
+    def parse_relational(self) -> Expr:
+        left = self.parse_colon()
+        op = self.match(
+            TokenType.REL_LT,
+            TokenType.REL_LE,
+            TokenType.REL_GT,
+            TokenType.REL_GE,
+            TokenType.REL_EQ,
+            TokenType.REL_NE,
+        )
+        if not op:
+            return left
+        right = self.parse_colon()
+        return BinOp(op=op.value, left=left, right=right)
 
     def parse_colon(self) -> Expr:
         first = self.parse_add()
