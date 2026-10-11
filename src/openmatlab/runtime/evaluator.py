@@ -51,6 +51,8 @@ class Evaluator:
             value = self.eval_expr(stmt.value)
             self.workspace.set(stmt.name, value)
             return value
+        if isinstance(stmt, ast.MultiAssign):
+            return self._eval_multi_assign(stmt)
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
@@ -101,34 +103,78 @@ class Evaluator:
             raise EvalError(f"{ctx}: expected Array, got {type(val).__name__}")
         return val
 
+    def _eval_multi_assign(self, stmt: ast.MultiAssign) -> Value:
+        nargout = len(stmt.names)
+        if nargout < 1:
+            raise EvalError("multi-assign: empty output list")
+        expr = stmt.value
+        if isinstance(expr, ast.IndexExpr):
+            target_expr, arg_exprs = expr.target, list(expr.indices)
+        elif isinstance(expr, ast.CallExpr):
+            target_expr, arg_exprs = expr.func, list(expr.args)
+        else:
+            raise EvalError("multi-assign RHS must be a function call")
+        results = self._invoke_call(target_expr, arg_exprs, nargout=nargout)
+        if len(results) < nargout:
+            raise EvalError(
+                f"multi-assign: expected {nargout} outputs, got {len(results)}"
+            )
+        for name, val in zip(stmt.names, results):
+            self.workspace.set(name, val)
+        return results[0]
+
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
-        # Unbound name(args): builtins / .m functions before indexing
-        if isinstance(target_expr, ast.Name) and not self._name_bound(target_expr.id):
-            n = target_expr.id
-            key = n.lower()
-            if key == "plot":
-                return self._builtin_plot(arg_exprs)
-            if key == "addpath":
-                return self._builtin_addpath(arg_exprs)
-            if key == "which":
-                return self._builtin_which(arg_exprs)
-            try:
-                fn = self.functions.resolve(n)
-            except LookupError as exc:
-                raise EvalError(str(exc)) from exc
-            args = [self.eval_expr(a) for a in arg_exprs]
-            results = fn(args, nargout=1)
-            if not results:
-                return self.numerics.from_nested([])
-            out = results[0]
+        results = self._invoke_call(target_expr, arg_exprs, nargout=1)
+        if results is None:
+            # indexed array path
+            target = self._require_array(self.eval_expr(target_expr), "index")
+            idxs = [
+                self._require_array(self.eval_expr(a), "index") for a in arg_exprs
+            ]
+            return self.numerics.index(target, idxs)
+        if not results:
+            return self.numerics.from_nested([])
+        return results[0]
+
+    def _invoke_call(
+        self,
+        target_expr: ast.Expr,
+        arg_exprs: List[ast.Expr],
+        *,
+        nargout: int,
+    ):
+        """Return output sequence for a function call, or None if indexing."""
+        if not (
+            isinstance(target_expr, ast.Name)
+            and not self._name_bound(target_expr.id)
+        ):
+            if nargout != 1:
+                raise EvalError("multi-assign RHS must be a function call")
+            return None
+        n = target_expr.id
+        key = n.lower()
+        if key == "plot":
+            if nargout != 1:
+                raise EvalError("plot: only one output supported")
+            return (self._builtin_plot(arg_exprs),)
+        if key == "addpath":
+            if nargout != 1:
+                raise EvalError("addpath: only one output supported")
+            return (self._builtin_addpath(arg_exprs),)
+        if key == "which":
+            if nargout != 1:
+                raise EvalError("which: only one output supported")
+            return (self._builtin_which(arg_exprs),)
+        try:
+            fn = self.functions.resolve(n)
+        except LookupError as exc:
+            raise EvalError(str(exc)) from exc
+        args = [self.eval_expr(a) for a in arg_exprs]
+        results = list(fn(args, nargout=nargout))
+        for i, out in enumerate(results):
             if not isinstance(out, Array):
-                raise EvalError(f"{n}: function did not return an Array")
-            return out
-        target = self._require_array(self.eval_expr(target_expr), "index")
-        idxs = [
-            self._require_array(self.eval_expr(a), "index") for a in arg_exprs
-        ]
-        return self.numerics.index(target, idxs)
+                raise EvalError(f"{n}: output {i} is not an Array")
+        return results
 
     def _string_arg(self, expr: ast.Expr, fname: str) -> str:
         from openmatlab.runtime.char_value import CharValue

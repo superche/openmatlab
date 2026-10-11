@@ -45,6 +45,17 @@ class ReplSession:
         for stmt in stmts:
             value = ev.eval_stmt(stmt)
             suppress = getattr(stmt, "suppress", False)
+            from openmatlab.lang.ast_nodes import MultiAssign
+
+            if isinstance(stmt, MultiAssign):
+                if self.display.should_print(suppress):
+                    for name in stmt.names:
+                        self.display.show(
+                            self.session.workspace.get(name), name=name
+                        )
+                # ans = first output (MATLAB-like)
+                self.display.bind_ans(value)
+                continue
             if self.display.should_print(suppress):
                 name = stmt.name if hasattr(stmt, "name") else None
                 self.display.show(value, name=name)

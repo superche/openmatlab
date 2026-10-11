@@ -110,6 +110,15 @@ class Assign(AstNode):
 
 
 @dataclass(frozen=True)
+class MultiAssign(AstNode):
+    """[a, b] = f(...) — multiple outputs from a call."""
+
+    names: Sequence[str]
+    value: Expr
+    suppress: bool = False
+
+
+@dataclass(frozen=True)
 class ExprStmt(AstNode):
     expr: Expr
     suppress: bool = False
@@ -125,5 +134,5 @@ class FunctionDef(AstNode):
     body: Sequence["Stmt"]
 
 
-Stmt = Union[Assign, ExprStmt, FunctionDef]
+Stmt = Union[Assign, MultiAssign, ExprStmt, FunctionDef]
 Program = List[Stmt]

@@ -92,7 +92,7 @@ features:
     name: Parser parse()
     status: partial
     tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix/index/colon/transpose/.* + function defs; eval in runtime.evaluator"
+    notes: "Matrix MVP + function defs + MultiAssign [a,b]=f(...); control-flow later"
 
   - id: lang.matrix_literal
     layer: lang
@@ -163,7 +163,7 @@ features:
     status: partial
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
     tests: [tests/unit/test_evaluator.py]
-    notes: "Matrix MVP + path .m calls; no control-flow stmts yet"
+    notes: "Matrix MVP + .m calls + multi-assign [a,b]=f; no control-flow yet"
 
   # --- numerics ---
   - id: numerics.array_backend
