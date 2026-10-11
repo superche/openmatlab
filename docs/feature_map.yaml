@@ -116,7 +116,7 @@ features:
   - id: lang.switch
     layer: lang
     name: switch / case / otherwise
-    status: partial
+    status: done
     depends_on: [lang.parser, runtime.evaluator]
     notes: "no fall-through; case {a,b} multi-match; scalar/char equality (#148)"
     tests: [tests/unit/test_switch.py, tests/bdd/test_switch_bdd.py]
