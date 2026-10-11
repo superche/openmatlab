@@ -12,7 +12,7 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan), [#63](https://github.com/superche/openmatlab/issues/63) (single-quote char + cells), [#87](https://github.com/superche/openmatlab/issues/87) (cumsum/sort/find), [#102](https://github.com/superche/openmatlab/issues/102) (cell write-back), [#115](https://github.com/superche/openmatlab/issues/115) (array indexed assign), [#126](https://github.com/superche/openmatlab/issues/126) (continue), [#136](https://github.com/superche/openmatlab/issues/136) (return).
+**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan), [#63](https://github.com/superche/openmatlab/issues/63) (single-quote char + cells), [#87](https://github.com/superche/openmatlab/issues/87) (cumsum/sort/find), [#102](https://github.com/superche/openmatlab/issues/102) (cell write-back), [#115](https://github.com/superche/openmatlab/issues/115) (array indexed assign), [#126](https://github.com/superche/openmatlab/issues/126) (continue), [#136](https://github.com/superche/openmatlab/issues/136) (return), [#147](https://github.com/superche/openmatlab/issues/147) (switch).
 Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
 Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md) · [`EPIC-005`](acceptance/EPIC-005.md) · [`EPIC-006`](acceptance/EPIC-006.md) · [`EPIC-007`](acceptance/EPIC-007.md) · [`EPIC-008`](acceptance/EPIC-008.md) · [`EPIC-009`](acceptance/EPIC-009.md).
@@ -25,13 +25,13 @@ What works today:
 - CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test`)
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
-- `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
+- `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
 - Indexed array assignment `A(i)=v` / `A(i,j)=v` (copy-on-write `set_index`)
 - Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan; cumsum/sort/find
 
 Residual non-parity (later): rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
-Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Epic #9 residuals: Issues on closed [#126](https://github.com/superche/openmatlab/issues/126). Epic #10 residuals: Issues on closed [#136](https://github.com/superche/openmatlab/issues/136). Next axis: **`switch`/`case`/`otherwise`** — Epic #11 (absorbs #132).
+Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Epic #9 residuals: Issues on closed [#126](https://github.com/superche/openmatlab/issues/126). Epic #10 residuals: Issues on closed [#136](https://github.com/superche/openmatlab/issues/136). Epic #11 residuals: Issues on [#147](https://github.com/superche/openmatlab/issues/147) (`switch` delivered).
 
 ## Package layout
 
@@ -101,7 +101,7 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-**Not yet:** `switch`, `cellfun`/`string` class,
+**Not yet:** `cellfun`/`string` class,
 scripts without `function`, nested functions, `nargin`/`nargout` specials.
 
 ## Non-goals
