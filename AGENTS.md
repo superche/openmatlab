@@ -24,6 +24,16 @@
 - **禁止**为了让流水线变绿而削弱 / 篡改用例去迁就错误实现。
 - 若需求本身要改：在 **Issue/PR 中写明理由**，同步改 feature map / catalog / Gherkin，再改代码。
 
+## Feature status（done / partial / stub）
+
+写入 `docs/feature_map.yaml` 时必须可辩护（细则见 `docs/PROCESS.md` § Feature status criteria）：
+
+- **stub**：仅有 Protocol/占位或明确 NotImplemented
+- **partial**：MVP 切片已可演示 + 有测试，但非目标完备（须在 `notes` 写清缺口）
+- **done**：对该 feature_id 的**书面验收标准**已全部满足（标准写在 Issue/PROCESS；禁止无标准地把 partial→done）
+
+Epic 关闭后、开下一个 epic 前：必须先做 **docs + feature_map sync chore**（ARCHITECTURE / notes / 状态与 tip 一致）。
+
 ## Epic Done（验收证据强制）
 
 Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：

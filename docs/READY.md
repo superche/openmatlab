@@ -30,6 +30,7 @@ Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope
 - [x] Five-layer QA (features sync YAML, cases+Gherkin, envs, tooling, Issues)
 - [x] Definition of Done in PROCESS + PR checklist
 - [x] Epic Done requires `docs/acceptance/EPIC-NNN.md` (see PROCESS § Epic acceptance)
+- [x] After-epic docs/feature_map sync chore required before next epic (PROCESS)
 - [x] Unit + BDD smoke + coverage threshold configured
 - [x] Inventories load via CLI; catalog validates feature ids
 - [x] Defects → GitHub Issues (`openmatlab defects` / `gh`)

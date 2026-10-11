@@ -112,6 +112,36 @@ In addition to the Issue/PR DoD above:
 
 Example: [`acceptance/EPIC-001.md`](acceptance/EPIC-001.md).
 
+## Feature status criteria
+
+`docs/feature_map.yaml` statuses are **claims**, not vibes. Use:
+
+| Status | Meaning | Promotion rule |
+|--------|---------|----------------|
+| `stub` | Protocol, empty body, or explicit `NotImplementedError` only | Default for new seams |
+| `partial` | MVP slice demonstrable + automated tests; known gaps listed in `notes` | Default after first landing PR |
+| `done` | Every bullet of that feature’s **written acceptance criteria** is true | **Never** flip `partial`→`done` without criteria in an Issue/PR |
+
+### Written criteria (minimum for `done`)
+
+For a given `feature_id`, criteria must name:
+
+1. Observable behaviour (CLI/`-e`/API) or Protocol guarantee
+2. Tests that lock it (`tests/…` or Gherkin)
+3. Explicit non-goals that do **not** block `done`
+
+Example: `lang.parser` may be `done` for “matrix MVP grammar” while strings remain a different feature_id.
+
+## After-epic sync chore (mandatory)
+
+Before opening the **next** epic’s implementation PRs:
+
+1. Epic acceptance evidence merged (`docs/acceptance/EPIC-NNN.md`)
+2. **Chore PR:** `docs/ARCHITECTURE.md` matches tip reality; epic-related `feature_map` **notes** (and statuses only when criteria justify) refreshed
+3. Then create/start the next epic board
+
+This chore is project-management, not optional polish.
+
 ## Branch protection (manual repo settings)
 
 Recommended for `main` (Settings → Branches → Rule):
