@@ -53,8 +53,10 @@ features:
   - id: host.plot_surface
     layer: host
     name: PlotSurface façade
-    status: stub
+    status: partial
     protocols: [openmatlab.host.plot_surface.PlotSurface]
+    tests: [tests/unit/test_plot.py]
+    notes: "HostPlotSurface"
 
   - id: host.repl
     layer: host
@@ -186,21 +188,24 @@ features:
   - id: graphics.backend
     layer: graphics
     name: GraphicsBackend protocol
-    status: stub
+    status: done
     protocols: [openmatlab.graphics.backend.GraphicsBackend]
 
   - id: graphics.matplotlib
     layer: graphics
     name: MatplotlibGraphicsBackend
-    status: stub
+    status: partial
     depends_on: [graphics.backend, host.plot_surface]
+    tests: [tests/unit/test_plot.py]
+    notes: "Agg headless; plot(y)/plot(x,y)"
 
   - id: graphics.plot_mvp
     layer: graphics
     name: plot(x,y) MVP
-    status: planned
+    status: partial
     depends_on: [graphics.matplotlib, runtime.evaluator]
-    tests: [tests/interactive/test_placeholder.py]
+    tests: [tests/unit/test_plot.py, tests/bdd/test_plot_bdd.py]
+    notes: "Builtin plot via IndexExpr; interactive show optional"
 
   # --- libs ---
   - id: libs.toolbox_path

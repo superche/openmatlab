@@ -1,8 +1,8 @@
-"""AST evaluator — Array-first on Session numerics backend."""
+"""AST evaluator — Array-first on Session numerics (+ optional plot surface)."""
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 
 from openmatlab.lang import ast_nodes as ast
 from openmatlab.lang.parser import parse
@@ -11,25 +11,30 @@ from openmatlab.runtime.functions import FunctionResolver
 from openmatlab.runtime.value import Array, Value
 from openmatlab.runtime.workspace import Workspace
 
+if TYPE_CHECKING:
+    from openmatlab.host.plot_surface import PlotSurface
+
 
 class EvalError(Exception):
     pass
 
 
 class Evaluator:
-    """Walk AST against Workspace + ArrayBackend."""
+    """Walk AST against Workspace + ArrayBackend (+ optional PlotSurface)."""
 
     def __init__(
         self,
         workspace: Optional[Workspace] = None,
         functions: Optional[FunctionResolver] = None,
         numerics: Optional[ArrayBackend] = None,
+        plots: Optional[Any] = None,
     ) -> None:
         self.workspace = workspace if workspace is not None else Workspace()
         self.functions = functions if functions is not None else FunctionResolver()
         if numerics is None:
             raise EvalError("Evaluator requires an ArrayBackend (Session.numerics)")
         self.numerics = numerics
+        self.plots = plots
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -80,15 +85,36 @@ class Evaluator:
                 self.eval_expr(expr.operand), conjugate=expr.conjugate
             )
         if isinstance(expr, ast.IndexExpr):
-            target = self.eval_expr(expr.target)
-            idxs = [self.eval_expr(i) for i in expr.indices]
-            return self.numerics.index(target, idxs)
+            return self._eval_call_or_index(expr.target, list(expr.indices))
         if isinstance(expr, ast.CallExpr):
-            # Same surface as indexing for now
-            target = self.eval_expr(expr.func)
-            idxs = [self.eval_expr(a) for a in expr.args]
-            return self.numerics.index(target, idxs)
+            return self._eval_call_or_index(expr.func, list(expr.args))
         raise EvalError(f"Unknown expression: {type(expr)!r}")
+
+    def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Array:
+        # Builtin plot(...) when name unbound
+        if isinstance(target_expr, ast.Name) and target_expr.id.lower() == "plot":
+            if not self._name_bound(target_expr.id):
+                return self._builtin_plot(arg_exprs)
+        target = self.eval_expr(target_expr)
+        idxs = [self.eval_expr(a) for a in arg_exprs]
+        return self.numerics.index(target, idxs)
+
+    def _name_bound(self, name: str) -> bool:
+        try:
+            self.workspace.get(name)
+            return True
+        except KeyError:
+            return False
+
+    def _builtin_plot(self, arg_exprs: List[ast.Expr]) -> Array:
+        if self.plots is None:
+            raise EvalError("plot: no PlotSurface on this Session")
+        args = [self.eval_expr(a) for a in arg_exprs]
+        handle = self.plots.plot(*args)
+        try:
+            return self.numerics.from_scalar(float(handle))
+        except (TypeError, ValueError):
+            return self.numerics.from_scalar(1.0)
 
     def _eval_binop(self, expr: ast.BinOp) -> Array:
         left = self.eval_expr(expr.left)
@@ -102,7 +128,6 @@ class Evaluator:
         if op == "*":
             return n.matmul(left, right)
         if op == "/":
-            # matrix right-divide approx: element-wise for MVP scalars/arrays
             return n.elem_div(left, right)
         if op == ".*":
             return n.elem_mul(left, right)

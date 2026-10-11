@@ -115,13 +115,13 @@ test_cases:
     env: conformance
 
   - id: tc.plot_mvp_smoke
-    kind: interactive
-    title: plot(x,y) smoke (future)
+    kind: unit
+    title: plot(x,y) builtin creates a line (Agg)
     features: [graphics.plot_mvp]
     use_cases: [uc.plot_tweak]
-    impl: null
-    status: planned
-    env: interactive
+    impl: tests/unit/test_plot.py::test_host_surface_and_eval_builtin
+    status: active
+    env: unit
 
   - id: tc.bdd_session_composition
     kind: unit
@@ -210,5 +210,21 @@ test_cases:
     title: Gherkin evaluator smoke
     features: [runtime.evaluator, qa.pytest_bdd]
     impl: tests/bdd/test_evaluator_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.plot_eval_builtin
+    kind: unit
+    title: Session REPL plot(1:4)
+    features: [graphics.plot_mvp, host.plot_surface]
+    impl: tests/unit/test_plot.py::test_session_default_plot_via_repl
+    status: active
+    env: unit
+
+  - id: tc.bdd_plot_mvp
+    kind: unit
+    title: Gherkin plot creates line
+    features: [graphics.plot_mvp, qa.pytest_bdd]
+    impl: tests/bdd/test_plot_bdd.py
     status: active
     env: unit

@@ -36,6 +36,7 @@ class ReplSession:
             workspace=self.session.workspace,
             functions=self.session.functions,
             numerics=self.session.numerics,
+            plots=self.session.plots,
         )
         stmts = parse(source)
         for stmt in stmts:
