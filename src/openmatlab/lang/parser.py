@@ -6,6 +6,7 @@ from typing import List, Optional, Sequence
 
 from openmatlab.lang.ast_nodes import (
     Assign,
+    CellAssign,
     BinOp,
     ColonExpr,
     Expr,
@@ -124,6 +125,17 @@ class Parser:
         if multi is not None:
             return multi
         expr = self.parse_expression()
+        if self.match(TokenType.ASSIGN):
+            if not isinstance(expr, CellIndexExpr):
+                tok = self.current()
+                raise ParseError(
+                    "Indexed assignment only supports cell content c{...} in this MVP",
+                    tok.line,
+                    tok.column,
+                )
+            value = self.parse_expression()
+            suppress = self._trailing_suppress()
+            return CellAssign(target=expr, value=value, suppress=suppress)
         suppress = self._trailing_suppress()
         return ExprStmt(expr=expr, suppress=suppress)
 

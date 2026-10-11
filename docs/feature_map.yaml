@@ -127,6 +127,14 @@ features:
     depends_on: [lang.cell_literal, runtime.cell_value, runtime.function_resolver]
     notes: "Read-only content index; cell(m,n) empty 0x0 doubles (#66) [done per ITER-067]"
     tests: [tests/unit/test_cell_index.py, tests/bdd/test_cell_index_bdd.py]
+
+  - id: lang.cell_assign
+    layer: lang
+    name: Cell content assignment c{i}=v
+    status: partial
+    depends_on: [lang.cell_index, runtime.cell_value]
+    notes: "OOB error no grow; name{...} LHS only (#103)"
+    tests: [tests/unit/test_cell_assign.py, tests/bdd/test_cell_assign_bdd.py]
   - id: lang.parser
     layer: lang
     name: Parser parse()

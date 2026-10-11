@@ -458,3 +458,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.cell_assign
+    kind: unit
+    title: cell content assignment
+    features: [lang.cell_assign]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cell_assign.py
+    status: active
+    env: unit
+

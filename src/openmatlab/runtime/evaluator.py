@@ -55,6 +55,8 @@ class Evaluator:
             value = self.eval_expr(stmt.value)
             self.workspace.set(stmt.name, value)
             return value
+        if isinstance(stmt, ast.CellAssign):
+            return self._eval_cell_assign(stmt)
         if isinstance(stmt, ast.MultiAssign):
             return self._eval_multi_assign(stmt)
         if isinstance(stmt, ast.IfStmt):
@@ -132,6 +134,7 @@ class Evaluator:
         return CellValue(rows=tuple(rows))
 
 
+
     def _eval_cell_index(self, expr: "ast.CellIndexExpr") -> Value:
         from openmatlab.runtime.cell_value import CellValue
 
@@ -140,40 +143,72 @@ class Evaluator:
             raise EvalError(
                 f"cell index: expected cell, got {type(target).__name__}"
             )
-        idxs = [self.eval_expr(i) for i in expr.indices]
-        if not idxs:
-            raise EvalError("cell index: missing indices")
-        rows, cols = target.shape
-        if rows == 0 and cols == 0:
-            raise EvalError("cell index: empty cell")
+        i0, j0 = self._cell_subscripts(target, list(expr.indices), "cell index")
+        return target.get(i0, j0)
 
-        def _as_int(v: Value, label: str) -> int:
-            arr = self._require_array(v, label)
+    def _eval_cell_assign(self, stmt: "ast.CellAssign") -> Value:
+        from openmatlab.runtime.cell_value import CellValue
+
+        target_expr = stmt.target.target
+        if not isinstance(target_expr, ast.Name):
+            raise EvalError("cell assign: LHS must be name{...} in this MVP")
+        name = target_expr.id
+        try:
+            cell = self.workspace.get(name)
+        except KeyError as exc:
+            raise EvalError(f"Undefined variable: {name}") from exc
+        if not isinstance(cell, CellValue):
+            raise EvalError(
+                f"cell assign: expected cell, got {type(cell).__name__}"
+            )
+        i0, j0 = self._cell_subscripts(
+            cell, list(stmt.target.indices), "cell assign"
+        )
+        value = self.eval_expr(stmt.value)
+        self.workspace.set(name, cell.with_set(i0, j0, value))
+        return value
+
+    def _cell_subscripts(
+        self, cell: "object", idx_exprs: list, label: str
+    ) -> tuple:
+        """Return 0-based (i, j) for 1-based linear or (i,j) indices."""
+        from openmatlab.runtime.cell_value import CellValue
+
+        assert isinstance(cell, CellValue)
+        idxs = [self.eval_expr(i) for i in idx_exprs]
+        if not idxs:
+            raise EvalError(f"{label}: missing indices")
+        rows, cols = cell.shape
+        if rows == 0 and cols == 0:
+            raise EvalError(f"{label}: empty cell")
+
+        def _as_int(v: Value, what: str) -> int:
+            arr = self._require_array(v, what)
             if not arr.is_scalar():
-                raise EvalError(f"{label}: expected scalar index")
+                raise EvalError(f"{what}: expected scalar index")
             x = float(arr.backend_buffer().reshape(-1)[0])
             if x != int(x) or x < 1:
-                raise EvalError(f"{label}: indices must be positive integers")
+                raise EvalError(f"{what}: indices must be positive integers")
             return int(x)
 
         if len(idxs) == 1:
-            k = _as_int(idxs[0], "cell index")
-            n = target.numel()
+            k = _as_int(idxs[0], label)
+            n = cell.numel()
             if k > n:
-                raise EvalError(f"cell index: linear index {k} exceeds numel ({n})")
-            # column-major linear → (i,j) 0-based
-            i0 = (k - 1) % rows
-            j0 = (k - 1) // rows
-            return target.get(i0, j0)
+                raise EvalError(
+                    f"{label}: linear index {k} exceeds numel ({n})"
+                )
+            return (k - 1) % rows, (k - 1) // rows
         if len(idxs) == 2:
-            i = _as_int(idxs[0], "cell index")
-            j = _as_int(idxs[1], "cell index")
+            i = _as_int(idxs[0], label)
+            j = _as_int(idxs[1], label)
             if i > rows or j > cols:
                 raise EvalError(
-                    f"cell index: ({i},{j}) out of bounds for {rows}x{cols} cell"
+                    f"{label}: ({i},{j}) out of bounds for {rows}x{cols} cell"
                 )
-            return target.get(i - 1, j - 1)
-        raise EvalError("cell index: only 1 or 2 subscripts supported")
+            return i - 1, j - 1
+        raise EvalError(f"{label}: only 1 or 2 subscripts supported")
+
 
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):
