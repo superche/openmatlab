@@ -176,5 +176,48 @@ class NumPyArrayBackend:
             return NDArrayValue(picked.reshape(-1, 1))
         return NDArrayValue(picked.reshape(np.asarray(ind).shape))
 
+
+    def set_index(self, a: Array, indices: Sequence[Array], value: Array) -> Array:
+        """1-based copy-on-write set of a single element (scalar value)."""
+        aa = _as_nd(a)
+        vv = _as_nd(value)
+        vbuf = vv.backend_buffer()
+        if vbuf.size != 1:
+            raise NumericsError("set_index: RHS must be scalar in this MVP")
+        scalar = float(vbuf.reshape(-1)[0])
+        data = aa.backend_buffer().copy()
+        if len(indices) == 1:
+            # linear column-major
+            ind = _as_nd(indices[0]).backend_buffer()
+            if ind.size != 1:
+                raise NumericsError("set_index: linear index must be scalar")
+            k = int(ind.reshape(-1)[0])
+            if k != float(ind.reshape(-1)[0]) or k < 1:
+                raise NumericsError("set_index: indices must be positive integers")
+            flat = self._np.asarray(data, order="F").reshape(-1, order="F").copy()
+            if k > flat.size:
+                raise NumericsError(
+                    f"set_index: linear index {k} exceeds numel ({flat.size})"
+                )
+            flat[k - 1] = scalar
+            out = flat.reshape(data.shape, order="F").copy()
+            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        if len(indices) == 2:
+            py_idx = []
+            for ind in indices:
+                buf = _as_nd(ind).backend_buffer()
+                if buf.size != 1:
+                    raise NumericsError("set_index: subscripts must be scalar")
+                i = int(buf.reshape(-1)[0])
+                if i != float(buf.reshape(-1)[0]) or i < 1:
+                    raise NumericsError("set_index: indices must be positive integers")
+                py_idx.append(i - 1)
+            try:
+                data[tuple(py_idx)] = scalar
+            except IndexError as exc:
+                raise NumericsError(f"set_index: {exc}") from exc
+            return NDArrayValue(data)
+        raise NumericsError("set_index: only 1 or 2 subscripts supported")
+
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()

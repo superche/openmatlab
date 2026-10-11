@@ -136,6 +136,22 @@ features:
     notes: "OOB error no grow; name{...} LHS only (#103) [done per ITER-105]"
     tests: [tests/unit/test_cell_assign.py, tests/bdd/test_cell_assign_bdd.py]
 
+
+  - id: lang.array_assign
+    layer: lang
+    name: Indexed array assignment A(i)=v
+    status: partial
+    depends_on: [lang.parser, numerics.numpy_backend]
+    notes: "A(i,j)/A(k)=scalar; COW set_index; OOB error (#116)"
+    tests: [tests/unit/test_array_assign.py, tests/bdd/test_array_assign_bdd.py]
+
+  - id: numerics.array_set
+    layer: numerics
+    name: ArrayBackend.set_index
+    status: partial
+    depends_on: [numerics.numpy_backend]
+    notes: "1-based copy-on-write element set (#116)"
+    tests: [tests/unit/test_array_assign.py]
   - id: lang.cell_paren_index
     layer: lang
     name: Parentheses cell indexing c(i) → sub-cell

@@ -43,3 +43,10 @@ class ArrayBackend(Protocol):
     def index(self, a: Array, indices: Sequence[Array]) -> Array: ...
 
     def raw(self, a: Array) -> Any: ...
+
+    def set_index(
+        self, a: Array, indices: Sequence[Array], value: Array
+    ) -> Array:
+        """1-based set; return new Array (copy-on-write)."""
+        ...
+
