@@ -228,3 +228,20 @@ test_cases:
     impl: tests/bdd/test_plot_bdd.py
     status: active
     env: unit
+
+  - id: tc.toolbox_find_mfile
+    kind: unit
+    title: ToolboxPath.find_mfile locates name.m
+    features: [libs.toolbox_path]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_toolbox_path.py::test_find_mfile
+    status: active
+    env: unit
+
+  - id: tc.resolver_path_hit
+    kind: unit
+    title: FunctionResolver.which finds path file
+    features: [runtime.function_resolver, libs.mfile_loading]
+    impl: tests/unit/test_toolbox_path.py::test_resolver_which_and_resolve_stub
+    status: active
+    env: unit
