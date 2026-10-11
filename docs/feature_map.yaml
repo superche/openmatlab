@@ -513,6 +513,15 @@ features:
     notes: "Epic #26 / #307; coverage for set_index empty+logical"
     tests: [tests/unit/test_logical_delete.py, tests/bdd/test_logical_delete_bdd.py]
 
+
+  - id: runtime.logical_index_2d
+    layer: runtime
+    name: 2-D logical indexing
+    status: done
+    depends_on: [runtime.logical_index]
+    notes: "A(L,:), A(:,L), A(L1,L2) read/assign (#317)"
+    tests: [tests/unit/test_logical_index_2d.py, tests/bdd/test_logical_index_2d_bdd.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)
