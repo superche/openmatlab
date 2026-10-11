@@ -39,11 +39,21 @@ def test_find_subscripts_and_values():
 
 
 def test_find_empty():
+    """MATLAB: find([0 0]) → 1×0; find([]) → 0×1.
+
+    Requirement correction (#196): prior assertions expected 0×1 for the row
+    case (non-MATLAB). Explicitly approved by the user.
+    """
     s = _ws("i = find([0 0]); j = find([]);")
-    assert _g(s, "i").shape[0] == 0
-    assert _g(s, "j").shape[0] == 0
+    assert _g(s, "i").shape == (1, 0)
+    assert _g(s, "j").shape == (0, 1)
 
 
-def test_find_skips_nan():
+def test_find_includes_nan():
+    """MATLAB: NaN is nonzero — find([NaN 0 5]) → [1 3].
+
+    Requirement correction (#196): prior test_find_skips_nan expected [3] only.
+    Explicitly approved by the user.
+    """
     s = _ws("i = find([nan() 0 5]);")
-    assert list(_g(s, "i").reshape(-1)) == [3]
+    assert list(_g(s, "i").reshape(-1)) == [1, 3]
