@@ -521,3 +521,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.index_end
+    kind: unit
+    title: end in array indexing read/assign
+    features: [lang.index_end]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_index_end.py
+    status: active
+    env: unit
+
