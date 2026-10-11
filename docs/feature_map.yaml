@@ -33,7 +33,7 @@ features:
     spec: docs/QA.md
     tests: [tests/unit/test_cli_qa.py]
     cases: [tc.cli_features]
-    notes: "status/features/cases/defects/test; -e and REPL evaluate"
+    notes: "status/features/cases/defects/test; -e evaluates; REPL default"
 
   - id: host.cli.version
     layer: host
@@ -48,7 +48,7 @@ features:
     spec: docs/ARCHITECTURE.md
     tests: [tests/unit/test_evaluator.py]
     protocols: [openmatlab.host.display.DisplayPolicy]
-    notes: "ConsoleDisplay"
+    notes: "ConsoleDisplay: ans, ';', pretty-print matrices"
 
   - id: host.plot_surface
     layer: host
@@ -56,14 +56,14 @@ features:
     status: partial
     protocols: [openmatlab.host.plot_surface.PlotSurface]
     tests: [tests/unit/test_plot.py]
-    notes: "HostPlotSurface"
+    notes: "HostPlotSurface → MatplotlibGraphicsBackend"
 
   - id: host.repl
     layer: host
     name: Interactive REPL session
     status: partial
     tests: [tests/unit/test_evaluator.py]
-    notes: "run_line wired; bare openmatlab enters REPL"
+    notes: "run_line + bind_runtime; bare openmatlab enters REPL"
 
   # --- lang ---
   - id: lang.tokens_reserved
@@ -85,14 +85,14 @@ features:
     name: Lexer tokenize()
     status: partial
     tests: [tests/unit/test_lexer.py]
-    notes: "Matrix subset; no strings/cells yet"
+    notes: "Matrix MVP tokens + KW_FUNCTION/KW_END; no strings/cells yet"
 
   - id: lang.parser
     layer: lang
     name: Parser parse()
     status: partial
     tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix/index/colon/transpose/.* ; no evaluator"
+    notes: "Matrix/index/colon/transpose/.* + function defs; eval in runtime.evaluator"
 
   - id: lang.matrix_literal
     layer: lang
@@ -100,13 +100,14 @@ features:
     status: partial
     tests: [tests/unit/test_parser_matrix.py]
     depends_on: [lang.lexer, lang.parser]
-    notes: "AST only; Array build is #4/#2 consumer"
+    notes: "Parsed + evaluated to Array via NumPy backend"
 
   - id: lang.indexing_colon
     layer: lang
     name: Indexing A(i,j) and colon expressions
     status: partial
     depends_on: [lang.parser]
+    notes: "Parsed IndexExpr/ColonExpr; evaluated on ArrayBackend"
     tests: [tests/unit/test_parser_matrix.py]
 
   - id: lang.elementwise_ops
@@ -115,7 +116,7 @@ features:
     status: partial
     depends_on: [lang.parser]
     tests: [tests/unit/test_parser_matrix.py, tests/bdd/test_matrix_parser_bdd.py]
-    notes: "Parsed as BinOp; eval semantics in #4"
+    notes: "Parsed + evaluated; * matmul vs .* ./ .^"
 
   - id: lang.function_def
     layer: lang
@@ -123,7 +124,7 @@ features:
     status: partial
     depends_on: [lang.parser]
     tests: [tests/unit/test_mfile_functions.py]
-    notes: "KW_FUNCTION/KW_END; single/multi outs"
+    notes: "Parsed FunctionDef; loaded from .m via FunctionResolver"
 
   # --- runtime ---
   - id: runtime.value_array_protocol
@@ -139,7 +140,7 @@ features:
     name: Workspace base + frames
     status: partial
     tests: [tests/unit/test_architecture.py]
-    notes: "push/pop/get/set work; unused by evaluator"
+    notes: "push/pop/get/set; .m calls use fresh Workspace"
 
   - id: runtime.function_resolver
     layer: runtime
@@ -147,14 +148,14 @@ features:
     status: partial
     protocols: [openmatlab.runtime.functions.CallableFunction]
     tests: [tests/unit/test_toolbox_path.py, tests/unit/test_mfile_functions.py]
-    notes: "loads/caches .m callables via bind_runtime"
+    notes: "builtins → find_mfile → parse_mfile/MFileCallable cache"
 
   - id: runtime.session
     layer: runtime
     name: Session composition root
     status: partial
     tests: [tests/unit/test_architecture.py, tests/unit/test_evaluator.py]
-    notes: "create_default wires NumPy + ConsoleDisplay"
+    notes: "create_default wires NumPy + ConsoleDisplay + Matplotlib Agg"
 
   - id: runtime.evaluator
     layer: runtime
@@ -162,7 +163,7 @@ features:
     status: partial
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
     tests: [tests/unit/test_evaluator.py]
-    notes: "Matrix MVP; no function files yet"
+    notes: "Matrix MVP + path .m calls; no control-flow stmts yet"
 
   # --- numerics ---
   - id: numerics.array_backend
@@ -178,7 +179,7 @@ features:
     status: partial
     depends_on: [numerics.array_backend, runtime.value_array_protocol]
     tests: [tests/unit/test_numpy_backend.py, tests/bdd/test_array_numpy_bdd.py]
-    notes: "Core ops live; complex/sparse later"
+    notes: "MVP ops: literal/matmul/elem/index/colon/transpose; complex/sparse later"
 
   - id: numerics.array_value
     layer: numerics
@@ -186,7 +187,7 @@ features:
     status: partial
     depends_on: [runtime.value_array_protocol, numerics.numpy_backend]
     tests: [tests/unit/test_numpy_backend.py]
-    notes: "NDArrayValue in numerics/; scalar as 1x1"
+    notes: "NDArrayValue; scalar as 1x1; LSP vs Array protocol"
 
   # --- graphics ---
   - id: graphics.backend
@@ -201,7 +202,7 @@ features:
     status: partial
     depends_on: [graphics.backend, host.plot_surface]
     tests: [tests/unit/test_plot.py]
-    notes: "Agg headless; plot(y)/plot(x,y)"
+    notes: "Agg headless default; plot(y)/plot(x,y); interactive later"
 
   - id: graphics.plot_mvp
     layer: graphics
@@ -209,14 +210,14 @@ features:
     status: partial
     depends_on: [graphics.matplotlib, runtime.evaluator]
     tests: [tests/unit/test_plot.py, tests/bdd/test_plot_bdd.py]
-    notes: "Builtin plot via IndexExpr; interactive show optional"
+    notes: "Builtin plot via unbound name; returns scalar 1 (MVP)"
 
   # --- libs ---
   - id: libs.toolbox_path
     layer: libs
     name: ToolboxPath addpath / find_mfile
     status: partial
-    notes: "find_mfile locates name.m; .m eval still TBD"
+    notes: "addpath/rmpath/find_mfile; language addpath still missing"
     tests: [tests/unit/test_toolbox_path.py]
 
   - id: libs.mfile_loading
@@ -224,7 +225,7 @@ features:
     name: Load .m functions from path
     status: partial
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
-    notes: "parse_mfile + MFileCallable; nested functions N/A"
+    notes: "parse_mfile + MFileCallable; nested/nargin N/A"
     tests: [tests/unit/test_mfile_functions.py]
 
   # --- qa ---

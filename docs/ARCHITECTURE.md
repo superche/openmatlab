@@ -12,80 +12,90 @@ are allowed.
 
 ## Stage
 
-**Architecture stage (v0.0.2):** package seams, Protocols/ABCs, stubs, and
-reserved grammar/AST forms. **Language evaluation is intentionally incomplete.**
-The old scalar `float`-dict evaluator was **removed** so it cannot steer design.
+**Post-MVP (v0.0.2+):** Epic [#1](https://github.com/superche/openmatlab/issues/1) delivered the calibrated fill order.
+Seams remain Protocol-first; language evaluation is a **matrix MVP**, not full MATLAB.
+
+Acceptance evidence: [`docs/acceptance/EPIC-001.md`](acceptance/EPIC-001.md).
+
+What works today:
+
+- Concrete `NDArrayValue` + `NumPyArrayBackend` (scalar = 1×1)
+- Lexer/parser: matrix literals, indexing, colon, transpose, `*` matmul vs `.* ./ .^`, `function`/`end`
+- `Evaluator` on `Session` + `ConsoleDisplay` (`;` suppress, `ans`)
+- CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test`)
+- Plot MVP: builtin `plot` → `PlotSurface` → Matplotlib **Agg** (headless)
+- `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
+
+Explicit non-parity (next epics): language `addpath`/`which`, multi-return `[a,b]=f()`, control flow beyond `function`/`end`, interactive (non-Agg) plot, rich toolboxes.
 
 ## Package layout
 
 ```
 src/openmatlab/
   host/           # workbench shell
-    cli.py          thin CLI (--status / version; no eval)
+    cli.py          -e / REPL / QA subcommands
     repl.py         ReplSession → runtime.Session
     display.py      DisplayPolicy (semicolon suppress, ans, pretty-print)
     plot_surface.py PlotSurface → graphics backend
   lang/           # language front-end
-    tokens.py       TokenType incl. reserved matrix grammar
-    ast_nodes.py    AST + MatrixLiteral/Index/Colon/Transpose/FunctionDef
-    lexer.py        stub (NotImplementedError)
-    parser.py       stub (NotImplementedError)
+    tokens.py       TokenType (matrix + KW_FUNCTION / KW_END)
+    ast_nodes.py    AST incl. MatrixLiteral / Index / Colon / FunctionDef
+    lexer.py        tokenize() — matrix MVP subset
+    parser.py       parse() — matrix MVP + function defs
   runtime/        # execution model
-    value.py        Value / Array protocols (scalar = 1×1)
+    value.py        Value / Array protocols
     workspace.py    base + nested frames
-    functions.py    FunctionResolver (builtins → path → .m)
-    evaluator.py    stub (no float-dict guts)
-    session.py      Session composition root
+    functions.py    FunctionResolver + MFileCallable / parse_mfile
+    evaluator.py    AST evaluator (Array-first)
+    session.py      Session composition root (create_default wires backends)
   numerics/       # array ops behind Array
     backend.py      ArrayBackend protocol
-    numpy_backend.py placeholder stub
+    numpy_backend.py NumPyArrayBackend
+    ndarray_value.py NDArrayValue
   graphics/       # plotting backends
     backend.py      GraphicsBackend protocol
-    matplotlib_backend.py placeholder stub
-  libs/           # toolboxes later
-    path.py         ToolboxPath (addpath / find_mfile stub)
+    matplotlib_backend.py MatplotlibGraphicsBackend (Agg default)
+  libs/           # path / toolboxes
+    path.py         ToolboxPath (addpath / find_mfile)
+  qa/             # feature_map / catalog / defects→gh bridges
 ```
 
 ## Layer diagram
 
 ```
-Host (CLI/REPL) ── DisplayPolicy ──► pretty-print / ans / ';' suppress
+Host (CLI -e / REPL / QA)
        │
-       ├── PlotSurface ──► GraphicsBackend (matplotlib stub)
-       │
-       └── Session ── Workspace + FunctionResolver + ToolboxPath (+ numerics/graphics backends)
-              │              │
-              │              └── ArrayBackend (NumPy stub)
+       ├── DisplayPolicy ──► pretty-print / ans / ';' suppress
+       ├── PlotSurface ──► GraphicsBackend (Matplotlib Agg MVP)
+       └── Session ── Workspace + FunctionResolver + ToolboxPath
+              │              + ArrayBackend + optional graphics
               ▼
-           Evaluator (stub) ◄── lang.parser → AST
+           Evaluator ◄── lang.parser → AST
+              │
+              └── unbound name(args) → builtins / .m on path
 ```
 
 ## Critical interfaces
 
 | Seam | Role |
 |------|------|
-| `Value` / `Array` | Array-first runtime values; no primary `dict[str, float]` |
-| `Workspace` | Base + call frames |
-| `FunctionResolver` + `ToolboxPath` | builtins → path → `.m` |
-| `DisplayPolicy` | Interactive display; `Assign/ExprStmt.suppress` |
-| `PlotSurface` / `GraphicsBackend` | Interactive plotting |
-| `ArrayBackend` | matmul / element-wise / literals |
-| `Session` | Wires the above for one workbench instance |
+| `Value` / `Array` | Array-first runtime values; scalar as 1×1 |
+| `Workspace` | Base + call frames (`.m` calls use a fresh workspace) |
+| `FunctionResolver` + `ToolboxPath` | builtins → path → `.m` load/eval |
+| `DisplayPolicy` | Interactive display; `Assign`/`ExprStmt.suppress` |
+| `PlotSurface` / `GraphicsBackend` | Plotting (Agg MVP; interactive later) |
+| `ArrayBackend` | matmul / element-wise / literals / index / colon |
+| `Session` | Composition root (`create_default` wires NumPy + display + plot) |
 
-## Reserved language forms (not yet parsed)
+## Language coverage (MVP)
 
-`TokenType` / AST reserve: `[ ]`, `.* ./ .^`, `\`, `'`, colon, comma,
-relational ops, `function` / `if` / `for` / `while` / `end`,
-`MatrixLiteral`, `IndexExpr`, `ColonExpr`, `TransposeExpr`, `CallExpr`,
-`FunctionDef`. Statement nodes carry `suppress: bool` for `;` display policy.
+**Parsed + evaluated:** numbers, names, `+ - * /` and `.* ./ .^`, unary `±`,
+`[rows]`, `A(i,j)`, `a:b` / `a:s:b`, `A'` / `A.'`, assignments, `;` suppress,
+`function [outs]=name(ins) … end` in `.m` files on the path.
 
-## MVP implementation order (after architecture)
-
-1. Concrete `Array` + `NumPyArrayBackend`
-2. Lexer/parser for matrix literals, indexing, colon, `.*`, `*` matmul
-3. Evaluator on `Session` + `DisplayPolicy`
-4. Plot MVP via `PlotSurface` + Matplotlib
-5. `function` files + path lookup → toolboxes
+**Not yet:** strings/cells, `if`/`for`/`while`, language-level `addpath`/`which`,
+multi-assign `[a,b]=f(…)`, scripts without `function`, nested functions,
+`nargin`/`nargout` specials.
 
 ## Non-goals
 
@@ -95,29 +105,23 @@ relational ops, `function` / `if` / `for` / `while` / `end`,
 - Simulink-class block diagrams (far future / out of scope near-term)
 - General software-eng IDE platform
 
-## Adversarial checklist (architecture)
+## Adversarial checklist
 
 | Prior risk | Structural mitigation |
 |------------|----------------------|
-| `float` env | Deleted; `Value`/`Array` protocols |
-| `*` vs `.*` | `STAR` + reserved `DOT_*` tokens |
-| Matrix syntax as “library” | Reserved AST + tokens in `lang` |
+| `float` env | Deleted; `Value`/`Array` + `NDArrayValue` |
+| `*` vs `.*` | Distinct tokens + evaluator ops |
+| Matrix syntax as “library” | First-class `lang` AST + parser |
 | `;` display | `suppress` on stmts + `DisplayPolicy` |
-| Flat dict | `Workspace` frames |
-| No plot seam | `PlotSurface` + `GraphicsBackend` |
-| No path/functions | `FunctionResolver` + `ToolboxPath` |
-| No composition root | `runtime.Session` |
+| Flat dict | `Workspace` frames; `.m` isolated WS |
+| No plot seam | `PlotSurface` + Matplotlib backend |
+| No path/functions | `FunctionResolver` + `ToolboxPath` + `MFileCallable` |
+| No composition root | `runtime.Session.create_default` |
+| Stale “architecture stage” docs | This file + epic acceptance + feature_map sync chore |
 
 ## QA system (five layers, off-the-shelf preferred)
 
-See `docs/QA.md`:
+See `docs/QA.md`. After each epic: acceptance evidence + **docs/feature_map sync chore**
+before the next epic (`docs/PROCESS.md`).
 
-1. Features — `docs/feature_map.yaml` → `openmatlab features`
-2. Cases — pytest + `docs/test_catalog.yaml` → `openmatlab cases`
-3. Environments — `tests/{unit,conformance,interactive}` (Playwright/Selenium only for future web UI)
-4. Tooling — pytest · coverage · gh → `openmatlab test`
-5. Defects — **GitHub Issues** canonical → `gh issue` / `openmatlab defects`
-
-Also: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.
-
-R&D loop / DoD: `docs/PROCESS.md`. CI: `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`).
+Status vocabulary (`done` / `partial` / `stub`): see PROCESS § Feature status criteria.
