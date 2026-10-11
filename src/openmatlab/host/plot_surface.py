@@ -11,6 +11,8 @@ class PlotSurface(Protocol):
 
     def close(self, handle: Optional[object] = None) -> None: ...
 
+    def show(self) -> None: ...
+
 
 class StubPlotSurface:
     def __init__(self, backend: Any = None) -> None:
@@ -21,6 +23,9 @@ class StubPlotSurface:
 
     def close(self, handle: Optional[object] = None) -> None:
         raise NotImplementedError("PlotSurface.close: no GraphicsBackend wired")
+
+    def show(self) -> None:
+        raise NotImplementedError("PlotSurface.show: no GraphicsBackend wired")
 
 
 class HostPlotSurface:
@@ -34,3 +39,8 @@ class HostPlotSurface:
 
     def close(self, handle: Optional[object] = None) -> None:
         self._backend.close(handle)
+
+    def show(self) -> None:
+        show = getattr(self._backend, "show", None)
+        if callable(show):
+            show()

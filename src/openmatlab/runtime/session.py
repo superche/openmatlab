@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import os
 from typing import Any, Optional
 
 from openmatlab.host.display import ConsoleDisplay, DisplayPolicy, NullDisplay
@@ -11,6 +12,18 @@ from openmatlab.libs.path import ToolboxPath
 from openmatlab.runtime.functions import FunctionResolver
 from openmatlab.runtime.workspace import Workspace
 
+
+
+def resolve_interactive_plots(explicit: Optional[bool] = None) -> bool:
+    """Interactive Matplotlib when requested and not running under CI."""
+    if explicit is not None:
+        return bool(explicit)
+    if os.environ.get("CI", "").lower() in ("1", "true", "yes"):
+        return False
+    if os.environ.get("GITHUB_ACTIONS", "").lower() in ("1", "true", "yes"):
+        return False
+    flag = os.environ.get("OPENMATLAB_PLOT_INTERACTIVE", "").lower()
+    return flag in ("1", "true", "yes", "on")
 
 @dataclass
 class Session:
@@ -32,8 +45,14 @@ class Session:
             self.display.workspace = self.workspace
 
     @classmethod
-    def create_default(cls) -> "Session":
-        """Wire NumPy + ConsoleDisplay + Matplotlib plot surface when available."""
+    def create_default(
+        cls, *, interactive_plots: Optional[bool] = None
+    ) -> "Session":
+        """Wire NumPy + ConsoleDisplay + Matplotlib plot surface when available.
+
+        interactive_plots: explicit override; else OPENMATLAB_PLOT_INTERACTIVE
+        unless CI/GITHUB_ACTIONS (always Agg in CI).
+        """
         numerics = None
         try:
             from openmatlab.numerics.numpy_backend import NumPyArrayBackend
@@ -42,12 +61,13 @@ class Session:
         except ImportError:
             pass
 
+        interactive = resolve_interactive_plots(interactive_plots)
         graphics = None
         plots: PlotSurface = StubPlotSurface()
         try:
             from openmatlab.graphics.matplotlib_backend import MatplotlibGraphicsBackend
 
-            graphics = MatplotlibGraphicsBackend(interactive=False)
+            graphics = MatplotlibGraphicsBackend(interactive=interactive)
             plots = HostPlotSurface(graphics)
         except ImportError:
             pass

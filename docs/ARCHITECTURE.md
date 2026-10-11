@@ -23,7 +23,7 @@ What works today:
 - Lexer/parser: matrix literals, indexing, colon, transpose, `*` matmul vs `.* ./ .^`, `function`/`end`
 - `Evaluator` on `Session` + `ConsoleDisplay` (`;` suppress, `ans`)
 - CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test`)
-- Plot MVP: builtin `plot` → `PlotSurface` → Matplotlib **Agg** (headless)
+- Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 
 Explicit non-parity (next epics): language `addpath`/`which`, multi-return `[a,b]=f()`, control flow beyond `function`/`end`, interactive (non-Agg) plot, rich toolboxes.

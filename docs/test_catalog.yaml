@@ -305,3 +305,12 @@ test_cases:
     impl: tests/unit/test_control_flow.py::test_eval_if_else
     status: active
     env: unit
+
+  - id: tc.interactive_plot_policy
+    kind: unit
+    title: Agg default; CI blocks interactive; show no-op
+    features: [graphics.plot_mvp, graphics.matplotlib, host.plot_surface]
+    use_cases: [uc.plot_tweak]
+    impl: tests/unit/test_interactive_plot.py
+    status: active
+    env: unit
