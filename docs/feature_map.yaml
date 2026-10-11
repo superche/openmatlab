@@ -119,6 +119,14 @@ features:
     depends_on: [runtime.evaluator]
     notes: "2-D Value grid; ConsoleDisplay summary (#65)"
     tests: [tests/unit/test_cell_literal.py]
+
+  - id: lang.cell_index
+    layer: lang
+    name: Cell content indexing c{i} / c{i,j} + cell()
+    status: partial
+    depends_on: [lang.cell_literal, runtime.cell_value, runtime.function_resolver]
+    notes: "Read-only content index; cell(m,n) empty 0x0 doubles (#66)"
+    tests: [tests/unit/test_cell_index.py, tests/bdd/test_cell_index_bdd.py]
   - id: lang.parser
     layer: lang
     name: Parser parse()

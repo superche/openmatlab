@@ -58,6 +58,14 @@ class MatrixLiteral(AstNode):
 
 
 @dataclass(frozen=True)
+class CellIndexExpr(AstNode):
+    """Content indexing: target{i} or target{i,j}."""
+
+    target: "Expr"
+    indices: Sequence["Expr"]
+
+
+@dataclass(frozen=True)
 class IndexExpr(AstNode):
     """Reserved: target(i, j, ...)"""
 
@@ -99,6 +107,7 @@ Expr = Union[
     MatrixLiteral,
     CellLiteral,
     IndexExpr,
+    CellIndexExpr,
     ColonExpr,
     TransposeExpr,
     CallExpr,

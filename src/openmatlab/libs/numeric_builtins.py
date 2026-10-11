@@ -260,6 +260,15 @@ def _mod(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(out),)
 
 
+
+def _cell(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """cell / cell(n) / cell(m,n) — empty cells of 0x0 doubles."""
+    from openmatlab.runtime.cell_value import CellValue
+
+    m, n = _shape2("cell", args)
+    return (CellValue.empty(m, n),)
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -267,6 +276,7 @@ BUILTINS: Dict[str, Builtin] = {
     "linspace": _linspace,
     "nan": _nan,
     "NaN": _nan,
+    "cell": _cell,
     "size": _size,
     "numel": _numel,
     "length": _length,
