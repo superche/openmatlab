@@ -41,8 +41,10 @@ def test_assign_nested_cell():
     assert float(inner.get(0, 0).backend_buffer().reshape(-1)[0]) == 9
 
 
-def test_assign_oob():
+def test_assign_oob_grows():
+    """EPIC-021 / #108: OOB c{k}= grows cell (was error before)."""
     s = Session.create_default()
-    ReplSession(s).run_line("c = {1, 2};")
-    with pytest.raises(EvalError, match="exceeds|out of bounds"):
-        ReplSession(s).run_line("c{5} = 1;")
+    ReplSession(s).run_line("c = {1, 2}; c{5} = 1;")
+    c = s.workspace.get("c")
+    assert c.shape == (1, 5)
+    assert float(c.get(0, 4).backend_buffer().reshape(-1)[0]) == 1
