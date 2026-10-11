@@ -377,3 +377,21 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.elfun
+    kind: unit
+    title: elementwise math incl. MATLAB round/mod and real-domain errors
+    features: [libs.elfun]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_elfun.py
+    status: active
+    env: unit
+
+  - id: tc.matrix_sign_elements
+    kind: unit
+    title: "[a -b] splits elements inside brackets — bug #51"
+    features: [lang.lexer, lang.matrix_literal]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_matrix_sign_elements.py
+    status: active
+    env: unit
+

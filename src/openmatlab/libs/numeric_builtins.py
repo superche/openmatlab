@@ -193,6 +193,42 @@ def _make_extremum(name: str, reduce_op, arg_op, pair_op):
     return _fn
 
 
+
+# ----- elementwise math (real domain) -----
+
+
+def _matlab_round(b: np.ndarray) -> np.ndarray:
+    return np.sign(b) * np.floor(np.abs(b) + 0.5)
+
+
+def _make_unary(name: str, op, *, nonneg: bool = False):
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, 1, 1)
+        b = _buf(name, args[0])
+        if nonneg and np.any(b < 0):
+            raise BuiltinError(
+                f"{name}: negative input needs complex results (not supported)"
+            )
+        with np.errstate(divide="ignore"):
+            return (_wrap(op(b)),)
+
+    return _fn
+
+
+def _broadcast_pair(name: str, a: np.ndarray, b: np.ndarray):
+    if a.size == 1 or b.size == 1 or a.shape == b.shape:
+        return np.broadcast_arrays(a, b)
+    raise BuiltinError(f"{name}: matrix dimensions must agree")
+
+
+def _mod(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("mod", args, 2, 2)
+    a, b = _broadcast_pair("mod", _buf("mod", args[0]), _buf("mod", args[1]))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(b == 0, a, a - np.floor(a / np.where(b == 0, 1, b)) * b)
+    return (_wrap(out),)
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -206,6 +242,16 @@ BUILTINS: Dict[str, Builtin] = {
     "mean": _make_reduce("mean", _mean_op, float("nan")),
     "max": _make_extremum("max", np.max, np.argmax, np.maximum),
     "min": _make_extremum("min", np.min, np.argmin, np.minimum),
+    "abs": _make_unary("abs", np.abs),
+    "sqrt": _make_unary("sqrt", np.sqrt, nonneg=True),
+    "exp": _make_unary("exp", np.exp),
+    "log": _make_unary("log", np.log, nonneg=True),
+    "sin": _make_unary("sin", np.sin),
+    "cos": _make_unary("cos", np.cos),
+    "floor": _make_unary("floor", np.floor),
+    "ceil": _make_unary("ceil", np.ceil),
+    "round": _make_unary("round", _matlab_round),
+    "mod": _mod,
 }
 
 
