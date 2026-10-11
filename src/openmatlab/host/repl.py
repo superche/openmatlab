@@ -32,6 +32,9 @@ class ReplSession:
 
         if self.session.numerics is None:
             raise EvalError('NumPy backend required: pip install -e ".[dev]"')
+        self.session.functions.bind_runtime(
+            self.session.numerics, self.session.plots
+        )
         ev = Evaluator(
             workspace=self.session.workspace,
             functions=self.session.functions,

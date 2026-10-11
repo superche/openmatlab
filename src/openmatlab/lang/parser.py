@@ -10,6 +10,7 @@ from openmatlab.lang.ast_nodes import (
     ColonExpr,
     Expr,
     ExprStmt,
+    FunctionDef,
     IndexExpr,
     MatrixLiteral,
     Name,
@@ -85,6 +86,8 @@ class Parser:
         return stmts
 
     def parse_statement(self) -> Stmt:
+        if self.current().type == TokenType.KW_FUNCTION:
+            return self.parse_function_def()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)
@@ -98,6 +101,56 @@ class Parser:
         expr = self.parse_expression()
         suppress = self._trailing_suppress()
         return ExprStmt(expr=expr, suppress=suppress)
+
+    def parse_function_def(self) -> FunctionDef:
+        self.expect(TokenType.KW_FUNCTION)
+        outputs: List[str] = []
+        # function name(args)
+        # function out = name(args)
+        # function [a,b] = name(args)
+        if self.match(TokenType.LBRACKET):
+            outputs = self._parse_name_list()
+            self.expect(TokenType.RBRACKET)
+            self.expect(TokenType.ASSIGN)
+            name = self.expect(TokenType.IDENT).value
+        elif self.current().type == TokenType.IDENT:
+            first = self.advance().value
+            if self.match(TokenType.ASSIGN):
+                outputs = [first]
+                name = self.expect(TokenType.IDENT).value
+            else:
+                name = first
+        else:
+            tok = self.current()
+            raise ParseError("Expected function name", tok.line, tok.column)
+        self.expect(TokenType.LPAREN)
+        inputs: List[str] = []
+        if self.current().type != TokenType.RPAREN:
+            inputs = self._parse_name_list()
+        self.expect(TokenType.RPAREN)
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            pass
+        body: List[Stmt] = []
+        while self.current().type not in (TokenType.KW_END, TokenType.EOF):
+            body.append(self.parse_statement())
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+        if self.current().type != TokenType.KW_END:
+            tok = self.current()
+            raise ParseError("Expected end to close function", tok.line, tok.column)
+        self.advance()  # KW_END
+        return FunctionDef(
+            name=name,
+            outputs=tuple(outputs),
+            inputs=tuple(inputs),
+            body=tuple(body),
+        )
+
+    def _parse_name_list(self) -> List[str]:
+        names: List[str] = [self.expect(TokenType.IDENT).value]
+        while self.match(TokenType.COMMA):
+            names.append(self.expect(TokenType.IDENT).value)
+        return names
 
     def _trailing_suppress(self) -> bool:
         """True if statement ends with ';' before newline/EOF (not inside matrix)."""

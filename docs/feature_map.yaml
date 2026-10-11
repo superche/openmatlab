@@ -120,8 +120,10 @@ features:
   - id: lang.function_def
     layer: lang
     name: function ... end syntax
-    status: planned
-    depends_on: [lang.parser, runtime.function_resolver]
+    status: partial
+    depends_on: [lang.parser]
+    tests: [tests/unit/test_mfile_functions.py]
+    notes: "KW_FUNCTION/KW_END; single/multi outs"
 
   # --- runtime ---
   - id: runtime.value_array_protocol
@@ -144,8 +146,8 @@ features:
     name: FunctionResolver builtins → path → .m
     status: partial
     protocols: [openmatlab.runtime.functions.CallableFunction]
-    tests: [tests/unit/test_toolbox_path.py]
-    notes: "which/path hit; load not yet"
+    tests: [tests/unit/test_toolbox_path.py, tests/unit/test_mfile_functions.py]
+    notes: "loads/caches .m callables via bind_runtime"
 
   - id: runtime.session
     layer: runtime
@@ -220,10 +222,10 @@ features:
   - id: libs.mfile_loading
     layer: libs
     name: Load .m functions from path
-    status: stub
+    status: partial
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
-    notes: "resolve finds file then NotImplementedError until eval"
-    tests: [tests/unit/test_toolbox_path.py]
+    notes: "parse_mfile + MFileCallable; nested functions N/A"
+    tests: [tests/unit/test_mfile_functions.py]
 
   # --- qa ---
   - id: qa.feature_map

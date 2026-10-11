@@ -117,7 +117,13 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             while i < n and (source[i].isalnum() or source[i] == "_"):
                 i += 1
                 col += 1
-            yield Token(TokenType.IDENT, source[start:i], start_line, start_col)
+            word = source[start:i]
+            keywords = {
+                "function": TokenType.KW_FUNCTION,
+                "end": TokenType.KW_END,
+            }
+            typ = keywords.get(word.lower(), TokenType.IDENT)
+            yield Token(typ, word, start_line, start_col)
             continue
 
         singles = {
