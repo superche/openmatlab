@@ -14,8 +14,8 @@ Four minimal, **stdlib-first** stubs that informed the locked
 | `option-c/` | Host slots + thin adapters | Normative extension surface |
 | `option-d/` | Micro-frontend-ish UI | Deferred (web workbench) |
 
-A contract-aligned sample community plugin will land under this tree (or
-`examples/plugins/`) as M-plugins criterion P07.
+Contract-aligned sample: **`community.signal/`** (criterion P07).
+Historical option stubs remain under `option-{a,b,c,d}/`.
 
 ```bash
 cd /workspace/openmatlab

@@ -22,8 +22,9 @@ What works today:
 - Concrete `NDArrayValue` + `NumPyArrayBackend` (scalar = 1×1)
 - Lexer/parser: matrix literals, indexing, colon, transpose, `*` matmul vs `.* ./ .^`, `function`/`end`
 - `Evaluator` on `Session` + `ConsoleDisplay` (`;` suppress, `ans`)
-- CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test`)
+- CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test` / `plugins`)
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
+- Plugin host (M-plugins): `openmatlab.extensions` loads community manifests, slots, activation, Host API; sample `demos/plugins/community.signal`; CLI `openmatlab plugins`
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
@@ -67,6 +68,13 @@ src/openmatlab/
   libs/           # path / toolboxes
     path.py         ToolboxPath (addpath / find_mfile)
     numeric_builtins.py core numeric builtins (elmat / reductions / elfun / cell)
+  extensions/     # VS Code–style plugin host (Epic #349 / M-plugins)
+    manifest.py     plugin.yaml / openmatlab.plugin.json validate
+    slots.py        host-owned contribution slots
+    activation.py   predicates + activate/deactivate
+    discovery.py    OPENMATLAB_PLUGIN_PATH + entry points
+    host.py         PluginHost orchestrator
+    api/            commands / window / workspace / path Host API
   qa/             # feature_map / catalog / defects→gh bridges
 ```
 
@@ -96,6 +104,7 @@ Host (CLI -e / REPL / QA)
 | `PlotSurface` / `GraphicsBackend` | Plotting (Agg MVP; interactive later) |
 | `ArrayBackend` | matmul / element-wise / literals / index / colon |
 | `Session` | Composition root (`create_default` wires NumPy + display + plot) |
+| `PluginHost` / `openmatlab.extensions` | Community plugin contract (slots, activation, Host API) |
 
 ## Language coverage (MVP)
 
