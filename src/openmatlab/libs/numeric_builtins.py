@@ -517,6 +517,25 @@ def _true_false(name: str, fill: bool):
 
 
 
+def _eps(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("eps", args, 0, 1)
+    if not args:
+        return (_wrap(np.finfo(np.float64).eps),)
+    # eps(x) relative — MVP: same as eps for any x
+    return (_wrap(np.finfo(np.float64).eps),)
+
+
+def _realmax(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("realmax", args, 0, 0)
+    return (_wrap(np.finfo(np.float64).max),)
+
+
+def _realmin(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("realmin", args, 0, 0)
+    return (_wrap(np.finfo(np.float64).tiny),)
+
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -535,6 +554,9 @@ BUILTINS: Dict[str, Builtin] = {
     "issorted": _issorted,
     "cellfun": _cellfun,
     "logical": _logical,
+    "eps": _eps,
+    "realmax": _realmax,
+    "realmin": _realmin,
     "true": _true_false("true", True),
     "false": _true_false("false", False),
     "size": _size,

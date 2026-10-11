@@ -199,8 +199,21 @@ class Evaluator:
             raise EvalError(
                 f"cell index: expected cell, got {type(target).__name__}"
             )
-        i0, j0 = self._cell_subscripts(target, list(expr.indices), "cell index")
-        return target.get(i0, j0)
+        idxs = list(expr.indices)
+        if len(idxs) == 1:
+            ri, cj = self._cell_subscript_lists(target, idxs, "cell index")
+            # linear: ri/cj are paired positions
+            if len(ri) == 1:
+                return target.get(ri[0], cj[0])
+            # pack as column cell of contents
+            return CellValue(rows=tuple((target.get(i, j),) for i, j in zip(ri, cj)))
+        rows_i, cols_j = self._cell_subscript_lists(target, idxs, "cell index")
+        if len(rows_i) == 1 and len(cols_j) == 1:
+            return target.get(rows_i[0], cols_j[0])
+        grid = tuple(
+            tuple(target.get(i, j) for j in cols_j) for i in rows_i
+        )
+        return CellValue(rows=grid)
 
 
     def _eval_array_assign(self, stmt: "ast.ArrayAssign") -> Value:
@@ -366,46 +379,75 @@ class Evaluator:
                 grid[i][j] = cell.get(i, j)
         return CellValue(rows=tuple(tuple(r) for r in grid))
 
-    def _cell_subscripts(
+    def _cell_subscript_lists(
         self, cell: "object", idx_exprs: list, label: str
     ) -> tuple:
-        """Return 0-based (i, j) for 1-based linear or (i,j) indices."""
+        """Return 0-based row list and col list (supports end and :)."""
         from openmatlab.runtime.cell_value import CellValue
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
 
         assert isinstance(cell, CellValue)
-        idxs = [self.eval_expr(i) for i in idx_exprs]
-        if not idxs:
+        if not idx_exprs:
             raise EvalError(f"{label}: missing indices")
         rows, cols = cell.shape
         if rows == 0 and cols == 0:
             raise EvalError(f"{label}: empty cell")
 
-        def _as_int(v: Value, what: str) -> int:
-            arr = self._require_array(v, what)
-            if not arr.is_scalar():
-                raise EvalError(f"{what}: expected scalar index")
-            x = float(arr.backend_buffer().reshape(-1)[0])
-            if x != int(x) or x < 1:
-                raise EvalError(f"{what}: indices must be positive integers")
-            return int(x)
+        def _eval_dim(aexpr, dim_size: int, linear_numel: int | None = None):
+            end_val = float(linear_numel if linear_numel is not None else dim_size)
+            if (
+                isinstance(aexpr, ast.ColonExpr)
+                and aexpr.start is None
+                and aexpr.stop is None
+            ):
+                return list(range(dim_size))
+            self._end_stack.append(end_val)
+            try:
+                v = self._require_array(self.eval_expr(aexpr), label)
+            finally:
+                self._end_stack.pop()
+            buf = np.asarray(v.backend_buffer(), dtype=np.float64).reshape(-1)
+            if buf.size == 0:
+                return []
+            if np.any(buf != np.floor(buf)) or np.any(buf < 1):
+                raise EvalError(f"{label}: indices must be positive integers")
+            out = []
+            limit = linear_numel if linear_numel is not None else dim_size
+            for x in buf:
+                k = int(x)
+                if k > limit:
+                    raise EvalError(f"{label}: index {k} exceeds {limit}")
+                out.append(k - 1)
+            return out
 
-        if len(idxs) == 1:
-            k = _as_int(idxs[0], label)
-            n = cell.numel()
-            if k > n:
-                raise EvalError(
-                    f"{label}: linear index {k} exceeds numel ({n})"
-                )
-            return (k - 1) % rows, (k - 1) // rows
-        if len(idxs) == 2:
-            i = _as_int(idxs[0], label)
-            j = _as_int(idxs[1], label)
-            if i > rows or j > cols:
-                raise EvalError(
-                    f"{label}: ({i},{j}) out of bounds for {rows}x{cols} cell"
-                )
-            return i - 1, j - 1
+        if len(idx_exprs) == 1:
+            # linear: end = numel; colon → all; multi → column-major positions
+            ks = _eval_dim(idx_exprs[0], cell.numel(), linear_numel=cell.numel())
+            pairs = [((k % rows), (k // rows)) for k in ks]
+            if len(pairs) == 1:
+                return [pairs[0][0]], [pairs[0][1]]
+            # multi linear → treat as list of cells packed as column
+            return [p[0] for p in pairs], [p[1] for p in pairs]
+        if len(idx_exprs) == 2:
+            ri = _eval_dim(idx_exprs[0], rows)
+            cj = _eval_dim(idx_exprs[1], cols)
+            return ri, cj
         raise EvalError(f"{label}: only 1 or 2 subscripts supported")
+
+    def _cell_subscripts(
+        self, cell: "object", idx_exprs: list, label: str
+    ) -> tuple:
+        """Return single 0-based (i, j) for scalar cell indexing."""
+        ri, cj = self._cell_subscript_lists(cell, idx_exprs, label)
+        if len(idx_exprs) == 1:
+            # linear multi not allowed for scalar API
+            if len(ri) != 1:
+                raise EvalError(f"{label}: expected scalar index")
+            return ri[0], cj[0]
+        if len(ri) != 1 or len(cj) != 1:
+            raise EvalError(f"{label}: expected scalar index")
+        return ri[0], cj[0]
 
 
 
@@ -645,10 +687,14 @@ class Evaluator:
             return n.elem_mul(left, right)
         if op == "./":
             return n.elem_div(left, right)
-        if op == ".^":
-            return n.power(left, right, elementwise=True)
-        if op == "^":
-            return n.power(left, right, elementwise=False)
+        if op in (".^", "^"):
+            try:
+                return n.power(left, right, elementwise=(op == ".^"))
+            except Exception as exc:
+                msg = str(exc)
+                raise EvalError(
+                    msg if ("power" in msg.lower()) else f"power: {msg}"
+                ) from exc
         if op in ("<", "<=", ">", ">=", "==", "~="):
             return self._eval_relational(op, left, right)
         raise EvalError(f"Unknown binary op: {op}")
