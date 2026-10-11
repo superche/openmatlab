@@ -100,6 +100,8 @@ class Evaluator:
             if self._return_ok <= 0:
                 raise EvalError("return outside of a function or script")
             raise _ReturnSignal()
+        if isinstance(stmt, ast.SwitchStmt):
+            return self._eval_switch(stmt)
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
@@ -556,6 +558,44 @@ class Evaluator:
 
         buf = np.asarray(arr.backend_buffer(), dtype=float).reshape(-1)
         return bool(np.all(buf != 0))
+
+
+    def _values_equal(self, a: Value, b: Value) -> bool:
+        """Scalar/char equality for switch/case matching."""
+        from openmatlab.runtime.char_value import CharValue
+
+        if isinstance(a, CharValue) or isinstance(b, CharValue):
+            if not isinstance(a, CharValue) or not isinstance(b, CharValue):
+                return False
+            return a.text == b.text
+        try:
+            aa = self._require_array(a, "switch")
+            bb = self._require_array(b, "switch")
+        except EvalError:
+            return False
+        if aa.numel() != 1 or bb.numel() != 1:
+            return False
+        import numpy as np
+
+        av = float(np.asarray(aa.backend_buffer(), dtype=float).reshape(-1)[0])
+        bv = float(np.asarray(bb.backend_buffer(), dtype=float).reshape(-1)[0])
+        if av != av and bv != bv:  # both NaN
+            return True
+        return av == bv
+
+    def _eval_switch(self, stmt: ast.SwitchStmt) -> Value:
+        needle = self.eval_expr(stmt.expr)
+        last: Value = self.numerics.from_scalar(0.0)
+        for case in stmt.cases:
+            for vexpr in case.values:
+                if self._values_equal(needle, self.eval_expr(vexpr)):
+                    for s in case.body:
+                        last = self.eval_stmt(s)
+                    return last
+        if stmt.otherwise is not None:
+            for s in stmt.otherwise:
+                last = self.eval_stmt(s)
+        return last
 
     def _eval_if(self, stmt: ast.IfStmt) -> Value:
         last: Value = self.numerics.from_scalar(0.0)

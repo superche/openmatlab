@@ -503,3 +503,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.switch
+    kind: unit
+    title: switch/case/otherwise + no fall-through
+    features: [lang.switch]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_switch.py
+    status: active
+    env: unit
+

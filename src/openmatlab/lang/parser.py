@@ -15,6 +15,8 @@ from openmatlab.lang.ast_nodes import (
     BreakStmt,
     ContinueStmt,
     ReturnStmt,
+    SwitchCase,
+    SwitchStmt,
     WhileStmt,
     ForStmt,
     FunctionDef,
@@ -122,6 +124,8 @@ class Parser:
             self.advance()
             self._trailing_suppress()
             return ReturnStmt()
+        if self.current().type == TokenType.KW_SWITCH:
+            return self.parse_switch()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)
@@ -253,6 +257,37 @@ class Parser:
             else_body = tuple(self._parse_block(TokenType.KW_END))
         self.expect(TokenType.KW_END)
         return IfStmt(branches=tuple(branches), else_body=else_body)
+
+
+    def parse_switch(self) -> SwitchStmt:
+        self.expect(TokenType.KW_SWITCH)
+        expr = self.parse_expression()
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            pass
+        cases: List[SwitchCase] = []
+        otherwise = None
+        while self.current().type == TokenType.KW_CASE:
+            self.advance()
+            label = self.parse_expression()
+            if isinstance(label, CellLiteral):
+                values = []
+                for row in label.rows:
+                    values.extend(row)
+            else:
+                values = [label]
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+            body = self._parse_block(
+                TokenType.KW_CASE, TokenType.KW_OTHERWISE, TokenType.KW_END
+            )
+            cases.append(SwitchCase(values=tuple(values), body=tuple(body)))
+        if self.current().type == TokenType.KW_OTHERWISE:
+            self.advance()
+            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+                pass
+            otherwise = tuple(self._parse_block(TokenType.KW_END))
+        self.expect(TokenType.KW_END)
+        return SwitchStmt(expr=expr, cases=tuple(cases), otherwise=otherwise)
 
     def parse_for(self) -> ForStmt:
         self.expect(TokenType.KW_FOR)

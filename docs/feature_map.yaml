@@ -112,6 +112,14 @@ features:
     depends_on: [lang.parser, runtime.function_resolver, runtime.evaluator]
     notes: "early exit; toplevel EvalError; no return-expr (#137)"
     tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py]
+
+  - id: lang.switch
+    layer: lang
+    name: switch / case / otherwise
+    status: partial
+    depends_on: [lang.parser, runtime.evaluator]
+    notes: "no fall-through; case {a,b} multi-match; scalar/char equality (#148)"
+    tests: [tests/unit/test_switch.py, tests/bdd/test_switch_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals
