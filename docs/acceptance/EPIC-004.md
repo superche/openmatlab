@@ -74,6 +74,8 @@ Note: `sum` still **propagates** NaN (MATLAB default for `sum` — only `max`/`m
 
 ## Residual (still non-goals — not acceptance blockers)
 
+**Canonical residual Issues** (filed post-acceptance): see comment on [#43](https://github.com/superche/openmatlab/issues/43) (omitnan flags, `zeros([m n])`, complex, integer classes, cumsum/sort/find, N-D; char+cells → Epic #5 [#63](https://github.com/superche/openmatlab/issues/63)).
+
 | Residual | Status |
 |----------|--------|
 | Explicit `'omitnan'` / `'includenan'` / `'all'` flag strings | **non-goal** (default omitnan is implemented; flags not) |
