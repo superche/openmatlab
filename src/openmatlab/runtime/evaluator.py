@@ -190,7 +190,10 @@ class Evaluator:
         except LookupError as exc:
             raise EvalError(str(exc)) from exc
         args = [self.eval_expr(a) for a in arg_exprs]
-        results = list(fn(args, nargout=nargout))
+        try:
+            results = list(fn(args, nargout=nargout))
+        except ValueError as exc:  # builtin argument errors (e.g. BuiltinError)
+            raise EvalError(f"{n}: {exc}") from exc
         for i, out in enumerate(results):
             if not isinstance(out, Array):
                 raise EvalError(f"{n}: output {i} is not an Array")

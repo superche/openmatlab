@@ -130,6 +130,8 @@ class NumPyArrayBackend:
         """1-based MATLAB-like subscript into ndarray."""
         aa = _as_nd(a)
         data = aa.backend_buffer()
+        if len(indices) == 1:
+            return self._linear_index(data, _as_nd(indices[0]).backend_buffer())
         py_idx = []
         for ind in indices:
             buf = _as_nd(ind).backend_buffer()
@@ -151,6 +153,28 @@ class NumPyArrayBackend:
         if out.ndim == 0:
             out = out.reshape(1, 1)
         return NDArrayValue(out)
+
+    def _linear_index(self, data: Any, ind: Any) -> Array:
+        """Single subscript: column-major linear index (1-based)."""
+        np = self._np
+        flat_idx = np.asarray(ind, dtype=np.float64)
+        if np.any(flat_idx != np.floor(flat_idx)) or np.any(flat_idx < 1):
+            raise NumericsError("index: subscripts must be positive integers")
+        k = flat_idx.astype(np.int64) - 1
+        flat = np.asarray(data).reshape(-1, order="F")
+        if np.any(k >= flat.size):
+            raise NumericsError(
+                f"index: linear index exceeds numel ({flat.size})"
+            )
+        picked = flat[k.reshape(-1)].astype(np.float64)
+        if k.size == 1:
+            return NDArrayValue(picked.reshape(1, 1))
+        rows, cols = (np.asarray(data).shape + (1, 1))[:2]
+        if rows == 1:  # row-vector source keeps row orientation
+            return NDArrayValue(picked.reshape(1, -1))
+        if cols == 1:  # column-vector source keeps column orientation
+            return NDArrayValue(picked.reshape(-1, 1))
+        return NDArrayValue(picked.reshape(np.asarray(ind).shape))
 
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()

@@ -349,3 +349,22 @@ test_cases:
     impl: tests/unit/test_run_script.py
     status: active
     env: unit
+
+  - id: tc.elmat_builtins
+    kind: unit
+    title: zeros/ones/eye/linspace/size/numel/length
+    features: [libs.elmat_constructors, libs.elmat_shape]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_elmat_builtins.py
+    status: active
+    env: unit
+
+  - id: tc.linear_index
+    kind: unit
+    title: Single-subscript linear indexing (column-major) — bug #48
+    features: [numerics.numpy_backend, lang.indexing_colon]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_linear_index.py
+    status: active
+    env: unit
+
