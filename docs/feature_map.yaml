@@ -136,6 +136,14 @@ features:
     depends_on: [lang.parser, lang.array_assign, runtime.array_assign_range]
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
+
+  - id: libs.elmat_size_vector
+    layer: libs
+    name: zeros/ones/eye size-vector form
+    status: partial
+    depends_on: [libs.elmat_constructors]
+    notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179)"
+    tests: [tests/unit/test_elmat_size_vector.py, tests/bdd/test_elmat_size_vector_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals
