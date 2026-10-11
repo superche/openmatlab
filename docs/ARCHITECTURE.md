@@ -31,7 +31,7 @@ What works today:
 - Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan; cumsum/sort/find
 
 Residual non-parity (later): rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
-Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Epic #9 residuals: see Issues on [#126](https://github.com/superche/openmatlab/issues/126).
+Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Epic #9 residuals: Issues on closed [#126](https://github.com/superche/openmatlab/issues/126). Next axis: **`return` in .m functions** — Epic #10 (absorbs #131).
 
 ## Package layout
 
