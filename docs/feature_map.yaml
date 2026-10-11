@@ -124,7 +124,7 @@ features:
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
-    status: partial
+    status: done
     depends_on: [lang.array_assign, numerics.array_set]
     notes: "A(1:n)=v; scalar broadcast; numel match; 2-sub ix_ (#159)"
     tests: [tests/unit/test_array_assign_range.py, tests/bdd/test_array_assign_range_bdd.py]
