@@ -1,16 +1,21 @@
 # Plugin architecture demos
 
-Four minimal, **stdlib-first** stubs exploring how OpenMATLAB could treat
-**domains** and **Desktop/UI** as plugins (domains may customize UX).
+Four minimal, **stdlib-first** stubs that informed the locked
+**VS Code–style** plugin contract.
 
-| Dir | Option | One-liner |
-|-----|--------|-----------|
-| `option-a/` | Entry points (`importlib.metadata`) | Pip-installable plugins via package metadata |
-| `option-b/` | Manifest YAML + load path | ToolboxPath-like folders with `plugin.yaml` |
-| `option-c/` | Host slots + thin adapters | Host owns named extension points; plugins adapt |
-| `option-d/` | Micro-frontend-ish UI | Isolated UI bundles + host shell composition |
+**Normative contract:** [`docs/design/PLUGIN-CONTRACT.md`](../../docs/design/PLUGIN-CONTRACT.md)  
+**Milestone:** [`docs/milestones/M-plugins.md`](../../docs/milestones/M-plugins.md)  
+**Historical comparison:** [`docs/design/PLUGIN-OPTIONS.md`](../../docs/design/PLUGIN-OPTIONS.md)
 
-Comparison + recommendation: [`docs/design/PLUGIN-OPTIONS.md`](../../docs/design/PLUGIN-OPTIONS.md).
+| Dir | Option | Role under contract |
+|-----|--------|---------------------|
+| `option-a/` | Entry points (`importlib.metadata`) | Optional packaging/distribution |
+| `option-b/` | Manifest YAML + load path | Default discovery/authoring shape |
+| `option-c/` | Host slots + thin adapters | Normative extension surface |
+| `option-d/` | Micro-frontend-ish UI | Deferred (web workbench) |
+
+A contract-aligned sample community plugin will land under this tree (or
+`examples/plugins/`) as M-plugins criterion P07.
 
 ```bash
 cd /workspace/openmatlab
@@ -20,5 +25,3 @@ python demos/plugins/option-b/run_demo.py
 python demos/plugins/option-c/run_demo.py
 python demos/plugins/option-d/run_demo.py
 ```
-
-**Not** the final plugin contract — pick an option first, then lock contract + milestone.

@@ -35,7 +35,7 @@ Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab
 
 Epic #15 residuals: Issues on closed [#188](https://github.com/superche/openmatlab/issues/188). Epic #16 residuals: Issues on closed [#203](https://github.com/superche/openmatlab/issues/203). Epic #17 residuals: Issues on closed [#213](https://github.com/superche/openmatlab/issues/213). Epic #18 residuals: Issues on closed [#223](https://github.com/superche/openmatlab/issues/223). Epic #19 residuals: Issues on closed [#233](https://github.com/superche/openmatlab/issues/233). Epic #27 residuals: Issues on closed [#316](https://github.com/superche/openmatlab/issues/316). **M2 exit 11/11**; milestone #2 **OPEN**. Epics #28–#32 cleared remaining M2 p1; milestone #2 **OPEN** (p2 backlog remains). See [M2-octave-breadth.md](milestones/M2-octave-breadth.md).
 
-Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3).
+Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Plugin host](https://github.com/superche/openmatlab/milestone/4) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3). Plugin contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) ([`milestones/M-plugins.md`](milestones/M-plugins.md)).
 
 ## Package layout
 

@@ -60,6 +60,7 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - 选下一个 epic：必须取 `docs/milestones/M*.md` 中最高优先级的**未满足**准则（p0 > p1），不是顺手的。
 - 每个 `EPIC-NNN.md` 必须含 **Milestone progress**：criteria met/total、conformance 通过数、剩余 gap 列表。
 - 开放 Issue 必须带 `p0`/`p1`/`p2` 标签。详见 `docs/PROCESS.md` 与 `docs/milestones/M2-octave-breadth.md`。
+- **Plugins:** VS Code–style host contract is locked in `docs/design/PLUGIN-CONTRACT.md`; exit criteria in `docs/milestones/M-plugins.md`. Community plugins only (no MathWorks proprietary toolboxes). Historical options: `docs/design/PLUGIN-OPTIONS.md`.
 
 ## Residual Issues（强制）
 
