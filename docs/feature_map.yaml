@@ -104,6 +104,14 @@ features:
     depends_on: [lang.parser, runtime.evaluator]
     notes: "innermost loop; outside → EvalError; break outside also errors (#127) [done per ITER-128]"
     tests: [tests/unit/test_continue.py, tests/bdd/test_continue_bdd.py]
+
+  - id: lang.return
+    layer: lang
+    name: return in .m functions/scripts
+    status: partial
+    depends_on: [lang.parser, runtime.function_resolver, runtime.evaluator]
+    notes: "early exit; toplevel EvalError; no return-expr (#137)"
+    tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals

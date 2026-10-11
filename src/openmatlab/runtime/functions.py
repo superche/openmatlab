@@ -81,6 +81,7 @@ class MFileCallable:
     Evaluator,
     _BreakSignal,
     _ContinueSignal,
+    _ReturnSignal,
 )
         from openmatlab.runtime.workspace import Workspace
 
@@ -100,15 +101,21 @@ class MFileCallable:
             numerics=self.numerics,
             plots=self.plots,
         )
+        ev._return_ok += 1
         try:
-            for stmt in self.defn.body:
-                if isinstance(stmt, FunctionDef):
-                    continue  # nested not supported
-                ev.eval_stmt(stmt)
-        except _BreakSignal:
-            raise EvalError("break outside of a for or while loop") from None
-        except _ContinueSignal:
-            raise EvalError("continue outside of a for or while loop") from None
+            try:
+                for stmt in self.defn.body:
+                    if isinstance(stmt, FunctionDef):
+                        continue  # nested not supported
+                    ev.eval_stmt(stmt)
+            except _ReturnSignal:
+                pass  # early exit; collect assigned outputs below
+            except _BreakSignal:
+                raise EvalError("break outside of a for or while loop") from None
+            except _ContinueSignal:
+                raise EvalError("continue outside of a for or while loop") from None
+        finally:
+            ev._return_ok -= 1
         if not self.defn.outputs:
             return ()
         outs: List[Value] = []
