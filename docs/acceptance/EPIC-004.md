@@ -1,113 +1,92 @@
 # Acceptance evidence — Epic #4 (#43)
 
 **Epic:** [#43 Core numeric builtins toolbox](https://github.com/superche/openmatlab/issues/43)  
-**Scope issues:** [#44](https://github.com/superche/openmatlab/issues/44) · [#45](https://github.com/superche/openmatlab/issues/45) · [#46](https://github.com/superche/openmatlab/issues/46) · [#47](https://github.com/superche/openmatlab/issues/47) · bugs found en route [#48](https://github.com/superche/openmatlab/issues/48) · [#51](https://github.com/superche/openmatlab/issues/51)  
-**Functional tip** (ordered steps 1–3 code complete, PR #52): `ba43aa8138bdc1baf9873d3853900b5f3c319641`  
-**Evidence merge tip** (EPIC-004 + sync merged, PR #53): `ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e` — also carries the small error-prefix dedupe fix from review  
-**Captured:** 2026-10-11 17:49 CST (Asia/Shanghai) on `/workspace/openmatlab`  
+**Scope issues:** [#44](https://github.com/superche/openmatlab/issues/44) · [#45](https://github.com/superche/openmatlab/issues/45) · [#46](https://github.com/superche/openmatlab/issues/46) · [#47](https://github.com/superche/openmatlab/issues/47) · bugs [#48](https://github.com/superche/openmatlab/issues/48) · [#51](https://github.com/superche/openmatlab/issues/51) · conditional pass [#55](https://github.com/superche/openmatlab/issues/55)  
+**Functional tip** (NaN-omit max/min + nan/NaN, PR #56): `82096934afd55b8c93bc937bf02d2f8dc8672ab7`  
+**Evidence merge tip:** *(stamped by follow-up PR after this doc merges)*  
+**Captured:** 2026-10-11 17:59 CST on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
 ## Verdict
 
-**Ready for user acceptance.** Ordered steps 1–5 green. Two pre-existing MATLAB-semantics defects (#48 linear indexing, #51 `[a -b]` literals) were exposed by MATLAB-correct tests and fixed in code — no test weakened.
+**Ready for user re-acceptance (conditional pass closed).** Ordered steps 1–5 from the epic plus the user-required **max/min default omitnan** (#55) are green. Tests were written to MATLAB defaults and were **not** weakened.
 
 ## Traceability
 
 | Step | Issue | PR | Merge commit | CI `test` |
 |------|-------|-----|--------------|-----------|
-| 1 | #44 constructors + shape (+ fixes #48) | [#49](https://github.com/superche/openmatlab/pull/49) | `329ab34ad6dc592473dd7988fec1612feac3369b` | pass |
+| 1 | #44 constructors + shape (+ #48) | [#49](https://github.com/superche/openmatlab/pull/49) | `329ab34ad6dc592473dd7988fec1612feac3369b` | pass |
 | 2 | #45 reductions | [#50](https://github.com/superche/openmatlab/pull/50) | `9bd34bf9d44c296f1326f0ee3a5843748001af0a` | pass |
-| 3 | #46 elfun (+ fixes #51) | [#52](https://github.com/superche/openmatlab/pull/52) | `ba43aa8138bdc1baf9873d3853900b5f3c319641` | pass |
-| 4–5 | #47 sync + criteria + EPIC-004 | [#53](https://github.com/superche/openmatlab/pull/53) | `ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e` | pass |
+| 3 | #46 elfun (+ #51) | [#52](https://github.com/superche/openmatlab/pull/52) | `ba43aa8138bdc1baf9873d3853900b5f3c319641` | pass |
+| 4–5 | #47 sync + EPIC-004 (initial) | [#53](https://github.com/superche/openmatlab/pull/53) | `ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e` | pass |
+| Cond. | #55 max/min omitnan + nan/NaN | [#56](https://github.com/superche/openmatlab/pull/56) | `82096934afd55b8c93bc937bf02d2f8dc8672ab7` | pass |
+| Refresh | EPIC-004 dual tips (this) | *(this PR)* | evidence merge tip | required |
 
 ## Feature map
 
-New `libs.elmat_constructors`, `libs.elmat_shape`, `libs.reductions`, `libs.elfun` → **done** per
-`docs/design/ITER-047-epic4-done-criteria.md`. Counts after this PR: **done=29, partial=9, stub=2** (was done=25 at Epic #3).
+`libs.elmat_constructors`, `libs.elmat_shape`, `libs.reductions`, `libs.elfun` → **done** per
+`docs/design/ITER-047-epic4-done-criteria.md` (updated for #55 NaN default). Counts: **done=29, partial=9, stub=2**.
 
 ## Measurable gate — pytest
 
-At functional tip `ba43aa8`:
+At functional tip `8209693`:
 
 ```text
 $ pytest -m "unit or bdd" --tb=no
-144 passed, 2 deselected in 0.91s
+152 passed, 2 deselected in 0.76s
 ```
 
-After this PR (adds error-message dedupe test): **145 passed, 2 deselected**.
-
-## Smoke — CLI transcripts (functional tip `ba43aa8`)
+## Smoke — CLI transcripts (functional tip `8209693`)
 
 ```text
-$ openmatlab -e "A = eye(2, 3)"
-A =
-
-[[1. 0. 0.]
- [0. 1. 0.]]
-
-$ openmatlab -e "[m, n] = size(zeros(4, 5))"
-m =
+$ openmatlab -e "v = max([1 nan() 4])"
+v =
 
 4
 
-n =
+$ openmatlab -e "[m, i] = max([nan() nan()])"
+m =
 
-5
-
-$ openmatlab -e "x = linspace(0, 1, 5)"
-x =
-
-[[0.   0.25 0.5  0.75 1.  ]]
-
-$ openmatlab -e "s = sum([1 2; 3 4])"
-s =
-
-[[4. 6.]]
-
-$ openmatlab -e "[v, i] = max([3 9 2 9])"
-v =
-
-9
+NDArrayValue(shape=(1, 1))
 
 i =
 
-2
-
-$ openmatlab -e "r = round([2.5 -2.5])"
-r =
-
-[[ 3. -3.]]
-
-$ openmatlab -e "k = mod(-5, 3)"
-k =
-
 1
 
-$ openmatlab -e 'w = which("sum")'
-w =
+$ openmatlab -e "e = max([1 nan()], [nan() 2])"
+e =
 
-builtin/sum
+[[1. 2.]]
+
+$ openmatlab -e "a = nan(1, 2)"
+a =
+
+[[nan nan]]
+
+$ openmatlab -e "s = sum([1 nan() 3])"
+s =
+
+NDArrayValue(shape=(1, 1))
 ```
 
-Real-domain error — functional tip showed a duplicated prefix (`error: sqrt: sqrt: negative input …`); fixed in this PR (adversarial-review finding):
+Note: `sum` still **propagates** NaN (MATLAB default for `sum` — only `max`/`min` default to omitnan).
 
-```text
-$ openmatlab -e "q = sqrt(-1)"
-error: sqrt: negative input needs complex results (not supported)
-```
+## Residual (still non-goals — not acceptance blockers)
 
-## Residual (explicit non-goals)
-
-MATLAB NaN-omit default for `max/min` (NumPy propagation today), `'omitnan'`/`'all'` flags, complex results,
-integer classes, `zeros([m n])` vector form, `cumsum/sort/find`, N-D arrays, single-quote char + cells (backlog axis).
+| Residual | Status |
+|----------|--------|
+| Explicit `'omitnan'` / `'includenan'` / `'all'` flag strings | **non-goal** (default omitnan is implemented; flags not) |
+| `zeros([m n])` vector size form | **non-goal** (scalar `zeros(m,n)` works) |
+| Complex results, integer classes | **non-goal** |
+| `cumsum` / `sort` / `find` | **non-goal** |
+| N-D (>2) arrays | **non-goal** |
+| Single-quote char + cell arrays | **backlog** (next epic candidate) |
 
 ## How to re-run
 
 ```bash
-git checkout ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e   # evidence merge tip (or main)
+git checkout 82096934afd55b8c93bc937bf02d2f8dc8672ab7   # functional tip; or evidence tip / main after stamp
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
-openmatlab -e "[v, i] = max([3 9 2 9])"
+openmatlab -e "v = max([1 nan() 4])"
 ```
-
-Functional-only tree (no EPIC-004 yet): `ba43aa8138bdc1baf9873d3853900b5f3c319641`.
