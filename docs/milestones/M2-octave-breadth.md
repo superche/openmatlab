@@ -69,6 +69,8 @@ Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
 
 After Epic #23: **11/11** criteria met. **M2 exit criteria complete.** Milestone left **OPEN** (user); next epics from residual p1 order (#247…).
 
+After Epic #24 (#247 cell paren): still **11/11**. Next residual p1: **#249**.
+
 
 
 After Epic #20: **8/11** criteria met. Next epic: **C08** (#119/#108, p0).
