@@ -12,6 +12,7 @@ from enum import Enum, auto
 class TokenType(Enum):
     # --- implemented / planned soon ---
     NUMBER = auto()
+    STRING = auto()  # double-quoted "..." (MVP)
     IDENT = auto()
     PLUS = auto()
     MINUS = auto()

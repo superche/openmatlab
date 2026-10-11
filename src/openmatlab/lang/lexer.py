@@ -64,6 +64,45 @@ def _iter_tokens(source: str) -> Iterator[Token]:
 
         start_line, start_col = line, col
 
+        # Double-quoted string MVP ("..."); single quote stays transpose
+        if ch == '"':
+            i += 1
+            col += 1
+            chars: List[str] = []
+            while i < n and source[i] != '"':
+                if source[i] == "\\":
+                    i += 1
+                    col += 1
+                    if i >= n:
+                        raise LexerError(
+                            "Unterminated string escape", start_line, start_col
+                        )
+                    esc = source[i]
+                    if esc == "n":
+                        chars.append("\n")
+                    elif esc == "t":
+                        chars.append("\t")
+                    elif esc == '"':
+                        chars.append('"')
+                    elif esc == "\\":
+                        chars.append("\\")
+                    else:
+                        chars.append(esc)
+                    i += 1
+                    col += 1
+                    continue
+                if source[i] == "\n":
+                    raise LexerError("Unterminated string", start_line, start_col)
+                chars.append(source[i])
+                i += 1
+                col += 1
+            if i >= n or source[i] != '"':
+                raise LexerError("Unterminated string", start_line, start_col)
+            i += 1
+            col += 1
+            yield Token(TokenType.STRING, "".join(chars), start_line, start_col)
+            continue
+
         # Dot-operators: .* ./ .\ .^ .'
         if ch == "." and peek(1) in "*/\\^'":
             nxt = peek(1)

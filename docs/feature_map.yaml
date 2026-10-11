@@ -85,7 +85,7 @@ features:
     name: Lexer tokenize()
     status: partial
     tests: [tests/unit/test_lexer.py]
-    notes: "Matrix MVP tokens + KW_FUNCTION/KW_END; no strings/cells yet"
+    notes: "Matrix MVP + KW_FUNCTION/END + double-quoted STRING; no cells/single-quote strings"
 
   - id: lang.parser
     layer: lang
@@ -217,7 +217,7 @@ features:
     layer: libs
     name: ToolboxPath addpath / find_mfile
     status: partial
-    notes: "addpath/rmpath/find_mfile; language addpath still missing"
+    notes: "API + language addpath/which (double-quoted strings); rmpath lang N/A"
     tests: [tests/unit/test_toolbox_path.py]
 
   - id: libs.mfile_loading

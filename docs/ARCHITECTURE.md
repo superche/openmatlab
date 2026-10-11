@@ -89,11 +89,12 @@ Host (CLI -e / REPL / QA)
 
 ## Language coverage (MVP)
 
-**Parsed + evaluated:** numbers, names, `+ - * /` and `.* ./ .^`, unary `±`,
+**Parsed + evaluated:** numbers, double-quoted strings, names, `+ - * /` and `.* ./ .^`, unary `±`,
 `[rows]`, `A(i,j)`, `a:b` / `a:s:b`, `A'` / `A.'`, assignments, `;` suppress,
-`function [outs]=name(ins) … end` in `.m` files on the path.
+`function [outs]=name(ins) … end` in `.m` files on the path,
+language `addpath("…")` / `which("…")`.
 
-**Not yet:** strings/cells, `if`/`for`/`while`, language-level `addpath`/`which`,
+**Not yet:** single-quoted char vectors/cells, `if`/`for`/`while`,
 multi-assign `[a,b]=f(…)`, scripts without `function`, nested functions,
 `nargin`/`nargout` specials.
 
