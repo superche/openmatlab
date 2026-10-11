@@ -95,6 +95,8 @@ class Evaluator:
             raise EvalError(f"Unknown unary op: {expr.op}")
         if isinstance(expr, ast.BinOp):
             return self._eval_binop(expr)
+        if isinstance(expr, ast.CellLiteral):
+            return self._eval_cell_literal(expr)
         if isinstance(expr, ast.MatrixLiteral):
             return self._eval_matrix(expr)
         if isinstance(expr, ast.ColonExpr):
@@ -109,6 +111,23 @@ class Evaluator:
         if isinstance(expr, ast.CallExpr):
             return self._eval_call_or_index(expr.func, list(expr.args))
         raise EvalError(f"Unknown expression: {type(expr)!r}")
+
+
+    def _eval_cell_literal(self, expr: "ast.CellLiteral") -> Value:
+        from openmatlab.runtime.cell_value import CellValue
+
+        if not expr.rows:
+            return CellValue(rows=tuple())
+        rows = []
+        width = None
+        for row in expr.rows:
+            vals = [self.eval_expr(cell) for cell in row]
+            if width is None:
+                width = len(vals)
+            elif len(vals) != width:
+                raise EvalError("Cell literal rows must have equal length")
+            rows.append(tuple(vals))
+        return CellValue(rows=tuple(rows))
 
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):

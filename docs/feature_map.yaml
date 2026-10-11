@@ -103,6 +103,22 @@ features:
     depends_on: [runtime.evaluator]
     notes: "Shared CharValue; no string class (#64)"
     tests: [tests/unit/test_char_literal.py]
+
+  - id: lang.cell_literal
+    layer: lang
+    name: Cell array literals {…}
+    status: partial
+    depends_on: [lang.parser, runtime.cell_value]
+    notes: "Rectangular 2-D cells; mixed Value elements (#65)"
+    tests: [tests/unit/test_cell_literal.py, tests/bdd/test_cell_literal_bdd.py]
+
+  - id: runtime.cell_value
+    layer: runtime
+    name: CellValue carrier + display
+    status: partial
+    depends_on: [runtime.evaluator]
+    notes: "2-D Value grid; ConsoleDisplay summary (#65)"
+    tests: [tests/unit/test_cell_literal.py]
   - id: lang.parser
     layer: lang
     name: Parser parse()
