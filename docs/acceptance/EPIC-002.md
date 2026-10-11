@@ -2,7 +2,8 @@
 
 **Epic:** [#19 Workbench depth](https://github.com/superche/openmatlab/issues/19)  
 **Scope issues:** [#20](https://github.com/superche/openmatlab/issues/20) · [#21](https://github.com/superche/openmatlab/issues/21) · [#22](https://github.com/superche/openmatlab/issues/22) · [#23](https://github.com/superche/openmatlab/issues/23) · [#24](https://github.com/superche/openmatlab/issues/24)  
-**Evidence tip:** `02f113fe0b034178dba7c5c5ad33fad35231d9fc`  
+**Functional tip** (ordered steps 1–5 code complete, PR #29): `02f113fe0b034178dba7c5c5ad33fad35231d9fc`  
+**Evidence merge tip** (this doc on `main`, PR #30): `6650784360978f59109fa072e7cc765840021e07`  
 **Captured:** 2026-10-11 16:04 CST (Asia/Shanghai) on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
@@ -65,9 +66,13 @@ Policy check: under default/CI, `Session.create_default()` keeps `graphics.inter
 
 ## How to re-run
 
+To read this evidence file and match `main` docs, checkout the **evidence merge tip** (or `main`):
+
 ```bash
-git checkout 02f113fe0b034178dba7c5c5ad33fad35231d9fc
+git checkout 6650784360978f59109fa072e7cc765840021e07   # or: git checkout main
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
 openmatlab -e "A = [1 2; 3 4] * [1; 0]"
 ```
+
+To reproduce only the step-5 **functional** tree (no `EPIC-002.md` yet), use `02f113fe0b034178dba7c5c5ad33fad35231d9fc`.
