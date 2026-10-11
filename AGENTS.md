@@ -45,7 +45,15 @@ Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：
 细则见 `docs/PROCESS.md` § Epic acceptance。
 
 
-### Milestones
+#
+## 待办 / Todos（强制 GitHub Issues）
+
+**所有**待办（功能、gap、bug、chore、residual、里程碑后续）必须以本仓库的
+**GitHub Issues** 为唯一系统；禁止仅用 agent 本地 todo、聊天清单或文档内未落 Issue
+的待办列表。文档可链接/汇总 Issue，不能替代 Issue。详见 `docs/PROCESS.md`
+§ Work tracking — GitHub Issues only。
+
+## Milestones
 
 Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign epics/residuals to the active milestone.
 
