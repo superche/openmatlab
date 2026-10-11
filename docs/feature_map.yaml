@@ -131,17 +131,17 @@ features:
   - id: lang.cell_assign
     layer: lang
     name: Cell content assignment c{i}=v
-    status: partial
+    status: done
     depends_on: [lang.cell_index, runtime.cell_value]
-    notes: "OOB error no grow; name{...} LHS only (#103)"
+    notes: "OOB error no grow; name{...} LHS only (#103) [done per ITER-105]"
     tests: [tests/unit/test_cell_assign.py, tests/bdd/test_cell_assign_bdd.py]
 
   - id: lang.cell_paren_index
     layer: lang
     name: Parentheses cell indexing c(i) → sub-cell
-    status: partial
+    status: done
     depends_on: [lang.cell_literal, runtime.cell_value]
-    notes: "1x1 CellValue slice; scalar indices only (#104)"
+    notes: "1x1 CellValue slice; scalar indices only (#104) [done per ITER-105]"
     tests: [tests/unit/test_cell_paren_index.py, tests/bdd/test_cell_paren_bdd.py]
   - id: lang.parser
     layer: lang
