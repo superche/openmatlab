@@ -1,6 +1,8 @@
 # Feature map (human index) — QA layer 1
 
-**Source of truth:** [`feature_map.yaml`](feature_map.yaml)
+**Inventory sync/export:** [`feature_map.yaml`](feature_map.yaml)  
+**Canonical work tracker:** GitHub Issues (+ optional Projects) — see [`PROCESS.md`](PROCESS.md)
+
 
 Dump: `openmatlab features`  
 Full QA system: [`QA.md`](QA.md) (five layers)  

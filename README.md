@@ -21,9 +21,11 @@ openmatlab features               # layer 1: capability map
 openmatlab cases                  # layer 2: use/test cases
 openmatlab defects                # layer 5: GitHub Issues via gh
 openmatlab test --suite unit      # layer 3+4: pytest
+pytest -m "unit or bdd" --cov=openmatlab
 ```
 
-QA: `docs/QA.md` · Issues = canonical defects · `docs/feature_map.yaml` · `docs/test_catalog.yaml` · `docs/WORKFLOW.md`
+Process: `docs/PROCESS.md` · `CONTRIBUTING.md`  
+QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.yaml` (sync) · CI `.github/workflows/ci.yml`
 
 ### Non-goals
 

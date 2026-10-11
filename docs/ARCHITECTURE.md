@@ -119,3 +119,5 @@ See `docs/QA.md`:
 5. Defects — **GitHub Issues** canonical → `gh issue` / `openmatlab defects`
 
 Also: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.
+
+R&D loop / DoD: `docs/PROCESS.md`. CI: `.github/workflows/ci.yml`.

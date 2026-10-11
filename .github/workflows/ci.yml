@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package (dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Unit + BDD smoke
+        run: |
+          pytest -m "unit or bdd" --cov=openmatlab --cov-report=term-missing --cov-fail-under=60
+
+      - name: Feature map + catalog CLI
+        run: |
+          openmatlab status
+          openmatlab features --layer qa >/dev/null
+          openmatlab cases --kind unit >/dev/null
+
+      # Optional lint — enable when ruff is added to [dev]
+      # - name: Lint
+      #   run: ruff check src tests

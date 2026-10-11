@@ -1,5 +1,9 @@
 # Quality Assurance System (Layered, off-the-shelf preferred)
 
+**R&D iteration loop + Definition of Done:** [`PROCESS.md`](PROCESS.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
+
+Behaviour specs: `features/*.feature` (pytest-bdd). CI: `.github/workflows/ci.yml`.
+
 OpenMATLAB QA is a **five-layer** system. Prefer **existing tools** (GitHub
 Issues, `gh`, pytest, coverage; later Selenium/Playwright for web UI) over
 bespoke trackers. Architecture/docs stage — no full language/runtime.
@@ -24,8 +28,8 @@ Clean-room — no MATLAB binary RE. Optional conformance: public docs / Octave.
 
 | Layer | Canonical system | Custom (kept thin) | Why custom at all |
 |-------|------------------|--------------------|-------------------|
-| **1 Features** | (optional later: GitHub Projects) | `docs/feature_map.yaml` | Capability inventory + status before Issues scale; agent-friendly |
-| **2 Cases** | **pytest** node ids | `docs/test_catalog.yaml` links | Cross-link features ↔ tests without a ticket DB |
+| **1 Features** | **GitHub Issues** (+ optional **Projects**) | `docs/feature_map.yaml` sync/export | Issues track work; YAML is optional inventory sync |
+| **2 Cases** | **pytest** + **pytest-bdd** / Gherkin | `features/*.feature`, `docs/test_catalog.yaml` | Behaviour in Gherkin; catalog links impl nodes |
 | **3 Envs** | pytest markers + dirs | layout under `tests/` | Standard layout; not a new framework |
 | **4 Tooling** | **pytest**, **coverage**, **gh** | `openmatlab` CLI wrappers | Thin DX only |
 | **5 Defects** | **GitHub Issues** | templates + label conventions | **No** in-repo defect ledger |
@@ -34,22 +38,22 @@ Clean-room — no MATLAB binary RE. Optional conformance: public docs / Octave.
 
 ## Layer 1 — Feature management
 
-**Artifact:** `docs/feature_map.yaml` · index `docs/FEATURE_MAP.md`  
-**CLI:** `openmatlab features`  
-**Loader:** `openmatlab.qa.feature_map`
+**Canonical work items:** GitHub Issues (+ optional Projects board).  
+**Sync/export:** `docs/feature_map.yaml` · index `docs/FEATURE_MAP.md`  
+**CLI:** `openmatlab features` · labels documented in `PROCESS.md`
 
-Status: `planned|stub|partial|done|wontfix`. Stable `id`s. Same PR updates map
-when adding Protocols/stubs. Optional later: mirror epics on GitHub Projects.
+Status values in YAML: `planned|stub|partial|done|wontfix`. Update YAML in the
+same PR when capability status changes — it is **not** a second ticket DB.
 
 ---
 
 ## Layer 2 — Test case / use-case management
 
-**Canonical execution:** pytest.  
-**Catalog:** `docs/test_catalog.yaml` (use_cases + test_cases with `impl: path::node`).  
+**Behaviour specs:** Gherkin in `features/*.feature` via **pytest-bdd**.  
+**Canonical execution:** pytest (`tests/unit`, `tests/bdd`).  
+**Catalog:** `docs/test_catalog.yaml` links features ↔ impl nodes.  
 **CLI:** `openmatlab cases`  
-**Do not** invent a separate ticket system for cases — Issues track *work*;
-catalog tracks *what is verified*.
+Issues track *work*; Gherkin+catalog track *verification*.
 
 ---
 
@@ -79,8 +83,9 @@ is a web UI. Goldens are self-authored / public-spec; never proprietary MATLAB R
 
 | Tool | Use |
 |------|-----|
-| **pytest** | All automated tests |
-| **coverage** (`pytest-cov`) | Optional `[dev]` — line coverage for `src/openmatlab` |
+| **pytest** + **pytest-bdd** | Unit + Gherkin scenarios |
+| **coverage** (`pytest-cov`) | CI `--cov-fail-under=60` (modest) |
+| **GitHub Actions** | PR/main CI (`.github/workflows/ci.yml`) |
 | **gh** | Issues / PRs (layer 5) |
 | **openmatlab** CLI | `status` · `features` · `cases` · `defects` (→ gh) · `test` (→ pytest) |
 | Playwright / Selenium | Deferred — future web workbench only |

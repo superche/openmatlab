@@ -122,3 +122,19 @@ test_cases:
     impl: null
     status: planned
     env: interactive
+
+  - id: tc.bdd_session_composition
+    kind: unit
+    title: Gherkin — Session composition root exists
+    features: [runtime.session, qa.pytest_bdd]
+    impl: tests/bdd/test_architecture_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bdd_feature_map_loads
+    kind: unit
+    title: Gherkin — Feature map inventory loads
+    features: [qa.feature_map, qa.pytest_bdd]
+    impl: tests/bdd/test_architecture_bdd.py
+    status: active
+    env: unit

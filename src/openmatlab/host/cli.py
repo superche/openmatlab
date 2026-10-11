@@ -16,9 +16,9 @@ Packages: host · lang · runtime · numerics · graphics · libs · qa
 
 QA layers (docs/QA.md):
   1. Features     docs/feature_map.yaml      → openmatlab features
-  2. Cases        pytest + test_catalog.yaml → openmatlab cases
+  2. Cases        Gherkin+pytest-bdd + catalog → openmatlab cases
   3. Environments tests/{{unit,conformance,interactive}}
-  4. Tooling      pytest · coverage · gh     → openmatlab test
+  4. Tooling      pytest-bdd · coverage · Actions · gh
   5. Defects      GitHub Issues (canonical)  → openmatlab defects / gh issue
 
 Interactive UI later: Playwright/Selenium only when a web workbench exists.

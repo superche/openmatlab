@@ -24,7 +24,12 @@ openmatlab = "openmatlab.host.cli:main"
 where = ["src"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "PyYAML>=6", "pytest-cov>=4"]
+dev = [
+    "pytest>=7",
+    "PyYAML>=6",
+    "pytest-cov>=4",
+    "pytest-bdd>=7",
+]
 numpy = ["numpy>=1.24"]
 plot = ["matplotlib>=3.7"]
 
@@ -33,6 +38,7 @@ minversion = "7.0"
 testpaths = ["tests"]
 markers = [
     "unit: fast unit / architecture tests",
+    "bdd: Gherkin / pytest-bdd scenarios",
     "conformance: golden / public-spec cases",
     "interactive: REPL/plot smoke",
     "slow: long-running tests",
@@ -40,3 +46,12 @@ markers = [
     "needs_matplotlib: requires Matplotlib",
 ]
 addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["openmatlab"]
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+skip_empty = true

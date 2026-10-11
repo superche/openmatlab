@@ -7,6 +7,7 @@ import pytest
 
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "unit: fast unit / architecture tests")
+    config.addinivalue_line("markers", "bdd: Gherkin / pytest-bdd scenarios")
     config.addinivalue_line(
         "markers",
         "conformance: golden / public-spec language-runtime cases",
