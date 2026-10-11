@@ -140,7 +140,7 @@ features:
   - id: libs.elmat_size_vector
     layer: libs
     name: zeros/ones/eye size-vector form
-    status: partial
+    status: done
     depends_on: [libs.elmat_constructors]
     notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179)"
     tests: [tests/unit/test_elmat_size_vector.py, tests/bdd/test_elmat_size_vector_bdd.py]
