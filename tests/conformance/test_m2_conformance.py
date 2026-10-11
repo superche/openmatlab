@@ -11,6 +11,7 @@ import pytest
 from openmatlab.host.repl import ReplSession
 from openmatlab.runtime.session import Session
 
+from .m2_expected import assert_close, coerce_expected
 from .m2_manifest import CRITERIA
 
 pytestmark = [pytest.mark.conformance, pytest.mark.unit, pytest.mark.needs_numpy]
@@ -28,8 +29,8 @@ def _params():
     return out
 
 
-def run_script(script: str) -> dict:
-    """Run scripts/<script>.m via language run(); return workspace values."""
+def run_script(script: str):
+    """Run scripts/<script>.m via language run(); return session."""
     s = Session.create_default()
     path = SCRIPTS / f"{script}.m"
     ReplSession(s).run_line(f'run("{path}");')
@@ -42,13 +43,8 @@ def test_m2_criterion(cid: str, script: str):
     s = run_script(script)
     for name, want in expected.items():
         got = np.asarray(s.workspace.get(name).backend_buffer(), dtype=float)
-        want_a = np.asarray(want, dtype=float)
-        if want_a.ndim == 0:
-            assert got.size == 1, f"{cid} {name}: expected scalar, got {got.shape}"
-            assert float(got.reshape(-1)[0]) == pytest.approx(float(want_a)), name
-        else:
-            assert got.shape == want_a.shape, f"{cid} {name}: {got.shape} != {want_a.shape}"
-            assert np.allclose(got, want_a), f"{cid} {name}: {got} != {want_a}"
+        want_a = np.asarray(coerce_expected(want), dtype=float)
+        assert_close(got, want_a, label=f"{cid} {name}")
 
 
 def test_manifest_scripts_exist():
