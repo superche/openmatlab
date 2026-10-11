@@ -142,8 +142,10 @@ features:
   - id: runtime.function_resolver
     layer: runtime
     name: FunctionResolver builtins → path → .m
-    status: stub
+    status: partial
     protocols: [openmatlab.runtime.functions.CallableFunction]
+    tests: [tests/unit/test_toolbox_path.py]
+    notes: "which/path hit; load not yet"
 
   - id: runtime.session
     layer: runtime
@@ -212,14 +214,16 @@ features:
     layer: libs
     name: ToolboxPath addpath / find_mfile
     status: partial
-    notes: "addpath/rmpath work; find_mfile always None"
-    tests: []
+    notes: "find_mfile locates name.m; .m eval still TBD"
+    tests: [tests/unit/test_toolbox_path.py]
 
   - id: libs.mfile_loading
     layer: libs
     name: Load .m functions from path
-    status: planned
+    status: stub
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
+    notes: "resolve finds file then NotImplementedError until eval"
+    tests: [tests/unit/test_toolbox_path.py]
 
   # --- qa ---
   - id: qa.feature_map

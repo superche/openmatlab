@@ -1,4 +1,4 @@
-"""Function resolution — builtins → path → .m files (stub)."""
+"""Function resolution — builtins → path → .m files."""
 
 from __future__ import annotations
 
@@ -25,10 +25,7 @@ class CallableFunction(Protocol):
 class FunctionResolver:
     """Resolve a name to a callable.
 
-    Search order (calibrated architecture):
-      1. builtins registered here
-      2. user path (ToolboxPath)
-      3. .m function files (lang parse + runtime) — later
+    Search order: builtins → ToolboxPath .m files (load TBD).
     """
 
     builtins: Dict[str, CallableFunction] = field(default_factory=dict)
@@ -41,13 +38,24 @@ class FunctionResolver:
         key = name.lower()
         if key in self.builtins:
             return self.builtins[key]
-        raise NotImplementedError(
-            f"FunctionResolver.resolve({name!r}): path/.m loading not wired "
-            "(architecture stage); builtins only"
-        )
+        mfile = self._find(name)
+        if mfile is not None:
+            raise NotImplementedError(
+                f"FunctionResolver.resolve({name!r}): found {mfile}, "
+                "but .m loading/eval is not implemented yet"
+            )
+        raise LookupError(f"Undefined function or variable: {name}")
 
     def which(self, name: str) -> str:
         key = name.lower()
         if key in self.builtins:
             return f"builtin/{key}"
+        mfile = self._find(name)
+        if mfile is not None:
+            return str(mfile)
         return ""
+
+    def _find(self, name: str):
+        if self.path is None:
+            return None
+        return self.path.find_mfile(name)

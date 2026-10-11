@@ -1,8 +1,4 @@
-"""Toolbox / MATLAB-like search path placeholder.
-
-FunctionResolver consults this after builtins. Entries will be directories
-of .m files or package folders — not implemented yet.
-"""
+"""Toolbox / MATLAB-like search path."""
 
 from __future__ import annotations
 
@@ -32,5 +28,16 @@ class ToolboxPath:
         return tuple(self.entries)
 
     def find_mfile(self, name: str) -> Path | None:
-        """Locate name.m on the path — stub returns None."""
+        """Locate name.m (or name.M) on the path; first match wins."""
+        base = Path(name).name
+        if base.lower().endswith(".m"):
+            base = base[:-2]
+        candidates = (f"{base}.m", f"{base}.M")
+        for entry in self.entries:
+            if not entry.is_dir():
+                continue
+            for cand in candidates:
+                hit = entry / cand
+                if hit.is_file():
+                    return hit.resolve()
         return None
