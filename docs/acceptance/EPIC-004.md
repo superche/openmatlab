@@ -3,7 +3,7 @@
 **Epic:** [#43 Core numeric builtins toolbox](https://github.com/superche/openmatlab/issues/43)  
 **Scope issues:** [#44](https://github.com/superche/openmatlab/issues/44) · [#45](https://github.com/superche/openmatlab/issues/45) · [#46](https://github.com/superche/openmatlab/issues/46) · [#47](https://github.com/superche/openmatlab/issues/47) · bugs [#48](https://github.com/superche/openmatlab/issues/48) · [#51](https://github.com/superche/openmatlab/issues/51) · conditional pass [#55](https://github.com/superche/openmatlab/issues/55)  
 **Functional tip** (omitnan + nan/NaN + NaN/Inf display, PRs #56+#58): `acccbffaa9824d6db3a22ee877d2c1beda33ec1d`  
-**Evidence merge tip:** *(stamped after this stamp PR merges)*  
+**Evidence merge tip** (dual-tip stamp):   
 **Captured:** 2026-10-11 18:01 CST on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
@@ -21,7 +21,7 @@
 | 4–5 | #47 sync + EPIC-004 (initial) | [#53](https://github.com/superche/openmatlab/pull/53) | `ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e` | pass |
 | Cond. | #55 max/min omitnan + nan/NaN | [#56](https://github.com/superche/openmatlab/pull/56) | `82096934afd55b8c93bc937bf02d2f8dc8672ab7` | pass |
 | Cond.+ | NaN/Inf display + EPIC-004 refresh | [#58](https://github.com/superche/openmatlab/pull/58) | `acccbffaa9824d6db3a22ee877d2c1beda33ec1d` | pass |
-| Stamp | dual-tip stamp | *(this PR)* | evidence merge tip | required |
+| Stamp | dual-tip stamp | [#59](https://github.com/superche/openmatlab/pull/59) |  | pass |
 
 Prior evidence refresh [#57](https://github.com/superche/openmatlab/pull/57) (`8d40c0d`) is superseded by this refresh (display fix made NaN smoke honest).
 
@@ -86,7 +86,7 @@ Note: `sum` still **propagates** NaN (MATLAB default for `sum` — only `max`/`m
 ## How to re-run
 
 ```bash
-git checkout acccbffaa9824d6db3a22ee877d2c1beda33ec1d   # functional tip; or evidence tip / main after stamp
+git checkout 54490aae3e07810fd9d794b5287c70ed8799db60   # evidence merge tip (functional: )
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
 openmatlab -e "v = max([1 nan() 4])"
