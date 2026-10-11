@@ -91,41 +91,41 @@ features:
   - id: lang.char_literal
     layer: lang
     name: Single-quoted char literals (vs transpose)
-    status: partial
+    status: done
     depends_on: [lang.lexer, lang.parser, runtime.char_value]
-    notes: "Context-sensitive '; '' escape (#64)"
+    notes: "Context-sensitive '; '' escape (#64) [done per ITER-067]"
     tests: [tests/unit/test_char_literal.py, tests/bdd/test_char_literal_bdd.py]
 
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals
-    status: partial
+    status: done
     depends_on: [runtime.evaluator]
-    notes: "Shared CharValue; no string class (#64)"
+    notes: "Shared CharValue; no string class (#64) [done per ITER-067]"
     tests: [tests/unit/test_char_literal.py]
 
   - id: lang.cell_literal
     layer: lang
     name: Cell array literals {…}
-    status: partial
+    status: done
     depends_on: [lang.parser, runtime.cell_value]
-    notes: "Rectangular 2-D cells; mixed Value elements (#65)"
+    notes: "Rectangular 2-D cells; mixed Value elements (#65) [done per ITER-067]"
     tests: [tests/unit/test_cell_literal.py, tests/bdd/test_cell_literal_bdd.py]
 
   - id: runtime.cell_value
     layer: runtime
     name: CellValue carrier + display
-    status: partial
+    status: done
     depends_on: [runtime.evaluator]
-    notes: "2-D Value grid; ConsoleDisplay summary (#65)"
+    notes: "2-D Value grid; ConsoleDisplay summary (#65) [done per ITER-067]"
     tests: [tests/unit/test_cell_literal.py]
 
   - id: lang.cell_index
     layer: lang
     name: Cell content indexing c{i} / c{i,j} + cell()
-    status: partial
+    status: done
     depends_on: [lang.cell_literal, runtime.cell_value, runtime.function_resolver]
-    notes: "Read-only content index; cell(m,n) empty 0x0 doubles (#66)"
+    notes: "Read-only content index; cell(m,n) empty 0x0 doubles (#66) [done per ITER-067]"
     tests: [tests/unit/test_cell_index.py, tests/bdd/test_cell_index_bdd.py]
   - id: lang.parser
     layer: lang
