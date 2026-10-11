@@ -1,6 +1,6 @@
 # Copy this file to: .github/workflows/ci.yml
 # (Requires a credential with the `workflow` scope, or paste via GitHub UI.)
-# Then protect main with required check: "CI / test"
+# Then protect main with required check: "`test` (Actions job; UI may show as test)"
 name: CI
 
 on:

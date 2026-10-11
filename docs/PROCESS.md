@@ -91,7 +91,7 @@ An Issue / PR is done only if:
 Recommended for `main` (Settings → Branches → Rule):
 
 1. Require pull request before merging  
-2. Require status check: **`CI / test`** (job name from Actions)  
+2. Require status check: **``test` (Actions job; UI may show as test)`** (job name from Actions)  
 3. Require conversation resolution  
 4. Do not allow bypass without review (team size permitting)
 
@@ -105,7 +105,7 @@ without the GitHub `workflow` OAuth scope can still push docs. To enable gates:
 
 1. Copy to `.github/workflows/ci.yml` via the GitHub UI (Actions → New workflow)
    or a credential that has the `workflow` scope.
-2. Turn on branch protection requiring check **`CI / test`**.
+2. Turn on branch protection requiring check **``test` (Actions job; UI may show as test)`**.
 
 ## Local commands
 

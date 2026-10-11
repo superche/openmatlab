@@ -9,7 +9,7 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope).
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab  
-- **Branch protection (`main`):** required status check \`CI / test\` (enforce_admins)  
+- **Branch protection (`main`):** required status check \``test` (Actions job; UI may show as test)\` (enforce_admins)  
 - **Iteration board:** GitHub Issues (Projects API needs \`project\` scope — use label filters)  
 - **Epic:** https://github.com/superche/openmatlab/issues/1  
 
@@ -23,7 +23,7 @@ Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope
 | Labels `layer:*` bug/gap/epic | **DONE** | `scripts/ensure_labels.sh`; labels on repo |
 | Gherkin skeletons | **DONE** | `features/*.feature` + `tests/bdd/` |
 | CI workflow **live** on GitHub | **BLOCKED** | Example at `docs/examples/ci.github-actions.yml`; token lacks `workflow` scope (push/API refused) |
-| Branch protection | **BLOCKED** (human) | Needs live check `CI / test` after workflow enabled |
+| Branch protection | **BLOCKED** (human) | Needs live check ``test` (Actions job; UI may show as test)` after workflow enabled |
 
 ## DONE (local / docs)
 
@@ -36,7 +36,7 @@ Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope
 
 ## BLOCKED / human steps
 
-### 1. Enable CI workflow (required — protection already requires `CI / test`)
+### 1. Enable CI workflow (required — protection already requires ``test` (Actions job; UI may show as test)`)
 
 Current `gh` token scopes: `gist`, `read:org`, `repo` — **no `workflow`**.  
 Creating/updating `.github/workflows/*.yml` is refused.
@@ -47,7 +47,7 @@ Creating/updating `.github/workflows/*.yml` is refused.
 2. **Add file** → create `.github/workflows/ci.yml`  
 3. Paste contents of [`examples/ci.github-actions.yml`](examples/ci.github-actions.yml)  
 4. Commit to `main`  
-5. **Settings → Branches →** protect `main` → require status check **`CI / test`**
+5. **Settings → Branches →** protect `main` → require status check **``test` (Actions job; UI may show as test)`**
 
 **Or** refresh auth with workflow scope (interactive):
 
@@ -56,6 +56,8 @@ gh auth refresh -h github.com -s workflow
 cp docs/examples/ci.github-actions.yml .github/workflows/ci.yml
 git add .github/workflows/ci.yml && git commit -m "ci: enable Actions gates" && git push
 ```
+
+</details>
 
 ### 2. Optional Projects board
 
