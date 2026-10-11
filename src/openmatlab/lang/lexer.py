@@ -164,6 +164,8 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "else": TokenType.KW_ELSE,
                 "elseif": TokenType.KW_ELSEIF,
                 "for": TokenType.KW_FOR,
+                "while": TokenType.KW_WHILE,
+                "break": TokenType.KW_BREAK,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
             yield Token(typ, word, start_line, start_col)

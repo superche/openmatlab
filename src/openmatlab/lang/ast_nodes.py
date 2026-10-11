@@ -155,5 +155,27 @@ class ForStmt(AstNode):
     body: Sequence["Stmt"]
 
 
-Stmt = Union[Assign, MultiAssign, ExprStmt, FunctionDef, IfStmt, ForStmt]
+@dataclass(frozen=True)
+class WhileStmt(AstNode):
+    condition: Expr
+    body: Sequence["Stmt"]
+
+
+@dataclass(frozen=True)
+class BreakStmt(AstNode):
+    """break — exits innermost while/for."""
+
+    pass
+
+
+Stmt = Union[
+    Assign,
+    MultiAssign,
+    ExprStmt,
+    FunctionDef,
+    IfStmt,
+    ForStmt,
+    WhileStmt,
+    BreakStmt,
+]
 Program = List[Stmt]

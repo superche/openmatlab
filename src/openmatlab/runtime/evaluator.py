@@ -19,6 +19,10 @@ class EvalError(Exception):
     pass
 
 
+class _BreakSignal(Exception):
+    """Internal: break leaves the innermost for/while."""
+
+
 class Evaluator:
     """Walk AST against Workspace + ArrayBackend (+ optional PlotSurface)."""
 
@@ -57,6 +61,10 @@ class Evaluator:
             return self._eval_if(stmt)
         if isinstance(stmt, ast.ForStmt):
             return self._eval_for(stmt)
+        if isinstance(stmt, ast.WhileStmt):
+            return self._eval_while(stmt)
+        if isinstance(stmt, ast.BreakStmt):
+            raise _BreakSignal()
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
@@ -361,7 +369,23 @@ class Evaluator:
         last: Value = self.numerics.from_scalar(0.0)
         for x in vals:
             self.workspace.set(stmt.var, self.numerics.from_scalar(float(x)))
-            for s in stmt.body:
-                last = self.eval_stmt(s)
+            try:
+                for s in stmt.body:
+                    last = self.eval_stmt(s)
+            except _BreakSignal:
+                break
         return last
+
+    def _eval_while(self, stmt: ast.WhileStmt) -> Value:
+        last: Value = self.numerics.from_scalar(0.0)
+        # Cap iterations to avoid hard hangs from user error in MVP
+        for _ in range(1_000_000):
+            if not self._truthy(self.eval_expr(stmt.condition)):
+                return last
+            try:
+                for s in stmt.body:
+                    last = self.eval_stmt(s)
+            except _BreakSignal:
+                return last
+        raise EvalError("while: exceeded 1000000 iterations")
 
