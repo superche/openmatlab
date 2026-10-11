@@ -7,7 +7,7 @@
 | Tip | SHA | PR |
 |-----|-----|----|
 | Functional | `6aadd4289d614dc0884896d82d30f2c95f6a51a5` | [#256](https://github.com/superche/openmatlab/pull/256) |
-| Evidence | PENDING | PENDING |
+| Evidence | `13aa9974c790a3640253e5299670d5c39b2beb6a` | [#257](https://github.com/superche/openmatlab/pull/257) |
 
 ## Acceptance
 
@@ -28,7 +28,10 @@
 
 ## Residual Issues
 
-PLACEHOLDER
+- https://github.com/superche/openmatlab/issues/258 (p1) matrix linear grow edges
+- https://github.com/superche/openmatlab/issues/259 (p2) N-D grow
+- https://github.com/superche/openmatlab/issues/260 (p1) cell paren grow
+
 
 ## Tests
 
