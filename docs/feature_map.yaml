@@ -108,7 +108,7 @@ features:
   - id: lang.return
     layer: lang
     name: return in .m functions/scripts
-    status: partial
+    status: done
     depends_on: [lang.parser, runtime.function_resolver, runtime.evaluator]
     notes: "early exit; toplevel EvalError; no return-expr (#137)"
     tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py]
