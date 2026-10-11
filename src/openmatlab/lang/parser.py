@@ -19,6 +19,7 @@ from openmatlab.lang.ast_nodes import (
     IndexExpr,
     MultiAssign,
     MatrixLiteral,
+    CellLiteral,
     Name,
     NumberLiteral,
     Program,
@@ -365,11 +366,47 @@ class Parser:
             return expr
         if tok.type == TokenType.LBRACKET:
             return self.parse_matrix()
+        if tok.type == TokenType.LBRACE:
+            return self.parse_cell()
         raise ParseError(
             f"Unexpected token {tok.type.name}",
             tok.line,
             tok.column,
         )
+
+
+    def parse_cell(self) -> CellLiteral:
+        self.expect(TokenType.LBRACE)
+        rows: List[Sequence[Expr]] = []
+        if self.match(TokenType.RBRACE):
+            return CellLiteral(rows=())
+        while True:
+            while self.match(TokenType.SEMICOLON):
+                pass
+            if self.current().type == TokenType.RBRACE:
+                break
+            row = self._parse_matrix_row()
+            rows.append(tuple(row))
+            if self.match(TokenType.SEMICOLON):
+                continue
+            if self.current().type == TokenType.RBRACE:
+                break
+            tok = self.current()
+            raise ParseError(
+                "Expected ';' or '}' in cell",
+                tok.line,
+                tok.column,
+            )
+        self.expect(TokenType.RBRACE)
+        width = len(rows[0]) if rows else 0
+        for i, row in enumerate(rows):
+            if len(row) != width:
+                raise ParseError(
+                    f"Cell literal ragged row {i}",
+                    0,
+                    0,
+                )
+        return CellLiteral(rows=tuple(rows))
 
     def parse_matrix(self) -> MatrixLiteral:
         self.expect(TokenType.LBRACKET)

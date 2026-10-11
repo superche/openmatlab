@@ -7,7 +7,7 @@ exist so parser, runtime, and display can agree on seams.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 
 class AstNode:
@@ -43,6 +43,11 @@ class BinOp(AstNode):
 class UnaryOp(AstNode):
     op: str
     operand: "Expr"
+
+
+@dataclass(frozen=True)
+class CellLiteral(AstNode):
+    rows: Tuple[Tuple["Expr", ...], ...]
 
 
 @dataclass(frozen=True)
@@ -92,6 +97,7 @@ Expr = Union[
     BinOp,
     UnaryOp,
     MatrixLiteral,
+    CellLiteral,
     IndexExpr,
     ColonExpr,
     TransposeExpr,

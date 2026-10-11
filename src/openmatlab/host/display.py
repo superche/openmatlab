@@ -58,6 +58,25 @@ class ConsoleDisplay:
 
 def _format_value(value: object) -> str:
     try:
+        from openmatlab.runtime.cell_value import CellValue
+
+        if isinstance(value, CellValue):
+            r, c = value.shape
+            if r == 0 and c == 0:
+                return "{}  (empty cell)"
+            lines = [f"{{{r}x{c} cell}}"]
+            for i in range(r):
+                for j in range(c):
+                    inner = _format_value(value.get(i, j))
+                    # indent multi-line
+                    inner_lines = inner.splitlines() or [inner]
+                    lines.append(f"  ({i+1},{j+1}) = {inner_lines[0]}")
+                    for extra in inner_lines[1:]:
+                        lines.append(f"           {extra}")
+            return "\n".join(lines)
+    except Exception:
+        pass
+    try:
         from openmatlab.runtime.char_value import CharValue
 
         if isinstance(value, CharValue):
