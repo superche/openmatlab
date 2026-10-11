@@ -664,3 +664,12 @@ test_cases:
     impl: tests/unit/test_logical_index_2d.py
     status: active
     env: unit
+
+  - id: tc.logical_pack
+    kind: unit
+    title: logical true false and 2d delete
+    features: [libs.logical_true_false]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_logical_pack.py
+    status: active
+    env: unit
