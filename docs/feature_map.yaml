@@ -100,9 +100,9 @@ features:
   - id: lang.continue
     layer: lang
     name: continue in for/while
-    status: partial
+    status: done
     depends_on: [lang.parser, runtime.evaluator]
-    notes: "innermost loop; outside → EvalError; break outside also errors (#127)"
+    notes: "innermost loop; outside → EvalError; break outside also errors (#127) [done per ITER-128]"
     tests: [tests/unit/test_continue.py, tests/bdd/test_continue_bdd.py]
   - id: runtime.char_value
     layer: runtime
