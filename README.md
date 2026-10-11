@@ -24,7 +24,7 @@ openmatlab test --suite unit      # layer 3+4: pytest
 pytest -m "unit or bdd" --cov=openmatlab
 ```
 
-Readiness: `docs/READY.md` · Process: `docs/PROCESS.md` · `CONTRIBUTING.md`  
+Agents: `AGENTS.md` · Readiness: `docs/READY.md` · Process: `docs/PROCESS.md` · `CONTRIBUTING.md`  
 QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.yaml` (sync) · CI `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`)
 
 ### Non-goals
