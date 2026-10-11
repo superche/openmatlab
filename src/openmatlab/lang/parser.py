@@ -29,6 +29,7 @@ from openmatlab.lang.ast_nodes import (
     CellLiteral,
     Name,
     EndExpr,
+    FuncHandleExpr,
     NumberLiteral,
     Program,
     StringLiteral,
@@ -431,6 +432,10 @@ class Parser:
         if tok.type == TokenType.IDENT:
             self.advance()
             return Name(id=tok.value)
+        if tok.type == TokenType.AT:
+            self.advance()
+            name_tok = self.expect(TokenType.IDENT)
+            return FuncHandleExpr(name=name_tok.value)
         if tok.type == TokenType.KW_END and self._in_subscript > 0:
             self.advance()
             return EndExpr()

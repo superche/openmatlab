@@ -619,3 +619,12 @@ test_cases:
     impl: tests/unit/test_unique_issorted.py
     status: active
     env: unit
+
+  - id: tc.cellfun
+    kind: unit
+    title: cellfun and function handles
+    features: [libs.cellfun, lang.function_handle]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cellfun.py
+    status: active
+    env: unit

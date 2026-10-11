@@ -286,6 +286,7 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             ";": TokenType.SEMICOLON,
             ",": TokenType.COMMA,
             ":": TokenType.COLON,
+            "@": TokenType.AT,
         }
         # Context-sensitive single quote: transpose vs char literal
         if ch == "'":

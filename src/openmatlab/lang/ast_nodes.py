@@ -105,6 +105,13 @@ class CallExpr(AstNode):
     args: Sequence["Expr"]
 
 
+@dataclass(frozen=True)
+class FuncHandleExpr(AstNode):
+    """@name — function handle to a named function/builtin."""
+
+    name: str
+
+
 Expr = Union[
     NumberLiteral,
     StringLiteral,
@@ -119,6 +126,7 @@ Expr = Union[
     ColonExpr,
     TransposeExpr,
     CallExpr,
+    FuncHandleExpr,
 ]
 
 

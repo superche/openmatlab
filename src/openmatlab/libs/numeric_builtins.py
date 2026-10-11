@@ -456,6 +456,36 @@ def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 
+def _cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """Apply function handle to each cell (UniformOutput=true MVP)."""
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    _arity("cellfun", args, 2, 2)
+    fh = args[0]
+    cell = args[1]
+    if not isinstance(fh, FunctionHandleValue):
+        raise BuiltinError("cellfun: expected function handle as first argument")
+    if not isinstance(cell, CellValue):
+        raise BuiltinError("cellfun: expected cell array as second argument")
+    rows, cols = cell.shape
+    out = np.zeros((rows, cols), dtype=np.float64)
+    for i in range(rows):
+        for j in range(cols):
+            results = fh.call([cell.get(i, j)], nargout=1)
+            if not results:
+                raise BuiltinError("cellfun: function returned no outputs")
+            r0 = results[0]
+            if not isinstance(r0, Array):
+                raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
+            buf = np.asarray(r0.backend_buffer(), dtype=np.float64)
+            if buf.size != 1:
+                raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
+            out[i, j] = float(buf.reshape(-1)[0])
+    return (_wrap(out),)
+
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -472,6 +502,7 @@ BUILTINS: Dict[str, Builtin] = {
     "find": _find,
     "unique": _unique,
     "issorted": _issorted,
+    "cellfun": _cellfun,
     "size": _size,
     "numel": _numel,
     "length": _length,

@@ -30,7 +30,7 @@ def test_newline_inside_matrix_becomes_row_sep():
     assert TokenType.SEMICOLON in toks
 
 
-def test_comment_and_error():
+def test_comment_and_at_handle():
     assert types("1 % c\n2") == [TokenType.NUMBER, TokenType.NEWLINE, TokenType.NUMBER]
-    with pytest.raises(LexerError):
-        tokenize("@")
+    # EPIC-023 / #276: @ is function-handle introducer (was LexerError)
+    assert types("@numel") == [TokenType.AT, TokenType.IDENT]

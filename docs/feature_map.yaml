@@ -470,6 +470,22 @@ features:
     notes: "M2 C09; non-decreasing → logical (#266)"
     tests: [tests/unit/test_unique_issorted.py]
 
+
+  - id: lang.function_handle
+    layer: lang
+    name: "@name function handle"
+    status: done
+    depends_on: [lang.parser]
+    notes: "M2 C10; FuncHandleExpr + FunctionHandleValue (#276)"
+    tests: [tests/unit/test_cellfun.py]
+  - id: libs.cellfun
+    layer: libs
+    name: cellfun UniformOutput
+    status: done
+    depends_on: [lang.function_handle, lang.cell_assign]
+    notes: "M2 C10 final; apply handle per cell (#276)"
+    tests: [tests/unit/test_cellfun.py, tests/bdd/test_cellfun_bdd.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)
