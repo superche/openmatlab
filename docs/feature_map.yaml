@@ -137,6 +137,13 @@ features:
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
 
+  - id: runtime.logical_index
+    layer: runtime
+    name: logical indexing read + LHS assign
+    status: done
+    depends_on: [runtime.evaluator, numerics.numpy_backend]
+    notes: "M2 C07 met; relational→logical; linear mask index/set (#234)"
+    tests: [tests/unit/test_logical_index.py, tests/bdd/test_logical_index_bdd.py]
   - id: numerics.matrix_power
     layer: numerics
     name: scalar / square-matrix power ^

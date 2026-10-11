@@ -25,7 +25,7 @@ met when its script actually passes.
 | C02 | Bare colon subscripts `A(i,:)`, `A(:)` | c02_indexing | p0 | #191 | **met** (Epic #16) |
 | C04 | Zero-arg constants `NaN`/`Inf`/`pi` in expressions | c04_numeric_builtins | p0 | #192 | **met** (Epic #17) |
 | C11 | Scalar / square-matrix power `x^2` | c11_scalar_power_script | p0 | #193 | **met** (Epic #18) |
-| C07 | Logical indexing read + LHS `v(v<0)=0` | c07_logical_indexing | p0 | #162 | pending |
+| C07 | Logical indexing read + LHS `v(v<0)=0` | c07_logical_indexing | p0 | #162 | **met** (Epic #19) |
 | C06 | Delete `v(i)=[]` (arrays; cells #109) | c06_delete_elements | p0 | #120 #109 | pending |
 | C08 | Grow on OOB assign `v(4)=7` (cells #108) | c08_grow_on_assign | p0 | #119 #108 | pending |
 | C05 | `sort(...,'descend')`, `find(...,k,'first'/'last')` | c05_sort_find_options | p1 | #95 #96 | **met** (Epic #15) |

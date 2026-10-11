@@ -144,12 +144,23 @@ class NumPyArrayBackend:
             vals = vals[vals >= stop - 1e-12]
         return NDArrayValue(vals.reshape(1, -1))
 
+
+    def _is_logical(self, a: Array) -> bool:
+        try:
+            return a.matlab_class() == "logical"
+        except Exception:
+            buf = _as_nd(a).backend_buffer()
+            return self._np.issubdtype(buf.dtype, self._np.bool_)
+
     def index(self, a: Array, indices: Sequence[Array]) -> Array:
         """1-based MATLAB-like subscript into ndarray."""
         aa = _as_nd(a)
         data = aa.backend_buffer()
         if len(indices) == 1:
-            return self._linear_index(data, _as_nd(indices[0]).backend_buffer())
+            ind_a = _as_nd(indices[0])
+            if self._is_logical(ind_a):
+                return self._logical_index(data, ind_a.backend_buffer())
+            return self._linear_index(data, ind_a.backend_buffer())
         py_idx = []
         for ind in indices:
             buf = _as_nd(ind).backend_buffer()
@@ -202,6 +213,27 @@ class NumPyArrayBackend:
             return NDArrayValue(picked.reshape(-1, 1))
         return NDArrayValue(picked.reshape(np.asarray(ind).shape))
 
+    def _logical_index(self, data: Any, mask: Any) -> Array:
+        """Linear logical mask (column-major), MATLAB A(L)."""
+        np = self._np
+        data_a = np.asarray(data)
+        flat = data_a.reshape(-1, order="F")
+        m = np.asarray(mask, dtype=bool).reshape(-1, order="F")
+        if m.size != flat.size:
+            raise NumericsError(
+                f"index: logical mask numel ({m.size}) != array numel ({flat.size})"
+            )
+        picked = flat[m].astype(np.float64)
+        rows, cols = (data_a.shape + (1, 1))[:2]
+        if picked.size == 0:
+            if rows == 1:
+                return NDArrayValue(picked.reshape(1, 0))
+            return NDArrayValue(picked.reshape(0, 1))
+        if rows == 1:
+            return NDArrayValue(picked.reshape(1, -1))
+        if cols == 1:
+            return NDArrayValue(picked.reshape(-1, 1))
+        return NDArrayValue(picked.reshape(-1, 1))
 
     def set_index(self, a: Array, indices: Sequence[Array], value: Array) -> Array:
         """1-based copy-on-write set; scalar or matching-numel RHS; range LHS ok."""
@@ -229,15 +261,25 @@ class NumPyArrayBackend:
             return np.asarray(vbuf, dtype=np.float64).reshape(-1, order="F")
 
         if len(indices) == 1:
-            k = _as_1based_int_vec(
-                _as_nd(indices[0]).backend_buffer(), label="linear index"
-            )
+            ind_a = _as_nd(indices[0])
             flat = np.asarray(data, order="F").reshape(-1, order="F").copy()
-            if np.any(k > flat.size):
-                raise NumericsError(
-                    f"set_index: linear index exceeds numel ({flat.size})"
+            if self._is_logical(ind_a):
+                m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
+                if m.size != flat.size:
+                    raise NumericsError(
+                        f"set_index: logical mask numel ({m.size}) != array numel ({flat.size})"
+                    )
+                nsel = int(m.sum())
+                flat[m] = _apply_rhs(nsel)
+            else:
+                k = _as_1based_int_vec(
+                    ind_a.backend_buffer(), label="linear index"
                 )
-            flat[k - 1] = _apply_rhs(int(k.size))
+                if np.any(k > flat.size):
+                    raise NumericsError(
+                        f"set_index: linear index exceeds numel ({flat.size})"
+                    )
+                flat[k - 1] = _apply_rhs(int(k.size))
             out = flat.reshape(data.shape, order="F").copy()
             return NDArrayValue(np.asarray(out, dtype=np.float64))
 

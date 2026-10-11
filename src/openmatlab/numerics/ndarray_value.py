@@ -18,6 +18,8 @@ class NDArrayValue:
         self._data = data
 
     def matlab_class(self) -> str:
+        if self._data.dtype == np.bool_ or np.issubdtype(self._data.dtype, np.bool_):
+            return "logical"
         return "double"
 
     @property
