@@ -531,6 +531,29 @@ features:
     notes: "Epic #28 (#327); absorbs #238 #321"
     tests: [tests/unit/test_logical_pack.py]
 
+
+  - id: libs.eps_realmax_realmin
+    layer: libs
+    name: eps realmax realmin
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "Epic #29 (#217)"
+    tests: [tests/unit/test_epic29_batch.py]
+  - id: runtime.power_eval_error
+    layer: runtime
+    name: wrap ^ NumericsError as EvalError
+    status: done
+    depends_on: [numerics.matrix_power]
+    notes: "Epic #29 (#227)"
+    tests: [tests/unit/test_epic29_batch.py]
+  - id: lang.cell_end_colon
+    layer: lang
+    name: end and colon in cell {}
+    status: done
+    depends_on: [lang.index_end]
+    notes: "Epic #29 (#172 #209); multi → cell pack (CSL #80 residual)"
+    tests: [tests/unit/test_epic29_batch.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)
