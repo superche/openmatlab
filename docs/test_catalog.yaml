@@ -163,3 +163,27 @@ test_cases:
     impl: tests/bdd/test_array_numpy_bdd.py
     status: active
     env: unit
+
+  - id: tc.parser_matrix_2x2
+    kind: unit
+    title: Parse [1 2; 3 4] to MatrixLiteral
+    features: [lang.matrix_literal, lang.parser]
+    impl: tests/unit/test_parser_matrix.py::test_matrix_literal_2x2
+    status: active
+    env: unit
+
+  - id: tc.parser_star_vs_dotstar
+    kind: unit
+    title: BinOp * vs .*
+    features: [lang.elementwise_ops]
+    impl: tests/unit/test_parser_matrix.py::test_star_vs_dot_star
+    status: active
+    env: unit
+
+  - id: tc.bdd_matrix_parse
+    kind: unit
+    title: Gherkin matrix / .* parse
+    features: [lang.parser, qa.pytest_bdd]
+    impl: tests/bdd/test_matrix_parser_bdd.py
+    status: active
+    env: unit
