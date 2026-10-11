@@ -50,14 +50,18 @@ def test_plot_surface_stub_raises():
         StubPlotSurface().plot()
 
 
-def test_lexer_parser_deferred():
+def test_lexer_parser_minimal_number():
+    """Issue #3: lexer/parser are real (no longer stubs)."""
+    from openmatlab.lang.ast_nodes import ExprStmt, NumberLiteral
     from openmatlab.lang.lexer import tokenize
     from openmatlab.lang.parser import parse
+    from openmatlab.lang.tokens import TokenType
 
-    with pytest.raises(NotImplementedError):
-        tokenize("1")
-    with pytest.raises(NotImplementedError):
-        parse("1")
+    toks = tokenize("1")
+    assert toks[0].type == TokenType.NUMBER
+    stmts = parse("1")
+    assert isinstance(stmts[0], ExprStmt)
+    assert stmts[0].expr == NumberLiteral(1.0)
 
 
 def test_no_float_dict_evaluator_module():
