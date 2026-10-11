@@ -106,6 +106,8 @@ class Evaluator:
                 self._require_array(self.eval_expr(expr.operand), "transpose"),
                 conjugate=expr.conjugate,
             )
+        if isinstance(expr, ast.CellIndexExpr):
+            return self._eval_cell_index(expr)
         if isinstance(expr, ast.IndexExpr):
             return self._eval_call_or_index(expr.target, list(expr.indices))
         if isinstance(expr, ast.CallExpr):
@@ -128,6 +130,50 @@ class Evaluator:
                 raise EvalError("Cell literal rows must have equal length")
             rows.append(tuple(vals))
         return CellValue(rows=tuple(rows))
+
+
+    def _eval_cell_index(self, expr: "ast.CellIndexExpr") -> Value:
+        from openmatlab.runtime.cell_value import CellValue
+
+        target = self.eval_expr(expr.target)
+        if not isinstance(target, CellValue):
+            raise EvalError(
+                f"cell index: expected cell, got {type(target).__name__}"
+            )
+        idxs = [self.eval_expr(i) for i in expr.indices]
+        if not idxs:
+            raise EvalError("cell index: missing indices")
+        rows, cols = target.shape
+        if rows == 0 and cols == 0:
+            raise EvalError("cell index: empty cell")
+
+        def _as_int(v: Value, label: str) -> int:
+            arr = self._require_array(v, label)
+            if not arr.is_scalar():
+                raise EvalError(f"{label}: expected scalar index")
+            x = float(arr.backend_buffer().reshape(-1)[0])
+            if x != int(x) or x < 1:
+                raise EvalError(f"{label}: indices must be positive integers")
+            return int(x)
+
+        if len(idxs) == 1:
+            k = _as_int(idxs[0], "cell index")
+            n = target.numel()
+            if k > n:
+                raise EvalError(f"cell index: linear index {k} exceeds numel ({n})")
+            # column-major linear → (i,j) 0-based
+            i0 = (k - 1) % rows
+            j0 = (k - 1) // rows
+            return target.get(i0, j0)
+        if len(idxs) == 2:
+            i = _as_int(idxs[0], "cell index")
+            j = _as_int(idxs[1], "cell index")
+            if i > rows or j > cols:
+                raise EvalError(
+                    f"cell index: ({i},{j}) out of bounds for {rows}x{cols} cell"
+                )
+            return target.get(i - 1, j - 1)
+        raise EvalError("cell index: only 1 or 2 subscripts supported")
 
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):
@@ -215,8 +261,8 @@ class Evaluator:
             msg = str(exc)
             raise EvalError(msg if msg.startswith(f"{n}:") else f"{n}: {msg}") from exc
         for i, out in enumerate(results):
-            if not isinstance(out, Array):
-                raise EvalError(f"{n}: output {i} is not an Array")
+            if not isinstance(out, Value):
+                raise EvalError(f"{n}: output {i} is not a Value")
         return results
 
     def _string_arg(self, expr: ast.Expr, fname: str) -> str:
@@ -225,7 +271,7 @@ class Evaluator:
         val = self.eval_expr(expr)
         if isinstance(val, CharValue):
             return val.text
-        raise EvalError(f"{fname}: expected string literal (double quotes)")
+        raise EvalError(f"{fname}: expected char/string argument")
 
     def _name_bound(self, name: str) -> bool:
         try:

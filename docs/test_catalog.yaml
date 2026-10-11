@@ -422,3 +422,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.cell_index
+    kind: unit
+    title: cell content indexing + cell() constructor
+    features: [lang.cell_index]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cell_index.py
+    status: active
+    env: unit
+

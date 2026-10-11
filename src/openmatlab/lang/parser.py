@@ -17,6 +17,7 @@ from openmatlab.lang.ast_nodes import (
     IfBranch,
     IfStmt,
     IndexExpr,
+    CellIndexExpr,
     MultiAssign,
     MatrixLiteral,
     CellLiteral,
@@ -344,6 +345,11 @@ class Parser:
                 args = self._parse_arg_list(TokenType.RPAREN)
                 self.expect(TokenType.RPAREN)
                 expr = IndexExpr(target=expr, indices=args)
+                continue
+            if self.match(TokenType.LBRACE):
+                args = self._parse_arg_list(TokenType.RBRACE)
+                self.expect(TokenType.RBRACE)
+                expr = CellIndexExpr(target=expr, indices=args)
                 continue
             break
         return expr
