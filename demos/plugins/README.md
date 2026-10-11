@@ -25,3 +25,11 @@ python demos/plugins/option-b/run_demo.py
 python demos/plugins/option-c/run_demo.py
 python demos/plugins/option-d/run_demo.py
 ```
+
+
+## Showcase recording
+
+Keyboard/mouse screen recording proving the host loads the sample community
+plugin and runs a contributed command / path entry:
+
+- [`showcase_plugin_host.mp4`](showcase_plugin_host.mp4)
