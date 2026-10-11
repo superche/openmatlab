@@ -82,6 +82,30 @@ Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 4. Agents use `gh api` / `gh issue edit --milestone "..."` (closed milestones: PATCH `milestone=<number>`).
 5. Do not invent parallel roadmap docs that duplicate milestone membership — link milestone URLs from `ARCHITECTURE.md` / acceptance packages when useful.
 
+
+### Milestone exit criteria & epic selection (mandatory)
+
+- Each active milestone has `docs/milestones/M<N>-*.md` with **measurable exit criteria**:
+  a conformance manifest (`tests/conformance/m2_manifest.py` for M2), required
+  feature_ids at `done`, and no open `p0` on the milestone.
+- Open Issues on a milestone carry exactly one priority label: `p0` / `p1` / `p2`.
+- **Epic selection:** the next epic MUST target the highest-priority **unmet**
+  criterion in the milestone doc (p0 before p1, then table order) — not convenience.
+- Unmet criteria scripts run as **strict xfail**; when an epic makes one pass, the
+  same PR flips it to `met` and updates the milestone doc table.
+- New gaps discovered by conformance get an Issue + priority label + milestone.
+
+### EPIC-NNN.md — Milestone progress section (mandatory)
+
+Every acceptance package includes:
+
+```
+## Milestone progress (M<N>)
+- Criteria met: X / Y
+- Conformance scripts passing: X / Y (xfail pending: …)
+- Remaining gaps (priority order): Cxx #issue …
+```
+
 ## Cases — Gherkin + pytest-bdd
 
 - Specs live in `features/*.feature` (business-readable).

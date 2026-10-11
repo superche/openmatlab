@@ -49,6 +49,10 @@ Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：
 
 Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign epics/residuals to the active milestone.
 
+- 选下一个 epic：必须取 `docs/milestones/M*.md` 中最高优先级的**未满足**准则（p0 > p1），不是顺手的。
+- 每个 `EPIC-NNN.md` 必须含 **Milestone progress**：criteria met/total、conformance 通过数、剩余 gap 列表。
+- 开放 Issue 必须带 `p0`/`p1`/`p2` 标签。详见 `docs/PROCESS.md` 与 `docs/milestones/M2-octave-breadth.md`。
+
 ## Residual Issues（强制）
 
 Epic 验收时，`EPIC-NNN.md` 中列出的 residual / non-goal **必须**落成 GitHub Issues
