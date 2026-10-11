@@ -27,6 +27,10 @@ class _ContinueSignal(Exception):
     """Internal: continue skips to next iteration of innermost for/while."""
 
 
+class _ReturnSignal(Exception):
+    """Internal: return exits current function/script body."""
+
+
 class Evaluator:
     """Walk AST against Workspace + ArrayBackend (+ optional PlotSurface)."""
 
@@ -44,6 +48,7 @@ class Evaluator:
         self.numerics = numerics
         self.plots = plots
         self._loop_depth = 0
+        self._return_ok = 0
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -51,14 +56,20 @@ class Evaluator:
 
     def eval_program(self, stmts: Sequence[ast.Stmt]) -> Optional[Value]:
         last: Optional[Value] = None
+        self._return_ok += 1
         try:
-            for stmt in stmts:
-                last = self.eval_stmt(stmt)
-        except _BreakSignal:
-            raise EvalError("break outside of a for or while loop") from None
-        except _ContinueSignal:
-            raise EvalError("continue outside of a for or while loop") from None
-        return last
+            try:
+                for stmt in stmts:
+                    last = self.eval_stmt(stmt)
+            except _ReturnSignal:
+                return last
+            except _BreakSignal:
+                raise EvalError("break outside of a for or while loop") from None
+            except _ContinueSignal:
+                raise EvalError("continue outside of a for or while loop") from None
+            return last
+        finally:
+            self._return_ok -= 1
 
     def eval_stmt(self, stmt: ast.Stmt) -> Value:
         if isinstance(stmt, ast.Assign):
@@ -85,6 +96,10 @@ class Evaluator:
             if self._loop_depth <= 0:
                 raise EvalError("continue outside of a for or while loop")
             raise _ContinueSignal()
+        if isinstance(stmt, ast.ReturnStmt):
+            if self._return_ok <= 0:
+                raise EvalError("return outside of a function or script")
+            raise _ReturnSignal()
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):

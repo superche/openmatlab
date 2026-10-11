@@ -494,3 +494,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.return
+    kind: unit
+    title: return in functions/scripts + toplevel error
+    features: [lang.return]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_return.py
+    status: active
+    env: unit
+

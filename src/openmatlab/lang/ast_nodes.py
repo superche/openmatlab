@@ -208,6 +208,13 @@ class ContinueStmt(AstNode):
     pass
 
 
+@dataclass(frozen=True)
+class ReturnStmt(AstNode):
+    """return — exit current function or script early."""
+
+    pass
+
+
 Stmt = Union[
     Assign,
     CellAssign,
@@ -220,5 +227,6 @@ Stmt = Union[
     WhileStmt,
     BreakStmt,
     ContinueStmt,
+    ReturnStmt,
 ]
 Program = List[Stmt]
