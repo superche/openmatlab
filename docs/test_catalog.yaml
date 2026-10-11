@@ -331,3 +331,12 @@ test_cases:
     impl: tests/unit/test_while_break.py
     status: active
     env: unit
+
+  - id: tc.script_m_eval
+    kind: unit
+    title: Script .m eval shares workspace
+    features: [libs.mfile_loading, runtime.evaluator]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_script_m.py::test_eval_script_shares_workspace
+    status: active
+    env: unit

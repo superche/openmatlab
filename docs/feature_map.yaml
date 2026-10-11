@@ -225,7 +225,7 @@ features:
     name: Load .m functions from path
     status: done
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
-    notes: "parse_mfile + MFileCallable; nested/nargin N/A [done per docs/design/ITER-024-feature-done-criteria.md]"
+    notes: "function .m + Script load/eval_script (shared WS); run() in #36 [done ITER-024; #35]"
     tests: [tests/unit/test_mfile_functions.py]
 
   # --- qa ---

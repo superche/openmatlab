@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
-from openmatlab.lang.ast_nodes import FunctionDef
+from openmatlab.lang.ast_nodes import FunctionDef, Stmt
 from openmatlab.lang.parser import parse
 from openmatlab.runtime.value import Array, Value
 
@@ -25,14 +25,39 @@ class CallableFunction(Protocol):
         ...
 
 
-def parse_mfile(path: Path) -> FunctionDef:
-    """Parse a .m file; require a top-level function definition."""
+@dataclass(frozen=True)
+class Script:
+    """Statement-only .m file (no function header)."""
+
+    body: Sequence[Stmt]
+    source_path: Optional[Path] = None
+
+
+def load_mfile(path: Path) -> FunctionDef | Script:
+    """Load a .m file as a function or a script."""
     text = path.read_text(encoding="utf-8")
     stmts = parse(text)
-    for stmt in stmts:
-        if isinstance(stmt, FunctionDef):
-            return stmt
-    raise ValueError(f"No function definition in {path}")
+    funcs = [s for s in stmts if isinstance(s, FunctionDef)]
+    if funcs:
+        if len(funcs) != 1 or any(not isinstance(s, FunctionDef) for s in stmts):
+            raise ValueError(
+                f"Mixed function/script or multiple functions not supported: {path}"
+            )
+        return funcs[0]
+    return Script(body=tuple(stmts), source_path=path.resolve())
+
+
+def parse_mfile(path: Path) -> FunctionDef:
+    """Parse a .m file; require a top-level function definition."""
+    loaded = load_mfile(path)
+    if not isinstance(loaded, FunctionDef):
+        raise ValueError(f"No function definition in {path}")
+    return loaded
+
+
+def eval_script(script: Script, evaluator: Any) -> Optional[Value]:
+    """Evaluate a script in the given evaluator's workspace (shared base WS)."""
+    return evaluator.eval_program(list(script.body))
 
 
 @dataclass
