@@ -257,16 +257,64 @@ class Evaluator:
 
         assert isinstance(cell, CellValue)
 
-        # Non-empty cell RHS → replace single cell contents
+        # Non-empty cell RHS → assign into paren slice (grow if needed)
         if isinstance(rhs_val, CellValue):
-            if rhs_val.numel() != 1:
-                raise EvalError(
-                    "cell () assign: RHS cell must be 1x1 for scalar subscript"
-                )
             if not (1 <= len(idx_exprs) <= 2):
                 raise EvalError("cell () assign: only 1 or 2 subscripts")
-            i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () assign")
-            self.workspace.set(name, cell.with_set(i0, j0, rhs_val.get(0, 0)))
+            # Grow only when a single OOB subscript needs expansion
+            try:
+                cell = self._cell_grow_for_assign(cell, idx_exprs)
+            except EvalError:
+                # non-scalar indices: no grow via content helper; require in-bounds
+                pass
+            if len(idx_exprs) == 1:
+                ri, cj = self._cell_subscript_lists(cell, idx_exprs, "cell () assign")
+                n = len(ri)
+                if rhs_val.numel() == 1 and n == 1:
+                    self.workspace.set(
+                        name, cell.with_set(ri[0], cj[0], rhs_val.get(0, 0))
+                    )
+                    return rhs_val
+                if rhs_val.numel() != n:
+                    raise EvalError(
+                        f"cell () assign: RHS numel ({rhs_val.numel()}) != LHS ({n})"
+                    )
+                # RHS linear column-major into selected positions
+                flat_rhs = []
+                rr, cc = rhs_val.shape
+                for j in range(cc):
+                    for i in range(rr):
+                        flat_rhs.append(rhs_val.get(i, j))
+                new_cell = cell
+                for (i0, j0), val in zip(zip(ri, cj), flat_rhs):
+                    new_cell = new_cell.with_set(i0, j0, val)
+                self.workspace.set(name, new_cell)
+                return rhs_val
+            rows_i, cols_j = self._cell_subscript_lists(
+                cell, idx_exprs, "cell () assign"
+            )
+            n = len(rows_i) * len(cols_j)
+            if rhs_val.numel() == 1 and n == 1:
+                self.workspace.set(
+                    name,
+                    cell.with_set(rows_i[0], cols_j[0], rhs_val.get(0, 0)),
+                )
+                return rhs_val
+            if rhs_val.shape != (len(rows_i), len(cols_j)) and rhs_val.numel() != n:
+                raise EvalError("cell () assign: RHS shape mismatch")
+            new_cell = cell
+            # fill column-major from RHS
+            flat_rhs = []
+            rr, cc = rhs_val.shape
+            for j in range(cc):
+                for i in range(rr):
+                    flat_rhs.append(rhs_val.get(i, j))
+            k = 0
+            for j0 in cols_j:
+                for i0 in rows_i:
+                    new_cell = new_cell.with_set(i0, j0, flat_rhs[k])
+                    k += 1
+            self.workspace.set(name, new_cell)
             return rhs_val
 
         # Empty numeric → delete
@@ -523,12 +571,21 @@ class Evaluator:
     def _eval_cell_paren_index(
         self, cell: "object", arg_exprs: List[ast.Expr]
     ) -> Value:
-        """c(i) / c(i,j) → 1×1 CellValue holding the content (slice, not content)."""
+        """c(i) / c(:,j) → sub-cell (paren slice, not content)."""
         from openmatlab.runtime.cell_value import CellValue
 
         assert isinstance(cell, CellValue)
-        i0, j0 = self._cell_subscripts(cell, list(arg_exprs), "cell () index")
-        return CellValue(rows=((cell.get(i0, j0),),))
+        idxs = list(arg_exprs)
+        if len(idxs) == 1:
+            ri, cj = self._cell_subscript_lists(cell, idxs, "cell () index")
+            # linear positions → column cell of 1×1 contents wrappers? MATLAB: c(1:2) is 1×2 or 2×1 subcell of cells
+            # Each selected element stays as cell content inside the subarray
+            if len(ri) == 1:
+                return CellValue(rows=((cell.get(ri[0], cj[0]),),))
+            return CellValue(rows=tuple((cell.get(i, j),) for i, j in zip(ri, cj)))
+        rows_i, cols_j = self._cell_subscript_lists(cell, idxs, "cell () index")
+        grid = tuple(tuple(cell.get(i, j) for j in cols_j) for i in rows_i)
+        return CellValue(rows=grid)
 
     def _invoke_call(
         self,
