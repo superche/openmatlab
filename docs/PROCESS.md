@@ -63,6 +63,25 @@ Card each Issue; do **not** invent a second in-repo ticket DB.
   **same PR** (sync note, not a competing system).
 - Dump: `openmatlab features`.
 
+
+## Milestones (roadmap)
+
+Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
+
+| Milestone | Intent |
+|-----------|--------|
+| **Workbench MVP** | Foundation REPL/scripts/control (epics #1 #19 #33) — closed when accepted |
+| **Octave-breadth language & numerics** | Language + numeric core toward MATLAB/Octave parity (builtins, cells, assign, control flow, indexing) |
+| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity |
+
+**Rules**
+
+1. Every **epic** Issue must be assigned to exactly one milestone at open (or in the after-epic sync).
+2. **Residual Issues** filed at epic acceptance inherit the **same milestone** as their parent epic unless they clearly belong to a later roadmap (e.g. domain toolbox → Domain toolboxes).
+3. After user accepts an epic: close the epic Issue; keep residuals on the milestone until delivered or re-homed.
+4. Agents use `gh api` / `gh issue edit --milestone "..."` (closed milestones: PATCH `milestone=<number>`).
+5. Do not invent parallel roadmap docs that duplicate milestone membership — link milestone URLs from `ARCHITECTURE.md` / acceptance packages when useful.
+
 ## Cases — Gherkin + pytest-bdd
 
 - Specs live in `features/*.feature` (business-readable).

@@ -45,7 +45,11 @@ Epic **关闭 / Done** 的条件不止 Issues 关闭与 CI 绿：
 细则见 `docs/PROCESS.md` § Epic acceptance。
 
 
-### Residual Issues（强制）
+### Milestones
+
+Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign epics/residuals to the active milestone.
+
+## Residual Issues（强制）
 
 Epic 验收时，`EPIC-NNN.md` 中列出的 residual / non-goal **必须**落成 GitHub Issues
 （`gap`/`chore` + layer；body 链回 parent epic；在 epic 上评论 URL 表）。
