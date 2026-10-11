@@ -18,6 +18,20 @@ Pending scripts run as **strict xfail**: once one starts passing, CI fails until
 the manifest marks it `met`. Progress can't drift, and a criterion only counts as
 met when its script actually passes.
 
+
+## Conformance script depth (honesty)
+
+Scripts were **thickened in Epic #25** so titles match assertions more closely:
+
+| Criterion | Added coverage |
+|-----------|----------------|
+| C04 | bare `pi`, `Inf`, `-Inf` (expected JSON tokens `"Inf"`/`"-Inf"`) |
+| C06 | cell paren delete `c(2)=[]` via `yc=c{1}+c{2}` |
+| C08 | cell content grow `c{3}=9` via `yg=c{1}+c{3}` |
+| C10 | `cellfun(@sum)` and `cellfun(@max)` beyond `@numel` |
+
+Harness: `tests/conformance/m2_expected.py` coerces Inf/NaN tokens. Remaining smoke thinness (matrix power, 2-D logical, etc.) tracked as residual Issues.
+
 ## Criteria (priority order — epic selection MUST take the top unmet one)
 
 | # | Criterion | Script | Priority | Tracking | Status |

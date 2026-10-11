@@ -637,3 +637,12 @@ test_cases:
     impl: tests/unit/test_cell_paren_assign.py
     status: active
     env: unit
+
+  - id: tc.m2_thicken
+    kind: unit
+    title: thickened M2 conformance scripts
+    features: [qa.m2_conformance_depth]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_m2_thicken.py
+    status: active
+    env: unit
