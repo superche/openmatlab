@@ -93,7 +93,10 @@ class NumPyArrayBackend:
             out = fn(aa.backend_buffer(), bb.backend_buffer())
         except ValueError as exc:
             raise NumericsError(f"{op}: {exc}") from exc
-        return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        out_a = self._np.asarray(out)
+        if not self._np.iscomplexobj(out_a):
+            out_a = out_a.astype(self._np.float64, copy=False)
+        return NDArrayValue(out_a)
 
     def transpose(self, a: Array, *, conjugate: bool = True) -> Array:
         aa = _as_nd(a)
@@ -106,8 +109,11 @@ class NumPyArrayBackend:
 
     def power(self, a: Array, b: Array, *, elementwise: bool = True) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
-        da = self._np.asarray(aa.backend_buffer(), dtype=self._np.float64)
-        db = self._np.asarray(bb.backend_buffer(), dtype=self._np.float64)
+        da = self._np.asarray(aa.backend_buffer())
+        db = self._np.asarray(bb.backend_buffer())
+        if not (self._np.iscomplexobj(da) or self._np.iscomplexobj(db)):
+            da = da.astype(self._np.float64, copy=False)
+            db = db.astype(self._np.float64, copy=False)
         if elementwise:
             out = da ** db
             return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
