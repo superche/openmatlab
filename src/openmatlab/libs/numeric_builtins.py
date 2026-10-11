@@ -299,6 +299,42 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(sorted_b), _wrap(idx0.astype(np.float64) + 1.0))
 
 
+
+def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("find", args, 1, 2)
+    b = _buf("find", args[0])
+    if b.ndim != 2:
+        b = np.asarray(b, dtype=np.float64)
+        if b.ndim < 2:
+            b = b.reshape(-1, 1)
+    rows, cols = b.shape
+    flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
+    mask = (flat != 0) & ~np.isnan(flat)
+    lin0 = np.nonzero(mask)[0]
+    if len(args) == 2:
+        k = _dim("find", args[1])
+        lin0 = lin0[:k]
+    r0 = lin0 % rows if rows else lin0
+    c0 = lin0 // rows if rows else lin0
+    vals = flat[lin0]
+
+    def colvec(data) -> NDArrayValue:
+        arr = np.asarray(data, dtype=np.float64).reshape(-1)
+        if arr.size == 0:
+            return NDArrayValue(np.zeros((0, 1), dtype=np.float64))
+        return NDArrayValue(arr.reshape(-1, 1))
+
+    if nargout <= 1:
+        return (colvec(lin0.astype(np.float64) + 1.0),)
+    if nargout == 2:
+        return (colvec(r0.astype(np.float64) + 1.0), colvec(c0.astype(np.float64) + 1.0))
+    return (
+        colvec(r0.astype(np.float64) + 1.0),
+        colvec(c0.astype(np.float64) + 1.0),
+        colvec(vals),
+    )
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -309,6 +345,7 @@ BUILTINS: Dict[str, Builtin] = {
     "cell": _cell,
     "cumsum": _cumsum,
     "sort": _sort,
+    "find": _find,
     "size": _size,
     "numel": _numel,
     "length": _length,

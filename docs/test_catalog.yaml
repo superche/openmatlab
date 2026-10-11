@@ -449,3 +449,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.find
+    kind: unit
+    title: find linear/subscripts/values
+    features: [libs.find]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_find.py
+    status: active
+    env: unit
+
