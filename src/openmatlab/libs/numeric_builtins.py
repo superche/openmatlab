@@ -281,6 +281,24 @@ def _cumsum(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (_wrap(np.cumsum(b, axis=ax)),)
 
 
+
+def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("sort", args, 1, 2)
+    b = _buf("sort", args[0])
+    if b.size == 0:
+        empty = _wrap(b)
+        return (empty,) if nargout <= 1 else (empty, empty)
+    ax = _axis_arg("sort", args[1]) if len(args) == 2 else _default_axis(b)
+    if ax >= b.ndim:
+        ones = np.ones(b.shape, dtype=np.float64)
+        return (_wrap(b),) if nargout <= 1 else (_wrap(b), _wrap(ones))
+    idx0 = np.argsort(b, axis=ax, kind="stable")
+    sorted_b = np.take_along_axis(b, idx0, axis=ax)
+    if nargout <= 1:
+        return (_wrap(sorted_b),)
+    return (_wrap(sorted_b), _wrap(idx0.astype(np.float64) + 1.0))
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -290,6 +308,7 @@ BUILTINS: Dict[str, Builtin] = {
     "NaN": _nan,
     "cell": _cell,
     "cumsum": _cumsum,
+    "sort": _sort,
     "size": _size,
     "numel": _numel,
     "length": _length,
