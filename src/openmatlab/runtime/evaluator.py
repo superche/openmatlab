@@ -181,6 +181,10 @@ class Evaluator:
             if nargout != 1:
                 raise EvalError(f"{key}: only one output supported")
             return (self._builtin_show(arg_exprs),)
+        if key == "run":
+            if nargout != 1:
+                raise EvalError("run: only one output supported")
+            return (self._builtin_run(arg_exprs),)
         try:
             fn = self.functions.resolve(n)
         except LookupError as exc:
@@ -248,6 +252,36 @@ class Evaluator:
         show = getattr(self.plots, "show", None)
         if callable(show):
             show()
+        return self.numerics.from_scalar(1.0)
+
+    def _builtin_run(self, arg_exprs: List[ast.Expr]) -> Array:
+        from pathlib import Path
+
+        from openmatlab.lang.ast_nodes import FunctionDef
+        from openmatlab.runtime.functions import Script, eval_script, load_mfile
+
+        if len(arg_exprs) != 1:
+            raise EvalError("run: expected one string path")
+        name = self._string_arg(arg_exprs[0], "run")
+        path = Path(name).expanduser()
+        if not path.is_file():
+            # try ToolboxPath by stem / name
+            hit = None
+            if self.functions.path is not None:
+                hit = self.functions.path.find_mfile(name)
+            if hit is None:
+                raise EvalError(f"run: file not found: {name}")
+            path = hit
+        try:
+            loaded = load_mfile(path)
+        except ValueError as exc:
+            raise EvalError(str(exc)) from exc
+        if isinstance(loaded, FunctionDef):
+            raise EvalError(
+                f"run: {path} is a function file; call it as a function instead"
+            )
+        assert isinstance(loaded, Script)
+        eval_script(loaded, self)
         return self.numerics.from_scalar(1.0)
 
     def _eval_binop(self, expr: ast.BinOp) -> Array:

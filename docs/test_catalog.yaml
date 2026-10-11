@@ -340,3 +340,12 @@ test_cases:
     impl: tests/unit/test_script_m.py::test_eval_script_shares_workspace
     status: active
     env: unit
+
+  - id: tc.run_script
+    kind: unit
+    title: run("script.m") / path name
+    features: [runtime.evaluator, libs.mfile_loading, libs.toolbox_path]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_run_script.py
+    status: active
+    env: unit
