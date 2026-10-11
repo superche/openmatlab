@@ -132,7 +132,7 @@ features:
   - id: lang.index_end
     layer: lang
     name: end as last-index in subscripts
-    status: partial
+    status: done
     depends_on: [lang.parser, lang.array_assign, runtime.array_assign_range]
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
