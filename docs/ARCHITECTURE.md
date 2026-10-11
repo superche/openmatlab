@@ -12,10 +12,10 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epic [#1](https://github.com/superche/openmatlab/issues/1) delivered the calibrated fill order.
-Seams remain Protocol-first; language evaluation is a **matrix MVP**, not full MATLAB.
+**Post-MVP (v0.0.2+):** Epic [#1](https://github.com/superche/openmatlab/issues/1) MVP fill order + Epic [#19](https://github.com/superche/openmatlab/issues/19) workbench depth.
+Seams remain Protocol-first; language is a **matrix+control MVP**, not full MATLAB.
 
-Acceptance evidence: [`docs/acceptance/EPIC-001.md`](acceptance/EPIC-001.md).
+Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md).
 
 What works today:
 
@@ -26,7 +26,7 @@ What works today:
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 
-Explicit non-parity (next epics): language `addpath`/`which`, multi-return `[a,b]=f()`, control flow beyond `function`/`end`, interactive (non-Agg) plot, rich toolboxes.
+Residual non-parity (later): `while`/`break`, single-quoted char/cells, rich toolboxes, full interactive GUI tweak loop.
 
 ## Package layout
 
