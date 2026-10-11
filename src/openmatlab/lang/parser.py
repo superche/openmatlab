@@ -28,6 +28,7 @@ from openmatlab.lang.ast_nodes import (
     MatrixLiteral,
     CellLiteral,
     Name,
+    EndExpr,
     NumberLiteral,
     Program,
     StringLiteral,
@@ -64,6 +65,7 @@ class Parser:
     def __init__(self, tokens: List[Token]) -> None:
         self.tokens = tokens
         self.pos = 0
+        self._in_subscript = 0
 
     def current(self) -> Token:
         return self.tokens[self.pos]
@@ -425,6 +427,9 @@ class Parser:
         if tok.type == TokenType.IDENT:
             self.advance()
             return Name(id=tok.value)
+        if tok.type == TokenType.KW_END and self._in_subscript > 0:
+            self.advance()
+            return EndExpr()
         if tok.type == TokenType.LPAREN:
             self.advance()
             expr = self.parse_expression()
@@ -516,12 +521,16 @@ class Parser:
 
     def _parse_arg_list(self, closer: TokenType) -> List[Expr]:
         args: List[Expr] = []
-        if self.current().type == closer:
-            return args
-        args.append(self.parse_expression())
-        while self.match(TokenType.COMMA):
+        self._in_subscript += 1
+        try:
+            if self.current().type == closer:
+                return args
             args.append(self.parse_expression())
-        return args
+            while self.match(TokenType.COMMA):
+                args.append(self.parse_expression())
+            return args
+        finally:
+            self._in_subscript -= 1
 
 
 def parse(source: str) -> Program:

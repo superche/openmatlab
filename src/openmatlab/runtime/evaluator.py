@@ -49,6 +49,7 @@ class Evaluator:
         self.plots = plots
         self._loop_depth = 0
         self._return_ok = 0
+        self._end_stack: list[float] = []
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -111,6 +112,10 @@ class Evaluator:
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
     def eval_expr(self, expr: ast.Expr) -> Value:
+        if isinstance(expr, ast.EndExpr):
+            if not self._end_stack:
+                raise EvalError("end outside of an indexing expression")
+            return self.numerics.from_scalar(self._end_stack[-1])
         if isinstance(expr, ast.NumberLiteral):
             return self.numerics.from_scalar(expr.value)
         if isinstance(expr, ast.StringLiteral):
@@ -192,10 +197,9 @@ class Evaluator:
         except KeyError as exc:
             raise EvalError(f"Undefined variable: {name}") from exc
         arr_a = self._require_array(arr, "array assign")
-        idxs = [
-            self._require_array(self.eval_expr(a), "array assign")
-            for a in stmt.target.indices
-        ]
+        idxs = self._eval_subscripts(
+            arr_a, list(stmt.target.indices), label="array assign"
+        )
         rhs = self._require_array(self.eval_expr(stmt.value), "array assign")
         try:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
@@ -268,6 +272,28 @@ class Evaluator:
         raise EvalError(f"{label}: only 1 or 2 subscripts supported")
 
 
+
+    def _eval_subscripts(
+        self, target: Array, arg_exprs: List[ast.Expr], *, label: str
+    ) -> List[Array]:
+        """Eval index exprs with `end` bound per MATLAB dim / numel rules."""
+        n = len(arg_exprs)
+        idxs: List[Array] = []
+        for i, aexpr in enumerate(arg_exprs):
+            if n == 1:
+                end_val = float(target.numel())
+            else:
+                shape = target.shape
+                if i >= len(shape):
+                    raise EvalError(f"{label}: too many subscripts")
+                end_val = float(shape[i])
+            self._end_stack.append(end_val)
+            try:
+                idxs.append(self._require_array(self.eval_expr(aexpr), label))
+            finally:
+                self._end_stack.pop()
+        return idxs
+
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):
             raise EvalError(f"{ctx}: expected Array, got {type(val).__name__}")
@@ -302,9 +328,7 @@ class Evaluator:
             if isinstance(target, CellValue):
                 return self._eval_cell_paren_index(target, arg_exprs)
             target_a = self._require_array(target, "index")
-            idxs = [
-                self._require_array(self.eval_expr(a), "index") for a in arg_exprs
-            ]
+            idxs = self._eval_subscripts(target_a, arg_exprs, label="index")
             return self.numerics.index(target_a, idxs)
         if not results:
             return self.numerics.from_nested([])

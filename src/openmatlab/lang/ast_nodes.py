@@ -33,6 +33,13 @@ class Name(AstNode):
 
 
 @dataclass(frozen=True)
+class EndExpr(AstNode):
+    """end — last index in a subscript context."""
+
+    pass
+
+
+@dataclass(frozen=True)
 class BinOp(AstNode):
     op: str
     left: "Expr"
@@ -102,6 +109,7 @@ Expr = Union[
     NumberLiteral,
     StringLiteral,
     Name,
+    EndExpr,
     BinOp,
     UnaryOp,
     MatrixLiteral,

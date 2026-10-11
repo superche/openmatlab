@@ -128,6 +128,14 @@ features:
     depends_on: [lang.array_assign, numerics.array_set]
     notes: "A(1:n)=v; scalar broadcast; numel match; 2-sub ix_ (#159)"
     tests: [tests/unit/test_array_assign_range.py, tests/bdd/test_array_assign_range_bdd.py]
+
+  - id: lang.index_end
+    layer: lang
+    name: end as last-index in subscripts
+    status: partial
+    depends_on: [lang.parser, lang.array_assign, runtime.array_assign_range]
+    notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
+    tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals
