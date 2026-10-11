@@ -63,5 +63,5 @@ After exit: richer UI slots, out-of-process host, signed plugins — file as
 
 ## Progress snapshot
 
-After host PR: **8 / 8** criteria met (P01–P08). Epic **#349** open for user acceptance; children #350–#356 closable when CI merged.
-Acceptance: `docs/acceptance/EPIC-349.md` (follow-up PR).
+After host + acceptance PRs: **8 / 8** criteria met (P01–P08). Epic **#349** OPEN for user acceptance; children #350–#356 closed. Residuals #359–#362 (p2).
+Acceptance: [`docs/acceptance/EPIC-349.md`](../acceptance/EPIC-349.md). Showcase: `demos/plugins/showcase_plugin_host.mp4`.
