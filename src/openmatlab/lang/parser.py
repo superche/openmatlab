@@ -12,6 +12,7 @@ from openmatlab.lang.ast_nodes import (
     ExprStmt,
     FunctionDef,
     IndexExpr,
+    MultiAssign,
     MatrixLiteral,
     Name,
     NumberLiteral,
@@ -99,9 +100,37 @@ class Parser:
             value = self.parse_expression()
             suppress = self._trailing_suppress()
             return Assign(name=name, value=value, suppress=suppress)
+        multi = self._try_parse_multi_assign()
+        if multi is not None:
+            return multi
         expr = self.parse_expression()
         suppress = self._trailing_suppress()
         return ExprStmt(expr=expr, suppress=suppress)
+
+    def _try_parse_multi_assign(self) -> Optional[MultiAssign]:
+        """Parse [a, b] = expr; rewind if not that pattern (matrix / other)."""
+        if self.current().type != TokenType.LBRACKET:
+            return None
+        saved = self.pos
+        self.advance()  # [
+        if self.current().type != TokenType.IDENT:
+            self.pos = saved
+            return None
+        try:
+            names = self._parse_name_list()
+            if self.current().type != TokenType.RBRACKET:
+                self.pos = saved
+                return None
+            self.advance()
+            if self.match(TokenType.ASSIGN) is None:
+                self.pos = saved
+                return None
+        except ParseError:
+            self.pos = saved
+            return None
+        value = self.parse_expression()
+        suppress = self._trailing_suppress()
+        return MultiAssign(names=tuple(names), value=value, suppress=suppress)
 
     def parse_function_def(self) -> FunctionDef:
         self.expect(TokenType.KW_FUNCTION)

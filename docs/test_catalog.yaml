@@ -279,3 +279,12 @@ test_cases:
     impl: tests/unit/test_addpath_which.py::test_addpath_which_and_call
     status: active
     env: unit
+
+  - id: tc.multi_assign_swap
+    kind: unit
+    title: "[u,v] = swap(1,2) binds both outputs"
+    features: [runtime.evaluator, lang.parser, libs.mfile_loading]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_multi_assign.py::test_eval_multi_return
+    status: active
+    env: unit
