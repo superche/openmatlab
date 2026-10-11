@@ -57,6 +57,8 @@ class Evaluator:
             return value
         if isinstance(stmt, ast.CellAssign):
             return self._eval_cell_assign(stmt)
+        if isinstance(stmt, ast.ArrayAssign):
+            return self._eval_array_assign(stmt)
         if isinstance(stmt, ast.MultiAssign):
             return self._eval_multi_assign(stmt)
         if isinstance(stmt, ast.IfStmt):
@@ -145,6 +147,29 @@ class Evaluator:
             )
         i0, j0 = self._cell_subscripts(target, list(expr.indices), "cell index")
         return target.get(i0, j0)
+
+
+    def _eval_array_assign(self, stmt: "ast.ArrayAssign") -> Value:
+        target_expr = stmt.target.target
+        if not isinstance(target_expr, ast.Name):
+            raise EvalError("array assign: LHS must be name(...) in this MVP")
+        name = target_expr.id
+        try:
+            arr = self.workspace.get(name)
+        except KeyError as exc:
+            raise EvalError(f"Undefined variable: {name}") from exc
+        arr_a = self._require_array(arr, "array assign")
+        idxs = [
+            self._require_array(self.eval_expr(a), "array assign")
+            for a in stmt.target.indices
+        ]
+        rhs = self._require_array(self.eval_expr(stmt.value), "array assign")
+        try:
+            new_arr = self.numerics.set_index(arr_a, idxs, rhs)
+        except Exception as exc:  # NumericsError
+            raise EvalError(f"array assign: {exc}") from exc
+        self.workspace.set(name, new_arr)
+        return rhs
 
     def _eval_cell_assign(self, stmt: "ast.CellAssign") -> Value:
         from openmatlab.runtime.cell_value import CellValue

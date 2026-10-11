@@ -476,3 +476,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.array_assign
+    kind: unit
+    title: indexed array assignment A(i)=v
+    features: [lang.array_assign, numerics.array_set]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_array_assign.py
+    status: active
+    env: unit
+
