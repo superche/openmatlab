@@ -53,6 +53,10 @@ class Evaluator:
             return value
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
+        if isinstance(stmt, ast.FunctionDef):
+            raise EvalError(
+                "function definitions are only valid in .m files on the path"
+            )
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
     def eval_expr(self, expr: ast.Expr) -> Array:
@@ -91,10 +95,23 @@ class Evaluator:
         raise EvalError(f"Unknown expression: {type(expr)!r}")
 
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Array:
-        # Builtin plot(...) when name unbound
-        if isinstance(target_expr, ast.Name) and target_expr.id.lower() == "plot":
-            if not self._name_bound(target_expr.id):
+        # Unbound name(args): builtins / .m functions before indexing
+        if isinstance(target_expr, ast.Name) and not self._name_bound(target_expr.id):
+            n = target_expr.id
+            if n.lower() == "plot":
                 return self._builtin_plot(arg_exprs)
+            try:
+                fn = self.functions.resolve(n)
+            except LookupError as exc:
+                raise EvalError(str(exc)) from exc
+            args = [self.eval_expr(a) for a in arg_exprs]
+            results = fn(args, nargout=1)
+            if not results:
+                return self.numerics.from_nested([])
+            out = results[0]
+            if not isinstance(out, Array):
+                raise EvalError(f"{n}: function did not return an Array")
+            return out
         target = self.eval_expr(target_expr)
         idxs = [self.eval_expr(a) for a in arg_exprs]
         return self.numerics.index(target, idxs)

@@ -1,14 +1,18 @@
-# ITER-006 Design: ToolboxPath + FunctionResolver (slice 1)
+# ITER-006 Design: ToolboxPath + .m function load/eval
 
-**Issue:** #6
+**Issue:** #6 · **Principles:** AGENTS.md (KISS)
 
-## This PR slice (KISS)
+## Done (slice 1)
+- `ToolboxPath.find_mfile`
+- `FunctionResolver.which` path hits
 
-1. `ToolboxPath.find_mfile(name)` searches `entries` for `name.m` / `name.M`
-2. `FunctionResolver.which` / `resolve` consult path after builtins
-3. `resolve` on path hit raises clear `NotImplementedError` until .m eval exists
-   — **path discovery works**; loading deferred
+## This slice (complete #6 MVP)
 
-## Later slice
+1. Lexer: `function` / `end` → `KW_FUNCTION` / `KW_END`
+2. Parser: `FunctionDef` (`function [outs]=name(ins) ... end`)
+3. `parse_mfile` + `MFileCallable` — new workspace, bind inputs, run body, read outputs
+4. `FunctionResolver.resolve` loads/caches callables; `bind_runtime(numerics, plots)`
+5. Evaluator: unbound `name(args)` → resolver (after `plot` builtin)
 
-Parse `function` files (#3 grammar extension) + call frames.
+## Non-goals
+Nested functions, nargin/nargout specials, script .m without `function`, classes.

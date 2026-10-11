@@ -242,6 +242,31 @@ test_cases:
     kind: unit
     title: FunctionResolver.which finds path file
     features: [runtime.function_resolver, libs.mfile_loading]
-    impl: tests/unit/test_toolbox_path.py::test_resolver_which_and_resolve_stub
+    impl: tests/unit/test_toolbox_path.py::test_resolver_which
+    status: active
+    env: unit
+
+  - id: tc.mfile_parse_function
+    kind: unit
+    title: Parse function y = f(a,b) ... end
+    features: [lang.function_def]
+    impl: tests/unit/test_mfile_functions.py::test_parse_function_def
+    status: active
+    env: unit
+
+  - id: tc.mfile_call_add2
+    kind: unit
+    title: Call add2.m from ToolboxPath via evaluator
+    features: [libs.mfile_loading, runtime.evaluator]
+    use_cases: [uc.script_function_path]
+    impl: tests/unit/test_mfile_functions.py::test_eval_call_from_path
+    status: active
+    env: unit
+
+  - id: tc.bdd_mfile
+    kind: unit
+    title: Gherkin path function add2
+    features: [libs.mfile_loading, qa.pytest_bdd]
+    impl: tests/bdd/test_mfile_bdd.py
     status: active
     env: unit
