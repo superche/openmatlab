@@ -2,7 +2,7 @@
 
 **R&D iteration loop + Definition of Done:** [`PROCESS.md`](PROCESS.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
 
-Behaviour specs: `features/*.feature` (pytest-bdd). CI: `.github/workflows/ci.yml`.
+Behaviour specs: `features/*.feature` (pytest-bdd). CI: `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`).
 
 OpenMATLAB QA is a **five-layer** system. Prefer **existing tools** (GitHub
 Issues, `gh`, pytest, coverage; later Selenium/Playwright for web UI) over
@@ -85,7 +85,7 @@ is a web UI. Goldens are self-authored / public-spec; never proprietary MATLAB R
 |------|-----|
 | **pytest** + **pytest-bdd** | Unit + Gherkin scenarios |
 | **coverage** (`pytest-cov`) | CI `--cov-fail-under=60` (modest) |
-| **GitHub Actions** | PR/main CI (`.github/workflows/ci.yml`) |
+| **GitHub Actions** | PR/main CI (`docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`)) |
 | **gh** | Issues / PRs (layer 5) |
 | **openmatlab** CLI | `status` · `features` · `cases` · `defects` (→ gh) · `test` (→ pytest) |
 | Playwright / Selenium | Deferred — future web workbench only |

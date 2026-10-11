@@ -120,4 +120,4 @@ See `docs/QA.md`:
 
 Also: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.
 
-R&D loop / DoD: `docs/PROCESS.md`. CI: `.github/workflows/ci.yml`.
+R&D loop / DoD: `docs/PROCESS.md`. CI: `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`).

@@ -28,7 +28,7 @@ Full QA layer model: [`QA.md`](QA.md). Defects: [`WORKFLOW.md`](WORKFLOW.md).
 | Executable checks | **pytest** | `tests/unit`, markers |
 | Environments | unit / conformance / interactive | `tests/` layout |
 | Defects | **GitHub Issues** | `gh` / `openmatlab defects` |
-| Gates | **GitHub Actions** | `.github/workflows/ci.yml` |
+| Gates | **GitHub Actions** | `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`) |
 | Coverage | **pytest-cov** | modest `fail_under` in pyproject |
 | Future web UI | Playwright/Selenium | **not** until browser workbench exists |
 
@@ -94,6 +94,16 @@ Recommended for `main` (Settings → Branches → Rule):
 4. Do not allow bypass without review (team size permitting)
 
 Documented here because protection is configured in the GitHub UI, not in git.
+
+
+## Enabling CI on GitHub
+
+The workflow file lives at **`docs/examples/ci.github-actions.yml`** so agents
+without the GitHub `workflow` OAuth scope can still push docs. To enable gates:
+
+1. Copy to `.github/workflows/ci.yml` via the GitHub UI (Actions → New workflow)
+   or a credential that has the `workflow` scope.
+2. Turn on branch protection requiring check **`CI / test`**.
 
 ## Local commands
 

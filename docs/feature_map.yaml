@@ -265,7 +265,7 @@ features:
     name: GitHub Actions CI quality gates
     status: partial
     spec: docs/PROCESS.md
-    notes: "PR CI: unit+bdd, cov>=60"
+    notes: "PR CI example docs/examples/ci.github-actions.yml; unit+bdd, cov>=60"
 
   - id: qa.process_dod
     layer: qa

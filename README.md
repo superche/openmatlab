@@ -25,7 +25,7 @@ pytest -m "unit or bdd" --cov=openmatlab
 ```
 
 Process: `docs/PROCESS.md` · `CONTRIBUTING.md`  
-QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.yaml` (sync) · CI `.github/workflows/ci.yml`
+QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.yaml` (sync) · CI `docs/examples/ci.github-actions.yml` (copy to `.github/workflows/ci.yml`)
 
 ### Non-goals
 
