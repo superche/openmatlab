@@ -59,3 +59,6 @@ class TokenType(Enum):
     KW_BREAK = auto()
     KW_CONTINUE = auto()
     KW_RETURN = auto()
+    KW_SWITCH = auto()
+    KW_CASE = auto()
+    KW_OTHERWISE = auto()

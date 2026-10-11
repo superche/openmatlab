@@ -215,6 +215,23 @@ class ReturnStmt(AstNode):
     pass
 
 
+@dataclass(frozen=True)
+class SwitchCase(AstNode):
+    """One case arm: one or more match values + body."""
+
+    values: Sequence["Expr"]
+    body: Sequence["Stmt"]
+
+
+@dataclass(frozen=True)
+class SwitchStmt(AstNode):
+    """switch expr … case … otherwise … end (no fall-through)."""
+
+    expr: "Expr"
+    cases: Sequence[SwitchCase]
+    otherwise: Optional[Sequence["Stmt"]] = None
+
+
 Stmt = Union[
     Assign,
     CellAssign,
@@ -228,5 +245,6 @@ Stmt = Union[
     BreakStmt,
     ContinueStmt,
     ReturnStmt,
+    SwitchStmt,
 ]
 Program = List[Stmt]
