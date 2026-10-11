@@ -72,6 +72,12 @@ def _format_value(value: object) -> str:
             buf = value.backend_buffer()
             if value.is_scalar():
                 v = float(buf.reshape(-1)[0])
+                import math
+
+                if math.isnan(v):
+                    return "NaN"
+                if math.isinf(v):
+                    return "-Inf" if v < 0 else "Inf"
                 if v == int(v) and abs(v) < 1e15:
                     return str(int(v))
                 return repr(v)

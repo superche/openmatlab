@@ -2,14 +2,14 @@
 
 **Epic:** [#43 Core numeric builtins toolbox](https://github.com/superche/openmatlab/issues/43)  
 **Scope issues:** [#44](https://github.com/superche/openmatlab/issues/44) · [#45](https://github.com/superche/openmatlab/issues/45) · [#46](https://github.com/superche/openmatlab/issues/46) · [#47](https://github.com/superche/openmatlab/issues/47) · bugs [#48](https://github.com/superche/openmatlab/issues/48) · [#51](https://github.com/superche/openmatlab/issues/51) · conditional pass [#55](https://github.com/superche/openmatlab/issues/55)  
-**Functional tip** (NaN-omit max/min + nan/NaN, PR #56): `82096934afd55b8c93bc937bf02d2f8dc8672ab7`  
-**Evidence merge tip:** *(stamped by follow-up PR after this doc merges)*  
-**Captured:** 2026-10-11 17:59 CST on `/workspace/openmatlab`  
+**Functional tip** (omitnan + nan/NaN + NaN/Inf display): *(merge tip of this PR — stamped in follow-up)*  
+**Evidence merge tip:** *(stamped by follow-up after this doc merges)*  
+**Captured:** 2026-10-11 18:01 CST on `/workspace/openmatlab`  
 **Rule:** Outputs below are from real local commands; not invented.
 
 ## Verdict
 
-**Ready for user re-acceptance (conditional pass closed).** Ordered steps 1–5 from the epic plus the user-required **max/min default omitnan** (#55) are green. Tests were written to MATLAB defaults and were **not** weakened.
+**Ready for user re-acceptance (conditional pass closed).** Ordered steps 1–5 plus user-required **max/min default omitnan** (#55) are green. NaN/Inf scalars print as `NaN`/`Inf`/`-Inf` (display fix found while refreshing evidence). Tests match MATLAB defaults and were **not** weakened.
 
 ## Traceability
 
@@ -20,7 +20,10 @@
 | 3 | #46 elfun (+ #51) | [#52](https://github.com/superche/openmatlab/pull/52) | `ba43aa8138bdc1baf9873d3853900b5f3c319641` | pass |
 | 4–5 | #47 sync + EPIC-004 (initial) | [#53](https://github.com/superche/openmatlab/pull/53) | `ea4c140e2da3dd6bb46402b8e7ca99794b7cea4e` | pass |
 | Cond. | #55 max/min omitnan + nan/NaN | [#56](https://github.com/superche/openmatlab/pull/56) | `82096934afd55b8c93bc937bf02d2f8dc8672ab7` | pass |
-| Refresh | EPIC-004 dual tips (this) | *(this PR)* | evidence merge tip | required |
+| Cond.+ | NaN/Inf display + EPIC-004 refresh | *(this PR)* | functional tip | required |
+| Stamp | dual-tip stamp | *(follow-up)* | evidence merge tip | required |
+
+Prior evidence refresh [#57](https://github.com/superche/openmatlab/pull/57) (`8d40c0d`) is superseded by this refresh (display fix made NaN smoke honest).
 
 ## Feature map
 
@@ -29,14 +32,12 @@
 
 ## Measurable gate — pytest
 
-At functional tip `8209693`:
-
 ```text
 $ pytest -m "unit or bdd" --tb=no
-152 passed, 2 deselected in 0.76s
+153 passed, 2 deselected
 ```
 
-## Smoke — CLI transcripts (functional tip `8209693`)
+## Smoke — CLI transcripts (this branch, pre-merge)
 
 ```text
 $ openmatlab -e "v = max([1 nan() 4])"
@@ -47,7 +48,7 @@ v =
 $ openmatlab -e "[m, i] = max([nan() nan()])"
 m =
 
-NDArrayValue(shape=(1, 1))
+NaN
 
 i =
 
@@ -66,7 +67,7 @@ a =
 $ openmatlab -e "s = sum([1 nan() 3])"
 s =
 
-NDArrayValue(shape=(1, 1))
+NaN
 ```
 
 Note: `sum` still **propagates** NaN (MATLAB default for `sum` — only `max`/`min` default to omitnan).
@@ -85,7 +86,7 @@ Note: `sum` still **propagates** NaN (MATLAB default for `sum` — only `max`/`m
 ## How to re-run
 
 ```bash
-git checkout 82096934afd55b8c93bc937bf02d2f8dc8672ab7   # functional tip; or evidence tip / main after stamp
+git checkout main   # or the evidence merge tip once stamped
 pip install -e ".[dev]"
 pytest -m "unit or bdd" --tb=no
 openmatlab -e "v = max([1 nan() 4])"
