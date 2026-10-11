@@ -8,7 +8,7 @@
 | Tip | SHA |
 |-----|-----|
 | **Functional** | `87cdcf8a11b1fd69bc02c81c672a61d1af984b18` (PR #195) |
-| **Evidence** | `EVIDENCE_SHA_PLACEHOLDER` (this stamp PR) |
+| **Evidence** | `cc1d70af48e9f55783841aede0e7550b379f45f0` (this stamp PR) |
 
 ## Acceptance checklist
 
