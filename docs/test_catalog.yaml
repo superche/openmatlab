@@ -646,3 +646,12 @@ test_cases:
     impl: tests/unit/test_m2_thicken.py
     status: active
     env: unit
+
+  - id: tc.logical_delete
+    kind: unit
+    title: logical-mask delete A(L)=[]
+    features: [runtime.logical_delete]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_logical_delete.py
+    status: active
+    env: unit
