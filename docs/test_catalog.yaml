@@ -655,3 +655,12 @@ test_cases:
     impl: tests/unit/test_logical_delete.py
     status: active
     env: unit
+
+  - id: tc.logical_index_2d
+    kind: unit
+    title: 2-D logical indexing
+    features: [runtime.logical_index_2d]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_logical_index_2d.py
+    status: active
+    env: unit

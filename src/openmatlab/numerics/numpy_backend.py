@@ -152,6 +152,28 @@ class NumPyArrayBackend:
             buf = _as_nd(a).backend_buffer()
             return self._np.issubdtype(buf.dtype, self._np.bool_)
 
+
+    def _dim_indices_0based(self, ind: "Array", dim_size: int, *, label: str) -> Any:
+        """Integer or logical subscript → 0-based index array for one dim."""
+        np = self._np
+        ind_a = _as_nd(ind)
+        if self._is_logical(ind_a):
+            m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
+            if m.size != dim_size:
+                raise NumericsError(
+                    f"{label}: logical mask numel ({m.size}) != dimension ({dim_size})"
+                )
+            return np.nonzero(m)[0].astype(np.int64)
+        buf = np.asarray(ind_a.backend_buffer(), dtype=np.float64).reshape(-1)
+        if buf.size == 0:
+            return np.zeros(0, dtype=np.int64)
+        if np.any(buf != np.floor(buf)) or np.any(buf < 1):
+            raise NumericsError(f"{label}: indices must be positive integers")
+        k = buf.astype(np.int64) - 1
+        if np.any(k >= dim_size):
+            raise NumericsError(f"{label}: index exceeds dimension ({dim_size})")
+        return k
+
     def index(self, a: Array, indices: Sequence[Array]) -> Array:
         """1-based MATLAB-like subscript into ndarray."""
         aa = _as_nd(a)
@@ -161,34 +183,20 @@ class NumPyArrayBackend:
             if self._is_logical(ind_a):
                 return self._logical_index(data, ind_a.backend_buffer())
             return self._linear_index(data, ind_a.backend_buffer())
-        py_idx = []
-        for ind in indices:
-            buf = _as_nd(ind).backend_buffer()
-            if buf.size == 1:
-                i = int(buf.reshape(-1)[0])
-                if i < 1:
-                    raise NumericsError(f"index: 1-based index out of range: {i}")
-                py_idx.append(i - 1)
-            else:
-                flat = buf.astype(self._np.int64).reshape(-1)
-                if self._np.any(flat < 1):
-                    raise NumericsError("index: indices must be >= 1")
-                py_idx.append(flat - 1)
+        data_a = self._np.asarray(data)
+        if data_a.ndim < 2:
+            data_a = data_a.reshape(data_a.shape + (1,) * (2 - data_a.ndim))
+        rows_n, cols_n = int(data_a.shape[0]), int(data_a.shape[1])
+        r0 = self._dim_indices_0based(indices[0], rows_n, label="index")
+        c0 = self._dim_indices_0based(indices[1], cols_n, label="index")
         try:
-            out = data[tuple(py_idx)]
+            out = data_a[self._np.ix_(r0, c0)]
         except IndexError as exc:
             raise NumericsError(f"index: {exc}") from exc
         out = self._np.asarray(out, dtype=self._np.float64)
-        if out.ndim == 0:
+        # ix_ always 2-D; squeeze scalar
+        if out.size == 1 and r0.size == 1 and c0.size == 1:
             out = out.reshape(1, 1)
-        elif out.ndim == 1 and len(py_idx) == 2:
-            # MATLAB: A(i, jvec) → 1×n row; A(ivec, j) → m×1 column
-            r_vec = not isinstance(py_idx[0], (int, self._np.integer))
-            c_vec = not isinstance(py_idx[1], (int, self._np.integer))
-            if (not r_vec) and c_vec:
-                out = out.reshape(1, -1)
-            elif r_vec and (not c_vec):
-                out = out.reshape(-1, 1)
         return NDArrayValue(out)
 
     def _linear_index(self, data: Any, ind: Any) -> Array:
@@ -344,12 +352,26 @@ class NumPyArrayBackend:
             return NDArrayValue(np.asarray(out, dtype=np.float64))
 
         if len(indices) == 2:
-            r = _as_1based_int_vec(
-                _as_nd(indices[0]).backend_buffer(), label="row subscript"
-            )
-            c = _as_1based_int_vec(
-                _as_nd(indices[1]).backend_buffer(), label="col subscript"
-            )
+            rows_n, cols_n = int(data.shape[0]), int(data.shape[1])
+            # logical → 1-based ints; grow only for non-logical integer OOB
+            r0 = self._dim_indices_0based(
+                indices[0], rows_n, label="set_index row"
+            ) if self._is_logical(_as_nd(indices[0])) else None
+            c0 = self._dim_indices_0based(
+                indices[1], cols_n, label="set_index col"
+            ) if self._is_logical(_as_nd(indices[1])) else None
+            if r0 is not None:
+                r = (r0 + 1).astype(self._np.int64)
+            else:
+                r = _as_1based_int_vec(
+                    _as_nd(indices[0]).backend_buffer(), label="row subscript"
+                )
+            if c0 is not None:
+                c = (c0 + 1).astype(self._np.int64)
+            else:
+                c = _as_1based_int_vec(
+                    _as_nd(indices[1]).backend_buffer(), label="col subscript"
+                )
             need_r = int(np.max(r))
             need_c = int(np.max(c))
             if need_r > data.shape[0] or need_c > data.shape[1]:
