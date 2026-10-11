@@ -4,6 +4,8 @@ Every iteration should be **high quality** by routing work through Issues,
 Gherkin cases, pytest gates, and a Definition of Done — preferring
 **off-the-shelf** tools.
 
+Readiness: [`READY.md`](READY.md).
+
 Full QA layer model: [`QA.md`](QA.md). Defects: [`WORKFLOW.md`](WORKFLOW.md).
 
 ## Process loop (happy path)

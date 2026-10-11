@@ -11,5 +11,6 @@ Clean-room / public specs only — **no** reverse engineering of MATLAB binaries
 5. Sync `docs/feature_map.yaml` / `docs/test_catalog.yaml` if needed.
 6. Fill the **PR QA checklist**.
 
+Readiness: [`docs/READY.md`](docs/READY.md).  
 Full loop and Definition of Done: **[`docs/PROCESS.md`](docs/PROCESS.md)**.  
 QA layers: [`docs/QA.md`](docs/QA.md). Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

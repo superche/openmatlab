@@ -1,0 +1,30 @@
+name: Epic
+description: Multi-issue capability spanning layers
+title: "[epic] "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+    validations:
+      required: true
+  - type: textarea
+    id: feature_ids
+    attributes:
+      label: feature_ids (from docs/feature_map.yaml)
+    validations:
+      required: true
+  - type: textarea
+    id: child_issues
+    attributes:
+      label: Child gaps / bugs
+      placeholder: "Split into gap issues before coding"
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+    validations:
+      required: true
