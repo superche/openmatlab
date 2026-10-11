@@ -305,25 +305,25 @@ features:
   - id: libs.cumsum
     layer: libs
     name: cumsum builtin
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "first non-singleton dim; optional dim (#88)"
+    notes: "first non-singleton dim; optional dim (#88) [done per ITER-091]"
     tests: [tests/unit/test_cumsum.py, tests/bdd/test_cumsum_bdd.py]
 
   - id: libs.sort
     layer: libs
     name: sort + [B,I]=sort
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "ascending; stable; 1-based I; optional dim (#89)"
+    notes: "ascending; stable; 1-based I; optional dim (#89) [done per ITER-091]"
     tests: [tests/unit/test_sort.py, tests/bdd/test_sort_bdd.py]
 
   - id: libs.find
     layer: libs
     name: find nonzero indices
-    status: partial
+    status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "column-major linear; k; [r,c,v]; skip NaN (#90)"
+    notes: "column-major linear; k; [r,c,v]; skip NaN (#90) [done per ITER-091]"
     tests: [tests/unit/test_find.py, tests/bdd/test_find_bdd.py]
   - id: qa.feature_map
     layer: qa
