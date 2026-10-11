@@ -395,3 +395,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.display_nan
+    kind: unit
+    title: NaN/Inf scalar pretty-print
+    features: [host.display_policy]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_display_nan.py
+    status: active
+    env: unit
+
