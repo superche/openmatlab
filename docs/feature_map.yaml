@@ -137,6 +137,13 @@ features:
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
 
+  - id: numerics.matrix_power
+    layer: numerics
+    name: scalar / square-matrix power ^
+    status: done
+    depends_on: [numerics.numpy_backend]
+    notes: "M2 C11 met; A^n via linalg.matrix_power; scalars via ** (#224)"
+    tests: [tests/unit/test_matrix_power.py, tests/bdd/test_matrix_power_bdd.py]
   - id: runtime.name_zero_arg_constants
     layer: runtime
     name: bare NaN/Inf/pi via zero-arg builtins

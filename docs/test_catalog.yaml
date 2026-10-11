@@ -574,3 +574,12 @@ test_cases:
     impl: tests/unit/test_name_zero_arg.py
     status: active
     env: unit
+
+  - id: tc.matrix_power
+    kind: unit
+    title: scalar and square-matrix power ^
+    features: [numerics.matrix_power]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_matrix_power.py
+    status: active
+    env: unit

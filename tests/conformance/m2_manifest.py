@@ -19,5 +19,5 @@ CRITERIA = {
     "C08": ("c08_grow_on_assign", "p0", [119, 108], "pending"),
     "C09": ("c09_unique_issorted", "p1", [97], "pending"),
     "C10": ("c10_cellfun", "p1", [81], "pending"),
-    "C11": ("c11_scalar_power_script", "p0", [193], "pending"),
+    "C11": ("c11_scalar_power_script", "p0", [193], "met"),
 }
