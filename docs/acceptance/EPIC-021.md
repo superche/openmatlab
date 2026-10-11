@@ -7,7 +7,7 @@
 | Tip | SHA | PR |
 |-----|-----|----|
 | Functional | `6aadd4289d614dc0884896d82d30f2c95f6a51a5` | [#256](https://github.com/superche/openmatlab/pull/256) |
-| Evidence | `884d71208714f21c4a9c927325651bdf63721a26` | [#261](https://github.com/superche/openmatlab/pull/261) |
+| Evidence | `e92bc87c1c8f7e6f771fba078ed31a83cdd1610c` | [#261](https://github.com/superche/openmatlab/pull/261) |
 
 ## Acceptance
 
