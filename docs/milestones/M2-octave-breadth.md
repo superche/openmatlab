@@ -47,8 +47,12 @@ introduced for C02/C04/C06/C07/C08/C09/C10/C11 when their epics land.
 ## Residual priority (open Issues on M2)
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
-- **p1** (in exit criteria / high-value breadth): #247 #249 #237 #238 #227 #217 #218 #207 #209 #97 #81 #110 #83 #69 #80 #142 #184 #172
-- **p2** (post-M2 or nice-to-have): #248 #239 #228 #229 #219 #208 #197 #198 #182 #183 #174 #173 #164 #153 #152 #151 #141 #140 #130 #78 #74 #72 #71
+- **p1** (post-exit breadth; selection order for next epics while M2 stays open):
+  #247 #249 #237 #238 #227 #217 #218 #207 #209 #110 #83 #69 #80 #142 #184 #172
+  #258 #260 #269 #271 #279
+  *(removed closed #97 #81 from this list — factual hygiene after Epic #22/#23)*
+- **p2** (nice-to-have / non-goals): #71 #72 #74 #78 #130 #140 #141 #151 #152 #153 #164 #173 #174 #182 #183 #197 #198 #208 #219 #228 #229 #239 #248 #259 #270 #280 #281
+  *(refresh: open p2 on milestone as of Epic #23 acceptance; not exhaustive of every label drift)*
 
 ## M2 close readiness (Epic #23)
 
@@ -58,12 +62,12 @@ All three exit criteria hold on `main` after Epic #23:
 2. Required feature_ids (incl. C02–C11 additions) at `done`.
 3. No open `p0` Issues on milestone #2.
 
-**Milestone #2 is ready to close** pending user acceptance of Epic #23 / EPIC-023.
-Open p1/p2 Issues are post-M2 backlog (may retarget to Domain toolboxes #3).
+**Exit criteria still hold** (11/11, 0 p0). User accepted Epic #23 but **left milestone #2 OPEN** to continue p1/p2 breadth on M2.
+Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
 
 ## Progress snapshot
 
-After Epic #23: **11/11** criteria met. **M2 exit complete.** Milestone close-ready.
+After Epic #23: **11/11** criteria met. **M2 exit criteria complete.** Milestone left **OPEN** (user); next epics from residual p1 order (#247…).
 
 
 
