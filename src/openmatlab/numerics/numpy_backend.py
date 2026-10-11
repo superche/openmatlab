@@ -106,11 +106,29 @@ class NumPyArrayBackend:
 
     def power(self, a: Array, b: Array, *, elementwise: bool = True) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
+        da = self._np.asarray(aa.backend_buffer(), dtype=self._np.float64)
+        db = self._np.asarray(bb.backend_buffer(), dtype=self._np.float64)
         if elementwise:
-            out = aa.backend_buffer() ** bb.backend_buffer()
-        else:
-            raise NumericsError("matrix power (^) not implemented yet")
-        return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+            out = da ** db
+            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        # Matrix power (^): scalars or square matrix ^ integer
+        if da.size == 1 and db.size == 1:
+            out = float(da.reshape(-1)[0]) ** float(db.reshape(-1)[0])
+            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64).reshape(1, 1))
+        if da.ndim == 2 and da.shape[0] == da.shape[1] and db.size == 1:
+            exp = float(db.reshape(-1)[0])
+            if exp != int(exp):
+                raise NumericsError(
+                    "matrix power (^): exponent must be an integer for square matrices"
+                )
+            try:
+                out = self._np.linalg.matrix_power(da, int(exp))
+            except Exception as exc:  # singular / domain
+                raise NumericsError(f"matrix power (^): {exc}") from exc
+            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        raise NumericsError(
+            "matrix power (^): requires scalars or square matrix ^ integer"
+        )
 
     def colon(self, start: float, stop: float, step: float = 1.0) -> Array:
         if step == 0:
