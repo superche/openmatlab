@@ -89,7 +89,8 @@ Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 |-----------|--------|
 | **Workbench MVP** | Foundation REPL/scripts/control (epics #1 #19 #33) — closed when accepted |
 | **Octave-breadth language & numerics** | Language + numeric core toward MATLAB/Octave parity (builtins, cells, assign, control flow, indexing) |
-| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity |
+| **Plugin host (VS Code–style)** | Published plugin contract + host for **community** plugins (not MathWorks proprietary). Doc: [`milestones/M-plugins.md`](milestones/M-plugins.md); contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) |
+| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract) |
 
 **Rules**
 
@@ -193,6 +194,21 @@ Rules:
 5. Residuals already owned by a later epic board may link that epic instead
    of duplicating a gap Issue.
 
+
+## Plugins (community extension host)
+
+OpenMATLAB uses a **VS Code–style** plugin host: manifest `contributes`, host
+**slots**, activation events, Extension Host API, and SemVer `engines` ranges.
+See [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md). Roadmap exit
+criteria: [`milestones/M-plugins.md`](milestones/M-plugins.md).
+
+**Rules**
+
+1. Plugins are **community / clean-room** only — no MathWorks proprietary
+   toolboxes or MATLAB RE.
+2. Do not mark plugin-related `feature_map` rows `done` until contract + host
+   tests satisfy M-plugins exit criteria.
+3. Option comparison (historical): [`design/PLUGIN-OPTIONS.md`](design/PLUGIN-OPTIONS.md).
 
 ## Feature status criteria
 

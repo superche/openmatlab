@@ -1,7 +1,9 @@
 # Plugin architecture options (domains + Desktop/UI)
 
-**Status:** comparison only — **do not** treat this as the locked plugin
-contract or milestone. After a pick, write contract + milestone separately.
+**Status:** historical comparison — **pick locked** 2026-10-11 as VS Code–style
+host (**C** slots + **B** manifest/path + **A** entry points optional).
+**Normative contract:** [`PLUGIN-CONTRACT.md`](PLUGIN-CONTRACT.md).
+**Milestone:** [`../milestones/M-plugins.md`](../milestones/M-plugins.md).
 
 **Goal:** Domain libraries as plugins **and** Desktop/UI as plugins (full
 shell **or** panels). Domains may customize UX without forking the host.
@@ -172,12 +174,13 @@ Full shell plugin = adapter that fills chrome slots (`menus` / `toolbar`
 
 ---
 
-## Next steps (blocked on user pick)
+## Next steps (done / follow-on)
 
-1. User chooses: **C+B (+A later)** as recommended, or another row.
-2. Then (separate PR): lock **plugin contract** (slot Protocols, YAML
-   schema, error isolation) + **milestone** criteria.
-3. Do **not** mark feature_map plugin items `done` until contract lands.
+1. ~~User chooses~~ → **VS Code–style (C+B+A)** locked.
+2. Contract + milestone: [`PLUGIN-CONTRACT.md`](PLUGIN-CONTRACT.md),
+   [`../milestones/M-plugins.md`](../milestones/M-plugins.md).
+3. Do **not** mark feature_map plugin items `done` until M-plugins exit
+   criteria (host + tests) are met.
 
 ---
 
