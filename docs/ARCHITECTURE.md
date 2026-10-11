@@ -30,8 +30,8 @@ What works today:
 - Indexed array assignment `A(i)=v` / `A(i,j)=v` (copy-on-write `set_index`)
 - Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan; cumsum/sort/find
 
-Residual non-parity (later): `continue`, rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
-Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: see Issues on [#115](https://github.com/superche/openmatlab/issues/115).
+Residual non-parity (later): rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
+Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab/issues/63). Epic #6 residuals: Issues on closed [#87](https://github.com/superche/openmatlab/issues/87). Epic #7 residuals: Issues on closed [#102](https://github.com/superche/openmatlab/issues/102). Epic #8 residuals: Issues on closed [#115](https://github.com/superche/openmatlab/issues/115). Next axis: **`continue` in loops** — Epic #9.
 
 ## Package layout
 
