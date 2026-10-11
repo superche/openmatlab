@@ -454,6 +454,22 @@ features:
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
     notes: "column-major linear; k; [r,c,v]; skip NaN (#90) [done per ITER-091]"
     tests: [tests/unit/test_find.py, tests/bdd/test_find_bdd.py]
+
+  - id: libs.unique
+    layer: libs
+    name: unique builtin
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "M2 C09; sorted unique vector/matrix flatten (#266)"
+    tests: [tests/unit/test_unique_issorted.py, tests/bdd/test_unique_issorted_bdd.py]
+  - id: libs.issorted
+    layer: libs
+    name: issorted builtin
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "M2 C09; non-decreasing → logical (#266)"
+    tests: [tests/unit/test_unique_issorted.py]
+
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)

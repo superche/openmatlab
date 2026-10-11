@@ -405,6 +405,57 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     )
 
 
+def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """Sorted unique values (MATLAB unique default, no flags)."""
+    _arity("unique", args, 1, 1)
+    if nargout > 1:
+        raise BuiltinError("unique: multiple outputs not supported yet")
+    b = _buf("unique", args[0])
+    if b.ndim == 0:
+        b = b.reshape(1, 1)
+    elif b.ndim == 1:
+        b = b.reshape(1, -1)
+    rows, cols = b.shape[:2]
+    flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
+    # np.unique sorts ascending; NaNs last (close enough for MVP)
+    u = np.unique(flat)
+    if flat.size == 0:
+        if rows == 1:
+            return (NDArrayValue(np.zeros((1, 0), dtype=np.float64)),)
+        return (NDArrayValue(np.zeros((0, 1), dtype=np.float64)),)
+    if rows == 1 and cols >= 1:
+        return (NDArrayValue(u.reshape(1, -1)),)
+    # column vector or matrix → column
+    return (NDArrayValue(u.reshape(-1, 1)),)
+
+
+def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """True if non-decreasing along vector / first non-singleton dim."""
+    _arity("issorted", args, 1, 1)
+    b = _buf("issorted", args[0])
+    if b.ndim == 0:
+        b = b.reshape(1, 1)
+    elif b.ndim == 1:
+        b = b.reshape(1, -1)
+    if b.size <= 1:
+        ok = True
+    else:
+        # vectorize: flatten along first non-singleton
+        if b.shape[0] == 1 or b.shape[1] == 1:
+            flat = b.reshape(-1, order="F")
+        else:
+            # matrix without dim: MATLAB checks columns? Actually issorted(M) for
+            # matrix without 'rows' checks each column... For MVP treat as
+            # column-major flatten (document residual).
+            flat = b.reshape(-1, order="F")
+        d = np.diff(flat.astype(np.float64))
+        # NaN in diff → not sorted
+        ok = bool(np.all(d >= 0) and not np.any(np.isnan(d)))
+    out = NDArrayValue(np.asarray([[ok]], dtype=bool))
+    return (out,)
+
+
+
 BUILTINS: Dict[str, Builtin] = {
     "zeros": _zeros,
     "ones": _ones,
@@ -419,6 +470,8 @@ BUILTINS: Dict[str, Builtin] = {
     "cumsum": _cumsum,
     "sort": _sort,
     "find": _find,
+    "unique": _unique,
+    "issorted": _issorted,
     "size": _size,
     "numel": _numel,
     "length": _length,

@@ -29,7 +29,7 @@ met when its script actually passes.
 | C06 | Delete `v(i)=[]` (arrays; cells #109) | c06_delete_elements | p0 | #120 #109 | **met** (Epic #20) |
 | C08 | Grow on OOB assign `v(4)=7` (cells #108) | c08_grow_on_assign | p0 | #119 #108 | **met** (Epic #21) |
 | C05 | `sort(...,'descend')`, `find(...,k,'first'/'last')` | c05_sort_find_options | p1 | #95 #96 | **met** (Epic #15) |
-| C09 | `unique`, `issorted` | c09_unique_issorted | p1 | #97 | pending |
+| C09 | `unique`, `issorted` | c09_unique_issorted | p1 | #97 | **met** (Epic #22) |
 | C10 | `cellfun` + function handles `@f` | c10_cellfun | p1 | #81 | pending |
 | C01 | Control flow (if/for/while/break/continue/switch) | c01_control_flow | p0 | — | met |
 | C03 | Cells `{}` read/write/slice | c03_cells | p0 | — | met |
