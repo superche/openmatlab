@@ -92,11 +92,11 @@ Host (CLI -e / REPL / QA)
 **Parsed + evaluated:** numbers, double-quoted strings, names, `+ - * /` and `.* ./ .^`, unary `±`,
 `[rows]`, `A(i,j)`, `a:b` / `a:s:b`, `A'` / `A.'`, assignments, `;` suppress,
 `function [outs]=name(ins) … end` in `.m` files on the path,
-language `addpath("…")` / `which("…")`, `if`/`elseif`/`else`/`for`/`end`.
+language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
+`if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
 **Not yet:** single-quoted char vectors/cells, `while`/`break`/`continue`,
-multi-assign `[a,b]=f(…)`, scripts without `function`, nested functions,
-`nargin`/`nargout` specials.
+scripts without `function`, nested functions, `nargin`/`nargout` specials.
 
 ## Non-goals
 

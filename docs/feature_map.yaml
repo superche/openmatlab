@@ -291,9 +291,9 @@ features:
   - id: qa.ci_gates
     layer: qa
     name: GitHub Actions CI quality gates
-    status: partial
+    status: done
     spec: docs/PROCESS.md
-    notes: "PR CI example docs/examples/ci.github-actions.yml; unit+bdd, cov>=60"
+    notes: "Live .github/workflows/ci.yml; required check test on main; unit+bdd, cov>=60; example retained at docs/examples/"
 
   - id: qa.process_dod
     layer: qa

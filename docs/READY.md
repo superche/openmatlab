@@ -5,13 +5,14 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; branch protection on; Issues kickoff done.**  
-Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope).
+**READY — public repo; CI live; branch protection on; Epics #1 and #2 closed.**
 
-- **Visibility:** PUBLIC — https://github.com/superche/openmatlab  
-- **Branch protection (`main`):** required status check \``test` (Actions job; UI may show as test)\` (enforce_admins)  
-- **Iteration board:** GitHub Issues (Projects API needs \`project\` scope — use label filters)  
-- **Epic:** https://github.com/superche/openmatlab/issues/1  
+- **Visibility:** PUBLIC — https://github.com/superche/openmatlab
+- **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
+- **Branch protection (`main`):** required status check `test` (enforce_admins)
+- **Iteration board:** GitHub Issues (Projects API needs `project` scope — use label filters)
+- **Closed epics:** [#1](https://github.com/superche/openmatlab/issues/1) · [#19](https://github.com/superche/openmatlab/issues/19)
+- **Acceptance:** `docs/acceptance/EPIC-001.md` · `docs/acceptance/EPIC-002.md`
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -22,8 +23,8 @@ Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope
 | feature_map / catalog CLI | **DONE** | `openmatlab features` · `openmatlab cases` |
 | Labels `layer:*` bug/gap/epic | **DONE** | `scripts/ensure_labels.sh`; labels on repo |
 | Gherkin skeletons | **DONE** | `features/*.feature` + `tests/bdd/` |
-| CI workflow **live** on GitHub | **BLOCKED** | Example at `docs/examples/ci.github-actions.yml`; token lacks `workflow` scope (push/API refused) |
-| Branch protection | **BLOCKED** (human) | Needs live check ``test` (Actions job; UI may show as test)` after workflow enabled |
+| CI workflow **live** on GitHub | **DONE** | `.github/workflows/ci.yml`; Actions workflow **CI** active |
+| Branch protection | **DONE** | `main` requires check `test` (enforce_admins) |
 
 ## DONE (local / docs)
 
@@ -35,35 +36,14 @@ Still **one human step** for live Actions workflow (OAuth lacks `workflow` scope
 - [x] Inventories load via CLI; catalog validates feature ids
 - [x] Defects → GitHub Issues (`openmatlab defects` / `gh`)
 - [x] Label bootstrap script
+- [x] Live Actions CI + protected `main`
 
-## BLOCKED / human steps
+## Optional / human steps
 
-### 1. Enable CI workflow (required — protection already requires ``test` (Actions job; UI may show as test)`)
-
-Current `gh` token scopes: `gist`, `read:org`, `repo` — **no `workflow`**.  
-Creating/updating `.github/workflows/*.yml` is refused.
-
-**One-click / short path:**
-
-1. Open https://github.com/superche/openmatlab  
-2. **Add file** → create `.github/workflows/ci.yml`  
-3. Paste contents of [`examples/ci.github-actions.yml`](examples/ci.github-actions.yml)  
-4. Commit to `main`  
-5. **Settings → Branches →** protect `main` → require status check **``test` (Actions job; UI may show as test)`**
-
-**Or** refresh auth with workflow scope (interactive):
-
-```bash
-gh auth refresh -h github.com -s workflow
-cp docs/examples/ci.github-actions.yml .github/workflows/ci.yml
-git add .github/workflows/ci.yml && git commit -m "ci: enable Actions gates" && git push
-```
-
-</details>
-
-### 2. Optional Projects board
+### 1. Optional Projects board
 
 Create a GitHub Project and attach Issues (Backlog → Done). Not required to start coding.
+`gh` still lacks `project` / `read:project` scope if you want CLI board management.
 
 ## Smoke commands (dev machine)
 
@@ -78,21 +58,14 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-Start with Issues labeled `gap` + `layer:*`, add/extend Gherkin, implement Array/parser per `ARCHITECTURE.md` MVP order, keep YAML inventories in sync in the same PR.
-
-## Project management kickoff
+Epics #1 and #2 are closed. Before opening Epic #3: keep `docs/ARCHITECTURE.md` + `feature_map` in sync (this chore), then file a new epic + ordered `gap` Issues from residual language/graphics gaps listed in `ARCHITECTURE.md` and `docs/acceptance/EPIC-002.md`.
 
 | Item | URL / command |
 |------|----------------|
-| Epic | https://github.com/superche/openmatlab/issues/1 |
-| Array + NumPy | https://github.com/superche/openmatlab/issues/2 |
-| Matrix lexer/parser | https://github.com/superche/openmatlab/issues/3 |
-| Evaluator + display | https://github.com/superche/openmatlab/issues/4 |
-| Plot MVP | https://github.com/superche/openmatlab/issues/5 |
-| Function path | https://github.com/superche/openmatlab/issues/6 |
+| Epic #1 (closed) | https://github.com/superche/openmatlab/issues/1 |
+| Epic #2 (closed) | https://github.com/superche/openmatlab/issues/19 |
 | Open gaps view | https://github.com/superche/openmatlab/issues?q=is%3Aissue+is%3Aopen+label%3Agap |
 | List CLI | `gh issue list --label gap` |
+| Acceptance | `docs/acceptance/EPIC-001.md` · `docs/acceptance/EPIC-002.md` |
 
-GitHub **Projects** board: blocked without \`gh auth refresh -s project,read:project\`. Issues + labels are the board until then.
-
-**First coding iteration:** start with #2 (Array + NumPyArrayBackend), then #3.
+GitHub **Projects** board: optional; needs `gh auth refresh -s project,read:project`. Issues + labels are the board until then.
