@@ -1,0 +1,34 @@
+from __future__ import annotations
+
+import numpy as np
+import pytest
+from pytest_bdd import given, parsers, scenarios, then, when
+
+pytest.importorskip("numpy")
+
+from openmatlab.host.repl import ReplSession
+from openmatlab.runtime.session import Session
+
+pytestmark = [pytest.mark.bdd, pytest.mark.unit, pytest.mark.needs_numpy]
+scenarios("../../features/cell_paren_assign.feature")
+
+
+@pytest.fixture
+def ctx():
+    return {"session": Session.create_default()}
+
+
+@given("a fresh session")
+def fresh(ctx):
+    pass
+
+
+@when(parsers.parse('I evaluate "{code}"'))
+def do_eval(code, ctx):
+    ReplSession(ctx["session"]).run_line(code)
+
+
+@then(parsers.parse('variable "{name}" equals scalar {val:d}'))
+def scalar_eq(ctx, name, val):
+    got = float(np.asarray(ctx["session"].workspace.get(name).backend_buffer()).reshape(-1)[0])
+    assert got == float(val)

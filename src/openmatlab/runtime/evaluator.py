@@ -239,24 +239,37 @@ class Evaluator:
         idx_exprs: list,
         rhs_val: Value,
     ) -> Value:
-        """c(i)=[] deletes; other c(i)=… not supported beyond delete in this epic."""
+        """c(i)=[] / c(i,j)=[] delete; c(i)={v} / c(i,j)={v} replace content."""
         from openmatlab.runtime.cell_value import CellValue
 
         assert isinstance(cell, CellValue)
-        rhs_arr = None
+
+        # Non-empty cell RHS → replace single cell contents
+        if isinstance(rhs_val, CellValue):
+            if rhs_val.numel() != 1:
+                raise EvalError(
+                    "cell () assign: RHS cell must be 1x1 for scalar subscript"
+                )
+            if not (1 <= len(idx_exprs) <= 2):
+                raise EvalError("cell () assign: only 1 or 2 subscripts")
+            i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () assign")
+            self.workspace.set(name, cell.with_set(i0, j0, rhs_val.get(0, 0)))
+            return rhs_val
+
+        # Empty numeric → delete
         try:
             rhs_arr = self._require_array(rhs_val, "cell () assign")
-        except EvalError:
-            pass
-        if rhs_arr is None or rhs_arr.numel() != 0:
+        except EvalError as exc:
             raise EvalError(
-                "cell () assign: only c(i)=[] delete supported in this MVP"
+                "cell () assign: RHS must be [] or a 1x1 cell"
+            ) from exc
+        if rhs_arr.numel() != 0:
+            raise EvalError(
+                "cell () assign: RHS must be [] or a 1x1 cell"
             )
-        # linear delete of selected cells (1-sub only)
-        if len(idx_exprs) != 1:
-            raise EvalError("cell () delete: only linear c(i)=[] in this MVP")
+        if not (1 <= len(idx_exprs) <= 2):
+            raise EvalError("cell () delete: only 1 or 2 subscripts")
         i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () delete")
-        # flatten column-major, drop (i0,j0), rebuild as row if was 1×n else column
         rows, cols = cell.shape
         flat: list = []
         for j in range(cols):
@@ -264,23 +277,13 @@ class Evaluator:
                 flat.append(cell.get(i, j))
         drop = i0 + j0 * rows  # column-major linear 0-based
         del flat[drop]
-        if rows == 1:
-            new_rows = (tuple(flat),) if flat else ()
-            if not flat:
-                new_cell = CellValue.empty(0, 0)
-            else:
-                new_cell = CellValue(rows=(tuple(flat),))
-        elif cols == 1:
-            if not flat:
-                new_cell = CellValue.empty(0, 0)
-            else:
-                new_cell = CellValue(rows=tuple((v,) for v in flat))
+        if not flat:
+            new_cell = CellValue.empty(0, 0)
+        elif rows == 1 and cols >= 1:
+            new_cell = CellValue(rows=(tuple(flat),))
         else:
-            # remaining → column
-            if not flat:
-                new_cell = CellValue.empty(0, 0)
-            else:
-                new_cell = CellValue(rows=tuple((v,) for v in flat))
+            # column vector residual (incl. former 2-D)
+            new_cell = CellValue(rows=tuple((v,) for v in flat))
         self.workspace.set(name, new_cell)
         return rhs_val
 
