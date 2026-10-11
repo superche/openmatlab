@@ -197,6 +197,8 @@ class Evaluator:
 
 
     def _eval_array_assign(self, stmt: "ast.ArrayAssign") -> Value:
+        from openmatlab.runtime.cell_value import CellValue
+
         target_expr = stmt.target.target
         if not isinstance(target_expr, ast.Name):
             raise EvalError("array assign: LHS must be name(...) in this MVP")
@@ -205,17 +207,75 @@ class Evaluator:
             arr = self.workspace.get(name)
         except KeyError as exc:
             raise EvalError(f"Undefined variable: {name}") from exc
+        rhs_val = self.eval_expr(stmt.value)
+        # c(i)=[] delete on cell arrays
+        if isinstance(arr, CellValue):
+            return self._eval_cell_paren_delete_or_assign(
+                name, arr, list(stmt.target.indices), rhs_val
+            )
         arr_a = self._require_array(arr, "array assign")
         idxs = self._eval_subscripts(
             arr_a, list(stmt.target.indices), label="array assign"
         )
-        rhs = self._require_array(self.eval_expr(stmt.value), "array assign")
+        rhs = self._require_array(rhs_val, "array assign")
         try:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
         except Exception as exc:  # NumericsError
             raise EvalError(f"array assign: {exc}") from exc
         self.workspace.set(name, new_arr)
         return rhs
+
+    def _eval_cell_paren_delete_or_assign(
+        self,
+        name: str,
+        cell: "object",
+        idx_exprs: list,
+        rhs_val: Value,
+    ) -> Value:
+        """c(i)=[] deletes; other c(i)=… not supported beyond delete in this epic."""
+        from openmatlab.runtime.cell_value import CellValue
+
+        assert isinstance(cell, CellValue)
+        rhs_arr = None
+        try:
+            rhs_arr = self._require_array(rhs_val, "cell () assign")
+        except EvalError:
+            pass
+        if rhs_arr is None or rhs_arr.numel() != 0:
+            raise EvalError(
+                "cell () assign: only c(i)=[] delete supported in this MVP"
+            )
+        # linear delete of selected cells (1-sub only)
+        if len(idx_exprs) != 1:
+            raise EvalError("cell () delete: only linear c(i)=[] in this MVP")
+        i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () delete")
+        # flatten column-major, drop (i0,j0), rebuild as row if was 1×n else column
+        rows, cols = cell.shape
+        flat: list = []
+        for j in range(cols):
+            for i in range(rows):
+                flat.append(cell.get(i, j))
+        drop = i0 + j0 * rows  # column-major linear 0-based
+        del flat[drop]
+        if rows == 1:
+            new_rows = (tuple(flat),) if flat else ()
+            if not flat:
+                new_cell = CellValue.empty(0, 0)
+            else:
+                new_cell = CellValue(rows=(tuple(flat),))
+        elif cols == 1:
+            if not flat:
+                new_cell = CellValue.empty(0, 0)
+            else:
+                new_cell = CellValue(rows=tuple((v,) for v in flat))
+        else:
+            # remaining → column
+            if not flat:
+                new_cell = CellValue.empty(0, 0)
+            else:
+                new_cell = CellValue(rows=tuple((v,) for v in flat))
+        self.workspace.set(name, new_cell)
+        return rhs_val
 
     def _eval_cell_assign(self, stmt: "ast.CellAssign") -> Value:
         from openmatlab.runtime.cell_value import CellValue
