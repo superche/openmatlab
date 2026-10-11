@@ -300,17 +300,44 @@ def _cumsum(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 
+def _char_flag(v: Value):
+    """Return lower-cased text if v is a CharValue flag, else None."""
+    from openmatlab.runtime.char_value import CharValue
+
+    if isinstance(v, CharValue):
+        return v.text.lower()
+    return None
+
+
 def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    _arity("sort", args, 1, 2)
+    _arity("sort", args, 1, 3)
     b = _buf("sort", args[0])
+    descend = False
+    dim_args = []
+    for a in args[1:]:
+        f = _char_flag(a)
+        if f is None:
+            dim_args.append(a)
+        elif f in ("descend", "ascend"):
+            descend = f == "descend"
+        else:
+            raise BuiltinError(f"sort: unknown option '{f}'")
+    if len(dim_args) > 1:
+        raise BuiltinError("sort: too many dimension arguments")
     if b.size == 0:
         empty = _wrap(b)
         return (empty,) if nargout <= 1 else (empty, empty)
-    ax = _axis_arg("sort", args[1]) if len(args) == 2 else _default_axis(b)
+    ax = _axis_arg("sort", dim_args[0]) if dim_args else _default_axis(b)
     if ax >= b.ndim:
         ones = np.ones(b.shape, dtype=np.float64)
         return (_wrap(b),) if nargout <= 1 else (_wrap(b), _wrap(ones))
-    idx0 = np.argsort(b, axis=ax, kind="stable")
+    if descend:
+        # stable descending: equal elements keep original order (MATLAB);
+        # NaN placed first for descend (MATLAB), last for ascend.
+        key = np.where(np.isnan(b), np.inf, -b)
+        idx0 = np.argsort(key, axis=ax, kind="stable")
+    else:
+        idx0 = np.argsort(b, axis=ax, kind="stable")
     sorted_b = np.take_along_axis(b, idx0, axis=ax)
     if nargout <= 1:
         return (_wrap(sorted_b),)
@@ -319,8 +346,14 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    _arity("find", args, 1, 2)
+    _arity("find", args, 1, 3)
     b = _buf("find", args[0])
+    direction = "first"
+    if len(args) == 3:
+        f = _char_flag(args[2])
+        if f not in ("first", "last"):
+            raise BuiltinError("find: direction must be 'first' or 'last'")
+        direction = f
     if b.ndim != 2:
         b = np.asarray(b, dtype=np.float64)
         if b.ndim < 2:
@@ -329,17 +362,21 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
     mask = (flat != 0) & ~np.isnan(flat)
     lin0 = np.nonzero(mask)[0]
-    if len(args) == 2:
+    if len(args) >= 2:
         k = _dim("find", args[1])
-        lin0 = lin0[:k]
+        lin0 = lin0[-k:] if (direction == "last" and k > 0) else lin0[:k]
     r0 = lin0 % rows if rows else lin0
     c0 = lin0 // rows if rows else lin0
     vals = flat[lin0]
+
+    row_input = rows == 1 and cols > 1
 
     def colvec(data) -> NDArrayValue:
         arr = np.asarray(data, dtype=np.float64).reshape(-1)
         if arr.size == 0:
             return NDArrayValue(np.zeros((0, 1), dtype=np.float64))
+        if row_input:  # MATLAB: row-vector input → row-vector output
+            return NDArrayValue(arr.reshape(1, -1))
         return NDArrayValue(arr.reshape(-1, 1))
 
     if nargout <= 1:

@@ -137,6 +137,13 @@ features:
     notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
     tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
 
+  - id: libs.sort_find_flags
+    layer: libs
+    name: sort descend + find k first/last
+    status: done
+    depends_on: [libs.sort, libs.find]
+    notes: "M2 C05 met; NaN/empty-row find divergence residual (#189)"
+    tests: [tests/unit/test_sort_find_flags.py, tests/bdd/test_sort_find_flags_bdd.py, tests/conformance/test_m2_conformance.py]
   - id: libs.elmat_size_vector
     layer: libs
     name: zeros/ones/eye size-vector form

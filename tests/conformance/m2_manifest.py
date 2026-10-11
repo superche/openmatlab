@@ -13,7 +13,7 @@ CRITERIA = {
     "C02": ("c02_indexing", "p0", [191], "pending"),
     "C03": ("c03_cells", "p0", [], "met"),
     "C04": ("c04_numeric_builtins", "p0", [192], "pending"),
-    "C05": ("c05_sort_find_options", "p1", [95, 96], "pending"),
+    "C05": ("c05_sort_find_options", "p1", [95, 96], "met"),
     "C06": ("c06_delete_elements", "p0", [120, 109], "pending"),
     "C07": ("c07_logical_indexing", "p0", [162], "pending"),
     "C08": ("c08_grow_on_assign", "p0", [119, 108], "pending"),
