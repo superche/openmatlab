@@ -78,10 +78,15 @@ class Session:
             display = ConsoleDisplay(workspace=ws)
         else:
             display = NullDisplay()
-        return cls(
+        session = cls(
             workspace=ws,
             display=display,
             numerics=numerics,
             graphics=graphics,
             plots=plots,
         )
+        if numerics is not None:
+            from openmatlab.libs.numeric_builtins import register_numeric_builtins
+
+            register_numeric_builtins(session.functions)
+        return session

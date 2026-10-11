@@ -229,6 +229,22 @@ features:
     tests: [tests/unit/test_mfile_functions.py]
 
   # --- qa ---
+
+  - id: libs.elmat_constructors
+    layer: libs
+    name: zeros / ones / eye / linspace builtins
+    status: partial
+    depends_on: [runtime.function_resolver, numerics.numpy_backend]
+    notes: "FunctionResolver builtins via libs.numeric_builtins; vector-size form N/A (#44)"
+    tests: [tests/unit/test_elmat_builtins.py, tests/bdd/test_elmat_bdd.py]
+
+  - id: libs.elmat_shape
+    layer: libs
+    name: size / numel / length builtins
+    status: partial
+    depends_on: [runtime.function_resolver]
+    notes: "size(A), size(A,d), [m,n]=size(A); 2-D only (#44)"
+    tests: [tests/unit/test_elmat_builtins.py]
   - id: qa.feature_map
     layer: qa
     name: Feature map load / dump (sync/export)
