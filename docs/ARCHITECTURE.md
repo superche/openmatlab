@@ -12,7 +12,7 @@ are allowed.
 
 ## Stage
 
-**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan), [#63](https://github.com/superche/openmatlab/issues/63) (single-quote char + cells), [#87](https://github.com/superche/openmatlab/issues/87) (cumsum/sort/find), [#102](https://github.com/superche/openmatlab/issues/102) (cell write-back), [#115](https://github.com/superche/openmatlab/issues/115) (array indexed assign), [#126](https://github.com/superche/openmatlab/issues/126) (continue), [#136](https://github.com/superche/openmatlab/issues/136) (return), [#147](https://github.com/superche/openmatlab/issues/147) (switch), [#158](https://github.com/superche/openmatlab/issues/158) (range assign).
+**Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan), [#63](https://github.com/superche/openmatlab/issues/63) (single-quote char + cells), [#87](https://github.com/superche/openmatlab/issues/87) (cumsum/sort/find), [#102](https://github.com/superche/openmatlab/issues/102) (cell write-back), [#115](https://github.com/superche/openmatlab/issues/115) (array indexed assign), [#126](https://github.com/superche/openmatlab/issues/126) (continue), [#136](https://github.com/superche/openmatlab/issues/136) (return), [#147](https://github.com/superche/openmatlab/issues/147) (switch), [#158](https://github.com/superche/openmatlab/issues/158) (range assign), [#168](https://github.com/superche/openmatlab/issues/168) (index end).
 Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
 Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md) · [`EPIC-005`](acceptance/EPIC-005.md) · [`EPIC-006`](acceptance/EPIC-006.md) · [`EPIC-007`](acceptance/EPIC-007.md) · [`EPIC-008`](acceptance/EPIC-008.md) · [`EPIC-009`](acceptance/EPIC-009.md).
@@ -27,7 +27,7 @@ What works today:
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
-- Indexed array assignment `A(i)=v` / `A(i,j)=v` / range `A(1:n)=…` (copy-on-write `set_index`; scalar broadcast; numel-matched RHS)
+- Indexed array assignment `A(i)=v` / `A(i,j)=v` / range `A(1:n)=…` (copy-on-write `set_index`; scalar broadcast; numel-matched RHS); `end` / `1:end` / `end-1` in subscripts
 - Numeric builtins toolbox (`libs/numeric_builtins.py` → `FunctionResolver.builtins`): zeros/ones/eye/linspace, size/numel/length, sum/prod/mean/min/max, abs/sqrt/exp/log/sin/cos/floor/ceil/round/mod; `nan`/`NaN`; max/min default omitnan; cumsum/sort/find
 
 Residual non-parity (later): rich toolboxes, bare script name without `run`, full interactive GUI tweak loop.
