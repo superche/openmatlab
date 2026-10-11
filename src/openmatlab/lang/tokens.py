@@ -57,4 +57,5 @@ class TokenType(Enum):
     KW_FOR = auto()
     KW_WHILE = auto()
     KW_BREAK = auto()
+    KW_CONTINUE = auto()
     KW_RETURN = auto()

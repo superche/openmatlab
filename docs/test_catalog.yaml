@@ -485,3 +485,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.continue
+    kind: unit
+    title: continue in for/while + outside error
+    features: [lang.continue]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_continue.py
+    status: active
+    env: unit
+

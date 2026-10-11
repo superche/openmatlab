@@ -96,6 +96,14 @@ features:
     notes: "Context-sensitive '; '' escape (#64) [done per ITER-067]"
     tests: [tests/unit/test_char_literal.py, tests/bdd/test_char_literal_bdd.py]
 
+
+  - id: lang.continue
+    layer: lang
+    name: continue in for/while
+    status: partial
+    depends_on: [lang.parser, runtime.evaluator]
+    notes: "innermost loop; outside → EvalError; break outside also errors (#127)"
+    tests: [tests/unit/test_continue.py, tests/bdd/test_continue_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals

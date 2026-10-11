@@ -13,6 +13,7 @@ from openmatlab.lang.ast_nodes import (
     Expr,
     ExprStmt,
     BreakStmt,
+    ContinueStmt,
     WhileStmt,
     ForStmt,
     FunctionDef,
@@ -112,6 +113,10 @@ class Parser:
             self.advance()
             self._trailing_suppress()
             return BreakStmt()
+        if self.current().type == TokenType.KW_CONTINUE:
+            self.advance()
+            self._trailing_suppress()
+            return ContinueStmt()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)

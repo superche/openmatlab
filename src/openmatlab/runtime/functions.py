@@ -76,7 +76,12 @@ class MFileCallable:
         *,
         nargout: int = 1,
     ) -> Sequence[Value]:
-        from openmatlab.runtime.evaluator import EvalError, Evaluator
+        from openmatlab.runtime.evaluator import (
+    EvalError,
+    Evaluator,
+    _BreakSignal,
+    _ContinueSignal,
+)
         from openmatlab.runtime.workspace import Workspace
 
         if len(args) != len(self.defn.inputs):
@@ -95,10 +100,15 @@ class MFileCallable:
             numerics=self.numerics,
             plots=self.plots,
         )
-        for stmt in self.defn.body:
-            if isinstance(stmt, FunctionDef):
-                continue  # nested not supported
-            ev.eval_stmt(stmt)
+        try:
+            for stmt in self.defn.body:
+                if isinstance(stmt, FunctionDef):
+                    continue  # nested not supported
+                ev.eval_stmt(stmt)
+        except _BreakSignal:
+            raise EvalError("break outside of a for or while loop") from None
+        except _ContinueSignal:
+            raise EvalError("continue outside of a for or while loop") from None
         if not self.defn.outputs:
             return ()
         outs: List[Value] = []

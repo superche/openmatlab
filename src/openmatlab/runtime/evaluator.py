@@ -23,6 +23,10 @@ class _BreakSignal(Exception):
     """Internal: break leaves the innermost for/while."""
 
 
+class _ContinueSignal(Exception):
+    """Internal: continue skips to next iteration of innermost for/while."""
+
+
 class Evaluator:
     """Walk AST against Workspace + ArrayBackend (+ optional PlotSurface)."""
 
@@ -39,6 +43,7 @@ class Evaluator:
             raise EvalError("Evaluator requires an ArrayBackend (Session.numerics)")
         self.numerics = numerics
         self.plots = plots
+        self._loop_depth = 0
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -46,8 +51,13 @@ class Evaluator:
 
     def eval_program(self, stmts: Sequence[ast.Stmt]) -> Optional[Value]:
         last: Optional[Value] = None
-        for stmt in stmts:
-            last = self.eval_stmt(stmt)
+        try:
+            for stmt in stmts:
+                last = self.eval_stmt(stmt)
+        except _BreakSignal:
+            raise EvalError("break outside of a for or while loop") from None
+        except _ContinueSignal:
+            raise EvalError("continue outside of a for or while loop") from None
         return last
 
     def eval_stmt(self, stmt: ast.Stmt) -> Value:
@@ -68,7 +78,13 @@ class Evaluator:
         if isinstance(stmt, ast.WhileStmt):
             return self._eval_while(stmt)
         if isinstance(stmt, ast.BreakStmt):
+            if self._loop_depth <= 0:
+                raise EvalError("break outside of a for or while loop")
             raise _BreakSignal()
+        if isinstance(stmt, ast.ContinueStmt):
+            if self._loop_depth <= 0:
+                raise EvalError("continue outside of a for or while loop")
+            raise _ContinueSignal()
         if isinstance(stmt, ast.ExprStmt):
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
@@ -544,25 +560,37 @@ class Evaluator:
 
         vals = np.asarray(iterable.backend_buffer(), dtype=float).reshape(-1)
         last: Value = self.numerics.from_scalar(0.0)
-        for x in vals:
-            self.workspace.set(stmt.var, self.numerics.from_scalar(float(x)))
-            try:
-                for s in stmt.body:
-                    last = self.eval_stmt(s)
-            except _BreakSignal:
-                break
+        self._loop_depth += 1
+        try:
+            for x in vals:
+                self.workspace.set(stmt.var, self.numerics.from_scalar(float(x)))
+                try:
+                    for s in stmt.body:
+                        last = self.eval_stmt(s)
+                except _ContinueSignal:
+                    continue
+                except _BreakSignal:
+                    break
+        finally:
+            self._loop_depth -= 1
         return last
 
     def _eval_while(self, stmt: ast.WhileStmt) -> Value:
         last: Value = self.numerics.from_scalar(0.0)
         # Cap iterations to avoid hard hangs from user error in MVP
-        for _ in range(1_000_000):
-            if not self._truthy(self.eval_expr(stmt.condition)):
-                return last
-            try:
-                for s in stmt.body:
-                    last = self.eval_stmt(s)
-            except _BreakSignal:
-                return last
-        raise EvalError("while: exceeded 1000000 iterations")
+        self._loop_depth += 1
+        try:
+            for _ in range(1_000_000):
+                if not self._truthy(self.eval_expr(stmt.condition)):
+                    return last
+                try:
+                    for s in stmt.body:
+                        last = self.eval_stmt(s)
+                except _ContinueSignal:
+                    continue
+                except _BreakSignal:
+                    return last
+            raise EvalError("while: exceeded 1000000 iterations")
+        finally:
+            self._loop_depth -= 1
 
