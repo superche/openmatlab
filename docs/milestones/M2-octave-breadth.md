@@ -23,7 +23,7 @@ met when its script actually passes.
 | # | Criterion | Script | Priority | Tracking | Status |
 |---|-----------|--------|----------|----------|--------|
 | C02 | Bare colon subscripts `A(i,:)`, `A(:)` | c02_indexing | p0 | #191 | **met** (Epic #16) |
-| C04 | Zero-arg constants `NaN`/`Inf`/`pi` in expressions | c04_numeric_builtins | p0 | #192 | pending |
+| C04 | Zero-arg constants `NaN`/`Inf`/`pi` in expressions | c04_numeric_builtins | p0 | #192 | **met** (Epic #17) |
 | C11 | Scalar / square-matrix power `x^2` | c11_scalar_power_script | p0 | #193 | pending |
 | C07 | Logical indexing read + LHS `v(v<0)=0` | c07_logical_indexing | p0 | #162 | pending |
 | C06 | Delete `v(i)=[]` (arrays; cells #109) | c06_delete_elements | p0 | #120 #109 | pending |

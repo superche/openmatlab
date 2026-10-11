@@ -565,3 +565,12 @@ test_cases:
     impl: tests/unit/test_bare_colon.py
     status: active
     env: unit
+
+  - id: tc.name_zero_arg
+    kind: unit
+    title: bare NaN/Inf/pi zero-arg constants
+    features: [runtime.name_zero_arg_constants]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_name_zero_arg.py
+    status: active
+    env: unit
