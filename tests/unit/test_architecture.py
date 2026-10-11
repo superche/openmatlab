@@ -11,6 +11,8 @@ from openmatlab.libs.path import ToolboxPath
 from openmatlab.runtime.session import Session
 from openmatlab.runtime.workspace import Workspace
 
+pytestmark = pytest.mark.unit
+
 
 def test_matrix_tokens_reserved():
     for name in ("LBRACKET", "DOT_STAR", "COLON", "TRANSPOSE", "KW_FUNCTION"):
@@ -71,5 +73,6 @@ def test_cli_status(capsys):
         main([])
     assert ei.value.code == 0
     out = capsys.readouterr().out
-    assert "architecture stage" in out
-    assert "openmatlab.runtime" in out
+    assert "architecture" in out
+    assert "runtime" in out
+    assert "docs/QA.md" in out

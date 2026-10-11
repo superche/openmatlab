@@ -24,7 +24,19 @@ openmatlab = "openmatlab.host.cli:main"
 where = ["src"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
-# Optional backends — not required at architecture stage
+dev = ["pytest>=7", "PyYAML>=6"]
 numpy = ["numpy>=1.24"]
 plot = ["matplotlib>=3.7"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+markers = [
+    "unit: fast unit / architecture tests",
+    "conformance: golden / public-spec cases",
+    "interactive: REPL/plot smoke",
+    "slow: long-running tests",
+    "needs_numpy: requires NumPy",
+    "needs_matplotlib: requires Matplotlib",
+]
+addopts = "-q"

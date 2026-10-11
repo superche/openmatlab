@@ -1,60 +1,218 @@
-"""Thin CLI — architecture status / version (no expression evaluation yet)."""
+"""CLI — QA/dev: status, features, cases, defects, test runner."""
 
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
+from typing import List, Optional
 
 from openmatlab import __version__
 
 _STATUS = """\
-OpenMATLAB {version} — architecture stage (clean-room / public specs)
+OpenMATLAB {version} — architecture + layered QA stage (clean-room / public specs)
 
-Package seams:
-  openmatlab.host      CLI/REPL, DisplayPolicy, PlotSurface
-  openmatlab.lang      lexer/parser/AST (matrix grammar reserved)
-  openmatlab.runtime   Value/Array, Workspace, FunctionResolver
-  openmatlab.numerics  ArrayBackend (NumPy placeholder)
-  openmatlab.graphics  GraphicsBackend (matplotlib placeholder)
-  openmatlab.libs      toolbox / path placeholder
+Packages: host · lang · runtime · numerics · graphics · libs · qa
 
-Product intent: matrix-first workbench, interactive display, functions/path,
-plots seam. Expression evaluation intentionally incomplete this stage.
-See docs/ARCHITECTURE.md.
+QA layers (docs/QA.md):
+  1. Features     docs/feature_map.yaml     → openmatlab features
+  2. Cases        docs/test_catalog.yaml    → openmatlab cases
+  3. Environments tests/{{unit,conformance,interactive}}
+  4. Tooling      pytest + this CLI         → openmatlab test
+  5. Defects      docs/defects/             → openmatlab defects
+
+Eval not wired. Architecture: docs/ARCHITECTURE.md
 """
 
 
-def main(argv: list[str] | None = None) -> None:
+def _cmd_status(_args: argparse.Namespace) -> int:
+    print(_STATUS.format(version=__version__))
+    return 0
+
+
+def _cmd_features(args: argparse.Namespace) -> int:
+    from openmatlab.qa.feature_map import load_feature_map
+
+    fmap = load_feature_map()
+    for problem in fmap.validate():
+        print(f"feature_map warning: {problem}", file=sys.stderr)
+    features = fmap.filter(layer=args.layer, status=args.status)
+    if args.format == "yaml":
+        try:
+            import yaml
+        except ImportError:
+            print("error: PyYAML required for --format yaml", file=sys.stderr)
+            return 1
+        if args.layer or args.status:
+            payload = {
+                "filter": {"layer": args.layer, "status": args.status},
+                "features": [
+                    {
+                        "id": f.id,
+                        "layer": f.layer,
+                        "name": f.name,
+                        "status": f.status,
+                    }
+                    for f in features
+                ],
+            }
+            print(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True))
+        else:
+            print(fmap.format_yaml())
+    else:
+        print(fmap.format_table(features))
+        counts = fmap.counts_by_status()
+        print("counts: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+    return 0
+
+
+def _cmd_cases(args: argparse.Namespace) -> int:
+    from openmatlab.qa.catalog import load_test_catalog
+    from openmatlab.qa.feature_map import load_feature_map
+
+    catalog = load_test_catalog()
+    known = {f.id for f in load_feature_map().features}
+    for problem in catalog.validate(known_feature_ids=known):
+        print(f"test_catalog warning: {problem}", file=sys.stderr)
+    rows = catalog.filter(
+        kind=args.kind, status=args.status, env=args.env, feature=args.feature
+    )
+    if args.format == "yaml":
+        try:
+            import yaml
+        except ImportError:
+            print("error: PyYAML required", file=sys.stderr)
+            return 1
+        print(
+            yaml.safe_dump(
+                {
+                    "use_cases": catalog.raw.get("use_cases"),
+                    "test_cases": [
+                        {
+                            "id": t.id,
+                            "kind": t.kind,
+                            "status": t.status,
+                            "env": t.env,
+                            "title": t.title,
+                            "features": t.features,
+                        }
+                        for t in rows
+                    ],
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            )
+        )
+    else:
+        print(
+            catalog.format_table(
+                rows, include_use_cases=not (args.kind or args.status or args.env)
+            )
+        )
+    return 0
+
+
+def _cmd_defects(args: argparse.Namespace) -> int:
+    from openmatlab.qa.defects import load_defect_index
+
+    index = load_defect_index()
+    rows = index.filter(status=args.status)
+    print(index.format_table(rows))
+    return 0
+
+
+def _cmd_test(args: argparse.Namespace) -> int:
+    markers = {
+        "unit": "unit",
+        "conformance": "conformance",
+        "interactive": "interactive",
+        "all": None,
+    }
+    mark = markers[args.suite]
+    cmd: List[str] = [sys.executable, "-m", "pytest"]
+    if mark:
+        cmd.extend(["-m", mark])
+    if args.keyword:
+        cmd.extend(["-k", args.keyword])
+    if args.pytest_args:
+        cmd.extend(args.pytest_args)
+    print("Running:", " ".join(cmd), file=sys.stderr)
+    return subprocess.call(cmd)
+
+
+def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="openmatlab",
-        description="OpenMATLAB: matrix-first MATLAB-compatible workbench",
+        description="OpenMATLAB workbench — architecture + layered QA CLI",
     )
     parser.add_argument(
-        "-V",
-        "--version",
-        action="version",
-        version=f"openmatlab {__version__}",
+        "-V", "--version", action="version", version=f"openmatlab {__version__}"
     )
     parser.add_argument(
-        "--status",
-        action="store_true",
-        help="Print architecture package status and exit",
+        "-e",
+        "--eval",
+        metavar="CODE",
+        help="(Reserved) evaluate CODE — not wired yet",
     )
-    # Accept legacy flags so old muscle memory does not crash hard
-    parser.add_argument("-e", "--eval", metavar="CODE", help=argparse.SUPPRESS)
-    parser.add_argument("script", nargs="?", help=argparse.SUPPRESS)
+    parser.add_argument("--status", action="store_true", help="Print QA/architecture status")
+    parser.add_argument("--features", action="store_true", help="Dump feature map")
+    parser.add_argument("--format", choices=("table", "yaml"), default="table")
+    parser.add_argument("--layer", default=None)
+    parser.add_argument("--status-filter", default=None, metavar="STATUS")
+
+    sub = parser.add_subparsers(dest="command")
+
+    p_status = sub.add_parser("status", help="Architecture + QA layer blurb")
+    p_status.set_defaults(func=_cmd_status)
+
+    p_feat = sub.add_parser("features", help="Layer 1: feature map")
+    p_feat.add_argument("--format", choices=("table", "yaml"), default="table")
+    p_feat.add_argument("--layer", default=None)
+    p_feat.add_argument("--status", default=None)
+    p_feat.set_defaults(func=_cmd_features)
+
+    p_cases = sub.add_parser("cases", help="Layer 2: use-case / test-case catalog")
+    p_cases.add_argument("--format", choices=("table", "yaml"), default="table")
+    p_cases.add_argument("--kind", default=None, help="unit|conformance|interactive")
+    p_cases.add_argument("--status", default=None)
+    p_cases.add_argument("--env", default=None)
+    p_cases.add_argument("--feature", default=None, help="Filter by feature id")
+    p_cases.set_defaults(func=_cmd_cases)
+
+    p_def = sub.add_parser("defects", help="Layer 5: defect index")
+    p_def.add_argument("--status", default=None)
+    p_def.set_defaults(func=_cmd_defects)
+
+    p_test = sub.add_parser("test", help="Layer 4: run pytest by environment")
+    p_test.add_argument(
+        "--suite",
+        choices=("unit", "conformance", "interactive", "all"),
+        default="unit",
+    )
+    p_test.add_argument("-k", dest="keyword", default=None)
+    p_test.add_argument("pytest_args", nargs="*", default=[])
+    p_test.set_defaults(func=_cmd_test)
+
     args = parser.parse_args(argv)
 
-    if args.eval is not None or args.script is not None:
+    if args.eval is not None:
         print(
-            "openmatlab: expression/script evaluation not wired "
-            "(architecture stage). Try: openmatlab --status",
+            "openmatlab: expression evaluation not wired "
+            "(architecture stage). Try: openmatlab status",
             file=sys.stderr,
         )
         sys.exit(2)
 
-    print(_STATUS.format(version=__version__))
-    sys.exit(0)
+    if args.command and getattr(args, "func", None):
+        sys.exit(args.func(args))
+
+    if args.features:
+        ns = argparse.Namespace(
+            format=args.format, layer=args.layer, status=args.status_filter
+        )
+        sys.exit(_cmd_features(ns))
+
+    sys.exit(_cmd_status(args))
 
 
 if __name__ == "__main__":

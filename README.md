@@ -16,10 +16,14 @@ See `docs/ARCHITECTURE.md`.
 
 ```bash
 pip install -e ".[dev]"
-openmatlab --status
-python -m openmatlab --version
-pytest
+openmatlab status                 # five-layer QA blurb
+openmatlab features               # layer 1: capability map
+openmatlab cases                  # layer 2: use/test cases
+openmatlab defects                # layer 5: defect index
+openmatlab test --suite unit      # layer 3+4: unit environment
 ```
+
+QA: `docs/QA.md` (layers) · `docs/feature_map.yaml` · `docs/test_catalog.yaml` · `docs/WORKFLOW.md`
 
 ### Non-goals
 
@@ -50,7 +54,7 @@ MIT © Shaw Che / superche, 2026
 
 ### 状态（v0.0.2 — 架构阶段）
 
-已搭好包边界与接口；**求值尚未接通**（刻意为之）。详见 `docs/ARCHITECTURE.md`。
+已搭好包边界与接口，以及 QA 体系（`docs/QA.md` / `docs/feature_map.yaml`）；**求值尚未接通**（刻意为之）。详见 `docs/ARCHITECTURE.md`。
 
 ### 明确非目标
 

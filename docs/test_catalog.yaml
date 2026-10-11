@@ -1,0 +1,124 @@
+# OpenMATLAB test / use-case catalog (QA layer 2)
+# Schema: docs/QA.md § Layer 2
+version: 1
+product: openmatlab
+updated: "2026-10-11"
+
+use_cases:
+  - id: uc.matrix_first_repl
+    title: Interactive matrix compute and display
+    actor: scientific user
+    goal: Enter arrays, operate, see pretty-print; suppress with ';'
+    features:
+      - lang.matrix_literal
+      - lang.elementwise_ops
+      - runtime.evaluator
+      - host.display_policy
+    priority: p0
+    narrative: docs/use_cases/matrix_first_repl.md
+
+  - id: uc.plot_tweak
+    title: Plot vectors and tweak in session
+    actor: scientific user
+    goal: plot(x,y) from workspace values
+    features: [graphics.plot_mvp, host.plot_surface, runtime.session]
+    priority: p0
+
+  - id: uc.script_function_path
+    title: Run scripts and resolve functions on path
+    actor: power user
+    goal: .m functions via ToolboxPath
+    features: [libs.mfile_loading, runtime.function_resolver, lang.function_def]
+    priority: p1
+
+test_cases:
+  - id: tc.arch_session_composition
+    kind: unit
+    title: Session wires workspace, path, display, plots
+    features: [runtime.session, host.display_policy]
+    use_cases: []
+    impl: tests/unit/test_architecture.py::test_session_composition
+    status: active
+    env: unit
+
+  - id: tc.arch_workspace_frames
+    kind: unit
+    title: Workspace push/pop frames
+    features: [runtime.workspace]
+    impl: tests/unit/test_architecture.py::test_workspace_frames
+    status: active
+    env: unit
+
+  - id: tc.arch_tokens_reserved
+    kind: unit
+    title: Matrix TokenType names reserved
+    features: [lang.tokens_reserved]
+    impl: tests/unit/test_architecture.py::test_matrix_tokens_reserved
+    status: active
+    env: unit
+
+  - id: tc.qa_feature_map_valid
+    kind: unit
+    title: feature_map.yaml loads; unique ids
+    features: [qa.feature_map]
+    impl: tests/unit/test_feature_map.py::test_feature_map_loads_and_unique_ids
+    status: active
+    env: unit
+
+  - id: tc.qa_catalog_valid
+    kind: unit
+    title: test_catalog.yaml loads; feature refs resolve
+    features: [qa.test_catalog]
+    impl: tests/unit/test_catalog.py::test_catalog_loads
+    status: active
+    env: unit
+
+  - id: tc.qa_defects_index
+    kind: unit
+    title: defects index.yaml loads
+    features: [qa.defects]
+    impl: tests/unit/test_defects.py::test_defects_index_loads
+    status: active
+    env: unit
+
+  - id: tc.cli_features
+    kind: unit
+    title: CLI dumps feature map
+    features: [host.cli.status, qa.feature_map]
+    impl: tests/unit/test_cli_qa.py::test_features_subcommand
+    status: active
+    env: unit
+
+  - id: tc.conformance_placeholder
+    kind: conformance
+    title: Golden directory present (placeholder)
+    features: [qa.conformance_suite]
+    impl: tests/conformance/test_conformance_placeholder.py::test_conformance_suite_ready_for_goldens
+    status: stub
+    env: conformance
+
+  - id: tc.interactive_placeholder
+    kind: interactive
+    title: Interactive marker smoke
+    features: [qa.interactive_suite]
+    impl: tests/interactive/test_interactive_placeholder.py::test_interactive_marker_registered
+    status: stub
+    env: interactive
+
+  - id: tc.matrix_literal_golden
+    kind: conformance
+    title: "[1 2; 3 4] builds 2x2 Array (future)"
+    features: [lang.matrix_literal, numerics.array_value]
+    use_cases: [uc.matrix_first_repl]
+    impl: null
+    status: planned
+    env: conformance
+
+  - id: tc.plot_mvp_smoke
+    kind: interactive
+    title: plot(x,y) smoke (future)
+    features: [graphics.plot_mvp]
+    use_cases: [uc.plot_tweak]
+    impl: null
+    status: planned
+    env: interactive

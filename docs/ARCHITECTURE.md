@@ -107,3 +107,15 @@ relational ops, `function` / `if` / `for` / `while` / `end`,
 | No plot seam | `PlotSurface` + `GraphicsBackend` |
 | No path/functions | `FunctionResolver` + `ToolboxPath` |
 | No composition root | `runtime.Session` |
+
+## QA system (five layers)
+
+See `docs/QA.md` for the layered design:
+
+1. Features — `docs/feature_map.yaml` → `openmatlab features`
+2. Cases — `docs/test_catalog.yaml` → `openmatlab cases`
+3. Environments — `tests/{unit,conformance,interactive}`
+4. Tooling — pytest + `openmatlab test`
+5. Defects — `docs/defects/` → `openmatlab defects`
+
+Also: `docs/FEATURE_MAP.md`, `docs/TEST_CATALOG.md`, `docs/WORKFLOW.md`.

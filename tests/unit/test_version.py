@@ -1,4 +1,8 @@
+import pytest
+
 from openmatlab import __version__
+
+pytestmark = pytest.mark.unit
 
 
 def test_version():

@@ -1,0 +1,251 @@
+# OpenMATLAB capability inventory — source of truth for QA status.
+# Schema: see docs/QA.md § Feature map
+# Status values: planned | stub | partial | done | wontfix
+# Clean-room: no MATLAB binary RE. Optional future conformance sources:
+#   public MATLAB language docs, Octave (public) behavior — never proprietary blobs.
+
+version: 1
+product: openmatlab
+updated: "2026-10-11"
+
+layers:
+  - id: host
+    package: openmatlab.host
+  - id: lang
+    package: openmatlab.lang
+  - id: runtime
+    package: openmatlab.runtime
+  - id: numerics
+    package: openmatlab.numerics
+  - id: graphics
+    package: openmatlab.graphics
+  - id: libs
+    package: openmatlab.libs
+  - id: qa
+    package: openmatlab.qa
+
+features:
+  # --- host ---
+  - id: host.cli.status
+    layer: host
+    name: CLI architecture / QA status
+    status: partial
+    spec: docs/QA.md
+    tests: [tests/unit/test_cli_qa.py]
+    cases: [tc.cli_features]
+    notes: "status/features/cases/defects/test; eval not wired"
+
+  - id: host.cli.version
+    layer: host
+    name: CLI version
+    status: done
+    tests: [tests/unit/test_cli_qa.py]
+
+  - id: host.display_policy
+    layer: host
+    name: DisplayPolicy (semicolon suppress, ans, pretty-print)
+    status: stub
+    spec: docs/ARCHITECTURE.md
+    tests: [tests/unit/test_architecture.py]
+    protocols: [openmatlab.host.display.DisplayPolicy]
+
+  - id: host.plot_surface
+    layer: host
+    name: PlotSurface façade
+    status: stub
+    protocols: [openmatlab.host.plot_surface.PlotSurface]
+
+  - id: host.repl
+    layer: host
+    name: Interactive REPL session
+    status: stub
+    tests: []
+    notes: "ReplSession.run_line raises NotImplementedError"
+
+  # --- lang ---
+  - id: lang.tokens_reserved
+    layer: lang
+    name: TokenType vocabulary incl. matrix-reserved
+    status: partial
+    tests: [tests/unit/test_architecture.py]
+    notes: "Enum present; lexer does not emit reserved tokens yet"
+
+  - id: lang.ast_matrix_forms
+    layer: lang
+    name: AST nodes for matrix-first forms
+    status: partial
+    tests: [tests/unit/test_architecture.py]
+    notes: "Dataclasses exist; parser does not produce them"
+
+  - id: lang.lexer
+    layer: lang
+    name: Lexer tokenize()
+    status: stub
+    tests: [tests/unit/test_architecture.py]
+
+  - id: lang.parser
+    layer: lang
+    name: Parser parse()
+    status: stub
+    tests: [tests/unit/test_architecture.py]
+
+  - id: lang.matrix_literal
+    layer: lang
+    name: "[...] matrix / row literals"
+    status: planned
+    tests: [tests/conformance/test_placeholder.py]
+    depends_on: [lang.lexer, lang.parser, numerics.array_value]
+
+  - id: lang.indexing_colon
+    layer: lang
+    name: Indexing A(i,j) and colon expressions
+    status: planned
+    depends_on: [lang.parser]
+
+  - id: lang.elementwise_ops
+    layer: lang
+    name: ".* ./ .^ vs * / matmul"
+    status: planned
+    depends_on: [lang.parser, numerics.array_backend]
+
+  - id: lang.function_def
+    layer: lang
+    name: function ... end syntax
+    status: planned
+    depends_on: [lang.parser, runtime.function_resolver]
+
+  # --- runtime ---
+  - id: runtime.value_array_protocol
+    layer: runtime
+    name: Value / Array protocols (scalar as 1x1)
+    status: stub
+    protocols: [openmatlab.runtime.value.Value, openmatlab.runtime.value.Array]
+    tests: [tests/unit/test_architecture.py]
+
+  - id: runtime.workspace
+    layer: runtime
+    name: Workspace base + frames
+    status: partial
+    tests: [tests/unit/test_architecture.py]
+    notes: "push/pop/get/set work; unused by evaluator"
+
+  - id: runtime.function_resolver
+    layer: runtime
+    name: FunctionResolver builtins → path → .m
+    status: stub
+    protocols: [openmatlab.runtime.functions.CallableFunction]
+
+  - id: runtime.session
+    layer: runtime
+    name: Session composition root
+    status: partial
+    tests: [tests/unit/test_architecture.py]
+
+  - id: runtime.evaluator
+    layer: runtime
+    name: AST evaluator
+    status: stub
+    depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
+
+  # --- numerics ---
+  - id: numerics.array_backend
+    layer: numerics
+    name: ArrayBackend protocol
+    status: stub
+    protocols: [openmatlab.numerics.backend.ArrayBackend]
+
+  - id: numerics.numpy_backend
+    layer: numerics
+    name: NumPyArrayBackend
+    status: stub
+    depends_on: [numerics.array_backend, runtime.value_array_protocol]
+
+  - id: numerics.array_value
+    layer: numerics
+    name: Concrete Array value type
+    status: planned
+    depends_on: [runtime.value_array_protocol, numerics.numpy_backend]
+
+  # --- graphics ---
+  - id: graphics.backend
+    layer: graphics
+    name: GraphicsBackend protocol
+    status: stub
+    protocols: [openmatlab.graphics.backend.GraphicsBackend]
+
+  - id: graphics.matplotlib
+    layer: graphics
+    name: MatplotlibGraphicsBackend
+    status: stub
+    depends_on: [graphics.backend, host.plot_surface]
+
+  - id: graphics.plot_mvp
+    layer: graphics
+    name: plot(x,y) MVP
+    status: planned
+    depends_on: [graphics.matplotlib, runtime.evaluator]
+    tests: [tests/interactive/test_placeholder.py]
+
+  # --- libs ---
+  - id: libs.toolbox_path
+    layer: libs
+    name: ToolboxPath addpath / find_mfile
+    status: partial
+    notes: "addpath/rmpath work; find_mfile always None"
+    tests: []
+
+  - id: libs.mfile_loading
+    layer: libs
+    name: Load .m functions from path
+    status: planned
+    depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
+
+  # --- qa ---
+  - id: qa.feature_map
+    layer: qa
+    name: Feature map load / dump
+    status: partial
+    spec: docs/QA.md
+    tests: [tests/unit/test_feature_map.py]
+
+  - id: qa.unit_suite
+    layer: qa
+    name: Unit test suite (pytest -m unit)
+    status: partial
+    tests: [tests/unit/]
+
+  - id: qa.conformance_suite
+    layer: qa
+    name: Conformance / golden suite
+    status: stub
+    tests: [tests/conformance/]
+    notes: "Placeholders only; future public-docs / optional Octave"
+
+  - id: qa.interactive_suite
+    layer: qa
+    name: Interactive / plot smoke suite
+    status: stub
+    tests: [tests/interactive/]
+
+  - id: qa.test_catalog
+    layer: qa
+    name: Test / use-case catalog load
+    status: partial
+    spec: docs/QA.md
+    tests: [tests/unit/test_catalog.py]
+    notes: "Layer 2 inventory"
+
+  - id: qa.defects
+    layer: qa
+    name: Defect index load / workflow
+    status: partial
+    spec: docs/WORKFLOW.md
+    tests: [tests/unit/test_defects.py]
+    notes: "Layer 5 in-repo defects"
+
+  - id: qa.layered_system
+    layer: qa
+    name: Five-layer QA system documented
+    status: partial
+    spec: docs/QA.md
+    tests: [tests/unit/test_catalog.py, tests/unit/test_defects.py, tests/unit/test_feature_map.py]
