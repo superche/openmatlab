@@ -201,6 +201,13 @@ class BreakStmt(AstNode):
     pass
 
 
+@dataclass(frozen=True)
+class ContinueStmt(AstNode):
+    """continue — next iteration of innermost while/for."""
+
+    pass
+
+
 Stmt = Union[
     Assign,
     CellAssign,
@@ -212,5 +219,6 @@ Stmt = Union[
     ForStmt,
     WhileStmt,
     BreakStmt,
+    ContinueStmt,
 ]
 Program = List[Stmt]

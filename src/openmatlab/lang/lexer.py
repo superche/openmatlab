@@ -227,6 +227,7 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "for": TokenType.KW_FOR,
                 "while": TokenType.KW_WHILE,
                 "break": TokenType.KW_BREAK,
+                "continue": TokenType.KW_CONTINUE,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
             tok = Token(typ, word, start_line, start_col)
