@@ -322,3 +322,12 @@ test_cases:
     impl: docs/design/ITER-024-feature-done-criteria.md
     status: active
     env: unit
+
+  - id: tc.while_break
+    kind: unit
+    title: while + break in while/for
+    features: [runtime.evaluator, lang.parser]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_while_break.py
+    status: active
+    env: unit

@@ -10,6 +10,8 @@ from openmatlab.lang.ast_nodes import (
     ColonExpr,
     Expr,
     ExprStmt,
+    BreakStmt,
+    WhileStmt,
     ForStmt,
     FunctionDef,
     IfBranch,
@@ -97,6 +99,12 @@ class Parser:
             return self.parse_if()
         if self.current().type == TokenType.KW_FOR:
             return self.parse_for()
+        if self.current().type == TokenType.KW_WHILE:
+            return self.parse_while()
+        if self.current().type == TokenType.KW_BREAK:
+            self.advance()
+            self._trailing_suppress()
+            return BreakStmt()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)
@@ -226,6 +234,15 @@ class Parser:
         body = self._parse_block(TokenType.KW_END)
         self.expect(TokenType.KW_END)
         return ForStmt(var=var, iterable=iterable, body=tuple(body))
+
+    def parse_while(self) -> WhileStmt:
+        self.expect(TokenType.KW_WHILE)
+        cond = self.parse_expression()
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            pass
+        body = self._parse_block(TokenType.KW_END)
+        self.expect(TokenType.KW_END)
+        return WhileStmt(condition=cond, body=tuple(body))
 
     def _parse_block(self, *end_types: TokenType) -> List[Stmt]:
         body: List[Stmt] = []

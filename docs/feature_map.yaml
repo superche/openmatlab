@@ -85,14 +85,14 @@ features:
     name: Lexer tokenize()
     status: done
     tests: [tests/unit/test_lexer.py]
-    notes: "Matrix MVP + function/if/else/elseif/for/end + STRING; while/cells later [done per docs/design/ITER-024-feature-done-criteria.md]"
+    notes: "Matrix MVP + if/for/while/break/end + STRING; continue/cells later [done ITER-024; #34]"
 
   - id: lang.parser
     layer: lang
     name: Parser parse()
     status: done
     tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix MVP + function + MultiAssign + IfStmt/ForStmt; while later [done per docs/design/ITER-024-feature-done-criteria.md]"
+    notes: "Matrix MVP + MultiAssign + If/For/While/Break; continue later [done ITER-024; #34]"
 
   - id: lang.matrix_literal
     layer: lang
@@ -163,7 +163,7 @@ features:
     status: done
     depends_on: [lang.parser, runtime.value_array_protocol, numerics.array_backend]
     tests: [tests/unit/test_evaluator.py]
-    notes: "Matrix MVP + .m + multi-assign + if/elseif/else + for; while N/A [done per docs/design/ITER-024-feature-done-criteria.md]"
+    notes: "Matrix MVP + .m + multi-assign + if/for/while/break [done ITER-024; #34]"
 
   # --- numerics ---
   - id: numerics.array_backend
