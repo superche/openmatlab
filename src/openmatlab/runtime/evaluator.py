@@ -133,16 +133,34 @@ class Evaluator:
             try:
                 return self.workspace.get(expr.id)
             except KeyError:
+                # bare i / j → imaginary unit when unbound
+                if expr.id in ("i", "j"):
+                    import numpy as np
+                    from openmatlab.numerics.ndarray_value import NDArrayValue
+                    return NDArrayValue(np.asarray([[1j]]))
+                # bare script on path before treating as function
+                mfile = None
+                try:
+                    mfile = self.functions._find(expr.id)  # type: ignore[attr-defined]
+                except Exception:
+                    mfile = None
+                if mfile is not None:
+                    from openmatlab.runtime.functions import Script, eval_script, load_mfile
+                    loaded = load_mfile(mfile)
+                    if isinstance(loaded, Script):
+                        eval_script(loaded, self)
+                        return self.numerics.from_scalar(0.0)
+                    # else fall through to function resolve via _invoke_call
                 # MATLAB: unbound name may be a zero-arg function/builtin (NaN, pi, …)
                 try:
                     results = self._invoke_call(expr, [], nargout=1)
-                except EvalError as exc:
-                    raise EvalError(f"Undefined variable: {expr.id}") from exc
-                if results is None:
-                    raise EvalError(f"Undefined variable: {expr.id}")
-                if not results:
-                    return self.numerics.from_nested([])
-                return results[0]
+                except (EvalError, ValueError, LookupError):
+                    results = None
+                if results is not None:
+                    if not results:
+                        return self.numerics.from_nested([])
+                    return results[0]
+                raise EvalError(f"Undefined variable: {expr.id}")
         if isinstance(expr, ast.UnaryOp):
             v = self._require_array(self.eval_expr(expr.operand), "unary")
             if expr.op == "+":
@@ -587,6 +605,34 @@ class Evaluator:
         grid = tuple(tuple(cell.get(i, j) for j in cols_j) for i in rows_i)
         return CellValue(rows=grid)
 
+
+    def _eval_call_args(self, arg_exprs: List[ast.Expr]) -> list:
+        """Evaluate call args with cell CSL expansion c{:} / c{:,k} pack→list."""
+        from openmatlab.runtime.cell_value import CellValue
+
+        out: list = []
+        for a in arg_exprs:
+            # CSL: content index with only bare colon(s) or multi result cell from {}
+            if isinstance(a, ast.CellIndexExpr):
+                val = self.eval_expr(a)
+                # If multi-content packed as cell (from colon), expand
+                bare = all(
+                    isinstance(ix, ast.ColonExpr)
+                    and ix.start is None
+                    and ix.stop is None
+                    for ix in a.indices
+                )
+                if bare and isinstance(val, CellValue):
+                    rows, cols = val.shape
+                    for j in range(cols):
+                        for i in range(rows):
+                            out.append(val.get(i, j))
+                    continue
+                out.append(val)
+                continue
+            out.append(self.eval_expr(a))
+        return out
+
     def _invoke_call(
         self,
         target_expr: ast.Expr,
@@ -628,7 +674,7 @@ class Evaluator:
             fn = self.functions.resolve(n)
         except LookupError as exc:
             raise EvalError(str(exc)) from exc
-        args = [self.eval_expr(a) for a in arg_exprs]
+        args = self._eval_call_args(arg_exprs)
         try:
             results = list(fn(args, nargout=nargout))
         except ValueError as exc:  # builtin argument errors (e.g. BuiltinError)
@@ -727,10 +773,28 @@ class Evaluator:
         eval_script(loaded, self)
         return self.numerics.from_scalar(1.0)
 
-    def _eval_binop(self, expr: ast.BinOp) -> Array:
-        left = self._require_array(self.eval_expr(expr.left), "binop")
-        right = self._require_array(self.eval_expr(expr.right), "binop")
+    def _eval_binop(self, expr: ast.BinOp) -> Value:
+        from openmatlab.runtime.char_value import CharValue
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+
+        lv = self.eval_expr(expr.left)
+        rv = self.eval_expr(expr.right)
         op = expr.op
+
+        def _as_numeric(v: Value, side: str) -> Array:
+            if isinstance(v, CharValue):
+                codes = [float(ord(ch)) for ch in v.text]
+                if not codes:
+                    return NDArrayValue(np.zeros((1, 0), dtype=np.float64))
+                return NDArrayValue(np.asarray(codes, dtype=np.float64).reshape(1, -1))
+            return self._require_array(v, f"binop:{side}")
+
+        # char + char → concat for + only
+        if op == "+" and isinstance(lv, CharValue) and isinstance(rv, CharValue):
+            return CharValue(lv.text + rv.text)  # type: ignore[return-value]
+        left = _as_numeric(lv, "left")
+        right = _as_numeric(rv, "right")
         n = self.numerics
         if op == "+":
             return n.add(left, right)
@@ -759,10 +823,37 @@ class Evaluator:
     def _eval_matrix(self, expr: ast.MatrixLiteral) -> Array:
         if not expr.rows:
             return self.numerics.from_nested([])
+        from openmatlab.runtime.cell_value import CellValue
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+
         rows_f: List[List[float]] = []
         for row in expr.rows:
             out_row: List[float] = []
             for cell in row:
+                # CSL inside []: [c{:}] expands contents into the row
+                if isinstance(cell, ast.CellIndexExpr):
+                    val = self.eval_expr(cell)
+                    bare = all(
+                        isinstance(ix, ast.ColonExpr)
+                        and ix.start is None
+                        and ix.stop is None
+                        for ix in cell.indices
+                    )
+                    if bare and isinstance(val, CellValue):
+                        rr, cc = val.shape
+                        for j in range(cc):
+                            for i in range(rr):
+                                el = val.get(i, j)
+                                arr = self._require_array(el, "matrix")
+                                if not arr.is_scalar():
+                                    raise EvalError(
+                                        "Matrix literal CSL cells must be scalar"
+                                    )
+                                out_row.append(
+                                    float(np.asarray(arr.backend_buffer()).reshape(-1)[0].real)
+                                )
+                        continue
                 val = self._require_array(self.eval_expr(cell), "matrix")
                 if not val.is_scalar():
                     raise EvalError(
