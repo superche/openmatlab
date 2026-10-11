@@ -368,3 +368,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.reductions
+    kind: unit
+    title: sum/prod/mean/min/max incl. [m,i]=max and dim forms
+    features: [libs.reductions]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_reductions.py
+    status: active
+    env: unit
+
