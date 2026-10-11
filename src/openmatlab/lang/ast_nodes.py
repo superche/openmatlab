@@ -118,6 +118,15 @@ Expr = Union[
 
 
 @dataclass(frozen=True)
+class CellAssign(AstNode):
+    """c{i} = expr — content assignment into a cell."""
+
+    target: CellIndexExpr
+    value: Expr
+    suppress: bool = False
+
+
+@dataclass(frozen=True)
 class Assign(AstNode):
     name: str
     value: Expr
@@ -185,6 +194,7 @@ class BreakStmt(AstNode):
 
 Stmt = Union[
     Assign,
+    CellAssign,
     MultiAssign,
     ExprStmt,
     FunctionDef,

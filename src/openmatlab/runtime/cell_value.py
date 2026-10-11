@@ -38,6 +38,12 @@ class CellValue:
         """0-based access."""
         return self.rows[i][j]
 
+    def with_set(self, i: int, j: int, value: Value) -> "CellValue":
+        """Return a new cell with rows[i][j] replaced (0-based)."""
+        rows = [list(r) for r in self.rows]
+        rows[i][j] = value
+        return CellValue(rows=tuple(tuple(r) for r in rows))
+
     @staticmethod
     def empty(m: int, n: int) -> "CellValue":
         """m×n cell of empty 0×0 double arrays (filled by caller/libs)."""
