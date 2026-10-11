@@ -238,15 +238,29 @@ class Evaluator:
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
         results = self._invoke_call(target_expr, arg_exprs, nargout=1)
         if results is None:
-            # indexed array path
-            target = self._require_array(self.eval_expr(target_expr), "index")
+            target = self.eval_expr(target_expr)
+            from openmatlab.runtime.cell_value import CellValue
+
+            if isinstance(target, CellValue):
+                return self._eval_cell_paren_index(target, arg_exprs)
+            target_a = self._require_array(target, "index")
             idxs = [
                 self._require_array(self.eval_expr(a), "index") for a in arg_exprs
             ]
-            return self.numerics.index(target, idxs)
+            return self.numerics.index(target_a, idxs)
         if not results:
             return self.numerics.from_nested([])
         return results[0]
+
+    def _eval_cell_paren_index(
+        self, cell: "object", arg_exprs: List[ast.Expr]
+    ) -> Value:
+        """c(i) / c(i,j) → 1×1 CellValue holding the content (slice, not content)."""
+        from openmatlab.runtime.cell_value import CellValue
+
+        assert isinstance(cell, CellValue)
+        i0, j0 = self._cell_subscripts(cell, list(arg_exprs), "cell () index")
+        return CellValue(rows=((cell.get(i0, j0),),))
 
     def _invoke_call(
         self,

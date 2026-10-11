@@ -467,3 +467,12 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.cell_paren_index
+    kind: unit
+    title: parentheses cell indexing to sub-cell
+    features: [lang.cell_paren_index]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_cell_paren_index.py
+    status: active
+    env: unit
+
