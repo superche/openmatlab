@@ -314,3 +314,11 @@ test_cases:
     impl: tests/unit/test_interactive_plot.py
     status: active
     env: unit
+
+  - id: tc.feature_done_criteria
+    kind: unit
+    title: Written done criteria for Epic #2 promotions
+    features: [qa.process_dod, qa.feature_map]
+    impl: docs/design/ITER-024-feature-done-criteria.md
+    status: active
+    env: unit
