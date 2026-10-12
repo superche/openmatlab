@@ -614,6 +614,58 @@ def _make_logical_op(name: str, op, nargs: int):
     return _fn
 
 
+def _class(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    from openmatlab.runtime.char_value import CharValue
+
+    _arity("class", args, 1, 1)
+    return (CharValue(args[0].matlab_class()),)
+
+
+def _make_is_class(name: str, classes: tuple):
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, 1, 1)
+        return (NDArrayValue(np.array([[args[0].matlab_class() in classes]])),)
+
+    return _fn
+
+
+def _isempty(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    _arity("isempty", args, 1, 1)
+    v = args[0]
+    if isinstance(v, CharValue):
+        n = len(v.text)
+    elif isinstance(v, CellValue):
+        r, c = v.shape
+        n = r * c
+    elif isinstance(v, Array):
+        n = v.numel()
+    else:
+        n = 1  # function handles etc. are 1x1
+    return (NDArrayValue(np.array([[n == 0]])),)
+
+
+def _make_any_all(name: str, op, empty: bool):
+    """any/all: column-wise on matrices (first non-singleton dim), 'all' flag."""
+
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        vals, flags = _peel_flags(name, args, {"all"})
+        _arity(name, vals, 1, 2)
+        b = _buf(name, vals[0])
+        b = np.where(np.isnan(b), True, b != 0)  # NaN counts as nonzero
+        if "all" in flags or b.shape == (0, 0):
+            out = np.array(op(b) if b.size else empty)
+        else:
+            ax = _axis_arg(name, vals[1]) if len(vals) == 2 else _default_axis(b)
+            out = b if ax >= b.ndim else op(b, axis=ax, keepdims=True)
+        out = np.asarray(out, dtype=bool)
+        return (NDArrayValue(out.reshape(1, 1) if out.ndim == 0 else out),)
+
+    return _fn
+
+
 def _true_false(name: str, fill: bool):
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         _arity(name, args, 0, 2)
@@ -701,6 +753,14 @@ BUILTINS: Dict[str, Builtin] = {
     "and": _make_logical_op("and", np.logical_and, 2),
     "or": _make_logical_op("or", np.logical_or, 2),
     "xor": _make_logical_op("xor", np.logical_xor, 2),
+    "class": _class,
+    "islogical": _make_is_class("islogical", ("logical",)),
+    "isnumeric": _make_is_class("isnumeric", ("double", "single")),
+    "ischar": _make_is_class("ischar", ("char",)),
+    "iscell": _make_is_class("iscell", ("cell",)),
+    "isempty": _isempty,
+    "any": _make_any_all("any", np.any, False),
+    "all": _make_any_all("all", np.all, True),
 }
 
 
