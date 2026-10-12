@@ -16,3 +16,8 @@ Feature: VS Code-style plugin host
     And I execute the command "community.signal.demo"
     Then the command result contains "hamming(5)="
     And the plugin state is "active"
+
+  Scenario: Builtin factory registers into FunctionResolver
+    Given a sample plugin with contributes.builtins factory
+    When the plugin host loads the plugin
+    Then the FunctionResolver has builtin "fir1"

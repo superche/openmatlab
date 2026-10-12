@@ -63,8 +63,10 @@ After exit: richer UI slots, out-of-process host, signed plugins — file as
 
 ## Progress snapshot
 
-After host + acceptance PRs: **8 / 8** criteria met (P01–P08). Epic **#349** OPEN for user acceptance; children #350–#356 closed. Residuals #359–#362 (p2).
+After host + acceptance PRs: **8 / 8** criteria met (P01–P08). Epic **#349** OPEN for user acceptance; children #350–#356 closed.
 
-**2026-10-12:** User rejected shallow acceptance. Deepening Issues [#367](https://github.com/superche/openmatlab/issues/367) (real community toolbox call) and [#368](https://github.com/superche/openmatlab/issues/368) (minimal desktop panel) filed + implemented; showcase re-recorded with **both**. Epic stays OPEN.
+**2026-10-12:** User rejected shallow acceptance. Deepening Issues [#367](https://github.com/superche/openmatlab/issues/367) (real community toolbox call) and [#368](https://github.com/superche/openmatlab/issues/368) (minimal desktop panel) filed + implemented; showcase re-recorded with **both**.
+
+**Residuals #359–#362 (p2):** addressed — builtins→FunctionResolver, `onPathExists`/`workspaceHasMatlabFiles` poll, `extensions.get_extension(id)`, documented `when` subset + panel chrome.
 
 Acceptance: [`docs/acceptance/EPIC-349.md`](../acceptance/EPIC-349.md). Showcase: `demos/plugins/showcase_plugin_host.mp4`.
