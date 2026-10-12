@@ -61,6 +61,8 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - 每个 `EPIC-NNN.md` 必须含 **Milestone progress**：criteria met/total、conformance 通过数、剩余 gap 列表。
 - 开放 Issue 必须带 `p0`/`p1`/`p2` 标签。详见 `docs/PROCESS.md` 与 `docs/milestones/M2-octave-breadth.md`。
 - **Plugins:** VS Code–style host contract is locked in `docs/design/PLUGIN-CONTRACT.md`; exit criteria in `docs/milestones/M-plugins.md`. Community plugins only (no MathWorks proprietary toolboxes). Historical options: `docs/design/PLUGIN-OPTIONS.md`.
+- **Domain gate:** business-conformance reference vectors — `docs/milestones/M-domain-conformance.md` (milestone/5).
+- **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6).
 
 ## Residual Issues（强制）
 

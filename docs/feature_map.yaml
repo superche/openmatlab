@@ -6,7 +6,7 @@
 
 version: 1
 product: openmatlab
-updated: "2026-10-11"
+updated: "2026-10-12"
 
 layers:
   - id: host
@@ -136,8 +136,60 @@ features:
     name: Community signal clean-room windows plugin
     status: partial
     spec: docs/design/PLUGIN-CONTRACT.md
-    notes: "Epic #349 / #367; hamming/rectwin/blackman .m + panel"
-    tests: [tests/unit/extensions/test_community_signal_package.py]
+    notes: "Epic #349 / #367; hamming/rectwin/blackman .m + panel; domain gate D01–D04"
+    tests: [tests/unit/extensions/test_community_signal_package.py, tests/conformance/test_domain_conformance.py]
+
+  - id: qa.domain_conformance
+    layer: qa
+    name: Domain business-conformance gate (reference vectors)
+    status: partial
+    spec: docs/milestones/M-domain-conformance.md
+    notes: "Epic #371; D01–D04 met (hamming/rectwin/blackman + PluginHost which)"
+    tests: [tests/conformance/test_domain_conformance.py]
+
+  - id: host.workbench.shell
+    layer: host
+    name: MATLAB-aligned Workbench Host shell + layout regions
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372 / W01 (#377); five host regions; plugin panels optional"
+    tests: [tests/unit/test_workbench.py]
+
+  - id: host.workbench.command_window
+    layer: host
+    name: Workbench Command Window (REPL eval + capture)
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372 / W02 (#378); headless --eval + tk surface"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
+
+  - id: host.workbench.editor
+    layer: host
+    name: Workbench Editor panel
+    status: stub
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "W03 #379 pending"
+
+  - id: host.workbench.workspace_browser
+    layer: host
+    name: Workbench Workspace browser
+    status: stub
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "W04 #380 pending"
+
+  - id: host.workbench.current_folder
+    layer: host
+    name: Workbench Current Folder browser
+    status: stub
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "W05 #381 pending"
+
+  - id: host.workbench.figures
+    layer: host
+    name: Workbench figure management
+    status: stub
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "W06 #382 pending"
 
   - id: lang.tokens_reserved
     layer: lang
