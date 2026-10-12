@@ -249,7 +249,7 @@ class NumPyArrayBackend:
             return self._np.issubdtype(buf.dtype, self._np.bool_)
 
 
-    def _dim_indices_0based(self, ind: "Array", dim_size: int, *, label: str) -> Any:
+    def _dim_indices_0based(self, ind: "Array", dim_size: int, *, label: str, pos: int = 0) -> Any:
         """Integer or logical subscript → 0-based index array for one dim."""
         np = self._np
         ind_a = _as_nd(ind)
@@ -267,6 +267,11 @@ class NumPyArrayBackend:
             raise NumericsError(f"{label}: indices must be positive integers")
         k = buf.astype(np.int64) - 1
         if np.any(k >= dim_size):
+            if pos:
+                # MATLAB wording (#446)
+                raise NumericsError(
+                    f"Index in position {pos} exceeds array bounds (must not exceed {dim_size})."
+                )
             raise NumericsError(f"{label}: index exceeds dimension ({dim_size})")
         return k
 
@@ -302,7 +307,7 @@ class NumPyArrayBackend:
         k = len(indices)
         view = data_a.reshape(self._collapsed_shape(data_a.shape, k), order="F")
         idx = [
-            self._dim_indices_0based(ind, view.shape[d], label="index")
+            self._dim_indices_0based(ind, view.shape[d], label="index", pos=d + 1)
             for d, ind in enumerate(indices)
         ]
         try:
@@ -321,7 +326,8 @@ class NumPyArrayBackend:
         flat = np.asarray(data).reshape(-1, order="F")
         if np.any(k >= flat.size):
             raise NumericsError(
-                f"index: linear index exceeds numel ({flat.size})"
+                "Index exceeds the number of array elements. "
+                f"Index must not exceed {flat.size}."
             )
         picked = _narrow(np, flat[k.reshape(-1)].astype(_dt(np, flat)))
         if k.size == 1:
