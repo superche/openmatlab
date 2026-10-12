@@ -56,5 +56,5 @@ breadth grows).
 
 ## Progress snapshot
 
-After first-slice PR: **4 / 4** criteria met (D01–D04).
-Epic **#371** OPEN until acceptance evidence.
+**4 / 4** criteria met (D01–D04). Children #373–#376 closed via [#383](https://github.com/superche/openmatlab/pull/383).
+Acceptance: [`docs/acceptance/EPIC-371.md`](../acceptance/EPIC-371.md). Epic **#371** OPEN until user accepts.
