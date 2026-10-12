@@ -270,6 +270,7 @@ def _cmd_workbench(args: argparse.Namespace) -> int:
     wb = Workbench.create(
         plugin_paths=paths or None,
         activate_plugins=bool(paths),
+        cwd=args.cwd,
     )
     if args.list_only:
         print(wb.list_regions_table())
@@ -425,11 +426,17 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Headless Command Window: evaluate CODE and print display capture",
     )
     p_wb.add_argument(
+        "--cwd",
+        default=None,
+        metavar="DIR",
+        help="Initial Current Folder directory",
+    )
+    p_wb.add_argument(
         "--demo-ms",
         type=int,
         default=None,
         metavar="MS",
-        help="Auto-close tk workbench after MS milliseconds",
+        help="Auto-close tk workbench after MS milliseconds (scripted walkthrough)",
     )
     p_wb.set_defaults(func=_cmd_workbench)
 
