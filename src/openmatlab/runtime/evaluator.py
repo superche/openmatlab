@@ -76,7 +76,13 @@ class Evaluator:
             self._return_ok -= 1
 
     def eval_stmt(self, stmt: ast.Stmt) -> Value:
-        value = self._exec_stmt(stmt)
+        from openmatlab.numerics.numpy_backend import NumericsError
+
+        try:
+            value = self._exec_stmt(stmt)
+        except NumericsError as exc:
+            # backend errors are user errors (MATLAB message), not crashes
+            raise EvalError(str(exc)) from exc
         if self.display is not None:
             self._display_stmt(stmt, value)
         return value
