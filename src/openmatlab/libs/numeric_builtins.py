@@ -127,9 +127,24 @@ def _pi(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 # ----- shape queries -----
 
 
+def _shape_of(v: Value) -> tuple:
+    """MATLAB dimensions of any value: arrays, char rows, cells; handles are 1x1."""
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    if isinstance(v, CharValue):
+        return (1, len(v.text)) if v.text else (0, 0)
+    if isinstance(v, CellValue):
+        return tuple(v.shape)
+    if isinstance(v, Array):
+        shape = tuple(np.asarray(v.backend_buffer()).shape)
+        return shape + (1,) * (2 - len(shape)) if len(shape) < 2 else shape
+    return (1, 1)
+
+
 def _size(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("size", args, 1, 2)
-    shape = tuple(_buf("size", args[0]).shape) or (1, 1)
+    shape = _shape_of(args[0])
     if len(args) == 2:
         d = _dim("size", args[1])
         if d < 1:
@@ -146,13 +161,13 @@ def _size(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 def _numel(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("numel", args, 1, 1)
-    return (_wrap(_buf("numel", args[0]).size),)
+    return (_wrap(int(np.prod(_shape_of(args[0])))),)
 
 
 def _length(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("length", args, 1, 1)
-    b = _buf("length", args[0])
-    return (_wrap(0 if b.size == 0 else max(b.shape)),)
+    shape = _shape_of(args[0])
+    return (_wrap(0 if 0 in shape else max(shape)),)
 
 
 
