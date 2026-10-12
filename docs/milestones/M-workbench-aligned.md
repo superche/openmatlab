@@ -18,7 +18,7 @@ two-pane notebook. The Host **owns** chrome and layout. Plugins fill **slots**
 | Tier | What | Status |
 |------|------|--------|
 | **Panel MVP** (W01–W06) | Five host regions with working APIs + tests | **met** |
-| **Layout parity** (W07–W15) | Menu bar, toolstrip, classic docks, multi-doc Editor, CW history, Workspace Value, path toolbar, docked Figures, layout presets | **required for milestone exit** — criteria met; epic OPEN pending E2E recording + user accept |
+| **Layout parity** (W07–W15) | Menu bar, toolstrip, classic docks, multi-doc Editor, CW history, Workspace Value, path toolbar, docked Figures, layout presets | **required for milestone exit** — criteria met; epic #372 closed (user accepted) |
 
 Milestone exit is **not** satisfied by panel MVP alone. User acceptance
 requires MATLAB-like layout parity (see exit criteria below).
@@ -89,5 +89,4 @@ met.
 
 **Panel MVP:** 6 / 6 met (W01–W06).  
 **Layout parity:** 9 / 9 met (W07–W15) — Issues #390–#398 closed by layout-parity PR.  
-Epic **#372** OPEN until layout parity + acceptance evidence + user accept
-(new window recording required after chrome lands).
+Epic **#372** closed on GitHub 2026-10-12 11:13 CST (user accepted); milestone closed (milestone/6).

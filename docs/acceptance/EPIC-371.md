@@ -15,7 +15,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** Milestone exit criteria 1–4 hold on `main` (D01–D04 **met**, no open `p0` on milestone/5). Children #373–#376 closed. **Epic remains OPEN** until the user accepts.
+**Ready for user acceptance.** Milestone exit criteria 1–4 hold on `main` (D01–D04 **met**, no open `p0` on milestone/5). Children #373–#376 closed. **Update:** Epic #371 closed on GitHub 2026-10-12 11:13 CST (user accepted); milestone closed.
 
 
 ## Showcase recording
@@ -29,7 +29,7 @@ Clear large-font terminal window proving Epic #371 gates:
 - [`demos/plugins/showcase_domain_conformance.mp4`](../../demos/plugins/showcase_domain_conformance.mp4)
 - Recorder: [`demos/plugins/record_domain_conformance_showcase.sh`](../../demos/plugins/record_domain_conformance_showcase.sh)
 
-**Epic remains OPEN** until the user accepts.
+**Update:** Epic #371 closed on GitHub 2026-10-12 11:13 CST (user accepted).
 
 ## Traceability — Issues → PR → CI
 
