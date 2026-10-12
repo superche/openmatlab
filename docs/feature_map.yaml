@@ -287,8 +287,8 @@ features:
     status: partial
     depends_on: [numerics.array_backend, runtime.array_grow_assign, runtime.logical_index]
     spec: docs/design/EPIC-440-nd-arrays.md
-    notes: "Epic #440 (M2 C12 met): zeros/ones/nan/Inf/true/false N-D (#182 #330); ndims/reshape/squeeze/cat; A(i,j,k) read/assign/grow (#259); end per dim + trailing-dim folding (#173); N-D logical masks (#322); reductions dim>=3; A(:,:,k) page display. Residual: permute, N-D cells, N-D concat in [ ], flip/circshift dim>=3; MATLAB index-bounds wording (#446)"
-    tests: [tests/unit/test_nd_arrays.py, tests/bdd/test_nd_arrays_bdd.py, tests/unit/test_elmat_size_vector.py, tests/unit/test_index_bounds_wording.py]
+    notes: "Epic #440 (M2 C12 met): zeros/ones/nan/Inf/true/false N-D (#182 #330); ndims/reshape/squeeze/cat; A(i,j,k) read/assign/grow (#259); end per dim + trailing-dim folding (#173); N-D logical masks (#322); reductions dim>=3; A(:,:,k) page display. permute/ipermute (#442), flip/fliplr/flipud/circshift + dim>=3 sort/cumsum coverage (#445). Residual: N-D cells, N-D concat in [ ]; MATLAB index-bounds wording (#446)"
+    tests: [tests/unit/test_nd_arrays.py, tests/unit/test_permute_flip.py, tests/bdd/test_nd_arrays_bdd.py, tests/unit/test_elmat_size_vector.py, tests/unit/test_index_bounds_wording.py]
   - id: runtime.array_delete_empty
     layer: runtime
     name: delete via A(i)=[] / c(i)=[]
