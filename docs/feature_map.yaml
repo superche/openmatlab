@@ -152,7 +152,7 @@ features:
     name: MATLAB-aligned Workbench Host shell + layout regions
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W01 (#377); five host regions; plugin panels optional"
+    notes: "Epic #372 / W01 (#377); five host regions ready; plugin panels optional"
     tests: [tests/unit/test_workbench.py]
 
   - id: host.workbench.command_window
@@ -166,30 +166,34 @@ features:
   - id: host.workbench.editor
     layer: host
     name: Workbench Editor panel
-    status: stub
+    status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "W03 #379 pending"
+    notes: "Epic #372 / W03 (#379); open/edit/save .m MVP (no LSP/debugger)"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
 
   - id: host.workbench.workspace_browser
     layer: host
     name: Workbench Workspace browser
-    status: stub
+    status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "W04 #380 pending"
+    notes: "Epic #372 / W04 (#380); name/size/class + refresh after eval"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
 
   - id: host.workbench.current_folder
     layer: host
     name: Workbench Current Folder browser
-    status: stub
+    status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "W05 #381 pending"
+    notes: "Epic #372 / W05 (#381); list/cd/open .m into Editor"
+    tests: [tests/unit/test_workbench.py]
 
   - id: host.workbench.figures
     layer: host
     name: Workbench figure management
-    status: stub
+    status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "W06 #382 pending"
+    notes: "Epic #372 / W06 (#382); list/close/focus via PlotSurface"
+    tests: [tests/unit/test_workbench.py]
 
   - id: lang.tokens_reserved
     layer: lang

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, List, Optional, Protocol, Tuple, runtime_checkable
 
 
 @runtime_checkable
@@ -12,6 +12,10 @@ class PlotSurface(Protocol):
     def close(self, handle: Optional[object] = None) -> None: ...
 
     def show(self) -> None: ...
+
+    def list_figures(self) -> List[Tuple[float, str]]: ...
+
+    def focus(self, handle: object) -> None: ...
 
 
 class StubPlotSurface:
@@ -26,6 +30,12 @@ class StubPlotSurface:
 
     def show(self) -> None:
         raise NotImplementedError("PlotSurface.show: no GraphicsBackend wired")
+
+    def list_figures(self) -> List[Tuple[float, str]]:
+        return []
+
+    def focus(self, handle: object) -> None:
+        raise NotImplementedError("PlotSurface.focus: no GraphicsBackend wired")
 
 
 class HostPlotSurface:
@@ -44,3 +54,15 @@ class HostPlotSurface:
         show = getattr(self._backend, "show", None)
         if callable(show):
             show()
+
+    def list_figures(self) -> List[Tuple[float, str]]:
+        list_fn = getattr(self._backend, "list_figures", None)
+        if callable(list_fn):
+            return list(list_fn())
+        return []
+
+    def focus(self, handle: object) -> None:
+        focus_fn = getattr(self._backend, "focus", None)
+        if not callable(focus_fn):
+            raise NotImplementedError("PlotSurface.focus: backend has no focus")
+        focus_fn(handle)

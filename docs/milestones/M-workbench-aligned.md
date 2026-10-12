@@ -39,18 +39,19 @@ M-workbench-aligned is **done** only when **all** hold on `main`:
 |---|-----------|----------|----------|--------|
 | W01 | Host Workbench shell + named layout regions / slots | p0 | #377 | **met** |
 | W02 | Command Window panel (REPL eval + capture) | p0 | #378 | **met** |
-| W03 | Editor panel MVP (open/edit/save `.m`) | p1 | #379 | pending |
-| W04 | Workspace browser (name/size/class + refresh) | p1 | #380 | pending |
-| W05 | Current Folder browser | p1 | #381 | pending |
-| W06 | Figure management panel | p1 | #382 | pending |
+| W03 | Editor panel MVP (open/edit/save `.m`) | p1 | #379 | **met** |
+| W04 | Workspace browser (name/size/class + refresh) | p1 | #380 | **met** |
+| W05 | Current Folder browser | p1 | #381 | **met** |
+| W06 | Figure management panel | p1 | #382 | **met** |
 
 Epic #372 takes unmet rows in this table (p0 before p1, then table order).
 
 ## Required feature_ids
 
-`host.workbench.shell`, `host.workbench.command_window` at `partial` after
-first slice; later `host.workbench.editor`, `host.workbench.workspace_browser`,
-`host.workbench.current_folder`, `host.workbench.figures`.
+All six feature_ids at `partial`: `host.workbench.shell`,
+`host.workbench.command_window`, `host.workbench.editor`,
+`host.workbench.workspace_browser`, `host.workbench.current_folder`,
+`host.workbench.figures`.
 
 ## Non-goals
 
@@ -61,5 +62,5 @@ first slice; later `host.workbench.editor`, `host.workbench.workspace_browser`,
 
 ## Progress snapshot
 
-After first-slice PR: **2 / 6** criteria met (W01–W02). Epic **#372** OPEN
-until acceptance evidence.
+**6 / 6** criteria met (W01–W06). Epic **#372** OPEN until acceptance evidence
++ user accept (window recording required).
