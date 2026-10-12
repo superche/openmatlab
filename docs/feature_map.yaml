@@ -597,8 +597,8 @@ features:
     name: unique builtin
     status: done
     depends_on: [libs.elmat_constructors]
-    notes: "M2 C09; sorted unique vector/matrix flatten (#266)"
-    tests: [tests/unit/test_unique_issorted.py, tests/bdd/test_unique_issorted_bdd.py]
+    notes: "M2 C09; sorted unique vector/matrix flatten (#266); unique(A,'rows') + issorted(A,'rows') (#270)"
+    tests: [tests/unit/test_unique_issorted.py, tests/bdd/test_unique_issorted_bdd.py, tests/unit/test_unique_rows.py]
   - id: libs.issorted
     layer: libs
     name: issorted builtin
