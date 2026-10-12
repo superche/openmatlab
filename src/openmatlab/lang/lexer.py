@@ -74,6 +74,15 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
             after = source[off + 1] if off + 1 < len(source) else ""
             if before in " \t" and after not in " \t":
                 out.append(Token(TokenType.COMMA, ",", tok.line, tok.column))
+        elif (
+            tok.type == TokenType.TILDE
+            and stack
+            and stack[-1] in (TokenType.LBRACKET, TokenType.LBRACE)
+            and out
+            and out[-1].type in _VALUE_END
+        ):
+            # `[a ~b]`: unary not after a value always starts a new element
+            out.append(Token(TokenType.COMMA, ",", tok.line, tok.column))
         out.append(tok)
     return out
 
@@ -246,6 +255,8 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             "~=": TokenType.REL_NE,
             "<=": TokenType.REL_LE,
             ">=": TokenType.REL_GE,
+            "&&": TokenType.AND_AND,
+            "||": TokenType.OR_OR,
         }
         if two in two_map:
             tok = Token(two_map[two], two, start_line, start_col)
@@ -253,6 +264,14 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             last_sig = tok.type
             i += 2
             col += 2
+            continue
+        one_map = {"&": TokenType.AMP, "|": TokenType.PIPE, "~": TokenType.TILDE}
+        if ch in one_map:
+            tok = Token(one_map[ch], ch, start_line, start_col)
+            yield tok
+            last_sig = tok.type
+            i += 1
+            col += 1
             continue
         if ch == "<":
             tok = Token(TokenType.REL_LT, ch, start_line, start_col)

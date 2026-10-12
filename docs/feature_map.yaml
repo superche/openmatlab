@@ -242,6 +242,14 @@ features:
     notes: "early exit; toplevel EvalError; no return-expr (#137)"
     tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py]
 
+  - id: lang.logical_ops
+    layer: lang
+    name: logical operators ~ & | && || + not/and/or/xor
+    status: done
+    depends_on: [lang.parser, runtime.evaluator]
+    notes: "MATLAB precedence; & | element-wise logical; && || short-circuit scalar-only; NaN→logical error (#413)"
+    tests: [tests/unit/test_logical_ops.py]
+
   - id: lang.switch
     layer: lang
     name: switch / case / otherwise
