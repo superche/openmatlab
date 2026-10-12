@@ -58,6 +58,16 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
     out: List[Token] = []
     stack: List[TokenType] = []
     for tok in toks:
+        if (
+            tok.type in (TokenType.LPAREN, TokenType.LBRACE)
+            and stack
+            and stack[-1] in (TokenType.LBRACKET, TokenType.LBRACE)
+            and out
+            and out[-1].type in _VALUE_END
+            and source[offset(tok) - 1 : offset(tok)] in (" ", "\t")
+        ):
+            # `[c {2}]` / `[a (1)]`: whitespace before ( or { starts a new element
+            out.append(Token(TokenType.COMMA, ",", tok.line, tok.column))
         if tok.type in (TokenType.LBRACKET, TokenType.LPAREN, TokenType.LBRACE):
             stack.append(tok.type)
         elif tok.type in (TokenType.RBRACKET, TokenType.RPAREN, TokenType.RBRACE) and stack:
@@ -309,7 +319,9 @@ def _iter_tokens(source: str) -> Iterator[Token]:
         }
         # Context-sensitive single quote: transpose vs char literal
         if ch == "'":
-            if last_sig is not None and last_sig in _VALUE_END:
+            # inside [ ] / { }, whitespace before ' starts a char literal: ['ab' 'cd']
+            spaced_elem = (bracket_depth > 0 or brace_depth > 0) and i > 0 and source[i - 1] in " \t"
+            if last_sig is not None and last_sig in _VALUE_END and not spaced_elem:
                 tok = Token(TokenType.TRANSPOSE, "'", start_line, start_col)
                 yield tok
                 last_sig = tok.type

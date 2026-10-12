@@ -404,9 +404,9 @@ features:
     layer: lang
     name: "[...] matrix / row literals"
     status: done
-    tests: [tests/unit/test_parser_matrix.py]
+    tests: [tests/unit/test_parser_matrix.py, tests/unit/test_concat.py]
     depends_on: [lang.lexer, lang.parser]
-    notes: "Parsed + evaluated to Array via NumPy backend [done per docs/design/ITER-024-feature-done-criteria.md]"
+    notes: "Parsed + evaluated to Array via NumPy backend [done per docs/design/ITER-024-feature-done-criteria.md]; horzcat/vertcat of non-scalars, [] ignored, char/cell concat, logical literal (#422); multi-row char matrix not yet"
 
   - id: lang.indexing_colon
     layer: lang

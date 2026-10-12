@@ -941,48 +941,120 @@ class Evaluator:
             return self._logical(left)
         return self._logical(scalar(expr.right))
 
-    def _eval_matrix(self, expr: ast.MatrixLiteral) -> Array:
-        if not expr.rows:
-            return self.numerics.from_nested([])
+    def _eval_matrix(self, expr: ast.MatrixLiteral) -> Value:
+        """[a b; c d]: horzcat each row, then vertcat rows (MATLAB rules).
+
+        Numeric/logical arrays concatenate when dims agree ([] is skipped);
+        all-logical stays logical. Any cell element makes a cell result (other
+        elements wrap as 1x1 cells). Char rows concatenate as text (numbers
+        convert by code).
+        """
         from openmatlab.runtime.cell_value import CellValue
+        from openmatlab.runtime.char_value import CharValue
+
+        rows = [self._matrix_row_values(row) for row in expr.rows]
+        flat = [v for r in rows for v in r]
+        if any(isinstance(v, CellValue) for v in flat):
+            return self._concat_cells(rows)
+        if any(isinstance(v, CharValue) for v in flat):
+            return self._concat_chars(rows)
+        return self._concat_arrays(rows)
+
+    def _matrix_row_values(self, row) -> list:
+        from openmatlab.runtime.cell_value import CellValue
+
+        out: list = []
+        for el in row:
+            val = self.eval_expr(el)
+            # CSL inside []: [c{:}] expands contents into the row
+            if (
+                isinstance(el, ast.CellIndexExpr)
+                and all(self._is_bare_colon(ix) for ix in el.indices)
+                and isinstance(val, CellValue)
+            ):
+                rr, cc = val.shape
+                out.extend(val.get(i, j) for j in range(cc) for i in range(rr))
+                continue
+            out.append(val)
+        return out
+
+    _CONCAT_ERR = "Dimensions of arrays being concatenated are not consistent."
+
+    def _concat_arrays(self, rows: list) -> Array:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
 
-        rows_f: List[List[float]] = []
-        for row in expr.rows:
-            out_row: List[float] = []
-            for cell in row:
-                # CSL inside []: [c{:}] expands contents into the row
-                if isinstance(cell, ast.CellIndexExpr):
-                    val = self.eval_expr(cell)
-                    bare = all(
-                        isinstance(ix, ast.ColonExpr)
-                        and ix.start is None
-                        and ix.stop is None
-                        for ix in cell.indices
-                    )
-                    if bare and isinstance(val, CellValue):
-                        rr, cc = val.shape
-                        for j in range(cc):
-                            for i in range(rr):
-                                el = val.get(i, j)
-                                arr = self._require_array(el, "matrix")
-                                if not arr.is_scalar():
-                                    raise EvalError(
-                                        "Matrix literal CSL cells must be scalar"
-                                    )
-                                out_row.append(
-                                    float(np.asarray(arr.backend_buffer()).reshape(-1)[0].real)
-                                )
-                        continue
-                val = self._require_array(self.eval_expr(cell), "matrix")
-                if not val.is_scalar():
-                    raise EvalError(
-                        "Matrix literal cells must be scalar in this MVP"
-                    )
-                out_row.append(float(val.backend_buffer().reshape(-1)[0]))
-            rows_f.append(out_row)
-        return self.numerics.from_nested(rows_f)
+        bufs = []
+        for r in rows:
+            parts = []
+            for v in r:
+                b = np.asarray(self._require_array(v, "matrix").backend_buffer())
+                b = b.reshape(1, 1) if b.ndim == 0 else (b.reshape(1, -1) if b.ndim == 1 else b)
+                if b.shape != (0, 0):  # [] is ignored in concatenation
+                    parts.append(b)
+            if not parts:
+                continue
+            if len({p.shape[0] for p in parts}) != 1:
+                raise EvalError(self._CONCAT_ERR)
+            bufs.append(np.concatenate(parts, axis=1) if len(parts) > 1 else parts[0])
+        if not bufs:
+            return self.numerics.from_nested([])
+        if len({b.shape[1] for b in bufs}) != 1:
+            raise EvalError(self._CONCAT_ERR)
+        out = np.concatenate(bufs, axis=0) if len(bufs) > 1 else bufs[0]
+        if out.dtype != np.bool_ and not np.iscomplexobj(out):
+            out = out.astype(np.float64)
+        return NDArrayValue(np.array(out))
+
+    def _concat_cells(self, rows: list):
+        from openmatlab.runtime.cell_value import CellValue
+
+        grids = []
+        for r in rows:
+            parts = []
+            for v in r:
+                if not isinstance(v, CellValue):
+                    if hasattr(v, "numel") and v.numel() == 0 and v.shape == (0, 0):
+                        continue  # [] ignored
+                    v = CellValue(rows=((v,),))
+                if v.shape == (0, 0):
+                    continue
+                parts.append(v)
+            if not parts:
+                continue
+            if len({p.shape[0] for p in parts}) != 1:
+                raise EvalError(self._CONCAT_ERR)
+            grids.append(
+                [tuple(x for p in parts for x in p.rows[i]) for i in range(parts[0].shape[0])]
+            )
+        if not grids:
+            return CellValue.empty(0, 0)
+        if len({len(g[0]) for g in grids}) != 1:
+            raise EvalError(self._CONCAT_ERR)
+        return CellValue(rows=tuple(row for g in grids for row in g))
+
+    def _concat_chars(self, rows: list):
+        import numpy as np
+        from openmatlab.runtime.char_value import CharValue
+
+        texts = []
+        for r in rows:
+            t = ""
+            for v in r:
+                if isinstance(v, CharValue):
+                    t += v.text
+                    continue
+                b = np.asarray(self._require_array(v, "matrix").backend_buffer())
+                if b.ndim == 2 and min(b.shape) > 1:
+                    raise EvalError(self._CONCAT_ERR)
+                t += "".join(chr(int(x)) for x in b.reshape(-1))
+            if t:
+                texts.append(t)
+        if len(texts) > 1:
+            if len({len(t) for t in texts}) != 1:
+                raise EvalError(self._CONCAT_ERR)
+            raise EvalError("multi-row char matrices are not supported yet")
+        return CharValue(texts[0] if texts else "")
 
     def _eval_colon(self, expr: ast.ColonExpr) -> Array:
         if expr.start is None or expr.stop is None:
