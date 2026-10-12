@@ -31,8 +31,15 @@ python demos/plugins/option-d/run_demo.py
 
 Screen recording proving **both**:
 
-1. Community package **load + call** (`hamming` via path / `community.signal.demo`)
-2. Minimal **desktop panel** contribution (`openmatlab desktop`)
+1. Community package **load + call** with visible **`hamming(8)`** numeric output
+2. Minimal **desktop panel** — open UI and **click Run** so the panel shows the result
+
+Recording helper uses **large fonts** and on-screen step titles
+(`=== 1 load plugin ===`, …). Keep under 90s:
+
+```bash
+DISPLAY=:2 ./demos/plugins/record_showcase.sh
+```
 
 - [`showcase_plugin_host.mp4`](showcase_plugin_host.mp4)
 

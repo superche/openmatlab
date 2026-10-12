@@ -11,6 +11,8 @@ Not a MathWorks proprietary toolbox.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any, Optional
 
 
@@ -58,13 +60,13 @@ def _build_panel_widget(parent: Any, plugin_id: str, host: Any) -> Any:
     import tkinter as tk
     from tkinter import ttk
 
-    frame = ttk.Frame(parent, padding=8)
+    frame = ttk.Frame(parent, padding=12)
     frame.columnconfigure(0, weight=1)
 
     ttk.Label(
         frame,
         text="Community Signal",
-        font=("", 12, "bold"),
+        font=("", 18, "bold"),
     ).grid(row=0, column=0, sticky="w")
     ttk.Label(
         frame,
@@ -72,10 +74,11 @@ def _build_panel_widget(parent: Any, plugin_id: str, host: Any) -> Any:
             "Clean-room Octave Forge–compatible windows\n"
             "(hamming / rectwin / blackman) — MIT; not MathWorks."
         ),
+        font=("", 13),
         justify="left",
-    ).grid(row=1, column=0, sticky="w", pady=(4, 8))
+    ).grid(row=1, column=0, sticky="w", pady=(6, 10))
 
-    out = tk.Text(frame, height=6, width=56, wrap="word")
+    out = tk.Text(frame, height=7, width=64, wrap="word", font=("DejaVu Sans Mono", 13))
     out.grid(row=2, column=0, sticky="nsew")
     frame.rowconfigure(2, weight=1)
 
@@ -88,11 +91,27 @@ def _build_panel_widget(parent: Any, plugin_id: str, host: Any) -> Any:
         out.insert("end", line)
         out.see("end")
 
-    ttk.Button(frame, text="Run hamming(8)", command=_run).grid(
-        row=3, column=0, sticky="w", pady=(8, 0)
-    )
-    # Auto-run once so a timed showcase recording shows content without clicks.
-    frame.after(200, _run)
+    btn = ttk.Button(frame, text="Run hamming(8)", command=_run)
+    btn.grid(row=3, column=0, sticky="w", pady=(10, 0))
+
+    # Showcase recording: publish button screen coords for xdotool click.
+    xy_path = os.environ.get("OPENMATLAB_DEMO_BTN_XY")
+    if xy_path:
+
+        def _publish_xy(_event: Any = None) -> None:
+            try:
+                btn.update_idletasks()
+                cx = btn.winfo_rootx() + max(btn.winfo_width(), 1) // 2
+                cy = btn.winfo_rooty() + max(btn.winfo_height(), 1) // 2
+                Path(xy_path).write_text(f"{cx} {cy}\n", encoding="utf-8")
+            except Exception:
+                pass
+
+        btn.bind("<Map>", _publish_xy)
+        frame.after(300, _publish_xy)
+        frame.after(800, _publish_xy)
+
+    # No auto-run: showcase clicks Run so the panel result is clearly from UI.
     return frame
 
 

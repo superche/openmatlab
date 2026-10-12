@@ -48,13 +48,13 @@ def run_desktop(
     host = build_host(plugin_paths=plugin_paths, activate=True)
     root = tk.Tk()
     root.title(title)
-    root.geometry("640x420")
+    root.geometry("900x560+510+200")
 
     header = ttk.Frame(root, padding=8)
     header.pack(fill="x")
-    ttk.Label(header, text=title, font=("", 14, "bold")).pack(side="left")
+    ttk.Label(header, text=title, font=("", 18, "bold")).pack(side="left")
     ids = host.window_api.list_panels()
-    ttk.Label(header, text=f"panels: {len(ids)}").pack(side="right")
+    ttk.Label(header, text=f"panels: {len(ids)}", font=("", 14)).pack(side="right")
 
     body = ttk.Notebook(root)
     body.pack(fill="both", expand=True, padx=8, pady=8)
@@ -82,7 +82,8 @@ def run_desktop(
     status = ttk.Label(
         root,
         text="Host-owned chrome · plugins fill panels slot · Epic #349 / #368",
-        padding=6,
+        font=("", 12),
+        padding=8,
     )
     status.pack(fill="x")
 
