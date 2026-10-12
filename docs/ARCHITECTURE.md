@@ -124,7 +124,7 @@ Host (CLI -e / REPL / QA)
 `[rows]`, `A(i,j)`, `a:b` / `a:s:b`, `A'` / `A.'`, assignments, `;` suppress,
 `function [outs]=name(ins) … end` in `.m` files on the path,
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
-`if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
+logical `~ & | && ||` (#413), `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
 Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` handles (see "What works today").
 

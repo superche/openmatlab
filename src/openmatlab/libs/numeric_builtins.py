@@ -577,6 +577,27 @@ def _logical(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (out,)
 
 
+def _bool_arg(name: str, v: Value) -> np.ndarray:
+    b = _buf(name, v)
+    if np.any(np.isnan(b)):
+        raise BuiltinError("NaN's cannot be converted to logicals.")
+    return b != 0
+
+
+def _make_logical_op(name: str, op, nargs: int):
+    """Function forms of logical operators: not(A), and/or/xor(A, B)."""
+
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        _arity(name, args, nargs, nargs)
+        bs = [_bool_arg(name, a) for a in args]
+        if nargs == 2:
+            bs = list(_broadcast_pair(name, *bs))
+        out = np.asarray(op(*bs), dtype=bool)
+        return (NDArrayValue(out.reshape(1, 1) if out.ndim == 0 else out),)
+
+    return _fn
+
+
 def _true_false(name: str, fill: bool):
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         _arity(name, args, 0, 2)
@@ -660,6 +681,10 @@ BUILTINS: Dict[str, Builtin] = {
     "ceil": _make_unary("ceil", np.ceil),
     "round": _make_unary("round", _matlab_round),
     "mod": _mod,
+    "not": _make_logical_op("not", np.logical_not, 1),
+    "and": _make_logical_op("and", np.logical_and, 2),
+    "or": _make_logical_op("or", np.logical_or, 2),
+    "xor": _make_logical_op("xor", np.logical_xor, 2),
 }
 
 

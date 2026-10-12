@@ -42,7 +42,11 @@ class TokenType(Enum):
     COMMA = auto()
     COLON = auto()  # 1:n , indexing ranges
     AT = auto()  # @ function handle
-    TILDE = auto()  # ~
+    TILDE = auto()  # ~ (unary not)
+    AMP = auto()  # &
+    PIPE = auto()  # |
+    AND_AND = auto()  # &&
+    OR_OR = auto()  # ||
     REL_LT = auto()
     REL_LE = auto()
     REL_GT = auto()
