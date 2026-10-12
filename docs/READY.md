@@ -5,14 +5,14 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; CI live; branch protection on; Epics #1 and #2 closed.**
+**READY — public repo; CI live; branch protection on.** Milestones 1/4/5/6 closed; M2 open (exit met).
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab
 - **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
 - **Branch protection (`main`):** required status check `test` (enforce_admins)
 - **Iteration board:** GitHub Issues (Projects API needs `project` scope — use label filters)
-- **Closed epics:** [#1](https://github.com/superche/openmatlab/issues/1) · [#19](https://github.com/superche/openmatlab/issues/19)
-- **Acceptance:** `docs/acceptance/EPIC-001.md` · `docs/acceptance/EPIC-002.md`
+- **Closed epics:** all epics through #349 / #371 / #372 (see `gh issue list --label epic --state closed`)
+- **Acceptance:** `docs/acceptance/EPIC-*.md` (one per epic)
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -58,14 +58,12 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-Epics #1 and #2 are closed. Before opening Epic #3: keep `docs/ARCHITECTURE.md` + `feature_map` in sync (this chore), then file a new epic + ordered `gap` Issues from residual language/graphics gaps listed in `ARCHITECTURE.md` and `docs/acceptance/EPIC-002.md`.
+Next work comes from open M2 Issues (p1 before p2) per `docs/milestones/M2-octave-breadth.md`.
 
 | Item | URL / command |
 |------|----------------|
-| Epic #1 (closed) | https://github.com/superche/openmatlab/issues/1 |
-| Epic #2 (closed) | https://github.com/superche/openmatlab/issues/19 |
 | Open gaps view | https://github.com/superche/openmatlab/issues?q=is%3Aissue+is%3Aopen+label%3Agap |
 | List CLI | `gh issue list --label gap` |
-| Acceptance | `docs/acceptance/EPIC-001.md` · `docs/acceptance/EPIC-002.md` |
+| Acceptance | `docs/acceptance/EPIC-*.md` |
 
 GitHub **Projects** board: optional; needs `gh auth refresh -s project,read:project`. Issues + labels are the board until then.

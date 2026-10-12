@@ -57,4 +57,4 @@ breadth grows).
 ## Progress snapshot
 
 **4 / 4** criteria met (D01–D04). Children #373–#376 closed via [#383](https://github.com/superche/openmatlab/pull/383).
-Acceptance: [`docs/acceptance/EPIC-371.md`](../acceptance/EPIC-371.md). Epic **#371** OPEN until user accepts.
+Acceptance: [`docs/acceptance/EPIC-371.md`](../acceptance/EPIC-371.md). Epic **#371** closed on GitHub 2026-10-12 11:13 CST (user accepted); milestone closed (milestone/5).

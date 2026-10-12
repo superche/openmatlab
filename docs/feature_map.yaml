@@ -320,7 +320,7 @@ features:
     name: zeros/ones/eye size-vector form
     status: done
     depends_on: [libs.elmat_constructors]
-    notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179)"
+    notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179); zeros(size(A)) / size(A,k) sugar verified (#184)"
     tests: [tests/unit/test_elmat_size_vector.py, tests/bdd/test_elmat_size_vector_bdd.py]
   - id: runtime.char_value
     layer: runtime
@@ -389,8 +389,8 @@ features:
     layer: lang
     name: Parser parse()
     status: done
-    tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix MVP + MultiAssign + If/For/While/Break; continue later [done ITER-024; #34]"
+    tests: [tests/unit/test_parser_matrix.py, tests/unit/test_comma_separator.py]
+    notes: "Matrix MVP + MultiAssign + If/For/While/Break; continue later [done ITER-024; #34] ; comma statement separator (#407)"
 
   - id: lang.matrix_literal
     layer: lang
@@ -688,7 +688,7 @@ features:
     name: Feature map load / dump (sync/export)
     status: partial
     spec: docs/PROCESS.md
-    tests: [tests/unit/test_feature_map.py]
+    tests: [tests/unit/test_feature_map.py, tests/unit/test_docs_drift.py]
     notes: "Optional inventory; Issues are canonical work items"
 
   - id: qa.unit_suite

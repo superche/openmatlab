@@ -102,7 +102,7 @@ class Parser:
         while self.current().type != TokenType.EOF:
             stmts.append(self.parse_statement())
             # optional separators; suppress already applied from trailing ';'
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
         return stmts
 
@@ -210,12 +210,12 @@ class Parser:
         if self.current().type != TokenType.RPAREN:
             inputs = self._parse_name_list()
         self.expect(TokenType.RPAREN)
-        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+        while self._match_sep():
             pass
         body: List[Stmt] = []
         while self.current().type not in (TokenType.KW_END, TokenType.EOF):
             body.append(self.parse_statement())
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
         if self.current().type != TokenType.KW_END:
             tok = self.current()
@@ -237,7 +237,7 @@ class Parser:
     def parse_if(self) -> IfStmt:
         self.expect(TokenType.KW_IF)
         cond = self.parse_expression()
-        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+        while self._match_sep():
             pass
         then_body = self._parse_block(
             TokenType.KW_ELSEIF, TokenType.KW_ELSE, TokenType.KW_END
@@ -246,7 +246,7 @@ class Parser:
         while self.current().type == TokenType.KW_ELSEIF:
             self.advance()
             c = self.parse_expression()
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
             body = self._parse_block(
                 TokenType.KW_ELSEIF, TokenType.KW_ELSE, TokenType.KW_END
@@ -255,7 +255,7 @@ class Parser:
         else_body = None
         if self.current().type == TokenType.KW_ELSE:
             self.advance()
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
             else_body = tuple(self._parse_block(TokenType.KW_END))
         self.expect(TokenType.KW_END)
@@ -265,7 +265,7 @@ class Parser:
     def parse_switch(self) -> SwitchStmt:
         self.expect(TokenType.KW_SWITCH)
         expr = self.parse_expression()
-        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+        while self._match_sep():
             pass
         cases: List[SwitchCase] = []
         otherwise = None
@@ -278,7 +278,7 @@ class Parser:
                     values.extend(row)
             else:
                 values = [label]
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
             body = self._parse_block(
                 TokenType.KW_CASE, TokenType.KW_OTHERWISE, TokenType.KW_END
@@ -286,7 +286,7 @@ class Parser:
             cases.append(SwitchCase(values=tuple(values), body=tuple(body)))
         if self.current().type == TokenType.KW_OTHERWISE:
             self.advance()
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
             otherwise = tuple(self._parse_block(TokenType.KW_END))
         self.expect(TokenType.KW_END)
@@ -297,7 +297,7 @@ class Parser:
         var = self.expect(TokenType.IDENT).value
         self.expect(TokenType.ASSIGN)
         iterable = self.parse_expression()
-        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+        while self._match_sep():
             pass
         body = self._parse_block(TokenType.KW_END)
         self.expect(TokenType.KW_END)
@@ -306,7 +306,7 @@ class Parser:
     def parse_while(self) -> WhileStmt:
         self.expect(TokenType.KW_WHILE)
         cond = self.parse_expression()
-        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+        while self._match_sep():
             pass
         body = self._parse_block(TokenType.KW_END)
         self.expect(TokenType.KW_END)
@@ -317,9 +317,13 @@ class Parser:
         ends = set(end_types)
         while self.current().type not in ends and self.current().type != TokenType.EOF:
             body.append(self.parse_statement())
-            while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
+            while self._match_sep():
                 pass
         return body
+
+    def _match_sep(self) -> Optional[Token]:
+        """Statement separator: newline, ';' or ',' (MATLAB: ',' keeps display)."""
+        return self.match(TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.COMMA)
 
     def _trailing_suppress(self) -> bool:
         """True if statement ends with ';' before newline/EOF (not inside matrix)."""
