@@ -726,6 +726,16 @@ def _make_logical_op(name: str, op, nargs: int):
     return _fn
 
 
+def _expm(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    from openmatlab.numerics.numpy_backend import expm
+
+    _arity("expm", args, 1, 1)
+    b = _buf("expm", args[0])
+    if b.ndim != 2 or b.shape[0] != b.shape[1]:
+        raise BuiltinError("expm: input must be a square matrix")
+    return (NDArrayValue(expm(b)),)
+
+
 def _class(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     from openmatlab.runtime.char_value import CharValue
 
@@ -866,6 +876,7 @@ BUILTINS: Dict[str, Builtin] = {
     "or": _make_logical_op("or", np.logical_or, 2),
     "xor": _make_logical_op("xor", np.logical_xor, 2),
     "class": _class,
+    "expm": _expm,
     "islogical": _make_is_class("islogical", ("logical",)),
     "isnumeric": _make_is_class("isnumeric", ("double", "single")),
     "ischar": _make_is_class("ischar", ("char",)),

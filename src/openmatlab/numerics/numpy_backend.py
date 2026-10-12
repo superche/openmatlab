@@ -69,7 +69,9 @@ class NumPyArrayBackend:
     def matmul(self, a: Array, b: Array) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
         try:
-            out = self._num(aa.backend_buffer()) @ self._num(bb.backend_buffer())
+            x, y = self._num(aa.backend_buffer()), self._num(bb.backend_buffer())
+            # scalar * matrix is element-wise scaling in MATLAB
+            out = x * y if (x.size == 1 or y.size == 1) else x @ y
         except ValueError as exc:
             raise NumericsError(f"matmul: {exc}") from exc
         return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
@@ -131,16 +133,20 @@ class NumPyArrayBackend:
         if da.ndim == 2 and da.shape[0] == da.shape[1] and db.size == 1:
             exp = float(db.reshape(-1)[0])
             if exp != int(exp):
-                raise NumericsError(
-                    "matrix power (^): exponent must be an integer for square matrices"
-                )
+                return NDArrayValue(_fractional_matrix_power(self._np, da, exp))
             try:
                 out = self._np.linalg.matrix_power(da, int(exp))
             except Exception as exc:  # singular / domain
                 raise NumericsError(f"matrix power (^): {exc}") from exc
             return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        if da.size == 1 and db.ndim == 2 and db.shape[0] == db.shape[1]:
+            # s^A = expm(log(s) * A)  (MATLAB, s > 0)
+            base = float(da.reshape(-1)[0])
+            if base <= 0:
+                raise NumericsError("matrix power (^): scalar^matrix needs a positive base (complex: #71)")
+            return NDArrayValue(expm(self._np.log(base) * db))
         raise NumericsError(
-            "matrix power (^): requires scalars or square matrix ^ integer"
+            "matrix power (^): requires scalars, square matrix ^ scalar, or scalar ^ square matrix"
         )
 
     def colon(self, start: float, stop: float, step: float = 1.0) -> Array:
@@ -422,3 +428,35 @@ class NumPyArrayBackend:
 
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()
+
+
+def expm(m):
+    """Matrix exponential: scaling and squaring with a Taylor series (no SciPy)."""
+    import numpy as np
+
+    m = np.asarray(m, dtype=np.float64)
+    norm = float(np.linalg.norm(m, 1))
+    s = max(0, int(np.ceil(np.log2(norm))) + 1) if norm > 0.5 else 0
+    a = m / (2.0 ** s)
+    term = np.eye(a.shape[0])
+    out = term.copy()
+    for k in range(1, 30):
+        term = term @ a / k
+        out = out + term
+        if np.linalg.norm(term, 1) < 1e-17 * np.linalg.norm(out, 1):
+            break
+    for _ in range(s):
+        out = out @ out
+    return out
+
+
+def _fractional_matrix_power(np, a, p):
+    """A^p for non-integer p via eigendecomposition; real results only (complex: #71)."""
+    w, v = np.linalg.eig(a)
+    if np.linalg.cond(v) > 1e12:
+        raise NumericsError("matrix power (^): matrix is not diagonalizable")
+    out = v @ np.diag(np.power(w.astype(complex), p)) @ np.linalg.inv(v)
+    if np.max(np.abs(out.imag)) > 1e-10 * max(1.0, np.max(np.abs(out.real))):
+        raise NumericsError("matrix power (^): result is complex (complex numbers: #71)")
+    return np.asarray(out.real, dtype=np.float64)
+
