@@ -1115,6 +1115,11 @@ BUILTINS: Dict[str, Builtin] = {
 }
 
 
+from openmatlab.libs import class_builtins as _class_builtins  # noqa: E402
+
+_class_builtins.register(BUILTINS)
+
+
 def register_numeric_builtins(resolver) -> None:
     """Install core numeric builtins into a FunctionResolver."""
     for name, fn in BUILTINS.items():

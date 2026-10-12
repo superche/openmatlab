@@ -338,13 +338,29 @@ features:
     depends_on: [libs.elmat_constructors]
     notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179); zeros(size(A)) / size(A,k) sugar verified (#184)"
     tests: [tests/unit/test_elmat_size_vector.py, tests/bdd/test_elmat_size_vector_bdd.py]
+  - id: numerics.int_classes
+    layer: numerics
+    name: "integer classes int8..uint64 + class / 'like' constructor args"
+    status: partial
+    spec: docs/design/EPIC-457-int-string-classes.md
+    depends_on: [numerics.array_backend]
+    notes: "Epic #457 (M2 C14 met): casts with round-half-away + saturation; intmax/intmin/cast/isinteger/isfloat/isa; int op double keeps class; mixed int classes and int matrix * error (MATLAB); class kept by index/assign/concat/colon/for/sum/max/sort/unique; zeros/ones/eye class + 'like' (#183). Residual: single, idivide/bit ops, int64 >2^53 exact arithmetic"
+    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py]
+  - id: runtime.string_class
+    layer: runtime
+    name: "string scalars (double-quoted literals)"
+    status: partial
+    spec: docs/design/EPIC-457-int-string-classes.md
+    depends_on: [runtime.char_value]
+    notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Residual: string arrays, string methods"
+    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals
     status: done
     depends_on: [lang.array_assign, numerics.array_set]
-    notes: "Shared CharValue; no string class (#64) [done per ITER-067]; multi-row char matrices ['ab';'cd'], char() padding, double() (#427); char indexing deferred to string epic"
-    tests: [tests/unit/test_char_literal.py, tests/unit/test_char_matrix.py]
+    notes: "CharValue for ' literals [done per ITER-067]; multi-row char matrices ['ab';'cd'], char() padding, double() (#427); char indexing/assign/delete/transpose and 'a'+'b' numeric (Epic #457); double-quoted literals are StringValue (runtime.string_class)"
+    tests: [tests/unit/test_char_literal.py, tests/unit/test_char_matrix.py, tests/unit/test_int_string_classes.py]
 
   - id: lang.cell_literal
     layer: lang

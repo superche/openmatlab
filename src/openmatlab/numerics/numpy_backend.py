@@ -22,6 +22,9 @@ def _require_numpy():
     return np
 
 
+from openmatlab.numerics import intclass as _ic
+
+
 def _narrow(np, out):
     """MATLAB narrowing: a complex result whose imaginary parts are all zero is real."""
     out = np.asarray(out)
@@ -29,14 +32,34 @@ def _narrow(np, out):
         if out.size == 0 or not np.any(out.imag):
             return np.ascontiguousarray(out.real).astype(np.float64)
         return out.astype(np.complex128, copy=False)
-    if out.dtype == np.bool_:
-        return out
+    if out.dtype == np.bool_ or np.issubdtype(out.dtype, np.integer):
+        return out  # logical / integer classes keep their class (#72)
     return out.astype(np.float64, copy=False)
 
 
 def _dt(np, *bufs):
-    """float64, or complex128 if any operand is complex (#71)."""
-    return np.complex128 if any(np.iscomplexobj(b) for b in bufs) else np.float64
+    """complex128 if any operand is complex (#71), else the integer class of an
+    integer operand (#72), else float64."""
+    if any(np.iscomplexobj(b) for b in bufs):
+        return np.complex128
+    for b in bufs:
+        if np.issubdtype(np.asarray(b).dtype, np.integer):
+            return np.asarray(b).dtype
+    return np.float64
+
+
+def _int_result(np, out, *operands):
+    """Saturate a double-computed result to the operands' integer class."""
+    try:
+        dt = _ic.result_dtype(*operands)
+    except _ic.IntClassError as exc:
+        raise NumericsError(str(exc)) from None
+    if dt is None:
+        return _narrow(np, out)
+    try:
+        return _ic.saturate(np.asarray(out), dt)
+    except _ic.IntClassError as exc:
+        raise NumericsError(str(exc)) from None
 
 
 def _as_nd(a: Array) -> NDArrayValue:
@@ -94,10 +117,16 @@ class NumPyArrayBackend:
                     "Arguments must be 2-D, or at least one argument must be scalar. "
                     "Use TIMES (.*) for elementwise multiplication."
                 )
+            raw = (aa.backend_buffer(), bb.backend_buffer())
+            if x.size != 1 and y.size != 1 and any(_ic.is_int(r) for r in raw):
+                raise NumericsError(
+                    "MTIMES (*) is not fully supported for integer data types. "
+                    "At least one input must be scalar."
+                )
             out = x * y if (x.size == 1 or y.size == 1) else x @ y
         except ValueError as exc:
             raise NumericsError(f"matmul: {exc}") from exc
-        return NDArrayValue(_narrow(self._np, out))
+        return NDArrayValue(_int_result(self._np, out, aa.backend_buffer(), bb.backend_buffer()))
 
     def elem_mul(self, a: Array, b: Array) -> Array:
         return self._elem(a, b, "multiply")
@@ -114,7 +143,7 @@ class NumPyArrayBackend:
     def _num(self, buf: Any) -> Any:
         """Arithmetic operand: logical promotes to double (MATLAB), never bool algebra."""
         buf = self._np.asarray(buf)
-        if buf.dtype == self._np.bool_:
+        if buf.dtype == self._np.bool_ or self._np.issubdtype(buf.dtype, self._np.integer):
             return buf.astype(self._np.float64)
         return buf
 
@@ -122,10 +151,11 @@ class NumPyArrayBackend:
         aa, bb = _as_nd(a), _as_nd(b)
         fn = getattr(self._np, op)
         try:
-            out = fn(self._num(aa.backend_buffer()), self._num(bb.backend_buffer()))
+            with self._np.errstate(divide="ignore", invalid="ignore"):
+                out = fn(self._num(aa.backend_buffer()), self._num(bb.backend_buffer()))
         except ValueError as exc:
             raise NumericsError(f"{op}: {exc}") from exc
-        return NDArrayValue(_narrow(self._np, out))
+        return NDArrayValue(_int_result(self._np, out, aa.backend_buffer(), bb.backend_buffer()))
 
     def transpose(self, a: Array, *, conjugate: bool = True) -> Array:
         aa = _as_nd(a)
@@ -141,6 +171,13 @@ class NumPyArrayBackend:
     def power(self, a: Array, b: Array, *, elementwise: bool = True) -> Array:
         np = self._np
         aa, bb = _as_nd(a), _as_nd(b)
+        if _ic.is_int(aa.backend_buffer()) or _ic.is_int(bb.backend_buffer()):
+            # integer power: compute in double, saturate to the class (#72)
+            x, y = self._num(aa.backend_buffer()), self._num(bb.backend_buffer())
+            if not elementwise and not (x.size == 1 and y.size == 1):
+                raise NumericsError("matrix power (^) is not supported for integer data types")
+            with np.errstate(all="ignore"):
+                return NDArrayValue(_int_result(np, x ** y, aa.backend_buffer(), bb.backend_buffer()))
         da = self._num(aa.backend_buffer()).astype(_dt(np, aa.backend_buffer()), copy=False)
         db = self._num(bb.backend_buffer()).astype(_dt(np, bb.backend_buffer()), copy=False)
 
@@ -341,9 +378,17 @@ class NumPyArrayBackend:
         aa = _as_nd(a)
         vv = _as_nd(value)
         np = self._np
-        dt = _dt(np, vv.backend_buffer(), aa.backend_buffer())
-        vbuf = np.asarray(vv.backend_buffer(), dtype=dt)
-        data = np.asarray(aa.backend_buffer(), dtype=dt).copy()
+        dt = _dt(np, aa.backend_buffer(), vv.backend_buffer())
+        if np.issubdtype(np.dtype(dt), np.integer):
+            # assigning into / with an integer class converts to it (MATLAB, #72)
+            try:
+                vbuf = _ic.saturate(vv.backend_buffer(), dt)
+                data = _ic.saturate(aa.backend_buffer(), dt)
+            except _ic.IntClassError as exc:
+                raise NumericsError(str(exc)) from None
+        else:
+            vbuf = np.asarray(vv.backend_buffer(), dtype=dt)
+            data = np.asarray(aa.backend_buffer(), dtype=dt).copy()
 
         def _as_1based_int_vec(buf: Any, *, label: str) -> Any:
             flat = np.asarray(buf, dtype=np.float64).reshape(-1)

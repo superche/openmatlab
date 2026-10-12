@@ -1,0 +1,16 @@
+a = uint8(250) + 10;
+b = int8([2.5 -2.5 200]);
+ia = isinteger(a);
+m = intmax('int16');
+c = isa([int8(1) 2.7], 'int8');
+z = isa(zeros(2, 'uint32'), 'uint32');
+l = isa(ones(1, 2, 'like', int16(1)), 'int16');
+s = "ab" + "cd";
+sl = strlength(s);
+ss = numel(s);
+st = isstring(s);
+ch = ischar(s);
+w = 'hello';
+w(1) = 'J';
+wd = double(w(1:2));
+pp = 'a' + 'b';

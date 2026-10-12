@@ -24,7 +24,8 @@ class NumberLiteral(AstNode):
 
 @dataclass(frozen=True)
 class StringLiteral(AstNode):
-    value: str  # double-quoted MVP string
+    value: str
+    is_string: bool = False  # True for "double-quoted" (string class, #78)
 
 
 @dataclass(frozen=True)

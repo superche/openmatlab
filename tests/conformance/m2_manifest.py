@@ -20,6 +20,7 @@ CRITERIA = {
     "C09": ("c09_unique_issorted", "p1", [97], "met"),
     "C10": ("c10_cellfun", "p1", [81], "met"),
     "C11": ("c11_scalar_power_script", "p0", [193], "met"),
+    "C14": ("c14_int_string_classes", "p2", [72, 78, 183], "met"),
     "C13": ("c13_complex", "p2", [71, 229, 228], "met"),
     "C12": ("c12_nd_arrays", "p2", [74, 182, 173, 259, 322, 330], "met"),
 }

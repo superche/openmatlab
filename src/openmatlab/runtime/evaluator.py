@@ -167,9 +167,9 @@ class Evaluator:
         if isinstance(expr, ast.NumberLiteral):
             return self.numerics.from_scalar(expr.value)
         if isinstance(expr, ast.StringLiteral):
-            from openmatlab.runtime.char_value import CharValue
+            from openmatlab.runtime.char_value import CharValue, StringValue
 
-            return CharValue(expr.value)
+            return StringValue(expr.value) if expr.is_string else CharValue(expr.value)
         if isinstance(expr, ast.Name):
             try:
                 return self.workspace.get(expr.id)
@@ -221,8 +221,15 @@ class Evaluator:
         if isinstance(expr, ast.ColonExpr):
             return self._eval_colon(expr)
         if isinstance(expr, ast.TransposeExpr):
+            from openmatlab.runtime.char_value import CharValue
+
+            operand = self.eval_expr(expr.operand)
+            if isinstance(operand, CharValue) and not getattr(operand, "is_string", False):
+                return _codes_char(self.numerics.transpose(_char_codes(operand)))
+            if getattr(operand, "is_string", False):
+                return operand  # 1x1 string scalar
             return self.numerics.transpose(
-                self._require_array(self.eval_expr(expr.operand), "transpose"),
+                self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
             )
         if isinstance(expr, ast.CellIndexExpr):
@@ -294,11 +301,19 @@ class Evaluator:
             return self._eval_cell_paren_delete_or_assign(
                 name, arr, list(stmt.target.indices), rhs_val
             )
-        arr_a = self._require_array(arr, "array assign")
+        from openmatlab.runtime.char_value import CharValue
+
+        is_char = isinstance(arr, CharValue) and not getattr(arr, "is_string", False)
+        if getattr(arr, "is_string", False):
+            raise EvalError("array assign: string arrays are not supported yet (#457 residual)")
+        arr_a = _char_codes(arr) if is_char else self._require_array(arr, "array assign")
         idxs = self._eval_subscripts(
             arr_a, list(stmt.target.indices), label="array assign"
         )
-        rhs = self._require_array(rhs_val, "array assign")
+        if isinstance(rhs_val, CharValue) and not getattr(rhs_val, "is_string", False):
+            rhs = _char_codes(rhs_val)
+        else:
+            rhs = self._require_array(rhs_val, "array assign")
         try:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
         except Exception as exc:  # NumericsError
@@ -306,6 +321,8 @@ class Evaluator:
         ix = stmt.target.indices
         if len(ix) == 1 and self._is_bare_colon(ix[0]) and rhs.numel() == 0:
             new_arr = self.numerics.from_nested([])  # A(:) = [] → 0x0 (MATLAB)
+        if is_char:
+            new_arr = _codes_char(new_arr)  # s(i) = 'x' keeps class char
         self.workspace.set(name, new_arr)
         return rhs
 
@@ -709,6 +726,25 @@ class Evaluator:
                 if not outs:
                     raise EvalError("function handle call returned no value")
                 return outs[0]
+            from openmatlab.runtime.char_value import CharValue
+
+            if getattr(target, "is_string", False):
+                # string scalar: s(1) / s(:) / s(end) is the scalar itself
+                codes1 = self.numerics.from_scalar(1.0)
+                idxs = self._eval_subscripts(codes1, arg_exprs, label="index")
+                self.numerics.index(codes1, idxs)  # bounds check (≤ 1)
+                return target
+            if isinstance(target, CharValue):
+                # char indexing (#457): index the code matrix, convert back
+                codes = _char_codes(target)
+                idxs = self._eval_subscripts(codes, arg_exprs, label="index")
+                out = self.numerics.index(codes, idxs)
+                if len(arg_exprs) == 1 and self._is_bare_colon(arg_exprs[0]):
+                    import numpy as np
+                    from openmatlab.numerics.ndarray_value import NDArrayValue
+
+                    out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
+                return _codes_char(out)
             target_a = self._require_array(target, "index")
             idxs = self._eval_subscripts(target_a, arg_exprs, label="index")
             out = self.numerics.index(target_a, idxs)
@@ -923,15 +959,11 @@ class Evaluator:
 
         def _as_numeric(v: Value, side: str) -> Array:
             if isinstance(v, CharValue):
-                codes = [float(ord(ch)) for ch in v.text]
-                if not codes:
-                    return NDArrayValue(np.zeros((1, 0), dtype=np.float64))
-                return NDArrayValue(np.asarray(codes, dtype=np.float64).reshape(1, -1))
+                return _char_codes(v)
             return self._require_array(v, f"binop:{side}")
 
-        # char + char → concat for + only
-        if op == "+" and isinstance(lv, CharValue) and isinstance(rv, CharValue):
-            return CharValue(lv.text + rv.text)  # type: ignore[return-value]
+        if getattr(lv, "is_string", False) or getattr(rv, "is_string", False):
+            return self._string_binop(op, lv, rv)
         left = _as_numeric(lv, "left")
         right = _as_numeric(rv, "right")
         n = self.numerics
@@ -964,6 +996,20 @@ class Evaluator:
             except ValueError as exc:
                 raise EvalError(f"{op}: matrix dimensions must agree") from exc
         raise EvalError(f"Unknown binary op: {op}")
+
+    def _string_binop(self, op: str, lv: Value, rv: Value) -> Value:
+        """string scalar ops (#78): + concatenates, comparisons are textual."""
+        from openmatlab.runtime.char_value import StringValue
+
+        a, b = _string_text(lv), _string_text(rv)
+        if a is None or b is None:
+            raise EvalError(f"Operator '{op}' is not supported for operands of type 'string'.")
+        if op == "+":
+            return StringValue(a + b)
+        cmp = {"==": a == b, "~=": a != b, "<": a < b, "<=": a <= b, ">": a > b, ">=": a >= b}
+        if op in cmp:
+            return self._logical(np_bool(cmp[op]))
+        raise EvalError(f"Operator '{op}' is not supported for operands of type 'string'.")
 
     def _bool_buf(self, v: Value):
         """Logical view of a numeric/logical array (NaN is an error, as in MATLAB)."""
@@ -1057,8 +1103,18 @@ class Evaluator:
             return self.numerics.from_nested([])
         if len({b.shape[1] for b in bufs}) != 1:
             raise EvalError(self._CONCAT_ERR)
+        int_dt = next(
+            (p.dtype for r in rows for v in r
+             for p in [np.asarray(v.backend_buffer())] if np.issubdtype(p.dtype, np.integer)),
+            None,
+        )
         out = np.concatenate(bufs, axis=0) if len(bufs) > 1 else bufs[0]
-        if out.dtype != np.bool_ and not np.iscomplexobj(out):
+        if int_dt is not None:
+            # MATLAB: concatenating with integers yields the leftmost integer class
+            from openmatlab.numerics.intclass import saturate
+
+            out = saturate(np.asarray(out, dtype=np.float64), int_dt)
+        elif out.dtype != np.bool_ and not np.iscomplexobj(out):
             out = out.astype(np.float64)
         return NDArrayValue(np.array(out))
 
@@ -1093,6 +1149,11 @@ class Evaluator:
         import numpy as np
         from openmatlab.runtime.char_value import CharValue
 
+        flat_vals = [v for r in rows for v in r]
+        if any(getattr(v, "is_string", False) for v in flat_vals):
+            if len(flat_vals) == 1:
+                return flat_vals[0]
+            raise EvalError("string arrays are not supported yet (#457 residual)")
         texts = []
         for r in rows:
             # each bracket row is a list of row-blocks; char matrices stack
@@ -1123,18 +1184,22 @@ class Evaluator:
     def _eval_colon(self, expr: ast.ColonExpr) -> Array:
         if expr.start is None or expr.stop is None:
             raise EvalError("Colon requires start and stop")
-        start = self._as_float(
-            self._require_array(self.eval_expr(expr.start), "colon")
-        )
-        stop = self._as_float(
-            self._require_array(self.eval_expr(expr.stop), "colon")
-        )
-        step = 1.0
-        if expr.step is not None:
-            step = self._as_float(
-                self._require_array(self.eval_expr(expr.step), "colon")
-            )
-        return self.numerics.colon(start, stop, step)
+        parts = [expr.start, expr.stop] + ([expr.step] if expr.step is not None else [])
+        vals = [self._require_array(self.eval_expr(p), "colon") for p in parts]
+        start, stop = self._as_float(vals[0]), self._as_float(vals[1])
+        step = self._as_float(vals[2]) if len(vals) == 3 else 1.0
+        out = self.numerics.colon(start, stop, step)
+        import numpy as np
+
+        int_dt = next((np.asarray(v.backend_buffer()).dtype for v in vals
+                       if np.issubdtype(np.asarray(v.backend_buffer()).dtype, np.integer)), None)
+        if int_dt is not None:
+            # int8(1):int8(3) is an int8 range (MATLAB, #72)
+            from openmatlab.numerics.intclass import saturate
+            from openmatlab.numerics.ndarray_value import NDArrayValue
+
+            out = NDArrayValue(saturate(np.asarray(out.backend_buffer()), int_dt))
+        return out
 
     def _as_float(self, val: Array) -> float:
         if not val.is_scalar():
@@ -1242,12 +1307,19 @@ class Evaluator:
         iterable = self._require_array(self.eval_expr(stmt.iterable), "for")
         import numpy as np
 
-        vals = np.asarray(iterable.backend_buffer(), dtype=float).reshape(-1)
+        raw = np.asarray(iterable.backend_buffer())
+        keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw)
+        vals = raw.reshape(-1) if keep else np.asarray(raw, dtype=float).reshape(-1)
         last: Value = self.numerics.from_scalar(0.0)
+        from openmatlab.numerics.ndarray_value import NDArrayValue
         self._loop_depth += 1
         try:
             for x in vals:
-                self.workspace.set(stmt.var, self.numerics.from_scalar(float(x)))
+                self.workspace.set(
+                    stmt.var,
+                    NDArrayValue(np.array([[x]], dtype=raw.dtype)) if keep
+                    else self.numerics.from_scalar(float(x)),
+                )
                 try:
                     for s in stmt.body:
                         last = self.eval_stmt(s)
@@ -1278,3 +1350,53 @@ class Evaluator:
         finally:
             self._loop_depth -= 1
 
+
+
+def np_bool(b: bool):
+    import numpy as np
+
+    return np.array([[bool(b)]])
+
+
+def _char_codes(v):
+    """char matrix → double code matrix (r x c); '' → 0x0."""
+    import numpy as np
+    from openmatlab.numerics.ndarray_value import NDArrayValue
+
+    r, c = v.shape
+    if r == 0:
+        return NDArrayValue(np.zeros((0, 0), dtype=np.float64))
+    return NDArrayValue(
+        np.array([[float(ord(ch)) for ch in row] for row in v.rows], dtype=np.float64).reshape(r, c)
+    )
+
+
+def _codes_char(arr):
+    """double code matrix → CharValue (2-D only)."""
+    import numpy as np
+    from openmatlab.runtime.char_value import CharValue
+
+    b = np.asarray(arr.backend_buffer())
+    if b.ndim > 2:
+        raise EvalError("N-D char arrays are not supported")
+    if b.size == 0:
+        return CharValue("")
+    b = b.reshape(b.shape if b.ndim == 2 else (1, -1))
+    return CharValue(rows=["".join(chr(int(x)) for x in row) for row in b.real])
+
+
+def _string_text(v):
+    """Text of a string/char row/number for string ops; None if unsupported."""
+    import numpy as np
+    from openmatlab.runtime.char_value import CharValue
+    from openmatlab.runtime.value import Array
+
+    if isinstance(v, CharValue):
+        return v.text
+    if isinstance(v, Array) and v.numel() == 1:
+        x = np.asarray(v.backend_buffer()).reshape(-1)[0]
+        if np.iscomplexobj(x) or isinstance(x, (bool, np.bool_)):
+            return None
+        x = float(x)
+        return str(int(x)) if x == int(x) and abs(x) < 1e15 else f"{x:.4f}".rstrip("0")
+    return None

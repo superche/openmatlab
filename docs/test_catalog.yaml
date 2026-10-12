@@ -873,3 +873,21 @@ test_cases:
     impl: tests/bdd/test_complex_numbers_bdd.py
     status: active
     env: unit
+
+  - id: tc.int_string_classes
+    kind: unit
+    title: integer classes, string class, char indexing (Epic #457)
+    features: [numerics.int_classes, runtime.string_class, runtime.char_value]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_int_string_classes.py
+    status: active
+    env: unit
+
+  - id: tc.int_string_classes_bdd
+    kind: bdd
+    title: integer/string classes Gherkin scenarios (Epic #457)
+    features: [numerics.int_classes, runtime.string_class]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_int_string_classes_bdd.py
+    status: active
+    env: unit
