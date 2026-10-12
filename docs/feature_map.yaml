@@ -629,8 +629,8 @@ features:
     name: cell paren assign/delete
     status: done
     depends_on: [runtime.array_delete_empty, lang.cell_assign]
-    notes: "c(i)={v}/c(i,j)=[] (#287); multi-element residual #110"
-    tests: [tests/unit/test_cell_paren_assign.py, tests/bdd/test_cell_paren_assign_bdd.py]
+    notes: "c(i)={v}/c(i,j)=[] (#287); multi-element residual #110; 1x1 cell RHS broadcasts; 2-sub shape must match modulo singletons (#291)"
+    tests: [tests/unit/test_cell_paren_assign.py, tests/bdd/test_cell_paren_assign_bdd.py, tests/unit/test_cell_assign_shape.py]
 
 
   - id: qa.m2_conformance_depth
