@@ -1324,7 +1324,16 @@ class Evaluator:
 
         raw = np.asarray(iterable.backend_buffer())
         keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw)
-        vals = raw.reshape(-1) if keep else np.asarray(raw, dtype=float).reshape(-1)
+        if not keep:
+            raw = np.asarray(raw, dtype=float)
+        if raw.ndim == 0:
+            raw = raw.reshape(1, 1)
+        # MATLAB iterates over columns of A(:,:) (#471).
+        cols = raw.reshape(raw.shape[0], int(np.prod(raw.shape[1:])), order="F")
+        if cols.shape[0] == 1:
+            vals = cols[0]
+        else:
+            vals = [cols[:, [k]] for k in range(cols.shape[1])]
         last: Value = self.numerics.from_scalar(0.0)
         from openmatlab.numerics.ndarray_value import NDArrayValue
         self._loop_depth += 1
@@ -1332,7 +1341,8 @@ class Evaluator:
             for x in vals:
                 self.workspace.set(
                     stmt.var,
-                    NDArrayValue(np.array([[x]], dtype=raw.dtype)) if keep
+                    NDArrayValue(np.array(x, dtype=raw.dtype)) if np.ndim(x)
+                    else NDArrayValue(np.array([[x]], dtype=raw.dtype)) if keep
                     else self.numerics.from_scalar(float(x)),
                 )
                 try:

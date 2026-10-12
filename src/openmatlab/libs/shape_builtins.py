@@ -101,8 +101,33 @@ def _circshift(args, *, nargout=1):
     return (NDArrayValue(np.ascontiguousarray(out)),)
 
 
+def _equal(a: Value, b: Value) -> bool:
+    from openmatlab.runtime.cell_value import CellValue
+
+    if isinstance(a, CellValue) or isinstance(b, CellValue):
+        if not (isinstance(a, CellValue) and isinstance(b, CellValue)):
+            return False
+        return a.shape == b.shape and all(
+            _equal(x, y) for ra, rb in zip(a.rows, b.rows) for x, y in zip(ra, rb)
+        )
+    if isinstance(a, Array) and isinstance(b, Array):
+        x, y = np.asarray(a.backend_buffer()), np.asarray(b.backend_buffer())
+        if x.shape != y.shape:
+            return False
+        return bool(np.all(x == y))
+    return a == b
+
+
+def _isequal(args, *, nargout=1):
+    """isequal(A, B, ...) - class-insensitive value/size equality; NaN ~= NaN (#471)."""
+    if len(args) < 2:
+        raise _err("isequal: requires at least two inputs")
+    ok = all(_equal(args[0], b) for b in args[1:])
+    return (NDArrayValue(np.array([[ok]])),)
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     builtins.update(
         permute=_permute, ipermute=_ipermute, flip=_flip, circshift=_circshift,
-        fliplr=_fixed_flip("fliplr", 1), flipud=_fixed_flip("flipud", 0),
+        isequal=_isequal, fliplr=_fixed_flip("fliplr", 1), flipud=_fixed_flip("flipud", 0),
     )
