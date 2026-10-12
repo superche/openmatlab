@@ -2,7 +2,7 @@
 
 Public imports for plugin authors::
 
-    from openmatlab.extensions import commands, window, workspace, path
+    from openmatlab.extensions import commands, window, workspace, path, extensions
     from openmatlab.extensions import api_version
 
 See ``docs/design/PLUGIN-CONTRACT.md``.
@@ -11,7 +11,7 @@ See ``docs/design/PLUGIN-CONTRACT.md``.
 from __future__ import annotations
 
 from openmatlab.extensions import api as _api_pkg
-from openmatlab.extensions.api import commands, path, window, workspace
+from openmatlab.extensions.api import commands, extensions, path, window, workspace
 
 # Host API SemVer (independent of package openmatlab version when needed).
 api_version: str = "0.1.0"
@@ -22,6 +22,7 @@ __all__ = [
     "window",
     "workspace",
     "path",
+    "extensions",
     "PluginHost",
 ]
 

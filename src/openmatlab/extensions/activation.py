@@ -108,3 +108,16 @@ def call_deactivate(module: Optional[ModuleType]) -> None:
             deactivate()
         except Exception:
             log.exception("deactivate() failed")
+
+
+def path_exists_globs(activation: List[str]) -> List[str]:
+    """Extract glob patterns from ``onPathExists:<glob>`` predicates."""
+    out: List[str] = []
+    for pred in activation:
+        if pred.startswith("onPathExists:"):
+            out.append(pred[len("onPathExists:") :])
+    return out
+
+
+def wants_workspace_matlab(activation: List[str]) -> bool:
+    return "workspaceHasMatlabFiles" in activation

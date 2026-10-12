@@ -53,7 +53,16 @@ def run_desktop(
     header = ttk.Frame(root, padding=8)
     header.pack(fill="x")
     ttk.Label(header, text=title, font=("", 14, "bold")).pack(side="left")
-    ids = host.window_api.list_panels()
+    # Prefer panels whose declarative ``when`` (if any) currently matches.
+    allowed = {
+        item.get("id")
+        for item in host.list_panel_contributions(evaluate=True)
+        if isinstance(item, dict) and item.get("id")
+    }
+    ids = [pid for pid in host.window_api.list_panels() if not allowed or pid in allowed]
+    # If no declarative panel rows, fall back to all registered factories.
+    if not allowed:
+        ids = host.window_api.list_panels()
     ttk.Label(header, text=f"panels: {len(ids)}").pack(side="right")
 
     body = ttk.Notebook(root)

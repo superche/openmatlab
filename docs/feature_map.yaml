@@ -88,16 +88,16 @@ features:
     name: Activation predicates + ExtensionContext
     status: partial
     spec: docs/design/PLUGIN-CONTRACT.md
-    notes: "Epic #349 / P04 (#352); fault isolation"
-    tests: [tests/unit/extensions/test_activation_host.py]
+    notes: "Epic #349 / P04 (#352); #360 onPathExists/workspaceHasMatlabFiles poll"
+    tests: [tests/unit/extensions/test_activation_host.py, tests/unit/extensions/test_residuals_359_362.py]
 
   - id: host.extensions.api
     layer: host
-    name: Extension Host API v0 (commands/path/window)
+    name: Extension Host API v0 (commands/path/window/extensions)
     status: partial
     spec: docs/design/PLUGIN-CONTRACT.md
-    notes: "Epic #349 / P05 (#353); api_version 0.1.0; #368 minimal desktop panels"
-    tests: [tests/unit/extensions/test_activation_host.py]
+    notes: "Epic #349 / P05 (#353); #361 get_extension; #359 builtins→resolver; #362 when subset"
+    tests: [tests/unit/extensions/test_activation_host.py, tests/unit/extensions/test_residuals_359_362.py]
 
   - id: host.extensions.discovery
     layer: host

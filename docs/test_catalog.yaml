@@ -701,6 +701,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.extensions_residuals
+    kind: unit
+    title: plugin residuals builtins path get_extension when
+    features: [host.extensions.activation, host.extensions.api]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_residuals_359_362.py
+    status: active
+    env: unit
+
   - id: tc.extensions_discovery
     kind: unit
     title: plugin path and entry point discovery
