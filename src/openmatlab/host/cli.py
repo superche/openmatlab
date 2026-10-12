@@ -261,6 +261,28 @@ def _cmd_desktop(args: argparse.Namespace) -> int:
 
 
 
+
+def _cmd_workbench(args: argparse.Namespace) -> int:
+    """MATLAB-aligned Workbench Host product (layout + Command Window)."""
+    from openmatlab.host.workbench import Workbench
+
+    paths = list(args.path) if args.path else []
+    wb = Workbench.create(
+        plugin_paths=paths or None,
+        activate_plugins=bool(paths),
+    )
+    if args.list_only:
+        print(wb.list_regions_table())
+        return 0
+    if args.eval_line:
+        text = wb.command_window.eval(args.eval_line)
+        if text:
+            print(text, end="" if text.endswith("\n") else "\n")
+        return 0
+    wb.run_tk(demo_ms=args.demo_ms)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="openmatlab",
@@ -378,6 +400,39 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Print headless panel metadata; do not open a window",
     )
     p_desk.set_defaults(func=_cmd_desktop)
+
+    p_wb = sub.add_parser(
+        "workbench",
+        help="MATLAB-aligned Workbench: Host layout + Command Window (plugin slots)",
+    )
+    p_wb.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Optional plugin roots for contributed panels (repeatable)",
+    )
+    p_wb.add_argument(
+        "--list-only",
+        action="store_true",
+        help="Print host/plugin layout regions; do not open a window",
+    )
+    p_wb.add_argument(
+        "--eval",
+        dest="eval_line",
+        default=None,
+        metavar="CODE",
+        help="Headless Command Window: evaluate CODE and print display capture",
+    )
+    p_wb.add_argument(
+        "--demo-ms",
+        type=int,
+        default=None,
+        metavar="MS",
+        help="Auto-close tk workbench after MS milliseconds",
+    )
+    p_wb.set_defaults(func=_cmd_workbench)
+
 
 
     args = parser.parse_args(argv)

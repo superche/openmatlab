@@ -2,7 +2,7 @@
 # Schema: docs/QA.md § Layer 2
 version: 1
 product: openmatlab
-updated: "2026-10-11"
+updated: "2026-10-12"
 
 use_cases:
   - id: uc.matrix_first_repl
@@ -734,6 +734,33 @@ test_cases:
     features: [host.cli.desktop]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/extensions/test_desktop_cli.py
+    status: active
+    env: unit
+
+  - id: tc.domain_conformance
+    kind: conformance
+    title: Domain business-conformance D01–D04
+    features: [qa.domain_conformance, host.extensions.community_signal]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/conformance/test_domain_conformance.py
+    status: active
+    env: conformance
+
+  - id: tc.workbench_shell
+    kind: unit
+    title: Workbench host layout regions + CLI list
+    features: [host.workbench.shell, host.workbench.command_window]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_workbench.py
+    status: active
+    env: unit
+
+  - id: tc.workbench_bdd
+    kind: unit
+    title: Workbench Gherkin smoke
+    features: [host.workbench.shell, host.workbench.command_window]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_workbench_bdd.py
     status: active
     env: unit
 

@@ -24,7 +24,9 @@ What works today:
 - `Evaluator` on `Session` + `ConsoleDisplay` (`;` suppress, `ans`)
 - CLI: `openmatlab -e "…"`, bare REPL, QA subcommands (`status` / `features` / `cases` / `defects` / `test` / `plugins`)
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
-- Plugin host (M-plugins): `openmatlab.extensions` loads community manifests, slots, activation, Host API; sample `demos/plugins/community.signal`; CLI `openmatlab plugins`
+- Plugin host (M-plugins): `openmatlab.extensions` loads community manifests, slots, activation, Host API; sample `demos/plugins/community.signal`; CLI `openmatlab plugins` / `desktop`
+- Domain business-conformance (milestone/5): reference vectors for `hamming`/`rectwin`/`blackman` + PluginHost `which` gate
+- MATLAB-aligned Workbench (milestone/6): `openmatlab workbench` Host layout + Command Window (editor/workspace/cwd/figures stub)
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
@@ -36,17 +38,19 @@ Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab
 
 Epic #15 residuals: Issues on closed [#188](https://github.com/superche/openmatlab/issues/188). Epic #16 residuals: Issues on closed [#203](https://github.com/superche/openmatlab/issues/203). Epic #17 residuals: Issues on closed [#213](https://github.com/superche/openmatlab/issues/213). Epic #18 residuals: Issues on closed [#223](https://github.com/superche/openmatlab/issues/223). Epic #19 residuals: Issues on closed [#233](https://github.com/superche/openmatlab/issues/233). Epic #27 residuals: Issues on closed [#316](https://github.com/superche/openmatlab/issues/316). **M2 exit 11/11**; milestone #2 **OPEN**. Epics #28–#32 cleared remaining M2 p1; milestone #2 **OPEN** (p2 backlog remains). See [M2-octave-breadth.md](milestones/M2-octave-breadth.md).
 
-Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Plugin host](https://github.com/superche/openmatlab/milestone/4) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3). Plugin contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) ([`milestones/M-plugins.md`](milestones/M-plugins.md)).
+Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Plugin host](https://github.com/superche/openmatlab/milestone/4) · [Domain business-conformance](https://github.com/superche/openmatlab/milestone/5) · [MATLAB-aligned Workbench](https://github.com/superche/openmatlab/milestone/6) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3). Plugin contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) ([`milestones/M-plugins.md`](milestones/M-plugins.md)). Domain gate: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md). Workbench: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md).
 
 ## Package layout
 
 ```
 src/openmatlab/
   host/           # workbench shell
-    cli.py          -e / REPL / QA subcommands
+    cli.py          -e / REPL / QA subcommands / plugins / desktop / workbench
     repl.py         ReplSession → runtime.Session
     display.py      DisplayPolicy (semicolon suppress, ans, pretty-print)
     plot_surface.py PlotSurface → graphics backend
+    desktop.py      Minimal tk chrome for plugin panels (Epic #349 / #368)
+    workbench.py    MATLAB-aligned Host layout + Command Window (Epic #372)
   lang/           # language front-end
     tokens.py       TokenType (matrix + KW_FUNCTION / KW_END)
     ast_nodes.py    AST incl. MatrixLiteral / Index / Colon / FunctionDef
