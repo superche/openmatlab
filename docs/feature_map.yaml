@@ -6,7 +6,7 @@
 
 version: 1
 product: openmatlab
-updated: "2026-10-11"
+updated: "2026-10-12"
 
 layers:
   - id: host
@@ -66,6 +66,135 @@ features:
     notes: "run_line + bind_runtime; bare openmatlab enters REPL [done per docs/design/ITER-024-feature-done-criteria.md]"
 
   # --- lang ---
+
+  - id: host.extensions.manifest
+    layer: host
+    name: Plugin manifest load/validate (YAML/JSON)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P02 (#350); unknown contributes keys warn"
+    tests: [tests/unit/extensions/test_manifest.py]
+
+  - id: host.extensions.slots
+    layer: host
+    name: Host slot registry contribute/unload
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P03 (#351)"
+    tests: [tests/unit/extensions/test_slots.py]
+
+  - id: host.extensions.activation
+    layer: host
+    name: Activation predicates + ExtensionContext
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P04 (#352); #360 onPathExists/workspaceHasMatlabFiles poll"
+    tests: [tests/unit/extensions/test_activation_host.py, tests/unit/extensions/test_residuals_359_362.py]
+
+  - id: host.extensions.api
+    layer: host
+    name: Extension Host API v0 (commands/path/window/extensions)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P05 (#353); #361 get_extension; #359 builtins→resolver; #362 when subset"
+    tests: [tests/unit/extensions/test_activation_host.py, tests/unit/extensions/test_residuals_359_362.py]
+
+  - id: host.extensions.discovery
+    layer: host
+    name: Plugin discovery (path + entry points)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P06 (#354); OPENMATLAB_PLUGIN_PATH"
+    tests: [tests/unit/extensions/test_discovery.py]
+
+  - id: host.cli.plugins
+    layer: host
+    name: CLI openmatlab plugins list
+    status: partial
+    spec: docs/milestones/M-plugins.md
+    notes: "Epic #349 / P07 (#355); sample demos/plugins/community.signal (#367 clean-room hamming)"
+    tests: [tests/unit/extensions/test_cli_plugins.py]
+
+  - id: host.extensions.engines
+    layer: host
+    name: engines.openmatlab SemVer + fault isolation
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / P08 (#356)"
+    tests: [tests/unit/extensions/test_engines.py, tests/unit/extensions/test_activation_host.py]
+
+  - id: host.cli.desktop
+    layer: host
+    name: CLI openmatlab desktop (minimal panel chrome)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / #368; tk notebook of contributed panels"
+    tests: [tests/unit/extensions/test_desktop_cli.py]
+
+  - id: host.extensions.community_signal
+    layer: host
+    name: Community signal clean-room windows plugin
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / #367; hamming/rectwin/blackman .m + panel; domain gate D01–D04"
+    tests: [tests/unit/extensions/test_community_signal_package.py, tests/conformance/test_domain_conformance.py]
+
+  - id: qa.domain_conformance
+    layer: qa
+    name: Domain business-conformance gate (reference vectors)
+    status: partial
+    spec: docs/milestones/M-domain-conformance.md
+    notes: "Epic #371; D01–D04 met (hamming/rectwin/blackman + PluginHost which)"
+    tests: [tests/conformance/test_domain_conformance.py]
+
+  - id: host.workbench.shell
+    layer: host
+    name: MATLAB-aligned Workbench Host shell + layout regions
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W01 met; layout parity W07–W09 (#390–#392) chrome+docks; W15 preset MVP"
+    tests: [tests/unit/test_workbench.py]
+
+  - id: host.workbench.command_window
+    layer: host
+    name: Workbench Command Window (REPL eval + capture)
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W02 met; W11 history (#394); headless --eval + Desktop CW"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
+
+  - id: host.workbench.editor
+    layer: host
+    name: Workbench Editor panel
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W03 met; W10 multi-doc tabs (#393); no LSP/debugger"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
+
+  - id: host.workbench.workspace_browser
+    layer: host
+    name: Workbench Workspace browser
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W04 met; W12 Value column (#395)"
+    tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
+
+  - id: host.workbench.current_folder
+    layer: host
+    name: Workbench Current Folder browser
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W05 met; W13 path toolbar (#396)"
+    tests: [tests/unit/test_workbench.py]
+
+  - id: host.workbench.figures
+    layer: host
+    name: Workbench figure management
+    status: partial
+    spec: docs/milestones/M-workbench-aligned.md
+    notes: "Epic #372; W06 met; W14 docked Figures region (#397)"
+    tests: [tests/unit/test_workbench.py]
+
   - id: lang.tokens_reserved
     layer: lang
     name: TokenType vocabulary incl. matrix-reserved

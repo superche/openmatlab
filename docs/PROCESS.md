@@ -89,7 +89,10 @@ Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 |-----------|--------|
 | **Workbench MVP** | Foundation REPL/scripts/control (epics #1 #19 #33) — closed when accepted |
 | **Octave-breadth language & numerics** | Language + numeric core toward MATLAB/Octave parity (builtins, cells, assign, control flow, indexing) |
-| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity |
+| **Plugin host (VS Code–style)** | Published plugin contract + host for **community** plugins (not MathWorks proprietary). Doc: [`milestones/M-plugins.md`](milestones/M-plugins.md); contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) |
+| **Domain business-conformance** | Reference vectors / tests for plugin domains (`hamming` etc.). Doc: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md); GitHub milestone/5 |
+| **MATLAB-aligned Workbench** | Host product: command window, editor, workspace browser, current folder, figure mgmt via plugin slots. Doc: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md); GitHub milestone/6 |
+| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate) |
 
 **Rules**
 
@@ -103,8 +106,10 @@ Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 ### Milestone exit criteria & epic selection (mandatory)
 
 - Each active milestone has `docs/milestones/M<N>-*.md` with **measurable exit criteria**:
-  a conformance manifest (`tests/conformance/m2_manifest.py` for M2), required
-  feature_ids at `done`, and no open `p0` on the milestone.
+  a conformance manifest where applicable (`tests/conformance/m2_manifest.py` for
+  M2; `tests/conformance/domain_manifest.py` for Domain business-conformance),
+  required feature_ids at `done`/`partial` per the milestone doc, and no open
+  `p0` on the milestone.
 - Open Issues on a milestone carry exactly one priority label: `p0` / `p1` / `p2`.
 - **Epic selection:** the next epic MUST target the highest-priority **unmet**
   criterion in the milestone doc (p0 before p1, then table order) — not convenience.
@@ -193,6 +198,21 @@ Rules:
 5. Residuals already owned by a later epic board may link that epic instead
    of duplicating a gap Issue.
 
+
+## Plugins (community extension host)
+
+OpenMATLAB uses a **VS Code–style** plugin host: manifest `contributes`, host
+**slots**, activation events, Extension Host API, and SemVer `engines` ranges.
+See [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md). Roadmap exit
+criteria: [`milestones/M-plugins.md`](milestones/M-plugins.md).
+
+**Rules**
+
+1. Plugins are **community / clean-room** only — no MathWorks proprietary
+   toolboxes or MATLAB RE.
+2. Do not mark plugin-related `feature_map` rows `done` until contract + host
+   tests satisfy M-plugins exit criteria.
+3. Option comparison (historical): [`design/PLUGIN-OPTIONS.md`](design/PLUGIN-OPTIONS.md).
 
 ## Feature status criteria
 

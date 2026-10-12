@@ -12,7 +12,7 @@ from openmatlab import __version__
 _STATUS = """\
 OpenMATLAB {version} — architecture + layered QA (off-the-shelf preferred)
 
-Packages: host · lang · runtime · numerics · graphics · libs · qa
+Packages: host · lang · runtime · numerics · graphics · libs · extensions · qa
 
 QA layers (docs/QA.md):
   1. Features     docs/feature_map.yaml      → openmatlab features
@@ -188,6 +188,102 @@ def _run_repl() -> int:
 
 
 
+
+def _cmd_plugins(args: argparse.Namespace) -> int:
+    """List discovered plugins (id, version, state, engine mismatch)."""
+    from pathlib import Path as _Path
+
+    from openmatlab.extensions.host import PluginHost
+    from openmatlab.libs.path import ToolboxPath
+
+    extra = []
+    if args.path:
+        extra.extend(args.path)
+    host = PluginHost(toolbox_path=ToolboxPath())
+    warns = host.discover(
+        extra=extra or None,
+        include_user_dir=not args.no_user_dir,
+        include_entry_points=not args.no_entry_points,
+    )
+    host.load_all()
+    if args.activate:
+        host.activate_on_startup()
+    rows = host.list_plugins()
+    for w in warns:
+        print(f"warning: {w}", file=sys.stderr)
+    if args.format == "yaml":
+        try:
+            import yaml
+        except ImportError:
+            print("error: PyYAML required for --format yaml", file=sys.stderr)
+            return 1
+        print(yaml.safe_dump({"plugins": rows}, sort_keys=False, allow_unicode=True))
+        return 0
+    if not rows:
+        print("No plugins discovered.")
+        print(
+            "Hint: set OPENMATLAB_PLUGIN_PATH or pass --path DIR "
+            "(e.g. demos/plugins/community.signal)",
+            file=sys.stderr,
+        )
+        return 0
+    print(f"{'ID':<28} {'VER':<10} {'STATE':<12} {'ENGINES':<22} MISMATCH")
+    print("-" * 90)
+    for r in rows:
+        print(
+            f"{r['id']:<28} {r['version']:<10} {r['state']:<12} "
+            f"{r['engines']:<22} {'yes' if r['engine_mismatch'] else 'no'}"
+        )
+        if r.get("error"):
+            print(f"  error: {r['error']}")
+    return 0
+
+
+
+def _cmd_desktop(args: argparse.Namespace) -> int:
+    """Minimal desktop chrome that renders plugin panel contributions."""
+    from openmatlab.host.desktop import list_panel_summaries, run_desktop
+
+    paths = list(args.path) if args.path else ["demos/plugins/community.signal"]
+    if args.list_only:
+        rows = list_panel_summaries(paths)
+        if not rows:
+            print("No panels registered.")
+            return 0
+        for row in rows:
+            pid = row.get("id", "?")
+            title = row.get("title", "")
+            summary = row.get("summary", row.get("repr", ""))
+            print(f"{pid}\t{title}\t{summary}")
+        return 0
+    run_desktop(plugin_paths=paths, demo_ms=args.demo_ms)
+    return 0
+
+
+
+
+def _cmd_workbench(args: argparse.Namespace) -> int:
+    """MATLAB-aligned Workbench Host product (layout + host panels)."""
+    from openmatlab.host.workbench import Workbench
+
+    paths = list(args.path) if args.path else []
+    wb = Workbench.create(
+        plugin_paths=paths or None,
+        activate_plugins=bool(paths),
+        cwd=args.cwd,
+    )
+    if args.list_only:
+        print(wb.list_regions_table())
+        return 0
+    if args.eval_line:
+        text = wb.command_window.eval(args.eval_line)
+        if text:
+            print(text, end="" if text.endswith("\n") else "\n")
+        return 0
+    wb.run_tk(demo_ms=args.demo_ms)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="openmatlab",
@@ -248,6 +344,103 @@ def main(argv: Optional[List[str]] = None) -> None:
     p_test.add_argument("-k", dest="keyword", default=None)
     p_test.add_argument("pytest_args", nargs="*", default=[])
     p_test.set_defaults(func=_cmd_test)
+
+
+    p_plugins = sub.add_parser(
+        "plugins",
+        help="List discovered plugins (id, version, state, engines)",
+    )
+    p_plugins.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Extra plugin root or parent directory (repeatable)",
+    )
+    p_plugins.add_argument(
+        "--activate",
+        action="store_true",
+        help="Also run onStartupFinished activation",
+    )
+    p_plugins.add_argument(
+        "--no-user-dir",
+        action="store_true",
+        help="Skip ~/.openmatlab/plugins",
+    )
+    p_plugins.add_argument(
+        "--no-entry-points",
+        action="store_true",
+        help="Skip importlib.metadata openmatlab.plugins group",
+    )
+    p_plugins.add_argument(
+        "--format", choices=("table", "yaml"), default="table"
+    )
+    p_plugins.set_defaults(func=_cmd_plugins)
+
+    p_desk = sub.add_parser(
+        "desktop",
+        help="Minimal host desktop: render contributed plugin panels (tk)",
+    )
+    p_desk.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Plugin root or parent directory (repeatable)",
+    )
+    p_desk.add_argument(
+        "--demo-ms",
+        type=int,
+        default=None,
+        metavar="MS",
+        help="Auto-close after MS milliseconds (showcase recordings)",
+    )
+    p_desk.add_argument(
+        "--list-only",
+        action="store_true",
+        help="Print headless panel metadata; do not open a window",
+    )
+    p_desk.set_defaults(func=_cmd_desktop)
+
+    p_wb = sub.add_parser(
+        "workbench",
+        help="MATLAB-aligned Workbench: Host layout + CW/editor/workspace/folder/figures",
+    )
+    p_wb.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Optional plugin roots for contributed panels (repeatable)",
+    )
+    p_wb.add_argument(
+        "--list-only",
+        action="store_true",
+        help="Print host/plugin layout regions; do not open a window",
+    )
+    p_wb.add_argument(
+        "--eval",
+        dest="eval_line",
+        default=None,
+        metavar="CODE",
+        help="Headless Command Window: evaluate CODE and print display capture",
+    )
+    p_wb.add_argument(
+        "--cwd",
+        default=None,
+        metavar="DIR",
+        help="Initial Current Folder directory",
+    )
+    p_wb.add_argument(
+        "--demo-ms",
+        type=int,
+        default=None,
+        metavar="MS",
+        help="Auto-close tk workbench after MS milliseconds (scripted walkthrough)",
+    )
+    p_wb.set_defaults(func=_cmd_workbench)
+
+
 
     args = parser.parse_args(argv)
 

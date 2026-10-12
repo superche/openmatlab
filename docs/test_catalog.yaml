@@ -2,7 +2,7 @@
 # Schema: docs/QA.md § Layer 2
 version: 1
 product: openmatlab
-updated: "2026-10-11"
+updated: "2026-10-12"
 
 use_cases:
   - id: uc.matrix_first_repl
@@ -673,3 +673,113 @@ test_cases:
     impl: tests/unit/test_logical_pack.py
     status: active
     env: unit
+
+  - id: tc.extensions_manifest
+    kind: unit
+    title: plugin manifest schema valid/invalid
+    features: [host.extensions.manifest]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_manifest.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_slots
+    kind: unit
+    title: slot contribute unload by plugin id
+    features: [host.extensions.slots]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_slots.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_host
+    kind: unit
+    title: activation host API fault engines
+    features: [host.extensions.activation, host.extensions.api, host.extensions.engines]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_activation_host.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_residuals
+    kind: unit
+    title: plugin residuals builtins path get_extension when
+    features: [host.extensions.activation, host.extensions.api]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_residuals_359_362.py
+    status: active
+    env: unit
+
+  - id: tc.extensions_discovery
+    kind: unit
+    title: plugin path and entry point discovery
+    features: [host.extensions.discovery]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_discovery.py
+    status: active
+    env: unit
+
+  - id: tc.cli_plugins
+    kind: unit
+    title: openmatlab plugins CLI
+    features: [host.cli.plugins]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_cli_plugins.py
+    status: active
+    env: unit
+
+  - id: tc.community_signal_package
+    kind: unit
+    title: community.signal hamming call + panel factory
+    features: [host.extensions.community_signal, host.extensions.api]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_community_signal_package.py
+    status: active
+    env: unit
+
+  - id: tc.cli_desktop
+    kind: unit
+    title: openmatlab desktop list-only
+    features: [host.cli.desktop]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_desktop_cli.py
+    status: active
+    env: unit
+
+  - id: tc.domain_conformance
+    kind: conformance
+    title: Domain business-conformance D01–D04
+    features: [qa.domain_conformance, host.extensions.community_signal]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/conformance/test_domain_conformance.py
+    status: active
+    env: conformance
+
+  - id: tc.workbench_shell
+    kind: unit
+    title: Workbench host layout regions + panels + CLI list
+    features:
+      - host.workbench.shell
+      - host.workbench.command_window
+      - host.workbench.editor
+      - host.workbench.workspace_browser
+      - host.workbench.current_folder
+      - host.workbench.figures
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_workbench.py
+    status: active
+    env: unit
+
+  - id: tc.workbench_bdd
+    kind: unit
+    title: Workbench Gherkin smoke (regions, CW, workspace, editor)
+    features:
+      - host.workbench.shell
+      - host.workbench.command_window
+      - host.workbench.editor
+      - host.workbench.workspace_browser
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_workbench_bdd.py
+    status: active
+    env: unit
+
