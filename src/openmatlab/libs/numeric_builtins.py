@@ -23,7 +23,12 @@ Builtin = Callable[..., Sequence[Value]]
 
 
 def _wrap(data: object) -> NDArrayValue:
-    arr = np.asarray(data, dtype=np.float64)
+    arr = np.asarray(data)
+    if np.iscomplexobj(arr):
+        # MATLAB narrowing: all-zero imaginary part → real (#71)
+        arr = arr.astype(np.complex128) if np.any(arr.imag) else np.ascontiguousarray(arr.real, dtype=np.float64)
+    else:
+        arr = arr.astype(np.float64)
     if arr.ndim == 0:
         arr = arr.reshape(1, 1)
     elif arr.ndim == 1:
@@ -34,7 +39,8 @@ def _wrap(data: object) -> NDArrayValue:
 def _buf(name: str, v: Value) -> np.ndarray:
     if not isinstance(v, Array):
         raise BuiltinError(f"{name}: expected numeric Array argument")
-    return np.asarray(v.backend_buffer(), dtype=np.float64)
+    b = np.asarray(v.backend_buffer())
+    return b.astype(np.complex128) if np.iscomplexobj(b) else b.astype(np.float64)
 
 
 def _scalar(name: str, v: Value) -> float:
@@ -382,6 +388,76 @@ def _nan_argmin(a: np.ndarray, axis: int) -> np.ndarray:
     return np.argmin(masked, axis=axis)
 
 
+def _one(name: str, args: Sequence[Value]) -> Value:
+    _arity(name, args, 1, 1)
+    return args[0]
+
+
+def _complex(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """complex(a) / complex(a, b): always complex storage, even with 0 imag (MATLAB)."""
+    _arity("complex", args, 1, 2)
+    a = _buf("complex", args[0])
+    b = _buf("complex", args[1]) if len(args) == 2 else np.zeros_like(a)
+    if np.iscomplexobj(a) or np.iscomplexobj(b):
+        raise BuiltinError("complex: input arguments must be real")
+    try:
+        out = a + 1j * b
+    except ValueError:
+        raise BuiltinError("complex: input dimensions must agree") from None
+    out = out.reshape(1, 1) if out.ndim == 0 else out
+    return (NDArrayValue(np.asarray(out, dtype=np.complex128)),)
+
+
+def _isreal(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("isreal", args, 1, 1)
+    v = args[0]
+    real = not (isinstance(v, Array) and np.iscomplexobj(np.asarray(v.backend_buffer())))
+    return (NDArrayValue(np.array([[real]])),)
+
+
+def _complex_aware_extremum(real_fn, which: str):
+    """max/min of complex input compare magnitude, then phase angle (MATLAB)."""
+
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        bufs = [np.asarray(a.backend_buffer()) for a in args if isinstance(a, Array)]
+        if not any(np.iscomplexobj(b) for b in bufs):
+            return real_fn(args, nargout=nargout)
+        vals, flags = _peel_flags(which, args, {"omitnan", "includenan", "all"})
+        if len(vals) == 2:
+            a, b = np.broadcast_arrays(_buf(which, vals[0]), _buf(which, vals[1]))
+            ka, kb = np.abs(a), np.abs(b)
+            take_a = (ka > kb) | ((ka == kb) & (np.angle(a) >= np.angle(b)))
+            if which == "min":
+                take_a = (ka < kb) | ((ka == kb) & (np.angle(a) <= np.angle(b)))
+            return (_wrap(np.where(take_a, a, b)),)
+        a = _buf(which, vals[0])
+        if "all" in flags:
+            a = a.reshape(-1, 1, order="F")
+            ax = 0
+        elif len(vals) == 3:
+            ax = _axis_arg(which, vals[2])
+        else:
+            ax = _default_axis(a)
+        if a.size == 0:
+            return (_wrap(np.zeros((0, 0))),) * max(1, min(nargout, 2))
+        k = np.abs(a)
+        ang = np.angle(a)
+        # simple exact selection: magnitude first, angle second, first occurrence
+        best = (np.max if which == "max" else np.min)(k, axis=ax, keepdims=True)
+        cand = k == best
+        angm = np.where(cand, ang, -np.inf if which == "max" else np.inf)
+        best_ang = (np.max if which == "max" else np.min)(angm, axis=ax, keepdims=True)
+        hit = cand & (angm == best_ang)
+        i0 = np.argmax(hit, axis=ax)
+        i0k = np.expand_dims(i0, ax)
+        out = np.take_along_axis(a, i0k, axis=ax)
+        if nargout <= 1:
+            return (_wrap(out),)
+        return (_wrap(out), _wrap(i0k + 1.0))
+
+    return _fn
+
+
 def _make_extremum(name: str, *, which: str):
     """MATLAB-default omitnan; explicit omitnan/includenan/all flags (#69)."""
     if which == "max":
@@ -450,11 +526,11 @@ def _make_unary(name: str, op, *, nonneg: bool = False):
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         _arity(name, args, 1, 1)
         b = _buf(name, args[0])
-        if nonneg and np.any(b < 0):
-            raise BuiltinError(
-                f"{name}: negative input needs complex results (not supported)"
-            )
-        with np.errstate(divide="ignore"):
+        if nonneg and not np.iscomplexobj(b) and np.any(b < 0):
+            b = b.astype(np.complex128)  # sqrt(-4) = 2i, log(-1) = pi*i (#71)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            if np.iscomplexobj(b) and op in (np.floor, np.ceil, _matlab_round):
+                return (_wrap(op(b.real) + 1j * op(b.imag)),)  # per part (MATLAB)
             return (_wrap(op(b)),)
 
     return _fn
@@ -468,6 +544,8 @@ def _broadcast_pair(name: str, a: np.ndarray, b: np.ndarray):
 
 def _mod(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("mod", args, 2, 2)
+    if any(isinstance(v, Array) and np.iscomplexobj(np.asarray(v.backend_buffer())) for v in args):
+        raise BuiltinError("mod: Complex arguments are not supported.")
     a, b = _broadcast_pair("mod", _buf("mod", args[0]), _buf("mod", args[1]))
     with np.errstate(divide="ignore", invalid="ignore"):
         out = np.where(b == 0, a, a - np.floor(a / np.where(b == 0, 1, b)) * b)
@@ -571,11 +649,19 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         return (_wrap(b),) if nargout <= 1 else (_wrap(b), _wrap(ones))
     # Sort key: value ('real'/'auto' for real data) or |value| ('abs'; ties by value).
     # NaN placement: 'auto' = last for ascend, first for descend (MATLAB).
-    vals = np.abs(b) if method == "abs" else b
+    cplx = np.iscomplexobj(b)
+    if cplx:
+        # MATLAB complex sort: 'auto'/'abs' → |z| then angle; 'real' → real then imag (#71)
+        by_real = method == "real"
+        vals = b.real if by_real else np.abs(b)
+        tie = b.imag if by_real else np.angle(b)
+    else:
+        vals = np.abs(b) if method == "abs" else b
+        tie = b
     nan_first = descend if missing == "auto" else missing == "first"
     nan = np.isnan(b)
     primary = np.where(nan, 0.0, -vals if descend else vals)
-    secondary = np.where(nan, 0.0, -b if descend else b)
+    secondary = np.where(nan, 0.0, -tie if descend else tie)
     nan_key = np.where(nan, 0 if nan_first else 1, 1 if nan_first else 0)
     # lexsort: last key is primary; stable for ties
     moved = [np.moveaxis(k, ax, -1) for k in (secondary, primary, nan_key)]
@@ -632,7 +718,7 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         if b.ndim < 2:
             b = b.reshape(-1, 1)
     rows, cols = b.shape
-    flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
+    flat = np.asarray(b).reshape(-1, order="F")
     # MATLAB: NaN is nonzero (isnan alone is true for find)
     mask = flat != 0
     lin0 = np.nonzero(mask)[0]
@@ -995,8 +1081,14 @@ BUILTINS: Dict[str, Builtin] = {
     "sum": _make_reduce("sum", np.sum, 0.0),
     "prod": _make_reduce("prod", np.prod, 1.0),
     "mean": _make_reduce("mean", _mean_op, float("nan")),
-    "max": _make_extremum("max", which="max"),
-    "min": _make_extremum("min", which="min"),
+    "max": _complex_aware_extremum(_make_extremum("max", which="max"), "max"),
+    "min": _complex_aware_extremum(_make_extremum("min", which="min"), "min"),
+    "real": lambda args, nargout=1: (_wrap(np.real(_buf("real", _one("real", args)))),),
+    "imag": lambda args, nargout=1: (_wrap(np.imag(_buf("imag", _one("imag", args)))),),
+    "conj": lambda args, nargout=1: (_wrap(np.conj(_buf("conj", _one("conj", args)))),),
+    "angle": lambda args, nargout=1: (_wrap(np.angle(_buf("angle", _one("angle", args)))),),
+    "complex": _complex,
+    "isreal": _isreal,
     "abs": _make_unary("abs", np.abs),
     "sqrt": _make_unary("sqrt", np.sqrt, nonneg=True),
     "exp": _make_unary("exp", np.exp),

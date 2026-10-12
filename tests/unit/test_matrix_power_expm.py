@@ -37,10 +37,10 @@ def test_fractional_matrix_power():
     np.testing.assert_allclose(r @ r, [[2, 1], [1, 2]], atol=1e-12)
 
 
-def test_complex_results_are_deferred_to_71():
-    for expr in ("(-2)^[1 0; 0 1]", "[-1 0; 0 1]^0.5"):
-        with pytest.raises(Exception, match="#71"):
-            _x(expr)
+def test_complex_results_now_supported_71():
+    """Previously deferred to #71; MATLAB returns the principal complex result."""
+    np.testing.assert_allclose(_x("(-2)^[1 0; 0 1]"), [[-2, 0], [0, -2]], atol=1e-12)
+    np.testing.assert_allclose(_x("[-1 0; 0 1]^0.5"), [[1j, 0], [0, 1]], atol=1e-12)
 
 
 def test_scalar_times_matrix_any_shape():

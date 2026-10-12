@@ -464,6 +464,8 @@ class Parser:
         tok = self.current()
         if tok.type == TokenType.NUMBER:
             self.advance()
+            if tok.value[-1] in "ijIJ":
+                return NumberLiteral(value=complex(0.0, float(tok.value[:-1])))
             return NumberLiteral(value=float(tok.value))
         if tok.type in (TokenType.STRING, TokenType.CHAR):
             self.advance()

@@ -22,6 +22,23 @@ def _require_numpy():
     return np
 
 
+def _narrow(np, out):
+    """MATLAB narrowing: a complex result whose imaginary parts are all zero is real."""
+    out = np.asarray(out)
+    if np.iscomplexobj(out):
+        if out.size == 0 or not np.any(out.imag):
+            return np.ascontiguousarray(out.real).astype(np.float64)
+        return out.astype(np.complex128, copy=False)
+    if out.dtype == np.bool_:
+        return out
+    return out.astype(np.float64, copy=False)
+
+
+def _dt(np, *bufs):
+    """float64, or complex128 if any operand is complex (#71)."""
+    return np.complex128 if any(np.iscomplexobj(b) for b in bufs) else np.float64
+
+
 def _as_nd(a: Array) -> NDArrayValue:
     if isinstance(a, NDArrayValue):
         return a
@@ -58,12 +75,13 @@ class NumPyArrayBackend:
                 raise NumericsError(
                     f"from_nested: ragged row {i}: expected {width} cols"
                 )
-        return NDArrayValue(self._np.asarray(rows, dtype=self._np.float64))
+        arr = self._np.asarray(rows)
+        return NDArrayValue(arr.astype(_dt(self._np, arr)))
 
     def from_scalar(self, value: float) -> Array:
         """MATLAB-like scalar as 1×1."""
         return NDArrayValue(
-            self._np.asarray([[float(value)]], dtype=self._np.float64)
+            self._np.asarray([[value]], dtype=_dt(self._np, self._np.asarray(value)))
         )
 
     def matmul(self, a: Array, b: Array) -> Array:
@@ -79,7 +97,7 @@ class NumPyArrayBackend:
             out = x * y if (x.size == 1 or y.size == 1) else x @ y
         except ValueError as exc:
             raise NumericsError(f"matmul: {exc}") from exc
-        return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+        return NDArrayValue(_narrow(self._np, out))
 
     def elem_mul(self, a: Array, b: Array) -> Array:
         return self._elem(a, b, "multiply")
@@ -107,10 +125,7 @@ class NumPyArrayBackend:
             out = fn(self._num(aa.backend_buffer()), self._num(bb.backend_buffer()))
         except ValueError as exc:
             raise NumericsError(f"{op}: {exc}") from exc
-        out_a = self._np.asarray(out)
-        if not self._np.iscomplexobj(out_a):
-            out_a = out_a.astype(self._np.float64, copy=False)
-        return NDArrayValue(out_a)
+        return NDArrayValue(_narrow(self._np, out))
 
     def transpose(self, a: Array, *, conjugate: bool = True) -> Array:
         aa = _as_nd(a)
@@ -124,34 +139,52 @@ class NumPyArrayBackend:
         return NDArrayValue(self._np.asarray(out))
 
     def power(self, a: Array, b: Array, *, elementwise: bool = True) -> Array:
+        np = self._np
         aa, bb = _as_nd(a), _as_nd(b)
-        da = self._np.asarray(aa.backend_buffer())
-        db = self._np.asarray(bb.backend_buffer())
-        if not (self._np.iscomplexobj(da) or self._np.iscomplexobj(db)):
-            da = da.astype(self._np.float64, copy=False)
-            db = db.astype(self._np.float64, copy=False)
+        da = self._num(aa.backend_buffer()).astype(_dt(np, aa.backend_buffer()), copy=False)
+        db = self._num(bb.backend_buffer()).astype(_dt(np, bb.backend_buffer()), copy=False)
+
+        def _elementwise(x, y):
+            # negative base with non-integer exponent → principal complex root (MATLAB)
+            needs_c = (
+                not np.iscomplexobj(x) and not np.iscomplexobj(y)
+                and np.any((x < 0) & (np.broadcast_to(y, np.broadcast(x, y).shape) != np.floor(y)))
+            )
+            if needs_c:
+                x = x.astype(np.complex128)
+            with np.errstate(all="ignore"):
+                return _narrow(np, x ** y)
+
         if elementwise:
-            out = da ** db
-            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+            try:
+                return NDArrayValue(_elementwise(da, db))
+            except ValueError as exc:
+                raise NumericsError(f"power: {exc}") from exc
         # Matrix power (^): scalars or square matrix ^ integer
         if da.size == 1 and db.size == 1:
-            out = float(da.reshape(-1)[0]) ** float(db.reshape(-1)[0])
-            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64).reshape(1, 1))
+            return NDArrayValue(_elementwise(da.reshape(1, 1), db.reshape(1, 1)))
         if da.ndim == 2 and da.shape[0] == da.shape[1] and db.size == 1:
-            exp = float(db.reshape(-1)[0])
-            if exp != int(exp):
-                return NDArrayValue(_fractional_matrix_power(self._np, da, exp))
+            exp = db.reshape(-1)[0]
+            if np.iscomplexobj(db) or exp != int(exp.real):
+                return NDArrayValue(_narrow(np, _fractional_matrix_power(np, da, exp)))
             try:
-                out = self._np.linalg.matrix_power(da, int(exp))
+                out = np.linalg.matrix_power(da, int(exp.real))
             except Exception as exc:  # singular / domain
                 raise NumericsError(f"matrix power (^): {exc}") from exc
-            return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
+            return NDArrayValue(_narrow(np, out))
         if da.size == 1 and db.ndim == 2 and db.shape[0] == db.shape[1]:
-            # s^A = expm(log(s) * A)  (MATLAB, s > 0)
-            base = float(da.reshape(-1)[0])
-            if base <= 0:
-                raise NumericsError("matrix power (^): scalar^matrix needs a positive base (complex: #71)")
-            return NDArrayValue(expm(self._np.log(base) * db))
+            # s^A = expm(log(s) * A); log of a negative/complex base is complex
+            base = complex(da.reshape(-1)[0])
+            if base == 0:
+                raise NumericsError("matrix power (^): scalar^matrix needs a nonzero base")
+            lg = np.log(base) if (base.imag or base.real < 0) else np.log(base.real)
+            out = expm(lg * db)
+            if np.iscomplexobj(out):
+                tol = 1e-12 * max(1.0, float(np.max(np.abs(out))))
+                out = np.where(np.abs(out.real) <= tol, 0.0, out.real) + 1j * np.where(
+                    np.abs(out.imag) <= tol, 0.0, out.imag
+                )
+            return NDArrayValue(_narrow(np, out))
         raise NumericsError(
             "matrix power (^): requires scalars, square matrix ^ scalar, or scalar ^ square matrix"
         )
@@ -239,9 +272,7 @@ class NumPyArrayBackend:
             out = view[np.ix_(*idx)]
         except IndexError as exc:
             raise NumericsError(f"index: {exc}") from exc
-        if data_a.dtype != np.bool_:
-            out = np.asarray(out, dtype=np.float64)
-        return NDArrayValue(np.array(out))
+        return NDArrayValue(np.array(_narrow(np, out)))
 
     def _linear_index(self, data: Any, ind: Any) -> Array:
         """Single subscript: column-major linear index (1-based)."""
@@ -255,7 +286,7 @@ class NumPyArrayBackend:
             raise NumericsError(
                 f"index: linear index exceeds numel ({flat.size})"
             )
-        picked = flat[k.reshape(-1)].astype(np.float64)
+        picked = _narrow(np, flat[k.reshape(-1)].astype(_dt(np, flat)))
         if k.size == 1:
             return NDArrayValue(picked.reshape(1, 1))
         rows, cols = (np.asarray(data).shape + (1, 1))[:2]
@@ -277,7 +308,7 @@ class NumPyArrayBackend:
             raise NumericsError(
                 f"index: logical mask numel ({m.size}) != array numel ({flat.size})"
             )
-        picked = flat[m].astype(np.float64)
+        picked = _narrow(np, flat[m].astype(_dt(np, flat)))
         rows, cols = (data_a.shape + (1, 1))[:2]
         if data_a.ndim > 2:  # N-D mask/source → column (#322)
             rows = cols = 0
@@ -301,7 +332,7 @@ class NumPyArrayBackend:
 
     def _grow_linear_flat(self, data: Any, flat: Any, need: int) -> Any:
         np = self._np
-        grown = np.zeros(need, dtype=np.float64)
+        grown = np.zeros(need, dtype=flat.dtype)
         grown[: flat.size] = flat
         return grown
 
@@ -309,9 +340,10 @@ class NumPyArrayBackend:
         """1-based copy-on-write set; scalar or matching-numel RHS; range LHS ok."""
         aa = _as_nd(a)
         vv = _as_nd(value)
-        vbuf = self._np.asarray(vv.backend_buffer(), dtype=self._np.float64)
-        data = self._np.asarray(aa.backend_buffer(), dtype=self._np.float64).copy()
         np = self._np
+        dt = _dt(np, vv.backend_buffer(), aa.backend_buffer())
+        vbuf = np.asarray(vv.backend_buffer(), dtype=dt)
+        data = np.asarray(aa.backend_buffer(), dtype=dt).copy()
 
         def _as_1based_int_vec(buf: Any, *, label: str) -> Any:
             flat = np.asarray(buf, dtype=np.float64).reshape(-1)
@@ -325,12 +357,12 @@ class NumPyArrayBackend:
             if vbuf.size == 0:
                 raise NumericsError("set_index: internal empty RHS")
             if vbuf.size == 1:
-                return np.full(n, float(vbuf.reshape(-1)[0]), dtype=np.float64)
+                return np.full(n, vbuf.reshape(-1)[0], dtype=dt)
             if vbuf.size != n:
                 raise NumericsError(
                     f"set_index: RHS numel ({vbuf.size}) != LHS numel ({n})"
                 )
-            return np.asarray(vbuf, dtype=np.float64).reshape(-1, order="F")
+            return np.asarray(vbuf, dtype=dt).reshape(-1, order="F")
 
         def _delete_linear(flat: Any, drop_0based: Any) -> Array:
             """Remove 0-based indices (MATLAB): row/column vectors keep orientation;
@@ -390,10 +422,10 @@ class NumPyArrayBackend:
                     flat[k - 1] = _apply_rhs(int(k.size))
                     rows, cols = self._grown_vector_shape(data, flat.size)
                     out = flat.reshape((rows, cols), order="F").copy()
-                    return NDArrayValue(np.asarray(out, dtype=np.float64))
+                    return NDArrayValue(_narrow(np, out))
                 flat[k - 1] = _apply_rhs(int(k.size))
             out = flat.reshape(data.shape, order="F").copy()
-            return NDArrayValue(np.asarray(out, dtype=np.float64))
+            return NDArrayValue(_narrow(np, out))
 
         return self._set_subscripts(data, indices, vbuf, _as_1based_int_vec, _apply_rhs)
 
@@ -444,7 +476,7 @@ class NumPyArrayBackend:
             out = np.delete(view, np.unique(subs[d] - 1), axis=d)
             if folded and d < k - 1:
                 out = out.reshape(out.shape[: k - 1] + orig_shape[k - 1 :], order="F")
-            return NDArrayValue(np.asarray(out, dtype=np.float64))
+            return NDArrayValue(_narrow(np, out))
         lhs_dims = [int(s_.size) for s_ in subs]
         n = int(np.prod(lhs_dims))
         if vbuf.size != 1:
@@ -459,14 +491,11 @@ class NumPyArrayBackend:
                     f"{'-by-'.join(map(str, rdims))}."
                 )
         block = _apply_rhs(n).reshape(lhs_dims, order="F")
-        if view.dtype != np.float64:
-            view = view.astype(np.float64)
-        else:
-            view = view.copy()
+        view = view.astype(_dt(np, view, vbuf) if view.dtype != np.bool_ else np.float64)
         view[np.ix_(*[s_ - 1 for s_ in subs])] = block
         if folded:
             view = view.reshape(orig_shape, order="F")
-        return NDArrayValue(view)
+        return NDArrayValue(_narrow(np, view))
 
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()
@@ -476,7 +505,8 @@ def expm(m):
     """Matrix exponential: scaling and squaring with a Taylor series (no SciPy)."""
     import numpy as np
 
-    m = np.asarray(m, dtype=np.float64)
+    m = np.asarray(m)
+    m = m.astype(np.complex128 if np.iscomplexobj(m) else np.float64)
     norm = float(np.linalg.norm(m, 1))
     s = max(0, int(np.ceil(np.log2(norm))) + 1) if norm > 0.5 else 0
     a = m / (2.0 ** s)
@@ -493,12 +523,15 @@ def expm(m):
 
 
 def _fractional_matrix_power(np, a, p):
-    """A^p for non-integer p via eigendecomposition; real results only (complex: #71)."""
+    """A^p for non-integer (or complex) p via eigendecomposition (#228, #229).
+
+    Real input with a real result (imag below round-off) narrows to real;
+    otherwise the principal complex result is returned (MATLAB)."""
     w, v = np.linalg.eig(a)
     if np.linalg.cond(v) > 1e12:
         raise NumericsError("matrix power (^): matrix is not diagonalizable")
     out = v @ np.diag(np.power(w.astype(complex), p)) @ np.linalg.inv(v)
-    if np.max(np.abs(out.imag)) > 1e-10 * max(1.0, np.max(np.abs(out.real))):
-        raise NumericsError("matrix power (^): result is complex (complex numbers: #71)")
-    return np.asarray(out.real, dtype=np.float64)
+    tol = 1e-10 * max(1.0, float(np.max(np.abs(out))))
+    out = out.real + 1j * np.where(np.abs(out.imag) <= tol, 0.0, out.imag)
+    return out
 

@@ -224,6 +224,13 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 while i < n and source[i].isdigit():
                     i += 1
                     col += 1
+            # imaginary literal suffix 3i / 2.5j / 4I (#71); not 3if / 2jx
+            if (
+                i < n and source[i] in "ijIJ"
+                and (i + 1 >= n or not (source[i + 1].isalnum() or source[i + 1] == "_"))
+            ):
+                i += 1
+                col += 1
             tok = Token(TokenType.NUMBER, source[start:i], start_line, start_col)
             yield tok
             last_sig = tok.type

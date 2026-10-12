@@ -126,9 +126,9 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 logical `~ & | && ||` (#413), `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280), N-D arrays `zeros(2,3,4)` / `A(i,j,k)` (Epic #440) (see "What works today").
+Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280), N-D arrays `zeros(2,3,4)` / `A(i,j,k)` (Epic #440), complex numbers `3+4i` / `sqrt(-1)` (Epic #449) (see "What works today").
 
-**Not yet:** `string` class (#78), `nargin`/`nargout` specials, integer classes (#72), complex (#71).
+**Not yet:** `string` class (#78), `nargin`/`nargout` specials, integer classes (#72).
 
 ## Non-goals
 
