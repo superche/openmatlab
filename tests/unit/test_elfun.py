@@ -50,11 +50,11 @@ def test_mod_matlab_semantics():
 
 
 def test_real_domain_errors():
+    # sqrt/log of negatives are complex in MATLAB (#71), no longer errors.
     s = Session.create_default()
-    with pytest.raises(EvalError, match="complex"):
-        ReplSession(s).run_line("sqrt(-1)")
-    with pytest.raises(EvalError, match="complex"):
-        ReplSession(s).run_line("log([1 -2])")
+    ReplSession(s).run_line("a = sqrt(-1); b = log([1 -2]);")
+    assert np.allclose(s.workspace.get("a").backend_buffer(), [[1j]])
+    assert np.allclose(s.workspace.get("b").backend_buffer(), [[0, np.log(2) + np.pi * 1j]])
     with pytest.raises(EvalError, match="dimensions"):
         ReplSession(s).run_line("mod([1 2 3], [1 2])")
 
@@ -62,6 +62,6 @@ def test_real_domain_errors():
 def test_builtin_error_message_not_duplicated():
     s = Session.create_default()
     with pytest.raises(EvalError) as info:
-        ReplSession(s).run_line("sqrt(-1)")
+        ReplSession(s).run_line("sqrt(1, 2)")  # was sqrt(-1), which is now valid (2i, #71)
     assert str(info.value).count("sqrt:") == 1
 

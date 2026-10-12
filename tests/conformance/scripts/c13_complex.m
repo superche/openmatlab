@@ -1,0 +1,15 @@
+z = 3 + 4i;
+a = abs(z);
+re = real(z * (1 - 2i));
+im = imag(z * (1 - 2i));
+s = sqrt(-4);
+si = imag(s);
+lr = isreal(s);
+c = (-8)^(1/3);
+cr = real(c);
+A = [1 2; 3 4]^0.5;
+B = real(A * A);
+ct = imag([1+2i 3]');
+m = max([1 -3i 2]);
+mi = imag(m);
+k = isreal(1i * 1i);

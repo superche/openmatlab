@@ -1145,8 +1145,13 @@ class Evaluator:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
 
-        a = np.asarray(left.backend_buffer(), dtype=float)
-        b = np.asarray(right.backend_buffer(), dtype=float)
+        a = np.asarray(left.backend_buffer())
+        b = np.asarray(right.backend_buffer())
+        a = a.astype(complex if np.iscomplexobj(a) else float)
+        b = b.astype(complex if np.iscomplexobj(b) else float)
+        if op not in ("==", "~="):
+            # MATLAB: <, <=, >, >= compare real parts of complex operands (#71)
+            a, b = np.real(a), np.real(b)
         if op == "<":
             r = a < b
         elif op == "<=":
@@ -1174,7 +1179,7 @@ class Evaluator:
             return False
         import numpy as np
 
-        buf = np.asarray(arr.backend_buffer(), dtype=float).reshape(-1)
+        buf = np.asarray(arr.backend_buffer()).reshape(-1)
         return bool(np.all(buf != 0))
 
 

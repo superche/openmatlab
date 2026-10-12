@@ -855,3 +855,21 @@ test_cases:
     impl: tests/bdd/test_nd_arrays_bdd.py
     status: active
     env: unit
+
+  - id: tc.complex_numbers
+    kind: unit
+    title: complex numbers literals/arith/elfun/power/display (Epic #449)
+    features: [numerics.complex]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_complex_numbers.py
+    status: active
+    env: unit
+
+  - id: tc.complex_numbers_bdd
+    kind: bdd
+    title: complex numbers Gherkin scenarios (Epic #449)
+    features: [numerics.complex]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_complex_numbers_bdd.py
+    status: active
+    env: unit

@@ -48,6 +48,7 @@ Harness: `tests/conformance/m2_expected.py` coerces Inf/NaN tokens. Remaining sm
 | C01 | Control flow (if/for/while/break/continue/switch) | c01_control_flow | p0 | — | met |
 | C03 | Cells `{}` read/write/slice | c03_cells | p0 | — | met |
 | C12 | N-D arrays: constructors, `A(i,j,k)`, `end`, grow, dim-3 reductions, N-D masks | c12_nd_arrays | p2 | #74 #182 #173 #259 #322 #330 | **met** (Epic #440) |
+| C13 | Complex numbers: `3+4i`, `sqrt(-4)`, complex `^`, `abs/real/imag`, `max` by magnitude | c13_complex | p2 | #71 #229 #228 | **met** (Epic #449) |
 
 Epic #15 (C05, p1) was opened before this rule. From Epic #16 on, the next epic
 takes the **first pending row** in this table (p0 before p1, then table order).
@@ -66,7 +67,7 @@ Expected JSON may carry `"<var>:size": [r, c]` keys for direct shape asserts
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
 - **p1** (post-exit breadth): #184 — the only open p1 (snapshot 2026-10-12; earlier p1 lists were cleared by Epics #24–#32).
-- **p2** (nice-to-have / non-goals): #71 #72 #78 #130 #140 #141 #151 #152 #153 #164 #174 #183 #197 #198 #208 #219 #228 #229 #239 #248 #270 #280 #281 #291 #292 #302 #311 #312 #336
+- **p2** (nice-to-have / non-goals): #72 #78 #130 #140 #141 #151 #152 #153 #164 #174 #183 #197 #198 #208 #219 #239 #248 #270 #280 #281 #291 #292 #302 #311 #312 #336
   *(snapshot 2026-10-12; live list: `gh issue list --milestone "Octave-breadth language & numerics"`)*
 
 ## M2 close readiness (Epic #23)
@@ -81,6 +82,8 @@ All three exit criteria hold on `main` after Epic #23:
 Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
 
 ## Progress snapshot
+
+After Epic #449 (complex numbers, adds C13 p2): **13/13** criteria met. Next epic: integer/string classes (#72 #78 #183).
 
 After Epic #440 (N-D arrays, adds C12 p2): **12/12** criteria met. Next epics: complex numbers (#71 #229), then integer/string classes (#72 #78 #183).
 

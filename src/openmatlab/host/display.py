@@ -157,7 +157,7 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
     if a.size == 0:
         return "[](" + "x".join(str(d) for d in a.shape) + ")"
     if np.iscomplexobj(a):
-        return str(a)
+        return _format_complex(a, terminal_width)
     a = a.astype(np.float64)
     finite = a[np.isfinite(a)]
     integer = bool(np.all(finite == np.floor(finite))) and (
@@ -206,3 +206,32 @@ def _page_columns(cells, width: int, terminal_width: int) -> str:
         body = "\n".join("".join(c.rjust(width) for c in row[start:stop]) for row in cells)
         blocks.append(f"{title}\n\n{body}")
     return "\n\n".join(blocks)
+
+
+def _format_complex(a, terminal_width: int = 80) -> str:
+    """MATLAB format short complex: ``3 + 4i`` (integer-valued) or
+    ``1.5000 - 2.0000i``; real and imaginary parts right-aligned per column (#71)."""
+    import numpy as np
+
+    re_, im_ = a.real, a.imag
+    parts = np.concatenate([re_[np.isfinite(re_)], im_[np.isfinite(im_)]])
+    integer = bool(np.all(parts == np.floor(parts))) and (
+        parts.size == 0 or float(np.max(np.abs(parts))) < 1e15
+    )
+
+    def mag(v: float) -> str:
+        return _fmt_real(abs(v), integer) if np.isfinite(v) else _fmt_real(abs(v), True)
+
+    reals = [[_fmt_real(float(v), integer) for v in row] for row in re_]
+    imags = [[mag(float(v)) for v in row] for row in im_]
+    signs = [["-" if (v < 0 or (v == 0 and np.signbit(v))) else "+" for v in row] for row in im_]
+    if a.size == 1:
+        return f"{reals[0][0]} {signs[0][0]} {imags[0][0]}i"
+    rw = max(len(x) for row in reals for x in row)
+    iw = max(len(x) for row in imags for x in row)
+    cells = [
+        [f"{r.rjust(rw)} {sg} {i.rjust(iw)}i" for r, sg, i in zip(rr, ss, ii)]
+        for rr, ss, ii in zip(reals, signs, imags)
+    ]
+    width = max(len(c) for row in cells for c in row) + 3
+    return _page_columns(cells, width, terminal_width)
