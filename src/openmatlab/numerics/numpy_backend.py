@@ -69,7 +69,7 @@ class NumPyArrayBackend:
     def matmul(self, a: Array, b: Array) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
         try:
-            out = aa.backend_buffer() @ bb.backend_buffer()
+            out = self._num(aa.backend_buffer()) @ self._num(bb.backend_buffer())
         except ValueError as exc:
             raise NumericsError(f"matmul: {exc}") from exc
         return NDArrayValue(self._np.asarray(out, dtype=self._np.float64))
@@ -86,11 +86,18 @@ class NumPyArrayBackend:
     def sub(self, a: Array, b: Array) -> Array:
         return self._elem(a, b, "subtract")
 
+    def _num(self, buf: Any) -> Any:
+        """Arithmetic operand: logical promotes to double (MATLAB), never bool algebra."""
+        buf = self._np.asarray(buf)
+        if buf.dtype == self._np.bool_:
+            return buf.astype(self._np.float64)
+        return buf
+
     def _elem(self, a: Array, b: Array, op: str) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
         fn = getattr(self._np, op)
         try:
-            out = fn(aa.backend_buffer(), bb.backend_buffer())
+            out = fn(self._num(aa.backend_buffer()), self._num(bb.backend_buffer()))
         except ValueError as exc:
             raise NumericsError(f"{op}: {exc}") from exc
         out_a = self._np.asarray(out)
