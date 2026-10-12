@@ -321,8 +321,8 @@ features:
     name: sort descend + find k first/last
     status: done
     depends_on: [libs.sort, libs.find]
-    notes: "M2 C05 met; NaN/empty-row find divergence residual (#189)"
-    tests: [tests/unit/test_sort_find_flags.py, tests/bdd/test_sort_find_flags_bdd.py, tests/conformance/test_m2_conformance.py]
+    notes: "M2 C05 met; NaN/empty-row find divergence residual (#189); sort char + cellstr (ASCII, stable, ascend/descend) (#198)"
+    tests: [tests/unit/test_sort_find_flags.py, tests/bdd/test_sort_find_flags_bdd.py, tests/conformance/test_m2_conformance.py, tests/unit/test_sort_char_cellstr.py]
   - id: libs.elmat_size_vector
     layer: libs
     name: zeros/ones/eye size-vector form
@@ -659,6 +659,14 @@ features:
     notes: "A(L,:), A(:,L), A(L1,L2) read/assign (#317)"
     tests: [tests/unit/test_logical_index_2d.py, tests/bdd/test_logical_index_2d_bdd.py]
 
+
+  - id: libs.type_predicates
+    layer: libs
+    name: class / islogical / isnumeric / ischar / iscell / isempty / any / all
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "logical results; any/all first non-singleton dim, dim arg, 'all' flag; NaN counts as true (#414)"
+    tests: [tests/unit/test_type_predicates.py]
 
   - id: libs.logical_true_false
     layer: libs
