@@ -613,8 +613,8 @@ features:
     name: "@name function handle"
     status: done
     depends_on: [lang.parser]
-    notes: "M2 C10; FuncHandleExpr + FunctionHandleValue (#276)"
-    tests: [tests/unit/test_cellfun.py]
+    notes: "M2 C10; FuncHandleExpr + FunctionHandleValue (#276); anonymous @(x) expr with value capture, calling handles in variables, @ display (#280)"
+    tests: [tests/unit/test_cellfun.py, tests/unit/test_anon_functions.py]
   - id: libs.cellfun
     layer: libs
     name: cellfun UniformOutput

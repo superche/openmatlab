@@ -158,6 +158,8 @@ class Evaluator:
             except Exception as e:
                 raise EvalError(f"function handle: undefined function '{expr.name}'") from e
             return FunctionHandleValue(name=expr.name, fn=fn)
+        if isinstance(expr, ast.AnonFuncExpr):
+            return self._make_anon(expr)
         if isinstance(expr, ast.EndExpr):
             if not self._end_stack:
                 raise EvalError("end outside of an indexing expression")
@@ -641,6 +643,28 @@ class Evaluator:
             self.workspace.set(name, val)
         return results[0]
 
+    def _make_anon(self, expr: ast.AnonFuncExpr):
+        """Anonymous function: snapshot visible variables now (MATLAB capture)."""
+        from openmatlab.runtime.function_handle import FunctionHandleValue
+
+        captured = {n: self.workspace.get(n) for n in self.workspace.names()}
+        params = tuple(expr.params)
+
+        def call(args, *, nargout: int = 1):
+            if len(args) > len(params):
+                raise EvalError("Too many input arguments.")
+            ws = Workspace()
+            for n, v in captured.items():
+                ws.set(n, v)
+            for n, v in zip(params, args):
+                ws.set(n, v)
+            ev = Evaluator(
+                workspace=ws, functions=self.functions, numerics=self.numerics, plots=self.plots
+            )
+            return (ev.eval_expr(expr.body),)
+
+        return FunctionHandleValue(name=expr.text, fn=call)
+
     @staticmethod
     def _is_bare_colon(expr: ast.Expr) -> bool:
         return isinstance(expr, ast.ColonExpr) and expr.start is None and expr.stop is None
@@ -650,9 +674,15 @@ class Evaluator:
         if results is None:
             target = self.eval_expr(target_expr)
             from openmatlab.runtime.cell_value import CellValue
+            from openmatlab.runtime.function_handle import FunctionHandleValue
 
             if isinstance(target, CellValue):
                 return self._eval_cell_paren_index(target, arg_exprs)
+            if isinstance(target, FunctionHandleValue):
+                outs = target.call(self._eval_call_args(arg_exprs), nargout=1)
+                if not outs:
+                    raise EvalError("function handle call returned no value")
+                return outs[0]
             target_a = self._require_array(target, "index")
             idxs = self._eval_subscripts(target_a, arg_exprs, label="index")
             out = self.numerics.index(target_a, idxs)

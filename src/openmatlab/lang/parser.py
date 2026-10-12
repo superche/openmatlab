@@ -29,6 +29,7 @@ from openmatlab.lang.ast_nodes import (
     CellLiteral,
     Name,
     EndExpr,
+    AnonFuncExpr,
     FuncHandleExpr,
     NumberLiteral,
     Program,
@@ -472,6 +473,30 @@ class Parser:
             return Name(id=tok.value)
         if tok.type == TokenType.AT:
             self.advance()
+            if self.match(TokenType.LPAREN):
+                params: List[str] = []
+                if self.current().type != TokenType.RPAREN:
+                    params = self._parse_name_list()
+                self.expect(TokenType.RPAREN)
+                saved, self._in_subscript = self._in_subscript, 0
+                start = self.pos
+                try:
+                    body = self.parse_expression()
+                finally:
+                    self._in_subscript = saved
+                src, prev_end = "", None
+                for t in self.tokens[start : self.pos]:
+                    piece = (
+                        ("'" + t.value + "'") if t.type == TokenType.CHAR
+                        else ('"' + t.value + '"') if t.type == TokenType.STRING
+                        else str(t.value)
+                    )
+                    if prev_end is not None and t.column > prev_end:
+                        src += " "  # keep source spacing (matters inside [ ])
+                    src += piece
+                    prev_end = t.column + len(piece)
+                text = "@(" + ",".join(params) + ")" + src
+                return AnonFuncExpr(params=tuple(params), body=body, text=text)
             name_tok = self.expect(TokenType.IDENT)
             return FuncHandleExpr(name=name_tok.value)
         if tok.type == TokenType.KW_END and self._in_subscript > 0:
