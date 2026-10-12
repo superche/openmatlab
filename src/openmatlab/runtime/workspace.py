@@ -35,6 +35,9 @@ class Workspace:
                 return frame[name]
         raise KeyError(name)
 
+    def __contains__(self, name: object) -> bool:
+        return any(name in frame for frame in self._frames)
+
     def set(self, name: str, value: Value) -> None:
         self._frames[-1][name] = value
 

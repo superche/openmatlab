@@ -783,3 +783,12 @@ test_cases:
     status: active
     env: unit
 
+
+  - id: tc.display_semantics
+    kind: unit
+    title: Display per statement (incl. blocks); ans only for non-assign expressions
+    features: [host.display_policy, runtime.evaluator]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_display_semantics.py
+    status: active
+    env: unit
