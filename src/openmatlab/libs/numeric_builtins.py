@@ -766,13 +766,21 @@ def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     elif b.ndim == 1:
         b = b.reshape(1, -1)
     rows, cols = b.shape[:2]
-    flat = np.asarray(b, dtype=np.float64).reshape(-1, order="F")
+    flat = np.asarray(b, dtype=complex if np.iscomplexobj(b) else np.float64).reshape(-1, order="F")
     if flat.size == 0:
         empty = NDArrayValue(np.zeros((1, 0) if rows == 1 else (0, 1), dtype=np.float64))
         if nargout <= 1:
             return (empty,)
         return (empty, empty, empty)
-    u, ia0, ic0 = np.unique(flat, return_index=True, return_inverse=True)
+    if np.iscomplexobj(b):  # MATLAB complex order: |z|, then angle (#452)
+        order = np.lexsort((np.angle(flat), np.abs(flat)))
+        srt = flat[order]
+        first = np.r_[True, srt[1:] != srt[:-1]]
+        u, ia0 = srt[first], order[first]
+        ic0 = np.empty(flat.size, dtype=np.int64)
+        ic0[order] = np.cumsum(first) - 1
+    else:
+        u, ia0, ic0 = np.unique(flat, return_index=True, return_inverse=True)
     if rows == 1 and cols >= 1:
         C = NDArrayValue(u.reshape(1, -1))
     else:
@@ -839,6 +847,12 @@ def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     def _vec_sorted(v: np.ndarray) -> bool:
         if v.size <= 1:
             return True
+        if np.iscomplexobj(v):  # MATLAB complex order: |z|, then angle (#452)
+            if np.any(np.isnan(v)):
+                return False
+            k = list(zip(np.abs(v), np.angle(v)))
+            pairs = zip(k[:-1], k[1:])
+            return all((a >= c) if descend else (a <= c) for a, c in pairs)
         d = np.diff(v.astype(np.float64))
         if np.any(np.isnan(d)):
             return False
