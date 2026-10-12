@@ -42,3 +42,19 @@ def test_c02_conformance_script():
     ReplSession(s).run_line('run("tests/conformance/scripts/c02_indexing.m");')
     A = np.asarray(s.workspace.get("A").backend_buffer())
     assert A.tolist() == [[7, 2, 3], [8, 0, 9]]
+
+
+@pytest.mark.parametrize(
+    "src, shape",
+    [
+        ("A = [1 2; 3 4];", (4, 1)),
+        ("A = [1 2 3];", (3, 1)),  # row source still yields a column
+        ("A = [1; 2; 3];", (3, 1)),
+        ("A = 7;", (1, 1)),
+        ("A = zeros(0, 3);", (0, 1)),
+        ("A = zeros(1, 0);", (0, 1)),
+    ],
+)
+def test_colon_linear_is_always_column(src, shape):
+    """Issue #208: A(:) is numel(A)×1 regardless of A's orientation/emptiness."""
+    assert _run(src + " B = A(:);", "B").shape == shape

@@ -306,7 +306,7 @@ features:
     name: bare colon A(i,:) / A(:)
     status: done
     depends_on: [lang.parser, runtime.array_assign_range, lang.index_end]
-    notes: "M2 C02 met; ColonExpr(None,None) → 1:dim (#204)"
+    notes: "M2 C02 met; ColonExpr(None,None) → 1:dim (#204); A(:) always numel×1 column incl. row/empty sources (#208)"
     tests: [tests/unit/test_bare_colon.py, tests/bdd/test_bare_colon_bdd.py, tests/conformance/test_m2_conformance.py]
   - id: libs.sort_find_flags
     layer: libs
