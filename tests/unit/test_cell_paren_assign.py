@@ -29,10 +29,14 @@ def test_paren_assign_2sub():
 
 
 def test_paren_delete_2sub():
+    # MATLAB: 2-subscript delete must remove whole rows/columns (#312)
     s = Session.create_default()
-    ReplSession(s).run_line("c = {1, 2; 3, 4}; c(1, 2) = [];")
-    c = s.workspace.get("c")
-    assert c.numel() == 3 and c.shape == (3, 1)
+    ReplSession(s).run_line("c = {1, 2; 3, 4}; c(1, :) = [];")
+    assert s.workspace.get("c").shape == (1, 2)
+    ReplSession(s).run_line("d = {1, 2; 3, 4}; d(:, 2) = [];")
+    assert s.workspace.get("d").shape == (2, 1)
+    with pytest.raises(EvalError, match="null assignment can have only one non-colon index"):
+        ReplSession(s).run_line("e = {1, 2; 3, 4}; e(1, 2) = [];")
 
 
 def test_paren_assign_rejects_numeric():

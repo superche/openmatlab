@@ -20,11 +20,12 @@ def test_vector_expr_and_mask():
     assert np.asarray(s.workspace.get("v").backend_buffer()).tolist() == [[1.0, 2.0]]
 
 
-def test_matrix_becomes_column():
+def test_matrix_becomes_row():
+    # MATLAB: linear delete from a matrix reshapes the rest to a row vector (#312)
     s = Session.create_default()
     ReplSession(s).run_line("A = [1 2; 3 4]; A(A > 2) = [];")
     A = np.asarray(s.workspace.get("A").backend_buffer())
-    assert A.shape == (2, 1) and A.tolist() == [[1.0], [2.0]]
+    assert A.shape == (1, 2) and A.tolist() == [[1.0, 2.0]]
 
 
 def test_c06_includes_logical():

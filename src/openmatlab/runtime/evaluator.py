@@ -303,6 +303,9 @@ class Evaluator:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
         except Exception as exc:  # NumericsError
             raise EvalError(f"array assign: {exc}") from exc
+        ix = stmt.target.indices
+        if len(ix) == 1 and self._is_bare_colon(ix[0]) and rhs.numel() == 0:
+            new_arr = self.numerics.from_nested([])  # A(:) = [] → 0x0 (MATLAB)
         self.workspace.set(name, new_arr)
         return rhs
 
@@ -392,24 +395,32 @@ class Evaluator:
         if not (1 <= len(idx_exprs) <= 2):
             raise EvalError("cell () delete: only 1 or 2 subscripts")
         rows, cols = cell.shape
-        if len(idx_exprs) == 1:
-            drop = set(self._cell_linear_delete_positions(cell, idx_exprs[0]))
-        else:
-            i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () delete")
-            drop = {i0 + j0 * rows}  # column-major linear 0-based
+        if len(idx_exprs) == 2:
+            # MATLAB: only whole rows c(i,:)=[] or whole columns c(:,j)=[]
+            ri, cj = self._cell_subscript_lists(cell, idx_exprs, "cell () delete")
+            if sorted(set(ri)) == list(range(rows)):
+                keep = [j for j in range(cols) if j not in set(cj)]
+                new_rows = tuple(tuple(cell.get(i, j) for j in keep) for i in range(rows))
+            elif sorted(set(cj)) == list(range(cols)):
+                keep = [i for i in range(rows) if i not in set(ri)]
+                new_rows = tuple(tuple(cell.get(i, j) for j in range(cols)) for i in keep)
+            else:
+                raise EvalError("A null assignment can have only one non-colon index.")
+            self.workspace.set(name, CellValue(rows=new_rows))
+            return rhs_val
+        drop = set(self._cell_linear_delete_positions(cell, idx_exprs[0]))
         flat = [
             cell.get(i, j)
             for j in range(cols)
             for i in range(rows)
             if i + j * rows not in drop
         ]
-        if not flat:
-            new_cell = CellValue.empty(0, 0)
-        elif rows == 1 and cols >= 1:
-            new_cell = CellValue(rows=(tuple(flat),))
-        else:
-            # column vector residual (incl. former 2-D)
+        if cols == 1 and rows != 1:
+            # column stays column (0x1 is not representable; empty → 0x0)
             new_cell = CellValue(rows=tuple((v,) for v in flat))
+        else:
+            # row vector or matrix → 1xN row (MATLAB linear delete)
+            new_cell = CellValue(rows=(tuple(flat),))
         self.workspace.set(name, new_cell)
         return rhs_val
 
