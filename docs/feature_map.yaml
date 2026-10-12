@@ -549,8 +549,8 @@ features:
     name: size / numel / length builtins
     status: done
     depends_on: [runtime.function_resolver]
-    notes: "size(A), size(A,d), [m,n]=size(A); 2-D only (#44) [done per ITER-047]"
-    tests: [tests/unit/test_elmat_builtins.py]
+    notes: "size(A), size(A,d), [m,n]=size(A); 2-D only (#44) [done per ITER-047]; cell/char/handle inputs (#423)"
+    tests: [tests/unit/test_elmat_builtins.py, tests/unit/test_size_any_value.py]
 
   - id: libs.reductions
     layer: libs
