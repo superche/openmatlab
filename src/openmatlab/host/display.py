@@ -108,13 +108,21 @@ def _format_value(value: object) -> str:
             r, c = value.shape
             if r == 0 and c == 0:
                 return "{}  (empty cell)"
-            lines = [f"{{{r}x{c} cell}}"]
+            full = value.full_shape
+            lines = ["{" + "x".join(str(d) for d in full) + " cell}"]
+            n = full[1]
             for i in range(r):
                 for j in range(c):
                     inner = _cell_int_summary(value.get(i, j)) or _format_value(value.get(i, j))
                     # indent multi-line
                     inner_lines = inner.splitlines() or [inner]
-                    lines.append(f"  ({i+1},{j+1}) = {inner_lines[0]}")
+                    sub = [i + 1, j % n + 1] if len(full) > 2 else [i + 1, j + 1]
+                    if len(full) > 2:  # N-D cell labels (i,j,k,...) (#444)
+                        p = j // n
+                        for d in full[2:]:
+                            sub.append(p % d + 1)
+                            p //= d
+                    lines.append(f"  ({','.join(map(str, sub))}) = {inner_lines[0]}")
                     for extra in inner_lines[1:]:
                         lines.append(f"           {extra}")
             return "\n".join(lines)

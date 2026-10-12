@@ -274,6 +274,9 @@ class Evaluator:
                 f"cell index: expected cell, got {type(target).__name__}"
             )
         idxs = list(expr.indices)
+        if len(idxs) > 2:
+            target, _ = self._cell_page(target, idxs, "cell index")
+            idxs = idxs[:2]
         if len(idxs) == 1:
             ri, cj = self._cell_subscript_lists(target, idxs, "cell index")
             # linear: ri/cj are paired positions
@@ -497,6 +500,12 @@ class Evaluator:
                 f"cell assign: expected cell, got {type(cell).__name__}"
             )
         value = self.eval_expr(stmt.value)
+        idxs = list(stmt.target.indices)
+        if len(idxs) > 2:  # N-D cell content assign, in bounds (#444)
+            page, off = self._cell_page(cell, idxs, "cell assign")
+            i0, j0 = self._cell_subscripts(page, idxs[:2], "cell assign")
+            self.workspace.set(name, cell.with_set(i0, j0 + off * page.shape[1], value))
+            return value
         cell = self._cell_grow_for_assign(cell, list(stmt.target.indices))
         i0, j0 = self._cell_subscripts(
             cell, list(stmt.target.indices), "cell assign"
@@ -615,6 +624,36 @@ class Evaluator:
             cj = _eval_dim(idx_exprs[1], cols)
             return ri, cj
         raise EvalError(f"{label}: only 1 or 2 subscripts supported")
+
+    def _cell_page(self, cell, idx_exprs: list, label: str):
+        """For c{i,j,k,...}: the 2-D page selected by scalar trailing subscripts (#444).
+
+        Returns (page CellValue, 0-based page offset). The last subscript folds any
+        remaining dims (MATLAB). Growth of N-D cells is not supported.
+        """
+        import numpy as np
+
+        full = tuple(cell.full_shape) + (1,) * max(0, len(idx_exprs) - len(cell.full_shape))
+        trail = full[2:]
+        off, stride = 0, 1
+        for d, ex in enumerate(idx_exprs[2:]):
+            last = d == len(idx_exprs) - 3
+            extent = int(np.prod(trail[d:])) if last else trail[d]
+            self._end_stack.append(float(extent))
+            try:
+                v = np.asarray(self._require_array(self.eval_expr(ex), label).backend_buffer())
+            finally:
+                self._end_stack.pop()
+            if v.size != 1 or float(v.reshape(-1)[0]) != int(v.reshape(-1)[0].real) or v.reshape(-1)[0] < 1:
+                raise EvalError(f"{label}: subscripts beyond the 2nd must be positive integer scalars")
+            k = int(v.reshape(-1)[0].real)
+            if k > extent:
+                raise EvalError(
+                    f"Index in position {d + 3} exceeds array bounds (must not exceed {extent})."
+                )
+            off += (k - 1) * stride
+            stride *= extent
+        return cell.page(off), off
 
     def _cell_subscripts(
         self, cell: "object", idx_exprs: list, label: str
@@ -773,6 +812,9 @@ class Evaluator:
 
         assert isinstance(cell, CellValue)
         idxs = list(arg_exprs)
+        if len(idxs) > 2:
+            cell, _ = self._cell_page(cell, idxs, "cell () index")
+            idxs = idxs[:2]
         if len(idxs) == 1:
             ri, cj = self._cell_subscript_lists(cell, idxs, "cell () index")
             # linear positions → column cell of 1×1 contents wrappers? MATLAB: c(1:2) is 1×2 or 2×1 subcell of cells
