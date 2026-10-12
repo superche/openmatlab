@@ -709,6 +709,22 @@ features:
     tests: [tests/unit/test_logical_pack.py, tests/unit/test_logical_promotion.py]
 
 
+  - id: lang.for_columns
+    layer: lang
+    name: for-loop iterates columns of A(:,:)
+    status: done
+    depends_on: [lang.parser]
+    notes: "c = A(:,k) per column; row vectors give scalars; N-D flattened to A(:,:); zeros(0,n) runs n times (#471)"
+    tests: [tests/unit/test_for_columns_isequal.py]
+
+  - id: libs.isequal
+    layer: libs
+    name: isequal
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "class-insensitive size+value equality, NaN~=NaN, recursive over cells, variadic (#472)"
+    tests: [tests/unit/test_for_columns_isequal.py]
+
   - id: libs.eps_realmax_realmin
     layer: libs
     name: eps realmax realmin
