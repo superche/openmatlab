@@ -58,6 +58,9 @@ takes the **first pending row** in this table (p0 before p1, then table order).
 `libs.elmat_constructors`, `libs.reductions`, `libs.elfun`, plus the feature_ids
 introduced for C02/C04/C06/C07/C08/C09/C10/C11 when their epics land.
 
+Expected JSON may carry `"<var>:size": [r, c]` keys for direct shape asserts
+(used by C06/C08 for cells, #302).
+
 ## Residual priority (open Issues on M2)
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
