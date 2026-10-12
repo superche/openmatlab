@@ -26,7 +26,7 @@ What works today:
 - Plot MVP: builtin `plot` / `show`/`drawnow` → `PlotSurface` → Matplotlib (**Agg** default; interactive via env)
 - Plugin host (M-plugins): `openmatlab.extensions` loads community manifests, slots, activation, Host API; sample `demos/plugins/community.signal`; CLI `openmatlab plugins` / `desktop`
 - Domain business-conformance (milestone/5): reference vectors for `hamming`/`rectwin`/`blackman` + PluginHost `which` gate
-- MATLAB-aligned Workbench (milestone/6): `openmatlab workbench` Host layout + Command Window (editor/workspace/cwd/figures stub)
+- MATLAB-aligned Workbench (milestone/6): `openmatlab workbench` Host layout + Command Window + Editor + Workspace + Current Folder + Figures
 - `.m` functions: `ToolboxPath.find_mfile` → `FunctionResolver` load/cache → call from evaluator
 - `while`/`break`/`continue`; `return` in .m functions/scripts (toplevel EvalError); `switch`/`case`/`otherwise` (no fall-through); script `.m` via `load_mfile`/`eval_script` + language `run("…")`
 - Single-quoted char literals (context-sensitive vs transpose) + cell `{…}` / `c{i}` / `c{i}=v` / `c(i)` sub-cell / `cell(m,n)`
@@ -50,7 +50,7 @@ src/openmatlab/
     display.py      DisplayPolicy (semicolon suppress, ans, pretty-print)
     plot_surface.py PlotSurface → graphics backend
     desktop.py      Minimal tk chrome for plugin panels (Epic #349 / #368)
-    workbench.py    MATLAB-aligned Host layout + Command Window (Epic #372)
+    workbench.py    MATLAB-aligned Host layout + five panels (Epic #372)
   lang/           # language front-end
     tokens.py       TokenType (matrix + KW_FUNCTION / KW_END)
     ast_nodes.py    AST incl. MatrixLiteral / Index / Colon / FunctionDef

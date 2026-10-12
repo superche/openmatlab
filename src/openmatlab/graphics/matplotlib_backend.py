@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Tuple
 
 from openmatlab.runtime.value import Array, Value
 
@@ -32,6 +32,7 @@ class MatplotlibGraphicsBackend:
         import matplotlib.pyplot as plt
 
         self._plt = plt
+        # 1-based handle N lives at index N-1; None = closed slot
         self._figures: List[Any] = []
 
     def plot(self, *args: Value, **kwargs: Any) -> Any:
@@ -54,23 +55,74 @@ class MatplotlibGraphicsBackend:
                 **{k: v for k, v in kwargs.items() if k in ("label", "color")},
             )
         self._figures.append(fig)
-        return float(len(self._figures))
+        handle = float(len(self._figures))
+        try:
+            fig.canvas.manager.set_window_title(f"Figure {int(handle)}")
+        except Exception:
+            pass
+        return handle
 
     def close(self, handle: Optional[Any] = None) -> None:
         if handle is None:
             for fig in self._figures:
-                self._plt.close(fig)
+                if fig is not None:
+                    self._plt.close(fig)
             self._figures.clear()
             return
         idx = int(float(handle)) - 1
-        if 0 <= idx < len(self._figures):
+        if 0 <= idx < len(self._figures) and self._figures[idx] is not None:
             self._plt.close(self._figures[idx])
+            self._figures[idx] = None
 
     def show(self) -> None:
         """Block/show windows when interactive; no-op under Agg (CI)."""
-        if self._interactive and self._figures:
+        if self._interactive and any(f is not None for f in self._figures):
             self._plt.show()
         return None
+
+    def list_figures(self) -> List[Tuple[float, str]]:
+        """Open figures as (1-based handle, title)."""
+        out: List[Tuple[float, str]] = []
+        for i, fig in enumerate(self._figures):
+            if fig is None:
+                continue
+            try:
+                if not self._plt.fignum_exists(fig.number):
+                    self._figures[i] = None
+                    continue
+            except Exception:
+                pass
+            handle = float(i + 1)
+            title = f"Figure {int(handle)}"
+            try:
+                mgr = getattr(fig.canvas, "manager", None)
+                if mgr is not None and hasattr(mgr, "get_window_title"):
+                    t = mgr.get_window_title()
+                    if t:
+                        title = str(t)
+            except Exception:
+                pass
+            out.append((handle, title))
+        return out
+
+    def focus(self, handle: Any) -> None:
+        """Make figure current (and raise window when interactive)."""
+        idx = int(float(handle)) - 1
+        if idx < 0 or idx >= len(self._figures) or self._figures[idx] is None:
+            raise GraphicsError(f"focus: no open figure {handle}")
+        fig = self._figures[idx]
+        self._plt.figure(fig.number)
+        if self._interactive:
+            try:
+                mgr = getattr(fig.canvas, "manager", None)
+                if mgr is not None and hasattr(mgr, "window"):
+                    win = mgr.window
+                    if hasattr(win, "lift"):
+                        win.lift()
+                    elif hasattr(win, "deiconify"):
+                        win.deiconify()
+            except Exception:
+                pass
 
     @property
     def interactive(self) -> bool:
@@ -78,4 +130,7 @@ class MatplotlibGraphicsBackend:
 
     @property
     def last_figure(self) -> Any:
-        return self._figures[-1] if self._figures else None
+        for fig in reversed(self._figures):
+            if fig is not None:
+                return fig
+        return None

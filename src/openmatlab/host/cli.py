@@ -263,7 +263,7 @@ def _cmd_desktop(args: argparse.Namespace) -> int:
 
 
 def _cmd_workbench(args: argparse.Namespace) -> int:
-    """MATLAB-aligned Workbench Host product (layout + Command Window)."""
+    """MATLAB-aligned Workbench Host product (layout + host panels)."""
     from openmatlab.host.workbench import Workbench
 
     paths = list(args.path) if args.path else []
@@ -403,7 +403,7 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     p_wb = sub.add_parser(
         "workbench",
-        help="MATLAB-aligned Workbench: Host layout + Command Window (plugin slots)",
+        help="MATLAB-aligned Workbench: Host layout + CW/editor/workspace/folder/figures",
     )
     p_wb.add_argument(
         "--path",
