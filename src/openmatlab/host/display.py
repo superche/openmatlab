@@ -76,6 +76,10 @@ def _format_value(value: object) -> str:
             return "\n".join(lines)
     except Exception:
         pass
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    if isinstance(value, FunctionHandleValue):
+        return value.name if value.name.startswith("@") else "@" + value.name
     try:
         from openmatlab.runtime.char_value import CharValue
 

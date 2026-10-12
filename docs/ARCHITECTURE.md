@@ -126,9 +126,9 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 logical `~ & | && ||` (#413), `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` handles (see "What works today").
+Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280) (see "What works today").
 
-**Not yet:** anonymous `@(x) expr` (#280), `string` class (#78), nested functions (#141), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
+**Not yet:** `string` class (#78), nested functions (#141), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
 
 ## Non-goals
 

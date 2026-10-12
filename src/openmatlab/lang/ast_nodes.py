@@ -112,6 +112,15 @@ class FuncHandleExpr(AstNode):
     name: str
 
 
+@dataclass(frozen=True)
+class AnonFuncExpr(AstNode):
+    """@(params) body — anonymous function; captures variables at creation."""
+
+    params: Sequence[str]
+    body: "Expr"
+    text: str = ""  # display form, e.g. "@(x)x.^2+1"
+
+
 Expr = Union[
     NumberLiteral,
     StringLiteral,
