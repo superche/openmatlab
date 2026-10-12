@@ -1053,22 +1053,38 @@ def _true_false(name: str, fill: bool):
 
 
 
+def _float_class(name: str, args) -> type:
+    """'double' (default) or 'single' class argument for eps/realmax/realmin (#461)."""
+    if not args:
+        return np.float64
+    f = _char_flag(args[0]) if not isinstance(args[0], Array) or hasattr(args[0], "text") else None
+    if f in ("double", "single"):
+        return np.float32 if f == "single" else np.float64
+    raise BuiltinError(f"{name}: class must be 'double' or 'single'")
+
+
 def _eps(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("eps", args, 0, 1)
-    if not args:
+    if args and isinstance(args[0], Array) and not hasattr(args[0], "text"):
+        b = np.asarray(args[0].backend_buffer())
+        if b.dtype in (np.float32, np.complex64):
+            return (NDArrayValue(np.spacing(np.abs(b).astype(np.float32)).reshape(b.shape or (1, 1))),)
+        # eps(x) relative — MVP: same as eps for any double x
         return (_wrap(np.finfo(np.float64).eps),)
-    # eps(x) relative — MVP: same as eps for any x
-    return (_wrap(np.finfo(np.float64).eps),)
+    dt = _float_class("eps", args)
+    return (NDArrayValue(np.array([[np.finfo(dt).eps]], dtype=dt)),)
 
 
 def _realmax(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    _arity("realmax", args, 0, 0)
-    return (_wrap(np.finfo(np.float64).max),)
+    _arity("realmax", args, 0, 1)
+    dt = _float_class("realmax", args)
+    return (NDArrayValue(np.array([[np.finfo(dt).max]], dtype=dt)),)
 
 
 def _realmin(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    _arity("realmin", args, 0, 0)
-    return (_wrap(np.finfo(np.float64).tiny),)
+    _arity("realmin", args, 0, 1)
+    dt = _float_class("realmin", args)
+    return (NDArrayValue(np.array([[np.finfo(dt).tiny]], dtype=dt)),)
 
 
 

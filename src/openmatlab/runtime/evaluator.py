@@ -1118,6 +1118,11 @@ class Evaluator:
             out = saturate(np.asarray(out, dtype=np.float64), int_dt)
         elif out.dtype != np.bool_ and not np.iscomplexobj(out):
             out = out.astype(np.float64)
+        if int_dt is None and any(
+            np.asarray(v.backend_buffer()).dtype in (np.float32, np.complex64)
+            for r in rows for v in r if hasattr(v, "backend_buffer")
+        ):  # [single double] is single (#461)
+            out = out.astype(np.complex64 if np.iscomplexobj(out) else np.float32)
         return NDArrayValue(np.array(out))
 
     def _cat_nd(self, parts: list, *, axis: int):
@@ -1323,7 +1328,7 @@ class Evaluator:
         import numpy as np
 
         raw = np.asarray(iterable.backend_buffer())
-        keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw)
+        keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw) or raw.dtype == np.float32
         if not keep:
             raw = np.asarray(raw, dtype=float)
         if raw.ndim == 0:
