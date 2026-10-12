@@ -389,14 +389,18 @@ class Evaluator:
             )
         if not (1 <= len(idx_exprs) <= 2):
             raise EvalError("cell () delete: only 1 or 2 subscripts")
-        i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () delete")
         rows, cols = cell.shape
-        flat: list = []
-        for j in range(cols):
-            for i in range(rows):
-                flat.append(cell.get(i, j))
-        drop = i0 + j0 * rows  # column-major linear 0-based
-        del flat[drop]
+        if len(idx_exprs) == 1:
+            drop = set(self._cell_linear_delete_positions(cell, idx_exprs[0]))
+        else:
+            i0, j0 = self._cell_subscripts(cell, idx_exprs, "cell () delete")
+            drop = {i0 + j0 * rows}  # column-major linear 0-based
+        flat = [
+            cell.get(i, j)
+            for j in range(cols)
+            for i in range(rows)
+            if i + j * rows not in drop
+        ]
         if not flat:
             new_cell = CellValue.empty(0, 0)
         elif rows == 1 and cols >= 1:
@@ -406,6 +410,31 @@ class Evaluator:
             new_cell = CellValue(rows=tuple((v,) for v in flat))
         self.workspace.set(name, new_cell)
         return rhs_val
+
+    def _cell_linear_delete_positions(self, cell, aexpr: ast.Expr) -> list:
+        """0-based linear positions for c(idx)=[]: numeric indices or logical mask."""
+        import numpy as np
+
+        n = cell.numel()
+        if self._is_bare_colon(aexpr):
+            return list(range(n))
+        self._end_stack.append(float(n))
+        try:
+            v = self._require_array(self.eval_expr(aexpr), "cell () delete")
+        finally:
+            self._end_stack.pop()
+        buf = np.asarray(v.backend_buffer())
+        if buf.dtype == np.bool_:
+            mask = buf.reshape(-1, order="F")
+            if mask.size > n and mask[n:].any():
+                raise EvalError(f"cell () delete: index exceeds {n}")
+            return [int(k) for k in np.flatnonzero(mask[:n])]
+        flat = buf.astype(np.float64).reshape(-1, order="F")
+        if np.any(flat != np.floor(flat)) or np.any(flat < 1):
+            raise EvalError("cell () delete: indices must be positive integers")
+        if np.any(flat > n):
+            raise EvalError(f"cell () delete: index exceeds {n}")
+        return [int(k) - 1 for k in flat]
 
     def _eval_cell_assign(self, stmt: "ast.CellAssign") -> Value:
         from openmatlab.runtime.cell_value import CellValue
