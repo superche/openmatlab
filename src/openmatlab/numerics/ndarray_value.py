@@ -26,6 +26,10 @@ class NDArrayValue:
     def matlab_class(self) -> str:
         if self._data.dtype == np.bool_ or np.issubdtype(self._data.dtype, np.bool_):
             return "logical"
+        if np.issubdtype(self._data.dtype, np.integer):
+            from openmatlab.numerics.intclass import class_name
+
+            return class_name(self._data.dtype) or "double"
         return "double"
 
     @property

@@ -469,7 +469,7 @@ class Parser:
             return NumberLiteral(value=float(tok.value))
         if tok.type in (TokenType.STRING, TokenType.CHAR):
             self.advance()
-            return StringLiteral(value=tok.value)
+            return StringLiteral(value=tok.value, is_string=tok.type == TokenType.STRING)
         if tok.type == TokenType.IDENT:
             self.advance()
             return Name(id=tok.value)

@@ -110,6 +110,8 @@ def _format_value(value: object) -> str:
     try:
         from openmatlab.runtime.char_value import CharValue
 
+        if getattr(value, "is_string", False):
+            return f'"{value.text}"'
         if isinstance(value, CharValue):
             return "\n".join(value.rows)
     except Exception:
@@ -158,6 +160,14 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
         return "[](" + "x".join(str(d) for d in a.shape) + ")"
     if np.iscomplexobj(a):
         return _format_complex(a, terminal_width)
+    int_class = np.issubdtype(a.dtype, np.integer)
+    if int_class:
+        # MATLAB integer classes: exact digits, 2-space gutter (#72)
+        cells = [[str(int(v)) for v in row] for row in a]
+        if a.size == 1:
+            return cells[0][0]
+        width = max(len(c) for row in cells for c in row) + 2
+        return _page_columns(cells, width, terminal_width)
     a = a.astype(np.float64)
     finite = a[np.isfinite(a)]
     integer = bool(np.all(finite == np.floor(finite))) and (
