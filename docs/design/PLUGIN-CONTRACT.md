@@ -164,9 +164,14 @@ discover → validate manifest → register contributes (declarative)
 | `onStartupFinished` | Host finished initial wiring (Session, path, UI shell if any) |
 | `onCommand:<commandId>` | That command is first invoked |
 | `onPathExists:<glob>` | A file matching glob appears on ToolboxPath / cwd (best-effort) |
-| `workspaceHasMatlabFiles` | (used in `when` clauses) any `*.m` on path / workspace roots |
+| `workspaceHasMatlabFiles` | Activation **or** `when`: any `*.m` on path / workspace roots |
 
 Unknown predicates → warning; plugin stays inactive until a known one fires.
+
+**Path/workspace activation (v0):** `PluginHost.poll_path_activation()` scans
+cwd + ToolboxPath (best-effort; also runs at the end of `activate_on_startup`).
+It is a poll/hook, not a full filesystem watcher. Call it again after
+`addpath` or workspace changes when those predicates matter.
 
 ### `ExtensionContext` (passed to `activate`)
 
@@ -204,7 +209,7 @@ from openmatlab.extensions import commands, window, workspace, path as om_path
 | `window.register_panel(id, factory)` | Attach panel widget/factory to `panels` slot |
 | `workspace.get_configuration(section)` | Read contributed settings |
 | `om_path.addpath(entry)` / `om_path.which(name)` | Thin wrappers over `ToolboxPath` |
-| `extensions.get_extension(id)` | Inspect another plugin’s public exports (optional) |
+| `extensions.get_extension(id)` | Inspect another plugin’s metadata / public exports; missing id → `KeyError`; faulted plugins returned flagged (`is_active=False`, `error` set) |
 
 Implementation lives under `src/openmatlab/extensions/` (new package). Plugins
 must not import private `openmatlab.runtime._*` or poke `Session` internals
@@ -271,9 +276,37 @@ Plugins SHOULD declare the narrowest range they test against.
 2. Declare `engines.openmatlab` and `contributes`.
 3. Implement `activate(context)`; register command handlers.
 4. Put `.m` helpers under a contributed `pathEntries` folder if needed.
-5. Do **not** vendor proprietary MathWorks code; clean-room / public domain /
+5. Optional **`contributes.builtins`**: each entry is `{ name, factory }` where
+   `factory` is `module:attr` relative to the plugin root (e.g.
+   `extension:make_fir1`). The resolved attr must be a **zero-arg factory** that
+   returns a `CallableFunction` (`fn(args, *, nargout=1) -> Sequence[Value]`).
+   The host calls the factory at load time and registers the result on
+   `FunctionResolver.builtins` (requires a Session / resolver bound to the host).
+6. Do **not** vendor proprietary MathWorks code; clean-room / public domain /
    your own MIT/Apache/etc. only.
-6. Test against the Host API version you declare.
+7. Test against the Host API version you declare.
+
+---
+
+
+## `when` expression subset (v0)
+
+Menu and panel contributions may carry an optional `when` string. The host
+evaluates a **documented subset** (no general expression language yet):
+
+| Expression | Meaning |
+|------------|---------|
+| omitted / empty / `true` | Always contribute / show |
+| `false` | Never contribute / show |
+| `workspaceHasMatlabFiles` | Any `*.m` under cwd or ToolboxPath roots |
+
+Unknown identifiers → load/list **warning**, treat as **false**. Boolean
+combinations (`&&` / `||` / `!`) are **deferred**.
+
+Host helpers: `PluginHost.list_menus()` / `list_panel_contributions()` apply
+this filter. The minimal desktop chrome (`openmatlab desktop`) already renders
+real panel widgets via `window.register_panel` (see #368); `when` gates which
+declarative panel/menu rows are considered active.
 
 ---
 
@@ -296,6 +329,7 @@ src/openmatlab/extensions/
   manifest.py          # load/validate plugin.yaml | json
   slots.py             # Slot registry
   activation.py        # predicates + lifecycle
+  when.py              # menu/panel when subset
   context.py           # ExtensionContext
   discovery.py         # path + entry_points
   api/
@@ -303,6 +337,7 @@ src/openmatlab/extensions/
     window.py
     workspace.py
     path.py
+    extensions.py      # get_extension(id)
 ```
 
 Exact module split may vary; public names above are the contract.

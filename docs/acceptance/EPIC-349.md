@@ -123,10 +123,10 @@ Packages: host · lang · runtime · numerics · graphics · libs · extensions 
 
 | Issue | Topic |
 |-------|-------|
-| [#359](https://github.com/superche/openmatlab/issues/359) | Wire `contributes.builtins` factory → FunctionResolver |
-| [#360](https://github.com/superche/openmatlab/issues/360) | Activate `onPathExists` / `workspaceHasMatlabFiles` |
-| [#361](https://github.com/superche/openmatlab/issues/361) | Host API `extensions.get_extension(id)` |
-| [#362](https://github.com/superche/openmatlab/issues/362) | `when` clauses + richer UI panels (partially demo'd by #368; `when` still deferred) |
+| [#359](https://github.com/superche/openmatlab/issues/359) | Wire `contributes.builtins` factory → FunctionResolver — **done** (this residual PR) |
+| [#360](https://github.com/superche/openmatlab/issues/360) | Activate `onPathExists` / `workspaceHasMatlabFiles` — **done** |
+| [#361](https://github.com/superche/openmatlab/issues/361) | Host API `extensions.get_extension(id)` — **done** |
+| [#362](https://github.com/superche/openmatlab/issues/362) | `when` subset + richer UI panels — **done** (`when` documented+evaluated; panel chrome via #368) |
 | [#367](https://github.com/superche/openmatlab/issues/367) | Real community toolbox proof *(this package)* |
 | [#368](https://github.com/superche/openmatlab/issues/368) | Minimal desktop panel *(this package)* |
 

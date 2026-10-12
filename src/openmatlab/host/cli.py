@@ -263,13 +263,14 @@ def _cmd_desktop(args: argparse.Namespace) -> int:
 
 
 def _cmd_workbench(args: argparse.Namespace) -> int:
-    """MATLAB-aligned Workbench Host product (layout + Command Window)."""
+    """MATLAB-aligned Workbench Host product (layout + host panels)."""
     from openmatlab.host.workbench import Workbench
 
     paths = list(args.path) if args.path else []
     wb = Workbench.create(
         plugin_paths=paths or None,
         activate_plugins=bool(paths),
+        cwd=args.cwd,
     )
     if args.list_only:
         print(wb.list_regions_table())
@@ -403,7 +404,7 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     p_wb = sub.add_parser(
         "workbench",
-        help="MATLAB-aligned Workbench: Host layout + Command Window (plugin slots)",
+        help="MATLAB-aligned Workbench: Host layout + CW/editor/workspace/folder/figures",
     )
     p_wb.add_argument(
         "--path",
@@ -425,11 +426,17 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Headless Command Window: evaluate CODE and print display capture",
     )
     p_wb.add_argument(
+        "--cwd",
+        default=None,
+        metavar="DIR",
+        help="Initial Current Folder directory",
+    )
+    p_wb.add_argument(
         "--demo-ms",
         type=int,
         default=None,
         metavar="MS",
-        help="Auto-close tk workbench after MS milliseconds",
+        help="Auto-close tk workbench after MS milliseconds (scripted walkthrough)",
     )
     p_wb.set_defaults(func=_cmd_workbench)
 

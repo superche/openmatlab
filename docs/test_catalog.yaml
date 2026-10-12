@@ -701,6 +701,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.extensions_residuals
+    kind: unit
+    title: plugin residuals builtins path get_extension when
+    features: [host.extensions.activation, host.extensions.api]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_residuals_359_362.py
+    status: active
+    env: unit
+
   - id: tc.extensions_discovery
     kind: unit
     title: plugin path and entry point discovery
@@ -748,8 +757,14 @@ test_cases:
 
   - id: tc.workbench_shell
     kind: unit
-    title: Workbench host layout regions + CLI list
-    features: [host.workbench.shell, host.workbench.command_window]
+    title: Workbench host layout regions + panels + CLI list
+    features:
+      - host.workbench.shell
+      - host.workbench.command_window
+      - host.workbench.editor
+      - host.workbench.workspace_browser
+      - host.workbench.current_folder
+      - host.workbench.figures
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_workbench.py
     status: active
@@ -757,8 +772,12 @@ test_cases:
 
   - id: tc.workbench_bdd
     kind: unit
-    title: Workbench Gherkin smoke
-    features: [host.workbench.shell, host.workbench.command_window]
+    title: Workbench Gherkin smoke (regions, CW, workspace, editor)
+    features:
+      - host.workbench.shell
+      - host.workbench.command_window
+      - host.workbench.editor
+      - host.workbench.workspace_browser
     use_cases: [uc.matrix_first_repl]
     impl: tests/bdd/test_workbench_bdd.py
     status: active
