@@ -71,6 +71,11 @@ class NumPyArrayBackend:
         try:
             x, y = self._num(aa.backend_buffer()), self._num(bb.backend_buffer())
             # scalar * matrix is element-wise scaling in MATLAB
+            if x.size != 1 and y.size != 1 and (x.ndim > 2 or y.ndim > 2):
+                raise NumericsError(
+                    "Arguments must be 2-D, or at least one argument must be scalar. "
+                    "Use TIMES (.*) for elementwise multiplication."
+                )
             out = x * y if (x.size == 1 or y.size == 1) else x @ y
         except ValueError as exc:
             raise NumericsError(f"matmul: {exc}") from exc
@@ -110,6 +115,8 @@ class NumPyArrayBackend:
     def transpose(self, a: Array, *, conjugate: bool = True) -> Array:
         aa = _as_nd(a)
         data = aa.backend_buffer()
+        if data.ndim > 2:
+            raise NumericsError("Transpose on ND array is not defined. Use PERMUTE instead.")
         if conjugate and self._np.iscomplexobj(data):
             out = data.conj().T
         else:
@@ -202,21 +209,39 @@ class NumPyArrayBackend:
             if self._is_logical(ind_a):
                 return self._logical_index(data, ind_a.backend_buffer())
             return self._linear_index(data, ind_a.backend_buffer())
-        data_a = self._np.asarray(data)
-        if data_a.ndim < 2:
-            data_a = data_a.reshape(data_a.shape + (1,) * (2 - data_a.ndim))
-        rows_n, cols_n = int(data_a.shape[0]), int(data_a.shape[1])
-        r0 = self._dim_indices_0based(indices[0], rows_n, label="index")
-        c0 = self._dim_indices_0based(indices[1], cols_n, label="index")
+        return self._subscript_index(data, indices)
+
+    @staticmethod
+    def _collapsed_shape(shape: tuple, k: int) -> tuple:
+        """MATLAB k-subscript view: pad with 1s, or fold trailing dims into the
+        last subscript (A(i,j) on a 2x2x2 array addresses columns 1..4)."""
+        shape = tuple(int(x) for x in shape)
+        if len(shape) < k:
+            return shape + (1,) * (k - len(shape))
+        if len(shape) > k:
+            tail = 1
+            for d in shape[k - 1 :]:
+                tail *= d
+            return shape[: k - 1] + (tail,)
+        return shape
+
+    def _subscript_index(self, data: Any, indices: Sequence[Array]) -> Array:
+        """N subscripts (N >= 2) into an N-D array (#74, #173)."""
+        np = self._np
+        data_a = np.asarray(data)
+        k = len(indices)
+        view = data_a.reshape(self._collapsed_shape(data_a.shape, k), order="F")
+        idx = [
+            self._dim_indices_0based(ind, view.shape[d], label="index")
+            for d, ind in enumerate(indices)
+        ]
         try:
-            out = data_a[self._np.ix_(r0, c0)]
+            out = view[np.ix_(*idx)]
         except IndexError as exc:
             raise NumericsError(f"index: {exc}") from exc
-        out = self._np.asarray(out, dtype=self._np.float64)
-        # ix_ always 2-D; squeeze scalar
-        if out.size == 1 and r0.size == 1 and c0.size == 1:
-            out = out.reshape(1, 1)
-        return NDArrayValue(out)
+        if data_a.dtype != np.bool_:
+            out = np.asarray(out, dtype=np.float64)
+        return NDArrayValue(np.array(out))
 
     def _linear_index(self, data: Any, ind: Any) -> Array:
         """Single subscript: column-major linear index (1-based)."""
@@ -234,6 +259,8 @@ class NumPyArrayBackend:
         if k.size == 1:
             return NDArrayValue(picked.reshape(1, 1))
         rows, cols = (np.asarray(data).shape + (1, 1))[:2]
+        if np.asarray(data).ndim > 2:  # N-D source: result takes the index's shape
+            rows = cols = 0
         if rows == 1:  # row-vector source keeps row orientation
             return NDArrayValue(picked.reshape(1, -1))
         if cols == 1:  # column-vector source keeps column orientation
@@ -252,6 +279,8 @@ class NumPyArrayBackend:
             )
         picked = flat[m].astype(np.float64)
         rows, cols = (data_a.shape + (1, 1))[:2]
+        if data_a.ndim > 2:  # N-D mask/source → column (#322)
+            rows = cols = 0
         if picked.size == 0:
             if rows == 1:
                 return NDArrayValue(picked.reshape(1, 0))
@@ -354,6 +383,8 @@ class NumPyArrayBackend:
                     ind_a.backend_buffer(), label="linear index"
                 )
                 need = int(np.max(k))
+                if need > flat.size and data.ndim > 2:
+                    raise NumericsError("Attempt to grow array along ambiguous dimension.")
                 if need > flat.size:
                     flat = self._grow_linear_flat(data, flat, need)
                     flat[k - 1] = _apply_rhs(int(k.size))
@@ -364,67 +395,78 @@ class NumPyArrayBackend:
             out = flat.reshape(data.shape, order="F").copy()
             return NDArrayValue(np.asarray(out, dtype=np.float64))
 
-        if len(indices) == 2:
-            rows_n, cols_n = int(data.shape[0]), int(data.shape[1])
-            # logical → 1-based ints; grow only for non-logical integer OOB
-            r0 = self._dim_indices_0based(
-                indices[0], rows_n, label="set_index row"
-            ) if self._is_logical(_as_nd(indices[0])) else None
-            c0 = self._dim_indices_0based(
-                indices[1], cols_n, label="set_index col"
-            ) if self._is_logical(_as_nd(indices[1])) else None
-            if r0 is not None:
-                r = (r0 + 1).astype(self._np.int64)
-            else:
-                r = _as_1based_int_vec(
-                    _as_nd(indices[0]).backend_buffer(), label="row subscript"
-                )
-            if c0 is not None:
-                c = (c0 + 1).astype(self._np.int64)
-            else:
-                c = _as_1based_int_vec(
-                    _as_nd(indices[1]).backend_buffer(), label="col subscript"
-                )
-            need_r = int(np.max(r))
-            need_c = int(np.max(c))
-            if need_r > data.shape[0] or need_c > data.shape[1]:
-                grown = np.zeros((need_r, need_c), dtype=np.float64)
-                grown[: data.shape[0], : data.shape[1]] = data
-                data = grown
-            if vbuf.size == 0:
-                # A(i,:)=[] or A(:,j)=[] when one subscript is all indices
-                rows_n, cols_n = data.shape[0], data.shape[1]
-                if r.size == rows_n and np.array_equal(np.sort(r), np.arange(1, rows_n + 1)):
-                    # deleting columns c
-                    keep_c = [j for j in range(cols_n) if (j + 1) not in set(c.tolist())]
-                    return NDArrayValue(data[:, keep_c].astype(np.float64))
-                if c.size == cols_n and np.array_equal(np.sort(c), np.arange(1, cols_n + 1)):
-                    keep_r = [i for i in range(rows_n) if (i + 1) not in set(r.tolist())]
-                    return NDArrayValue(data[keep_r, :].astype(np.float64))
-                raise NumericsError(
-                    "A null assignment can have only one non-colon index."
-                )
-            n = int(r.size * c.size)
-            if vbuf.size != 1:
-                # MATLAB: shapes must agree once singleton dims are dropped
-                lhs = [d for d in (int(r.size), int(c.size)) if d != 1]
-                rhs = [int(d) for d in np.asarray(vbuf).shape if d != 1]
-                if lhs != rhs:
-                    rr, rc = (np.asarray(vbuf).shape + (1, 1))[:2]
-                    raise NumericsError(
-                        "Unable to perform assignment because the size of the left side "
-                        f"is {r.size}-by-{c.size} and the size of the right side is "
-                        f"{rr}-by-{rc}."
-                    )
-            rhs_flat = _apply_rhs(n)
-            block = rhs_flat.reshape((r.size, c.size), order="F")
-            try:
-                data[np.ix_(r - 1, c - 1)] = block
-            except IndexError as exc:
-                raise NumericsError(f"set_index: {exc}") from exc
-            return NDArrayValue(data)
+        return self._set_subscripts(data, indices, vbuf, _as_1based_int_vec, _apply_rhs)
 
-        raise NumericsError("set_index: only 1 or 2 subscripts supported")
+    def _set_subscripts(self, data, indices, vbuf, _as_1based_int_vec, _apply_rhs) -> Array:
+        """A(i,j,...)=v for N >= 2 subscripts: grow with zero fill (#259),
+        deletion along one non-colon subscript, MATLAB size agreement."""
+        np = self._np
+        k = len(indices)
+        orig_shape = tuple(int(x) for x in data.shape)
+        view_shape = self._collapsed_shape(orig_shape, k)
+        folded = len(orig_shape) > k
+        view = data.reshape(view_shape, order="F")
+        subs = []
+        for d, ind in enumerate(indices):
+            ind_a = _as_nd(ind)
+            if self._is_logical(ind_a):
+                subs.append(
+                    self._dim_indices_0based(ind_a, view_shape[d], label="set_index") + 1
+                )
+            else:
+                subs.append(_as_1based_int_vec(ind_a.backend_buffer(), label="subscript"))
+        need = [max(view_shape[d], int(np.max(s_))) for d, s_ in enumerate(subs)]
+        if vbuf.size == 0 and tuple(need) != view_shape:
+            raise NumericsError("Matrix index is out of range for deletion.")
+        if tuple(need) != view_shape:
+            if folded:
+                raise NumericsError(
+                    "Attempt to grow array along ambiguous dimension."
+                )
+            grown = np.zeros(need, dtype=view.dtype)
+            grown[tuple(slice(0, n) for n in view_shape)] = view
+            view = grown
+            view_shape = tuple(need)
+        if vbuf.size == 0:
+            full = [
+                s_.size == view_shape[d]
+                and np.array_equal(np.sort(s_), np.arange(1, view_shape[d] + 1))
+                for d, s_ in enumerate(subs)
+            ]
+            partial = [d for d, f in enumerate(full) if not f]
+            if len(partial) > 1:
+                raise NumericsError("A null assignment can have only one non-colon index.")
+            if not partial:
+                # every subscript covers its dim: empty along the last (A(:,:)=[] → Rx0)
+                d = k - 1
+            else:
+                d = partial[0]
+            out = np.delete(view, np.unique(subs[d] - 1), axis=d)
+            if folded and d < k - 1:
+                out = out.reshape(out.shape[: k - 1] + orig_shape[k - 1 :], order="F")
+            return NDArrayValue(np.asarray(out, dtype=np.float64))
+        lhs_dims = [int(s_.size) for s_ in subs]
+        n = int(np.prod(lhs_dims))
+        if vbuf.size != 1:
+            lhs = [d for d in lhs_dims if d != 1]
+            rhs = [int(d) for d in np.asarray(vbuf).shape if d != 1]
+            if lhs != rhs:
+                rshape = np.asarray(vbuf).shape + (1, 1)
+                rdims = list(rshape[: max(2, np.asarray(vbuf).ndim)])
+                raise NumericsError(
+                    "Unable to perform assignment because the size of the left side "
+                    f"is {'-by-'.join(map(str, lhs_dims))} and the size of the right side is "
+                    f"{'-by-'.join(map(str, rdims))}."
+                )
+        block = _apply_rhs(n).reshape(lhs_dims, order="F")
+        if view.dtype != np.float64:
+            view = view.astype(np.float64)
+        else:
+            view = view.copy()
+        view[np.ix_(*[s_ - 1 for s_ in subs])] = block
+        if folded:
+            view = view.reshape(orig_shape, order="F")
+        return NDArrayValue(view)
 
     def raw(self, a: Array) -> Any:
         return _as_nd(a).backend_buffer()

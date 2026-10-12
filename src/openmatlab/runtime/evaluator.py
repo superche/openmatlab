@@ -619,10 +619,16 @@ class Evaluator:
             if n == 1:
                 end_val = float(target.numel())
             else:
-                shape = target.shape
-                if i >= len(shape):
-                    raise EvalError(f"{label}: too many subscripts")
-                end_val = float(shape[i])
+                # MATLAB `end` per dim (#173): dims past ndims are 1; the last
+                # subscript spans all trailing dims (folded view).
+                shape = tuple(target.shape) + (1,) * max(0, n - len(target.shape))
+                if i < n - 1:
+                    end_val = float(shape[i])
+                else:
+                    tail = 1
+                    for d in shape[i:]:
+                        tail *= int(d)
+                    end_val = float(tail)
             # Bare ":" → 1:end for this dim (or 1:numel for linear)
             if (
                 isinstance(aexpr, ast.ColonExpr)

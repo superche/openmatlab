@@ -837,3 +837,21 @@ test_cases:
     impl: tests/unit/test_concat.py
     status: active
     env: unit
+
+  - id: tc.nd_arrays
+    kind: unit
+    title: N-D arrays construct/index/assign/reduce/display (Epic #440)
+    features: [numerics.nd_arrays]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_nd_arrays.py
+    status: active
+    env: unit
+
+  - id: tc.nd_arrays_bdd
+    kind: bdd
+    title: N-D arrays Gherkin scenarios (Epic #440)
+    features: [numerics.nd_arrays]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_nd_arrays_bdd.py
+    status: active
+    env: unit

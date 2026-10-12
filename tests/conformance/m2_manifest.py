@@ -20,4 +20,5 @@ CRITERIA = {
     "C09": ("c09_unique_issorted", "p1", [97], "met"),
     "C10": ("c10_cellfun", "p1", [81], "met"),
     "C11": ("c11_scalar_power_script", "p0", [193], "met"),
+    "C12": ("c12_nd_arrays", "p2", [74, 182, 173, 259, 322, 330], "met"),
 }

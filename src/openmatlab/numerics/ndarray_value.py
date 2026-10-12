@@ -15,6 +15,12 @@ class NDArrayValue:
     def __init__(self, data: np.ndarray) -> None:
         if not isinstance(data, np.ndarray):
             raise TypeError("NDArrayValue requires numpy.ndarray")
+        # MATLAB drops trailing singleton dims beyond the 2nd (size(zeros(2,3,1))=[2 3]).
+        if data.ndim > 2 and data.shape[-1] == 1:
+            shape = list(data.shape)
+            while len(shape) > 2 and shape[-1] == 1:
+                shape.pop()
+            data = data.reshape(shape)
         self._data = data
 
     def matlab_class(self) -> str:

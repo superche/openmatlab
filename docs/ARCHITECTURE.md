@@ -70,7 +70,7 @@ src/openmatlab/
   numerics/       # array ops behind Array
     backend.py      ArrayBackend protocol
     numpy_backend.py NumPyArrayBackend
-    ndarray_value.py NDArrayValue
+    ndarray_value.py NDArrayValue (N-D; trailing singleton dims dropped, #440)
   graphics/       # plotting backends
     backend.py      GraphicsBackend protocol
     matplotlib_backend.py MatplotlibGraphicsBackend (Agg default)
@@ -126,9 +126,9 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 logical `~ & | && ||` (#413), `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280) (see "What works today").
+Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280), N-D arrays `zeros(2,3,4)` / `A(i,j,k)` (Epic #440) (see "What works today").
 
-**Not yet:** `string` class (#78), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
+**Not yet:** `string` class (#78), `nargin`/`nargout` specials, integer classes (#72), complex (#71).
 
 ## Non-goals
 
