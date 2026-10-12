@@ -171,3 +171,11 @@ def test_linear_grow_on_nd_is_ambiguous():
         _ws(R + " A(9) = 1;")
     ws = _ws(R + " A(3) = 70; x = A(1,2,1); A(:,3) = []; s = size(A);")
     assert _v(ws, "x").tolist() == [[70]] and _v(ws, "s").tolist() == [[2, 3]]
+
+
+def test_bracket_concat_nd_443():
+    ws = _ws("A = reshape(1:8, 2, 2, 2); B = [A A]; s = size(B); C = [A; A]; t = size(C); x = B(1,3,2);")
+    assert _v(ws, "s").tolist() == [[2, 4, 2]] and _v(ws, "t").tolist() == [[4, 2, 2]]
+    assert _v(ws, "x").item() == 5
+    with pytest.raises(EvalError, match="Dimensions of arrays being concatenated"):
+        _ws("A = ones(2,2,2); B = [A ones(2,2)];")

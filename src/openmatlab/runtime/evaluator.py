@@ -1102,19 +1102,15 @@ class Evaluator:
                     parts.append(b)
             if not parts:
                 continue
-            if len({p.shape[0] for p in parts}) != 1:
-                raise EvalError(self._CONCAT_ERR)
-            bufs.append(np.concatenate(parts, axis=1) if len(parts) > 1 else parts[0])
+            bufs.append(self._cat_nd(parts, axis=1))
         if not bufs:
             return self.numerics.from_nested([])
-        if len({b.shape[1] for b in bufs}) != 1:
-            raise EvalError(self._CONCAT_ERR)
+        out = self._cat_nd(bufs, axis=0)
         int_dt = next(
             (p.dtype for r in rows for v in r
              for p in [np.asarray(v.backend_buffer())] if np.issubdtype(p.dtype, np.integer)),
             None,
         )
-        out = np.concatenate(bufs, axis=0) if len(bufs) > 1 else bufs[0]
         if int_dt is not None:
             # MATLAB: concatenating with integers yields the leftmost integer class
             from openmatlab.numerics.intclass import saturate
@@ -1123,6 +1119,19 @@ class Evaluator:
         elif out.dtype != np.bool_ and not np.iscomplexobj(out):
             out = out.astype(np.float64)
         return NDArrayValue(np.array(out))
+
+    def _cat_nd(self, parts: list, *, axis: int):
+        """Concatenate 2-D or N-D blocks along axis; other dims must agree (#443)."""
+        import numpy as np
+
+        if len(parts) == 1:
+            return parts[0]
+        nd = max(p.ndim for p in parts)
+        parts = [p.reshape(p.shape + (1,) * (nd - p.ndim)) for p in parts]
+        keep = [d for d in range(nd) if d != axis]
+        if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:
+            raise EvalError(self._CONCAT_ERR)
+        return np.concatenate(parts, axis=axis)
 
     def _concat_cells(self, rows: list):
         from openmatlab.runtime.cell_value import CellValue
