@@ -37,3 +37,17 @@ Screen recording proving **both**:
 - [`showcase_plugin_host.mp4`](showcase_plugin_host.mp4)
 
 Issues: #367 (toolbox proof), #368 (panel). Epic #349 stays OPEN until user accepts.
+
+
+## Domain conformance showcase (Epic #371)
+
+Clear large-font terminal recording for the Domain business-conformance gate:
+
+1. Reference-vector pytest suite (`tests/conformance`)
+2. `hamming(8)` vs golden (D01)
+3. PluginHost `which('hamming')` gate (D04)
+
+- [`showcase_domain_conformance.mp4`](showcase_domain_conformance.mp4)
+- Re-record: `bash demos/plugins/record_domain_conformance_showcase.sh`
+
+Epic #371 stays OPEN until user accepts. Milestone: [`M-domain-conformance.md`](../../docs/milestones/M-domain-conformance.md).
