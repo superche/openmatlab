@@ -200,3 +200,11 @@ def test_char_assign_and_delete():
 
 def test_char_plus_char_is_numeric():
     assert _v(_ws("x = 'a' + 'b';"), "x").item() == 195
+
+
+def test_numeric_errors_surface_as_eval_errors():
+    """Found in acceptance: `-e 'int8(1)+int16(1)'` printed a Python traceback."""
+    from openmatlab.runtime.evaluator import EvalError
+
+    with pytest.raises(EvalError, match="Integers can only be combined"):
+        _ws("x = int8(1) + int16(1);")
