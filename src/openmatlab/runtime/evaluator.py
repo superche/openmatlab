@@ -334,10 +334,12 @@ class Evaluator:
             if len(idx_exprs) == 1:
                 ri, cj = self._cell_subscript_lists(cell, idx_exprs, "cell () assign")
                 n = len(ri)
-                if rhs_val.numel() == 1 and n == 1:
-                    self.workspace.set(
-                        name, cell.with_set(ri[0], cj[0], rhs_val.get(0, 0))
-                    )
+                if rhs_val.numel() == 1:
+                    # 1x1 cell RHS broadcasts to every selected position (MATLAB)
+                    new_cell = cell
+                    for i0, j0 in zip(ri, cj):
+                        new_cell = new_cell.with_set(i0, j0, rhs_val.get(0, 0))
+                    self.workspace.set(name, new_cell)
                     return rhs_val
                 if rhs_val.numel() != n:
                     raise EvalError(
@@ -357,15 +359,22 @@ class Evaluator:
             rows_i, cols_j = self._cell_subscript_lists(
                 cell, idx_exprs, "cell () assign"
             )
-            n = len(rows_i) * len(cols_j)
-            if rhs_val.numel() == 1 and n == 1:
-                self.workspace.set(
-                    name,
-                    cell.with_set(rows_i[0], cols_j[0], rhs_val.get(0, 0)),
-                )
+            if rhs_val.numel() == 1:
+                new_cell = cell
+                for j0 in cols_j:
+                    for i0 in rows_i:
+                        new_cell = new_cell.with_set(i0, j0, rhs_val.get(0, 0))
+                self.workspace.set(name, new_cell)
                 return rhs_val
-            if rhs_val.shape != (len(rows_i), len(cols_j)) and rhs_val.numel() != n:
-                raise EvalError("cell () assign: RHS shape mismatch")
+            # MATLAB: shapes must agree once singleton dims are dropped
+            lhs = [d for d in (len(rows_i), len(cols_j)) if d != 1]
+            rhs = [d for d in rhs_val.shape if d != 1]
+            if lhs != rhs:
+                raise EvalError(
+                    "Unable to perform assignment because the size of the left side is "
+                    f"{len(rows_i)}-by-{len(cols_j)} and the size of the right side is "
+                    f"{rhs_val.shape[0]}-by-{rhs_val.shape[1]}."
+                )
             new_cell = cell
             # fill column-major from RHS
             flat_rhs = []
