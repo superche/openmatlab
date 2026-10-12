@@ -263,8 +263,8 @@ features:
     name: range / non-scalar indexed assignment
     status: done
     depends_on: [lang.array_assign, numerics.array_set]
-    notes: "A(1:n)=v; scalar broadcast; numel match; 2-sub ix_ (#159)"
-    tests: [tests/unit/test_array_assign_range.py, tests/bdd/test_array_assign_range_bdd.py]
+    notes: "A(1:n)=v; scalar broadcast; numel match; 2-sub ix_ (#159); 2-sub block RHS shape must match modulo singletons, MATLAB errors for null block delete + cell conversion (#164 #248 #292)"
+    tests: [tests/unit/test_array_assign_range.py, tests/bdd/test_array_assign_range_bdd.py, tests/unit/test_assign_conformance_errors.py]
 
   - id: lang.index_end
     layer: lang

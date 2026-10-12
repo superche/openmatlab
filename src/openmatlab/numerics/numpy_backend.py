@@ -402,9 +402,20 @@ class NumPyArrayBackend:
                     keep_r = [i for i in range(rows_n) if (i + 1) not in set(r.tolist())]
                     return NDArrayValue(data[keep_r, :].astype(np.float64))
                 raise NumericsError(
-                    "set_index: empty assign delete needs A(i,:)=[] or A(:,j)=[]"
+                    "A null assignment can have only one non-colon index."
                 )
             n = int(r.size * c.size)
+            if vbuf.size != 1:
+                # MATLAB: shapes must agree once singleton dims are dropped
+                lhs = [d for d in (int(r.size), int(c.size)) if d != 1]
+                rhs = [int(d) for d in np.asarray(vbuf).shape if d != 1]
+                if lhs != rhs:
+                    rr, rc = (np.asarray(vbuf).shape + (1, 1))[:2]
+                    raise NumericsError(
+                        "Unable to perform assignment because the size of the left side "
+                        f"is {r.size}-by-{c.size} and the size of the right side is "
+                        f"{rr}-by-{rc}."
+                    )
             rhs_flat = _apply_rhs(n)
             block = rhs_flat.reshape((r.size, c.size), order="F")
             try:
