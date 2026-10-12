@@ -13,6 +13,13 @@ class CellValue:
     """MATLAB-like cell array — rectangular 2-D grid of Values."""
 
     rows: Tuple[Tuple[Value, ...], ...]
+    # N-D cells (#444): full MATLAB size when ndims > 2; ``rows`` then holds the
+    # folded m x (n*p*...) view c(:,:), column-major over trailing dims.
+    nd: Tuple[int, ...] = ()
+
+    @property
+    def full_shape(self) -> Tuple[int, ...]:
+        return self.nd or self.shape
 
     def matlab_class(self) -> str:
         return "cell"
@@ -25,7 +32,7 @@ class CellValue:
 
     @property
     def ndim(self) -> int:
-        return 2
+        return len(self.full_shape)
 
     def numel(self) -> int:
         r, c = self.shape
@@ -42,7 +49,12 @@ class CellValue:
         """Return a new cell with rows[i][j] replaced (0-based)."""
         rows = [list(r) for r in self.rows]
         rows[i][j] = value
-        return CellValue(rows=tuple(tuple(r) for r in rows))
+        return CellValue(rows=tuple(tuple(r) for r in rows), nd=self.nd)
+
+    def page(self, off: int) -> "CellValue":
+        """2-D page ``off`` (0-based, column-major over trailing dims) of an N-D cell."""
+        n = self.full_shape[1]
+        return CellValue(rows=tuple(r[off * n:(off + 1) * n] for r in self.rows))
 
     @staticmethod
     def empty(m: int, n: int) -> "CellValue":

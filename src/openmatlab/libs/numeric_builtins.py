@@ -159,7 +159,7 @@ def _shape_of(v: Value) -> tuple:
     if isinstance(v, CharValue):
         return v.shape
     if isinstance(v, CellValue):
-        return tuple(v.shape)
+        return tuple(v.full_shape)
     if isinstance(v, Array):
         shape = tuple(np.asarray(v.backend_buffer()).shape)
         return shape + (1,) * (2 - len(shape)) if len(shape) < 2 else shape
@@ -569,6 +569,17 @@ def _cell(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     """cell / cell(n) / cell(m,n) — empty cells of 0x0 doubles."""
     from openmatlab.runtime.cell_value import CellValue
 
+    if len(args) > 2 or (len(args) == 1 and _buf("cell", args[0]).size > 2):
+        dims = (
+            [_dim("cell", a) for a in args] if len(args) > 2
+            else [max(0, int(x)) for x in _buf("cell", args[0]).reshape(-1)]
+        )
+        while len(dims) > 2 and dims[-1] == 1:
+            dims.pop()
+        if len(dims) > 2:  # N-D cell (#444)
+            folded = CellValue.empty(dims[0], int(np.prod(dims[1:])))
+            return (CellValue(rows=folded.rows, nd=tuple(dims)),)
+        return (CellValue.empty(dims[0], dims[1]),)
     m, n = _shape2("cell", args)
     return (CellValue.empty(m, n),)
 
