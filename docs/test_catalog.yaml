@@ -784,6 +784,12 @@ test_cases:
     env: unit
 
 
+  - id: tc.display_semantics
+    kind: unit
+    title: Display per statement (incl. blocks); ans only for non-assign expressions
+    features: [host.display_policy, runtime.evaluator]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_display_semantics.py
   - id: tc.comma_separator
     kind: unit
     title: Comma separates statements (top level, block headers, bodies)

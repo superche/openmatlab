@@ -40,6 +40,7 @@ class Evaluator:
         functions: Optional[FunctionResolver] = None,
         numerics: Optional[ArrayBackend] = None,
         plots: Optional[Any] = None,
+        display: Optional[Any] = None,
     ) -> None:
         self.workspace = workspace if workspace is not None else Workspace()
         self.functions = functions if functions is not None else FunctionResolver()
@@ -47,6 +48,8 @@ class Evaluator:
             raise EvalError("Evaluator requires an ArrayBackend (Session.numerics)")
         self.numerics = numerics
         self.plots = plots
+        # DisplayPolicy (host); None = silent (e.g. .m function bodies today).
+        self.display = display
         self._loop_depth = 0
         self._return_ok = 0
         self._end_stack: list[float] = []
@@ -73,6 +76,42 @@ class Evaluator:
             self._return_ok -= 1
 
     def eval_stmt(self, stmt: ast.Stmt) -> Value:
+        value = self._exec_stmt(stmt)
+        if self.display is not None:
+            self._display_stmt(stmt, value)
+        return value
+
+    def _display_stmt(self, stmt: ast.Stmt, value: Value) -> None:
+        """MATLAB display: each simple statement, where it runs; never for blocks.
+
+        Assignments show the assigned variable(s) and never touch ``ans``; a bare
+        variable name shows under its own name; any other expression binds ``ans``.
+        """
+        d = self.display
+        show = d.should_print(getattr(stmt, "suppress", True))
+        if isinstance(stmt, ast.Assign):
+            names: Sequence[str] = (stmt.name,)
+        elif isinstance(stmt, (ast.ArrayAssign, ast.CellAssign)):
+            base = stmt.target.target
+            names = (base.id,) if isinstance(base, ast.Name) else ()
+        elif isinstance(stmt, ast.MultiAssign):
+            names = stmt.names
+        elif isinstance(stmt, ast.ExprStmt):
+            if isinstance(stmt.expr, ast.Name) and stmt.expr.id in self.workspace:
+                if show:
+                    d.show(value, name=stmt.expr.id)
+                return
+            d.bind_ans(value)
+            if show:
+                d.show(value)
+            return
+        else:
+            return
+        if show:
+            for n in names:
+                d.show(self.workspace.get(n), name=n)
+
+    def _exec_stmt(self, stmt: ast.Stmt) -> Value:
         if isinstance(stmt, ast.Assign):
             value = self.eval_expr(stmt.value)
             self.workspace.set(stmt.name, value)
