@@ -14,7 +14,7 @@
 |-----|-----|-------|
 | Functional (host P02–P08) | `55c55e82f9bbacea2a4a0bc5e411f0f7629d5acb` | Merge of [#358](https://github.com/superche/openmatlab/pull/358) |
 | Evidence (prior package) | `c2066ed6831726887ca89be7c69c1af2a80cd737` | Merge of [#363](https://github.com/superche/openmatlab/pull/363) |
-| Deepening (this PR) | *(fill after merge)* | Community toolbox call + desktop panel + re-recorded showcase |
+| Deepening (this PR) | `12f5494184d6c48420c095bd01154385abee29de` | Branch tip of [#369](https://github.com/superche/openmatlab/pull/369); fill merge SHA after land |
 
 ## Verdict
 
@@ -33,8 +33,8 @@ Showcase: `demos/plugins/showcase_plugin_host.mp4` shows **both** package load/c
 |-----------|-------|----|-------------|
 | P01 Contract docs | #349 / #357 | [#357](https://github.com/superche/openmatlab/pull/357) | prior green |
 | P02–P08 Host | #350–#356 | [#358](https://github.com/superche/openmatlab/pull/358) | [run 38149639262](https://github.com/superche/openmatlab/actions/runs/38149639262) **success** |
-| Community toolbox proof | #367 | *(this PR)* | *(CI after push)* |
-| Minimal desktop panel | #368 | *(this PR)* | *(CI after push)* |
+| Community toolbox proof | #367 | [#369](https://github.com/superche/openmatlab/pull/369) | [run 38192243011](https://github.com/superche/openmatlab/actions/runs/38192243011) **success** |
+| Minimal desktop panel | #368 | [#369](https://github.com/superche/openmatlab/pull/369) | [run 38192243011](https://github.com/superche/openmatlab/actions/runs/38192243011) **success** |
 
 Functional tip check-run: name=`test`, conclusion=`success`,  
 https://github.com/superche/openmatlab/actions/runs/38149639262/job/114500213144
