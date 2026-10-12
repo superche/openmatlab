@@ -229,6 +229,24 @@ def _format_complex(a, terminal_width: int = 80) -> str:
         parts.size == 0 or float(np.max(np.abs(parts))) < 1e15
     )
 
+    # Large/small magnitudes (#453): scalars use %.4e per part, matrices a
+    # common ``1.0e+NN *`` factor (thresholds as for real format short).
+    nz = np.abs(parts[parts != 0])
+    big = 1e5 if (a.size == 1 or integer) else 1e3
+    sci = nz.size > 0 and (float(nz.max()) >= big or (not integer and float(nz.min()) < 1e-4))
+    header = ""
+    if sci:
+        if a.size == 1:
+            z = complex(a.reshape(-1)[0])
+            sg = "-" if (z.imag < 0 or (z.imag == 0 and np.signbit(z.imag))) else "+"
+            fe = lambda v: f"{v:.4e}" if np.isfinite(v) else _fmt_real(v, True)  # noqa: E731
+            return f"{fe(z.real)} {sg} {fe(abs(z.imag))}i"
+        e = int(np.floor(np.log10(float(nz.max()))))
+        if e:
+            header = f"   1.0e{e:+03d} *\n\n"
+        re_, im_ = re_ / 10.0 ** e, im_ / 10.0 ** e
+        integer = False
+
     def mag(v: float) -> str:
         return _fmt_real(abs(v), integer) if np.isfinite(v) else _fmt_real(abs(v), True)
 
@@ -244,4 +262,4 @@ def _format_complex(a, terminal_width: int = 80) -> str:
         for rr, ss, ii in zip(reals, signs, imags)
     ]
     width = max(len(c) for row in cells for c in row) + 3
-    return _page_columns(cells, width, terminal_width)
+    return header + _page_columns(cells, width, terminal_width)
