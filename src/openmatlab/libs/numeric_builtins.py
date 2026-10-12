@@ -504,8 +504,12 @@ def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    """Sorted unique; optional [C,ia,ic]=unique(A)."""
-    _arity("unique", args, 1, 1)
+    """Sorted unique; optional [C,ia,ic]=unique(A); unique(A,'rows')."""
+    _arity("unique", args, 1, 2)
+    if len(args) == 2:
+        if _char_flag(args[1]) != "rows":
+            raise BuiltinError("unique: only the 'rows' option is supported")
+        return _unique_rows(_buf("unique", args[0]), nargout)
     b = _buf("unique", args[0])
     if b.ndim == 0:
         b = b.reshape(1, 1)
@@ -532,23 +536,55 @@ def _unique(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (C, ia, ic)
 
 
+def _unique_rows(b: np.ndarray, nargout: int) -> Sequence[Value]:
+    b = b.reshape(1, -1) if b.ndim < 2 else b
+    if b.shape[0] == 0:
+        e = NDArrayValue(np.zeros((0, b.shape[1])))
+        return (e, NDArrayValue(np.zeros((0, 1))), NDArrayValue(np.zeros((0, 1))))[:max(nargout, 1)]
+    u, ia0, ic0 = np.unique(b, axis=0, return_index=True, return_inverse=True)
+    outs = (
+        NDArrayValue(u.astype(np.float64)),
+        NDArrayValue((ia0 + 1.0).reshape(-1, 1)),
+        NDArrayValue((ic0.reshape(-1) + 1.0).reshape(-1, 1)),
+    )
+    return outs[: max(nargout, 1)]
+
+
+def _rows_sorted(b: np.ndarray, descend: bool) -> bool:
+    """Lexicographic row order (MATLAB issorted(A,'rows'))."""
+    for k in range(b.shape[0] - 1):
+        a, c = b[k], b[k + 1]
+        diff = np.flatnonzero(a != c)
+        if diff.size == 0:
+            continue
+        j = diff[0]
+        if np.isnan(a[j]) or np.isnan(c[j]):
+            return False
+        if (a[j] < c[j]) == descend:
+            return False
+    return True
+
+
 def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     """issorted(A) / issorted(A,'descend'); matrix → all columns."""
-    _arity("issorted", args, 1, 2)
+    _arity("issorted", args, 1, 3)
     b = _buf("issorted", args[0])
     if b.ndim == 0:
         b = b.reshape(1, 1)
     elif b.ndim == 1:
         b = b.reshape(1, -1)
     descend = False
-    if len(args) == 2:
-        f = _char_flag(args[1])
-        if f == "descend":
-            descend = True
-        elif f == "ascend":
-            descend = False
+    rows_mode = False
+    for a in args[1:]:
+        f = _char_flag(a)
+        if f == "rows":
+            rows_mode = True
+        elif f in ("ascend", "descend"):
+            descend = f == "descend"
         else:
-            raise BuiltinError("issorted: flag must be 'ascend' or 'descend'")
+            raise BuiltinError("issorted: flag must be 'ascend', 'descend' or 'rows'")
+    if rows_mode:
+        return (NDArrayValue(np.asarray([[_rows_sorted(b, descend)]], dtype=bool)),)
 
     def _vec_sorted(v: np.ndarray) -> bool:
         if v.size <= 1:
