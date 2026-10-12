@@ -84,7 +84,7 @@ def _format_value(value: object) -> str:
         from openmatlab.runtime.char_value import CharValue
 
         if isinstance(value, CharValue):
-            return value.text
+            return "\n".join(value.rows)
     except Exception:
         pass
     try:

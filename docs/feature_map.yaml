@@ -335,8 +335,8 @@ features:
     name: CharValue carrier for ' and \" literals
     status: done
     depends_on: [lang.array_assign, numerics.array_set]
-    notes: "Shared CharValue; no string class (#64) [done per ITER-067]"
-    tests: [tests/unit/test_char_literal.py]
+    notes: "Shared CharValue; no string class (#64) [done per ITER-067]; multi-row char matrices ['ab';'cd'], char() padding, double() (#427); char indexing deferred to string epic"
+    tests: [tests/unit/test_char_literal.py, tests/unit/test_char_matrix.py]
 
   - id: lang.cell_literal
     layer: lang

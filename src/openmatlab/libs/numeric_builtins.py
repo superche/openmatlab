@@ -133,13 +133,58 @@ def _shape_of(v: Value) -> tuple:
     from openmatlab.runtime.char_value import CharValue
 
     if isinstance(v, CharValue):
-        return (1, len(v.text)) if v.text else (0, 0)
+        return v.shape
     if isinstance(v, CellValue):
         return tuple(v.shape)
     if isinstance(v, Array):
         shape = tuple(np.asarray(v.backend_buffer()).shape)
         return shape + (1,) * (2 - len(shape)) if len(shape) < 2 else shape
     return (1, 1)
+
+
+def _char(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """char(A) codes→chars; char(s1, s2, ...) / char({..}) pads rows with blanks."""
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    if not args:
+        raise BuiltinError("char: not enough input arguments")
+    items: list = []
+    for a in args:
+        if isinstance(a, CellValue):
+            r, c = a.shape
+            items.extend(a.get(i, j) for j in range(c) for i in range(r))
+        else:
+            items.append(a)
+    rows: list = []
+    for v in items:
+        if isinstance(v, CharValue):
+            rows.extend(v.rows or ([""] if len(items) > 1 else []))
+        elif isinstance(v, Array):
+            b = np.asarray(v.backend_buffer(), dtype=float)
+            b = b.reshape(1, -1) if b.ndim < 2 else b
+            if b.size and (np.any(b < 0) or np.any(b != np.floor(b))):
+                raise BuiltinError("char: codes must be non-negative integers")
+            rows.extend("".join(chr(int(x)) for x in row) for row in b)
+        else:
+            raise BuiltinError(f"char: unsupported argument {type(v).__name__}")
+    w = max((len(r) for r in rows), default=0)
+    return (CharValue(rows=[r.ljust(w) for r in rows]),)
+
+
+def _double(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """double(A): char → code matrix; numeric/logical → double."""
+    from openmatlab.runtime.char_value import CharValue
+
+    _arity("double", args, 1, 1)
+    v = args[0]
+    if isinstance(v, CharValue):
+        r, c = v.shape
+        out = np.array([[float(ord(ch)) for ch in row] for row in v.rows]).reshape(r, c)
+        return (NDArrayValue(out),)
+    if isinstance(v, Array):
+        return (NDArrayValue(np.asarray(v.backend_buffer(), dtype=float)),)
+    raise BuiltinError("double: conversion from this class is not possible")
 
 
 def _size(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
@@ -758,7 +803,7 @@ def _isempty(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("isempty", args, 1, 1)
     v = args[0]
     if isinstance(v, CharValue):
-        n = len(v.text)
+        n = v.numel()
     elif isinstance(v, CellValue):
         r, c = v.shape
         n = r * c
@@ -854,6 +899,8 @@ BUILTINS: Dict[str, Builtin] = {
     "true": _true_false("true", True),
     "false": _true_false("false", False),
     "size": _size,
+    "char": _char,
+    "double": _double,
     "numel": _numel,
     "length": _length,
     "sum": _make_reduce("sum", np.sum, 0.0),
