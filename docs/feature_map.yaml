@@ -341,19 +341,28 @@ features:
   - id: numerics.int_classes
     layer: numerics
     name: "integer classes int8..uint64 + class / 'like' constructor args"
-    status: partial
+    status: done
     spec: docs/design/EPIC-457-int-string-classes.md
     depends_on: [numerics.array_backend]
     notes: "Epic #457 (M2 C14 met): casts with round-half-away + saturation; intmax/intmin/cast/isinteger/isfloat/isa; int op double keeps class; mixed int classes and int matrix * error (MATLAB); class kept by index/assign/concat/colon/for/sum/max/sort/unique; zeros/ones/eye class + 'like' (#183). single class: float32 carrier, single op double -> single, ints win, class kept by index/assign/concat/for/elfun/reductions, eps/realmax/realmin('single') (#461); exact int64/uint64 +-*/ via Python ints (#463); idivide fix/round/floor/ceil, bitand/bitor/bitxor/bitshift (#462); cell display summarizes non-scalar int arrays [1x2 int8]; N-D summary names the class (#464)"
     tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_int_exact_bitops.py, tests/unit/test_cell_int_summary.py, tests/unit/test_single_class.py]
   - id: runtime.string_class
     layer: runtime
-    name: "string scalars (double-quoted literals)"
-    status: partial
-    spec: docs/design/EPIC-457-int-string-classes.md
+    name: "string scalars and string arrays"
+    status: done
+    spec: docs/design/EPIC-482-string-arrays.md
     depends_on: [runtime.char_value]
-    notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Residual: string arrays, string methods"
-    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py]
+    notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Epic #482 (M2 C15 met, #459): StringArray grid with <missing>; [..] construction, strings(), string(cell/num/char matrix); s(i)/s(i,j)/s(end)/s(:)/mask, s{k}; assign/grow/delete; elementwise + and comparisons; transpose, char, cellstr, isequal, for; 'RxC string array' display. Residuals: #483"
+    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py]
+
+  - id: libs.string_methods
+    layer: libs
+    name: "text methods for string/char/cellstr"
+    status: done
+    spec: docs/design/EPIC-482-string-arrays.md
+    depends_on: [runtime.string_class]
+    notes: "Epic #482 (#460): upper/lower/strip/strtrim/replace/strrep/split/join/contains/startsWith/endsWith/strcmp/strcmpi; kind in = kind out (string/char/cellstr); <missing> propagates. Residuals: #483"
+    tests: [tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals

@@ -167,8 +167,11 @@ def test_string_conversions():
 def test_string_unsupported_ops_and_arrays():
     with pytest.raises(Exception, match="not supported for operands of type 'string'"):
         _ws('x = "a" * 2;')
-    with pytest.raises(Exception, match="string arrays"):
-        _ws('x = ["a" "b"];')
+    # string arrays were a non-goal of #457; Epic #482 (#459) implements them
+    ws = _ws('x = ["a" "b"];')
+    assert ws.get("x").matlab_class() == "string" and ws.get("x").shape == (1, 2)
+    with pytest.raises(Exception, match="not supported for operands of type 'string'"):
+        _ws('x = ["a" "b"] * 2;')
 
 
 def test_string_still_works_as_text_argument():

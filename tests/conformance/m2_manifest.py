@@ -23,4 +23,5 @@ CRITERIA = {
     "C14": ("c14_int_string_classes", "p2", [72, 78, 183], "met"),
     "C13": ("c13_complex", "p2", [71, 229, 228], "met"),
     "C12": ("c12_nd_arrays", "p2", [74, 182, 173, 259, 322, 330], "met"),
+    "C15": ("c15_string_arrays", "p2", [459, 460], "met"),
 }
