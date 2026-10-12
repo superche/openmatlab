@@ -344,8 +344,8 @@ features:
     status: partial
     spec: docs/design/EPIC-457-int-string-classes.md
     depends_on: [numerics.array_backend]
-    notes: "Epic #457 (M2 C14 met): casts with round-half-away + saturation; intmax/intmin/cast/isinteger/isfloat/isa; int op double keeps class; mixed int classes and int matrix * error (MATLAB); class kept by index/assign/concat/colon/for/sum/max/sort/unique; zeros/ones/eye class + 'like' (#183). Residual: single, idivide/bit ops, int64 >2^53 exact arithmetic; exact int64/uint64 +-*/ via Python ints (#463); idivide fix/round/floor/ceil, bitand/bitor/bitxor/bitshift (#462)"
-    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_int_exact_bitops.py]
+    notes: "Epic #457 (M2 C14 met): casts with round-half-away + saturation; intmax/intmin/cast/isinteger/isfloat/isa; int op double keeps class; mixed int classes and int matrix * error (MATLAB); class kept by index/assign/concat/colon/for/sum/max/sort/unique; zeros/ones/eye class + 'like' (#183). Residual: single, idivide/bit ops, int64 >2^53 exact arithmetic; exact int64/uint64 +-*/ via Python ints (#463); idivide fix/round/floor/ceil, bitand/bitor/bitxor/bitshift (#462); cell display summarizes non-scalar int arrays [1x2 int8]; N-D summary names the class (#464)"
+    tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_int_exact_bitops.py, tests/unit/test_cell_int_summary.py]
   - id: runtime.string_class
     layer: runtime
     name: "string scalars (double-quoted literals)"
