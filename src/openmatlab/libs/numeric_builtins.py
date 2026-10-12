@@ -1159,6 +1159,9 @@ _class_builtins.register(BUILTINS)
 from openmatlab.libs import shape_builtins as _shape_builtins  # noqa: E402
 
 _shape_builtins.register(BUILTINS)
+from openmatlab.libs import int_builtins as _int_builtins  # noqa: E402
+
+_int_builtins.register(BUILTINS)
 
 
 def register_numeric_builtins(resolver) -> None:

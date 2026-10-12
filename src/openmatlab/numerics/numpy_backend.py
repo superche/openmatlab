@@ -150,6 +150,15 @@ class NumPyArrayBackend:
     def _elem(self, a: Array, b: Array, op: str) -> Array:
         aa, bb = _as_nd(a), _as_nd(b)
         fn = getattr(self._np, op)
+        ra, rb = aa.backend_buffer(), bb.backend_buffer()
+        if _ic.is_int(ra) or _ic.is_int(rb):
+            try:
+                dt = _ic.result_dtype(ra, rb)
+                exact = _ic.exact_wide(op, ra, rb, dt)
+            except (_ic.IntClassError, ValueError):
+                exact = None  # mixing/shape errors surface on the generic path
+            if exact is not None:
+                return NDArrayValue(exact)
         try:
             with self._np.errstate(divide="ignore", invalid="ignore"):
                 out = fn(self._num(aa.backend_buffer()), self._num(bb.backend_buffer()))
