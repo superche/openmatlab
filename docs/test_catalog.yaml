@@ -819,3 +819,12 @@ test_cases:
     impl: tests/unit/test_logical_ops.py
     status: active
     env: unit
+
+  - id: tc.type_predicates
+    kind: unit
+    title: class / is* predicates / any / all
+    features: [libs.type_predicates]
+    use_cases: []
+    impl: tests/unit/test_type_predicates.py
+    status: active
+    env: unit

@@ -271,8 +271,8 @@ features:
     name: end as last-index in subscripts
     status: done
     depends_on: [lang.parser, lang.array_assign, runtime.array_assign_range]
-    notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169)"
-    tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py]
+    notes: "A(end)/A(1:end)/end-1; dim-aware for 2-sub (#169); clear errors for end outside indexing (#174) and incomplete ranges A(i:) (#336)"
+    tests: [tests/unit/test_index_end.py, tests/bdd/test_index_end_bdd.py, tests/unit/test_error_clarity.py]
 
   - id: runtime.array_grow_assign
     layer: runtime
@@ -659,6 +659,14 @@ features:
     notes: "A(L,:), A(:,L), A(L1,L2) read/assign (#317)"
     tests: [tests/unit/test_logical_index_2d.py, tests/bdd/test_logical_index_2d_bdd.py]
 
+
+  - id: libs.type_predicates
+    layer: libs
+    name: class / islogical / isnumeric / ischar / iscell / isempty / any / all
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "logical results; any/all first non-singleton dim, dim arg, 'all' flag; NaN counts as true (#414)"
+    tests: [tests/unit/test_type_predicates.py]
 
   - id: libs.logical_true_false
     layer: libs
