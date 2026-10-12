@@ -1,4 +1,4 @@
 function y = sigdemo(x)
-%SIGDEMO Community sample — identity passthrough (clean-room demo).
+%SIGDEMO  Deprecated alias — prefer hamming / rectwin / blackman.
 y = x;
 end

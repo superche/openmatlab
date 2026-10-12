@@ -239,6 +239,28 @@ def _cmd_plugins(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def _cmd_desktop(args: argparse.Namespace) -> int:
+    """Minimal desktop chrome that renders plugin panel contributions."""
+    from openmatlab.host.desktop import list_panel_summaries, run_desktop
+
+    paths = list(args.path) if args.path else ["demos/plugins/community.signal"]
+    if args.list_only:
+        rows = list_panel_summaries(paths)
+        if not rows:
+            print("No panels registered.")
+            return 0
+        for row in rows:
+            pid = row.get("id", "?")
+            title = row.get("title", "")
+            summary = row.get("summary", row.get("repr", ""))
+            print(f"{pid}\t{title}\t{summary}")
+        return 0
+    run_desktop(plugin_paths=paths, demo_ms=args.demo_ms)
+    return 0
+
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="openmatlab",
@@ -331,6 +353,31 @@ def main(argv: Optional[List[str]] = None) -> None:
         "--format", choices=("table", "yaml"), default="table"
     )
     p_plugins.set_defaults(func=_cmd_plugins)
+
+    p_desk = sub.add_parser(
+        "desktop",
+        help="Minimal host desktop: render contributed plugin panels (tk)",
+    )
+    p_desk.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Plugin root or parent directory (repeatable)",
+    )
+    p_desk.add_argument(
+        "--demo-ms",
+        type=int,
+        default=None,
+        metavar="MS",
+        help="Auto-close after MS milliseconds (showcase recordings)",
+    )
+    p_desk.add_argument(
+        "--list-only",
+        action="store_true",
+        help="Print headless panel metadata; do not open a window",
+    )
+    p_desk.set_defaults(func=_cmd_desktop)
 
 
     args = parser.parse_args(argv)

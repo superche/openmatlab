@@ -96,7 +96,7 @@ features:
     name: Extension Host API v0 (commands/path/window)
     status: partial
     spec: docs/design/PLUGIN-CONTRACT.md
-    notes: "Epic #349 / P05 (#353); api_version 0.1.0"
+    notes: "Epic #349 / P05 (#353); api_version 0.1.0; #368 minimal desktop panels"
     tests: [tests/unit/extensions/test_activation_host.py]
 
   - id: host.extensions.discovery
@@ -112,7 +112,7 @@ features:
     name: CLI openmatlab plugins list
     status: partial
     spec: docs/milestones/M-plugins.md
-    notes: "Epic #349 / P07 (#355); sample demos/plugins/community.signal"
+    notes: "Epic #349 / P07 (#355); sample demos/plugins/community.signal (#367 clean-room hamming)"
     tests: [tests/unit/extensions/test_cli_plugins.py]
 
   - id: host.extensions.engines
@@ -122,6 +122,22 @@ features:
     spec: docs/design/PLUGIN-CONTRACT.md
     notes: "Epic #349 / P08 (#356)"
     tests: [tests/unit/extensions/test_engines.py, tests/unit/extensions/test_activation_host.py]
+
+  - id: host.cli.desktop
+    layer: host
+    name: CLI openmatlab desktop (minimal panel chrome)
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / #368; tk notebook of contributed panels"
+    tests: [tests/unit/extensions/test_desktop_cli.py]
+
+  - id: host.extensions.community_signal
+    layer: host
+    name: Community signal clean-room windows plugin
+    status: partial
+    spec: docs/design/PLUGIN-CONTRACT.md
+    notes: "Epic #349 / #367; hamming/rectwin/blackman .m + panel"
+    tests: [tests/unit/extensions/test_community_signal_package.py]
 
   - id: lang.tokens_reserved
     layer: lang
