@@ -522,12 +522,24 @@ def _matlab_round(b: np.ndarray) -> np.ndarray:
     return np.sign(b) * np.floor(np.abs(b) + 0.5)
 
 
-def _make_unary(name: str, op, *, nonneg: bool = False):
+def _make_unary(name: str, op, *, nonneg: bool = False, domain=None, neg_zero: bool = False):
+    """Real inputs outside ``domain`` (default x >= 0 when ``nonneg``) promote to complex.
+
+    ``neg_zero``: promote x > 0 with imag -0.0 so asin(2)/acos(2) land on MATLAB's
+    branch (1.5708 - 1.3170i, 0 + 1.3170i) (#454).
+    """
+    if nonneg and domain is None:
+        domain = lambda x: x >= 0  # noqa: E731
+
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         _arity(name, args, 1, 1)
         b = _buf(name, args[0])
-        if nonneg and not np.iscomplexobj(b) and np.any(b < 0):
-            b = b.astype(np.complex128)  # sqrt(-4) = 2i, log(-1) = pi*i (#71)
+        if domain is not None and not np.iscomplexobj(b) and np.any(~domain(b) & ~np.isnan(b)):
+            # sqrt(-4) = 2i, log(-1) = pi*i (#71); asin(2), acosh(0.5), atanh(2) (#454)
+            fb = np.asarray(b, dtype=np.float64)
+            b = fb.astype(np.complex128)
+            if neg_zero:
+                b.imag = np.where(~domain(fb) & (fb > 0), -0.0, 0.0)
         with np.errstate(divide="ignore", invalid="ignore"):
             if np.iscomplexobj(b) and op in (np.floor, np.ceil, _matlab_round):
                 return (_wrap(op(b.real) + 1j * op(b.imag)),)  # per part (MATLAB)
@@ -1109,6 +1121,17 @@ BUILTINS: Dict[str, Builtin] = {
     "log": _make_unary("log", np.log, nonneg=True),
     "sin": _make_unary("sin", np.sin),
     "cos": _make_unary("cos", np.cos),
+    "tan": _make_unary("tan", np.tan),
+    "sinh": _make_unary("sinh", np.sinh),
+    "cosh": _make_unary("cosh", np.cosh),
+    "tanh": _make_unary("tanh", np.tanh),
+    "asin": _make_unary("asin", np.arcsin, domain=lambda x: np.abs(x) <= 1, neg_zero=True),
+    "acos": _make_unary("acos", np.arccos, domain=lambda x: np.abs(x) <= 1, neg_zero=True),
+    "atan": _make_unary("atan", np.arctan),
+    "asinh": _make_unary("asinh", np.arcsinh),
+    "acosh": _make_unary("acosh", np.arccosh, domain=lambda x: x >= 1),
+    "atanh": _make_unary("atanh", np.arctanh, domain=lambda x: np.abs(x) <= 1),
+    "log10": _make_unary("log10", np.log10, nonneg=True),
     "floor": _make_unary("floor", np.floor),
     "ceil": _make_unary("ceil", np.ceil),
     "round": _make_unary("round", _matlab_round),

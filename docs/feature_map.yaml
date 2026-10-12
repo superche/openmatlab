@@ -597,8 +597,8 @@ features:
     name: abs / sqrt / exp / log / sin / cos / floor / ceil / round / mod
     status: done
     depends_on: [runtime.function_resolver, numerics.numpy_backend]
-    notes: "sqrt/log of negatives -> complex (#71, Epic #449); floor/ceil/round per part; mod rejects complex; MATLAB round + mod semantics (#46) [done per ITER-047]"
-    tests: [tests/unit/test_elfun.py, tests/bdd/test_elfun_bdd.py]
+    notes: "sqrt/log of negatives -> complex (#71, Epic #449); floor/ceil/round per part; mod rejects complex; MATLAB round + mod semantics (#46) [done per ITER-047]; tan/sinh/cosh/tanh/asin/acos/atan/asinh/acosh/atanh/log10 with MATLAB branch cuts on out-of-domain reals (#454)"
+    tests: [tests/unit/test_elfun.py, tests/bdd/test_elfun_bdd.py, tests/unit/test_complex_elfun_parity.py]
 
   - id: libs.cumsum
     layer: libs
