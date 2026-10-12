@@ -29,7 +29,11 @@ python demos/plugins/option-d/run_demo.py
 
 ## Showcase recording
 
-Keyboard/mouse screen recording proving the host loads the sample community
-plugin and runs a contributed command / path entry:
+Screen recording proving **both**:
+
+1. Community package **load + call** (`hamming` via path / `community.signal.demo`)
+2. Minimal **desktop panel** contribution (`openmatlab desktop`)
 
 - [`showcase_plugin_host.mp4`](showcase_plugin_host.mp4)
+
+Issues: #367 (toolbox proof), #368 (panel). Epic #349 stays OPEN until user accepts.

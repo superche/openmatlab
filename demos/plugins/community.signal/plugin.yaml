@@ -1,7 +1,9 @@
 id: community.signal
 version: 0.1.0
-displayName: Community Signal Helpers
-description: Example domain plugin (not a MathWorks toolbox) — contract-aligned sample
+displayName: Community Signal (Octave Forge–compatible windows)
+description: >
+  Clean-room MIT subset of popular Octave Forge / MATLAB signal window APIs
+  (hamming, rectwin, blackman). Not a MathWorks toolbox; no GPL sources copied.
 engines:
   openmatlab: ">=0.1.0 <0.2.0"
 main: extension.py
@@ -11,7 +13,7 @@ activation:
 contributes:
   commands:
     - command: community.signal.demo
-      title: "Signal: Demo"
+      title: "Signal: Demo (hamming)"
   menus:
     - path: Tools/Signal
       command: community.signal.demo

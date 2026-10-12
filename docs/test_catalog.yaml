@@ -718,3 +718,22 @@ test_cases:
     impl: tests/unit/extensions/test_cli_plugins.py
     status: active
     env: unit
+
+  - id: tc.community_signal_package
+    kind: unit
+    title: community.signal hamming call + panel factory
+    features: [host.extensions.community_signal, host.extensions.api]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_community_signal_package.py
+    status: active
+    env: unit
+
+  - id: tc.cli_desktop
+    kind: unit
+    title: openmatlab desktop list-only
+    features: [host.cli.desktop]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/extensions/test_desktop_cli.py
+    status: active
+    env: unit
+
