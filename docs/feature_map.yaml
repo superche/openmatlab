@@ -688,7 +688,7 @@ features:
     name: Feature map load / dump (sync/export)
     status: partial
     spec: docs/PROCESS.md
-    tests: [tests/unit/test_feature_map.py]
+    tests: [tests/unit/test_feature_map.py, tests/unit/test_docs_drift.py]
     notes: "Optional inventory; Issues are canonical work items"
 
   - id: qa.unit_suite

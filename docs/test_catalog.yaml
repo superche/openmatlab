@@ -783,3 +783,12 @@ test_cases:
     status: active
     env: unit
 
+
+  - id: tc.docs_drift
+    kind: unit
+    title: Core docs + inventories reference existing paths / ids
+    features: [qa.feature_map]
+    use_cases: []
+    impl: tests/unit/test_docs_drift.py
+    status: active
+    env: unit

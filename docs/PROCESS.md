@@ -85,6 +85,8 @@ opens or updates an Issue (with labels + milestone) before or as it acts.
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 
+States on 2026-10-12: milestone/1, /4, /5, /6 **closed**; /2 **open** (exit met, backlog); /3 **reserved**.
+
 | Milestone | Intent |
 |-----------|--------|
 | **Workbench MVP** | Foundation REPL/scripts/control (epics #1 #19 #33) — closed when accepted |

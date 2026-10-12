@@ -16,7 +16,7 @@
 
 ## Verdict
 
-**Ready for user acceptance (Desktop layout parity).** Panel MVP + layout parity criteria met on `main`. Children #377–#382 and #390–#398 closed. **Epic remains OPEN** until the user accepts.
+**Ready for user acceptance (Desktop layout parity).** Panel MVP + layout parity criteria met on `main`. Children #377–#382 and #390–#398 closed. **Update:** Epic #372 closed on GitHub 2026-10-12 11:13 CST (user accepted); milestone closed.
 
 ## Honest split
 
@@ -42,7 +42,7 @@ https://github.com/superche/openmatlab/actions/runs/38197078130/job/114642019796
 
 - Panel MVP met: **6 / 6** (W01–W06)
 - Layout parity met: **9 / 9** (W07–W15)
-- Remaining gaps on this milestone: *(none open; #372 OPEN for user accept)*
+- Remaining gaps on this milestone: *(none open; #372 closed 2026-10-12, user accepted)*
 
 ## Feature map (epic-related)
 

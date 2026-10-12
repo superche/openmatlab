@@ -61,12 +61,9 @@ introduced for C02/C04/C06/C07/C08/C09/C10/C11 when their epics land.
 ## Residual priority (open Issues on M2)
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
-- **p1** (post-exit breadth; selection order for next epics while M2 stays open):
-  #247(closed) #249(closed→Epic#26) #237 #238 #227 #217 #218 #207 #209 #110 #83 #69 #80 #142 #184 #172
-  #258 #260 #269 #271 #279
-  *(removed closed #97 #81 from this list — factual hygiene after Epic #22/#23)*
-- **p2** (nice-to-have / non-goals): #71 #72 #74 #78 #130 #140 #141 #151 #152 #153 #164 #173 #174 #182 #183 #197 #198 #208 #219 #228 #229 #239 #248 #259 #270 #280 #281
-  *(refresh: open p2 on milestone as of Epic #23 acceptance; not exhaustive of every label drift)*
+- **p1** (post-exit breadth): #184 — the only open p1 (snapshot 2026-10-12; earlier p1 lists were cleared by Epics #24–#32).
+- **p2** (nice-to-have / non-goals): #71 #72 #74 #78 #130 #140 #141 #151 #152 #153 #164 #173 #174 #182 #183 #197 #198 #208 #219 #228 #229 #239 #248 #259 #270 #280 #281 #291 #292 #302 #311 #312 #322 #330 #336
+  *(snapshot 2026-10-12; live list: `gh issue list --milestone "Octave-breadth language & numerics"`)*
 
 ## M2 close readiness (Epic #23)
 

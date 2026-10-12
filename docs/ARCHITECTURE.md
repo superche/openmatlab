@@ -15,7 +15,7 @@ are allowed.
 **Post-MVP (v0.0.2+):** Epics [#1](https://github.com/superche/openmatlab/issues/1), [#19](https://github.com/superche/openmatlab/issues/19), [#33](https://github.com/superche/openmatlab/issues/33) (scripts + while/break), [#43](https://github.com/superche/openmatlab/issues/43) (core numeric builtins, incl. max/min default omitnan), [#63](https://github.com/superche/openmatlab/issues/63) (single-quote char + cells), [#87](https://github.com/superche/openmatlab/issues/87) (cumsum/sort/find (sort `'descend'`, find `k,'first'|'last'`)), [#102](https://github.com/superche/openmatlab/issues/102) (cell write-back), [#115](https://github.com/superche/openmatlab/issues/115) (array indexed assign), [#126](https://github.com/superche/openmatlab/issues/126) (continue), [#136](https://github.com/superche/openmatlab/issues/136) (return), [#147](https://github.com/superche/openmatlab/issues/147) (switch), [#158](https://github.com/superche/openmatlab/issues/158) (range assign), [#168](https://github.com/superche/openmatlab/issues/168) (index end), [#178](https://github.com/superche/openmatlab/issues/178) (elmat size-vector).
 Seams remain Protocol-first; language is a **matrix+procedural MVP**, not full MATLAB.
 
-Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md) · [`EPIC-005`](acceptance/EPIC-005.md) · [`EPIC-006`](acceptance/EPIC-006.md) · [`EPIC-007`](acceptance/EPIC-007.md) · [`EPIC-008`](acceptance/EPIC-008.md) · [`EPIC-009`](acceptance/EPIC-009.md).
+Acceptance: [`EPIC-001`](acceptance/EPIC-001.md) · [`EPIC-002`](acceptance/EPIC-002.md) · [`EPIC-003`](acceptance/EPIC-003.md) · [`EPIC-004`](acceptance/EPIC-004.md) · [`EPIC-005`](acceptance/EPIC-005.md) · [`EPIC-006`](acceptance/EPIC-006.md) · [`EPIC-007`](acceptance/EPIC-007.md) · [`EPIC-008`](acceptance/EPIC-008.md) · [`EPIC-009`](acceptance/EPIC-009.md) · … · [`EPIC-032`](acceptance/EPIC-032.md) · [`EPIC-349`](acceptance/EPIC-349.md) · [`EPIC-371`](acceptance/EPIC-371.md) · [`EPIC-372`](acceptance/EPIC-372.md).
 
 What works today:
 
@@ -38,6 +38,8 @@ Epic #5 residuals: Issues on closed [#63](https://github.com/superche/openmatlab
 
 Epic #15 residuals: Issues on closed [#188](https://github.com/superche/openmatlab/issues/188). Epic #16 residuals: Issues on closed [#203](https://github.com/superche/openmatlab/issues/203). Epic #17 residuals: Issues on closed [#213](https://github.com/superche/openmatlab/issues/213). Epic #18 residuals: Issues on closed [#223](https://github.com/superche/openmatlab/issues/223). Epic #19 residuals: Issues on closed [#233](https://github.com/superche/openmatlab/issues/233). Epic #27 residuals: Issues on closed [#316](https://github.com/superche/openmatlab/issues/316). **M2 exit 11/11**; milestone #2 **OPEN**. Epics #28–#32 cleared remaining M2 p1; milestone #2 **OPEN** (p2 backlog remains). See [M2-octave-breadth.md](milestones/M2-octave-breadth.md).
 
+Milestone states (2026-10-12): M1 Workbench MVP, M4 Plugin host, M5 Domain conformance, M6 MATLAB-aligned Workbench **closed** (epics #349/#371/#372 accepted + closed); M2 **open** (11/11 exit criteria met, p1/p2 backlog); M3 Domain toolboxes **reserved** (no issues).
+
 Roadmap milestones: [Workbench MVP](https://github.com/superche/openmatlab/milestone/1) · [Octave-breadth](https://github.com/superche/openmatlab/milestone/2) · [Plugin host](https://github.com/superche/openmatlab/milestone/4) · [Domain business-conformance](https://github.com/superche/openmatlab/milestone/5) · [MATLAB-aligned Workbench](https://github.com/superche/openmatlab/milestone/6) · [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3). Plugin contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) ([`milestones/M-plugins.md`](milestones/M-plugins.md)). Domain gate: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md). Workbench: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md).
 
 ## Package layout
@@ -58,6 +60,9 @@ src/openmatlab/
     parser.py       parse() — matrix MVP + function defs
   runtime/        # execution model
     value.py        Value / Array protocols
+    char_value.py   CharValue (single/double-quoted char rows)
+    cell_value.py   CellValue
+    function_handle.py FunctionHandleValue (@name)
     workspace.py    base + nested frames
     functions.py    FunctionResolver + MFileCallable / parse_mfile
     evaluator.py    AST evaluator (Array-first)
@@ -77,9 +82,12 @@ src/openmatlab/
     slots.py        host-owned contribution slots
     activation.py   predicates + activate/deactivate
     discovery.py    OPENMATLAB_PLUGIN_PATH + entry points
+    when.py         documented `when`-clause subset
+    context.py      ExtensionContext
+    engines.py      engine compatibility checks
     host.py         PluginHost orchestrator
-    api/            commands / window / workspace / path Host API
-  qa/             # feature_map / catalog / defects→gh bridges
+    api/            commands / window / workspace / path / extensions Host API
+  qa/             # feature_map / catalog / defects→gh bridges / repo paths
 ```
 
 ## Layer diagram
@@ -118,8 +126,9 @@ Host (CLI -e / REPL / QA)
 language `addpath("…")` / `which("…")`, multi-return `[a,b]=f(...)`,
 `if`/`elseif`/`else`/`for`/`end`, builtins `plot` / `show` / `drawnow`.
 
-**Not yet:** `cellfun`/`string` class,
-scripts without `function`, nested functions, `nargin`/`nargout` specials.
+Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` handles (see "What works today").
+
+**Not yet:** anonymous `@(x) expr` (#280), `string` class (#78), nested functions (#141), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
 
 ## Non-goals
 
