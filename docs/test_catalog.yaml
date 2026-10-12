@@ -804,3 +804,12 @@ test_cases:
     impl: tests/unit/test_docs_drift.py
     status: active
     env: unit
+
+  - id: tc.logical_ops
+    kind: unit
+    title: Logical operators, precedence, short-circuit, function forms
+    features: [lang.logical_ops]
+    use_cases: []
+    impl: tests/unit/test_logical_ops.py
+    status: active
+    env: unit

@@ -207,6 +207,8 @@ class Evaluator:
             if expr.op == "-":
                 z = self.numerics.from_scalar(0.0)
                 return self.numerics.sub(z, v)
+            if expr.op == "~":
+                return self._logical(~self._bool_buf(v))
             raise EvalError(f"Unknown unary op: {expr.op}")
         if isinstance(expr, ast.BinOp):
             return self._eval_binop(expr)
@@ -828,9 +830,11 @@ class Evaluator:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
 
+        op = expr.op
+        if op in ("&&", "||"):
+            return self._eval_short_circuit(expr)
         lv = self.eval_expr(expr.left)
         rv = self.eval_expr(expr.right)
-        op = expr.op
 
         def _as_numeric(v: Value, side: str) -> Array:
             if isinstance(v, CharValue):
@@ -868,7 +872,45 @@ class Evaluator:
                 ) from exc
         if op in ("<", "<=", ">", ">=", "==", "~="):
             return self._eval_relational(op, left, right)
+        if op in ("&", "|"):
+            a, b = self._bool_buf(left), self._bool_buf(right)
+            try:
+                return self._logical(a & b if op == "&" else a | b)
+            except ValueError as exc:
+                raise EvalError(f"{op}: matrix dimensions must agree") from exc
         raise EvalError(f"Unknown binary op: {op}")
+
+    def _bool_buf(self, v: Value):
+        """Logical view of a numeric/logical array (NaN is an error, as in MATLAB)."""
+        import numpy as np
+
+        arr = self._require_array(v, "logical")
+        buf = np.asarray(arr.backend_buffer())
+        if buf.dtype != np.bool_ and np.any(np.isnan(buf)):
+            raise EvalError("NaN's cannot be converted to logicals.")
+        return buf.astype(bool)
+
+    def _logical(self, buf) -> Array:
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+
+        buf = np.asarray(buf, dtype=bool)
+        return NDArrayValue(buf.reshape((1, 1)) if buf.ndim == 0 else buf)
+
+    def _eval_short_circuit(self, expr: ast.BinOp) -> Array:
+        def scalar(side: ast.Expr) -> bool:
+            b = self._bool_buf(self.eval_expr(side))
+            if b.size != 1:
+                raise EvalError(
+                    f"Operands to the {expr.op} operator must be convertible to "
+                    "logical scalar values."
+                )
+            return bool(b.reshape(-1)[0])
+
+        left = scalar(expr.left)
+        if (expr.op == "&&" and not left) or (expr.op == "||" and left):
+            return self._logical(left)
+        return self._logical(scalar(expr.right))
 
     def _eval_matrix(self, expr: ast.MatrixLiteral) -> Array:
         if not expr.rows:

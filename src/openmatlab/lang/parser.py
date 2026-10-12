@@ -330,11 +330,32 @@ class Parser:
         return self.match(TokenType.SEMICOLON) is not None
 
     def parse_expression(self) -> Expr:
-        return self.parse_relational()
+        return self.parse_oror()
+
+    def _left_assoc(self, next_level, *types: TokenType) -> Expr:
+        left = next_level()
+        while True:
+            op = self.match(*types)
+            if not op:
+                return left
+            left = BinOp(op=op.value, left=left, right=next_level())
+
+    # MATLAB precedence, low → high: || , && , | , & , relational , colon , ...
+    def parse_oror(self) -> Expr:
+        return self._left_assoc(self.parse_andand, TokenType.OR_OR)
+
+    def parse_andand(self) -> Expr:
+        return self._left_assoc(self.parse_or, TokenType.AND_AND)
+
+    def parse_or(self) -> Expr:
+        return self._left_assoc(self.parse_and, TokenType.PIPE)
+
+    def parse_and(self) -> Expr:
+        return self._left_assoc(self.parse_relational, TokenType.AMP)
 
     def parse_relational(self) -> Expr:
-        left = self.parse_colon()
-        op = self.match(
+        return self._left_assoc(
+            self.parse_colon,
             TokenType.REL_LT,
             TokenType.REL_LE,
             TokenType.REL_GT,
@@ -342,10 +363,6 @@ class Parser:
             TokenType.REL_EQ,
             TokenType.REL_NE,
         )
-        if not op:
-            return left
-        right = self.parse_colon()
-        return BinOp(op=op.value, left=left, right=right)
 
     def parse_colon(self) -> Expr:
         # Bare ":" in subscript → all indices for that dim / linear A(:)
@@ -389,7 +406,7 @@ class Parser:
         return left
 
     def parse_unary(self) -> Expr:
-        op = self.match(TokenType.PLUS, TokenType.MINUS)
+        op = self.match(TokenType.PLUS, TokenType.MINUS, TokenType.TILDE)
         if op:
             return UnaryOp(op=op.value, operand=self.parse_unary())
         return self.parse_power()
