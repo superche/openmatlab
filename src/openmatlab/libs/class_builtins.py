@@ -39,6 +39,11 @@ def _to_class(buf: np.ndarray, cls: str, name: str) -> NDArrayValue:
             return NDArrayValue(ic.saturate(buf, ic.INT_CLASSES[cls]))
         except ic.IntClassError as exc:
             raise _err()(f"{name}: {exc}") from None
+    if cls == "single":  # (#461)
+        b = np.asarray(buf)
+        if b.dtype == np.bool_ or ic.is_int(b):
+            b = b.astype(np.float64)
+        return NDArrayValue(b.astype(np.complex64 if np.iscomplexobj(b) else np.float32))
     if cls == "double":
         b = np.asarray(buf)
         return NDArrayValue(b.astype(np.complex128 if np.iscomplexobj(b) else np.float64))
@@ -145,7 +150,33 @@ def _with_class(name: str, fn, allowed: tuple):
     return _wrapped
 
 
-_NUMERIC = ("double", *ic.INT_CLASSES)
+_NUMERIC = ("double", "single", *ic.INT_CLASSES)
+
+
+def _single_first(args, out):
+    """A single input keeps single for the first output (#461)."""
+    if args and isinstance(args[0], Array) and out and isinstance(out[0], Array):
+        if np.asarray(args[0].backend_buffer()).dtype in (np.float32, np.complex64):
+            b = np.asarray(out[0].backend_buffer())
+            if b.dtype in (np.float64, np.complex128):
+                b = b.astype(np.complex64 if np.iscomplexobj(b) else np.float32)
+                return (NDArrayValue(b), *out[1:])
+    return out
+
+
+def _keep_single(fn):
+    def _wrapped(args, *, nargout=1):
+        return _single_first(args, fn(args, nargout=nargout))
+
+    return _wrapped
+
+
+_SINGLE_UNARY = (
+    "sqrt", "exp", "log", "log10", "sin", "cos", "tan", "sinh", "cosh", "tanh", "asin",
+    "acos", "atan", "asinh", "acosh", "atanh", "floor", "ceil", "round", "fix", "real",
+    "imag", "conj", "angle", "mean", "transpose", "reshape", "repmat", "mod", "rem",
+    "permute", "flip", "fliplr", "flipud", "circshift", "diff", "cumprod", "full",
+)
 
 
 def _keep_int(fn):
@@ -158,7 +189,7 @@ def _keep_int(fn):
             first = out[0]
             if isinstance(first, Array):
                 return (NDArrayValue(ic.saturate(np.asarray(first.backend_buffer()), dt)), *out[1:])
-        return out
+        return _single_first(args, out)
 
     return _wrapped
 
@@ -225,6 +256,7 @@ def register(builtins: Dict[str, Callable]) -> None:
     builtins["double"] = _string_aware_double(builtins["double"])
     for cls in ic.INT_CLASSES:
         builtins[cls] = _cast_fn(cls)
+    builtins["single"] = _cast_fn("single")
     builtins["cast"] = _cast
     builtins["intmax"] = _intlimit("intmax")
     builtins["intmin"] = _intlimit("intmin")
@@ -235,8 +267,11 @@ def register(builtins: Dict[str, Callable]) -> None:
     for k in ("zeros", "ones", "eye"):
         builtins[k] = _with_class(k, builtins[k], _NUMERIC)
     for k in ("nan", "NaN", "inf", "Inf"):
-        builtins[k] = _with_class(k, builtins[k], ("double",))
+        builtins[k] = _with_class(k, builtins[k], ("double", "single"))
     for k in ("true", "false"):
         builtins[k] = _with_class(k, builtins[k], ("logical",))
     for k in ("sum", "prod", "max", "min", "abs", "cumsum", "sort", "unique"):
         builtins[k] = _keep_int(builtins[k])
+    for k in _SINGLE_UNARY:
+        if k in builtins:
+            builtins[k] = _keep_single(builtins[k])

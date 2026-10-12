@@ -30,6 +30,8 @@ class NDArrayValue:
             from openmatlab.numerics.intclass import class_name
 
             return class_name(self._data.dtype) or "double"
+        if self._data.dtype in (np.float32, np.complex64):
+            return "single"  # (#461)
         return "double"
 
     @property

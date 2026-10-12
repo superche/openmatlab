@@ -28,24 +28,28 @@ from openmatlab.numerics import intclass as _ic
 def _narrow(np, out):
     """MATLAB narrowing: a complex result whose imaginary parts are all zero is real."""
     out = np.asarray(out)
+    single = _is_single(out)  # single keeps its class (#461)
     if np.iscomplexobj(out):
         if out.size == 0 or not np.any(out.imag):
-            return np.ascontiguousarray(out.real).astype(np.float64)
-        return out.astype(np.complex128, copy=False)
+            return np.ascontiguousarray(out.real).astype(np.float32 if single else np.float64)
+        return out.astype(np.complex64 if single else np.complex128, copy=False)
     if out.dtype == np.bool_ or np.issubdtype(out.dtype, np.integer):
         return out  # logical / integer classes keep their class (#72)
-    return out.astype(np.float64, copy=False)
+    return out.astype(np.float32 if single else np.float64, copy=False)
 
 
 def _dt(np, *bufs):
     """complex128 if any operand is complex (#71), else the integer class of an
     integer operand (#72), else float64."""
+    single = any(_is_single(b) for b in bufs)  # (#461)
     if any(np.iscomplexobj(b) for b in bufs):
-        return np.complex128
+        if any(np.issubdtype(np.asarray(b).dtype, np.integer) for b in bufs):
+            return np.complex128
+        return np.complex64 if single else np.complex128
     for b in bufs:
         if np.issubdtype(np.asarray(b).dtype, np.integer):
             return np.asarray(b).dtype
-    return np.float64
+    return np.float32 if single else np.float64
 
 
 def _int_result(np, out, *operands):
@@ -70,6 +74,30 @@ def _as_nd(a: Array) -> NDArrayValue:
     if isinstance(buf, np.ndarray):
         return NDArrayValue(buf)
     raise TypeError(f"Unsupported Array type: {type(a)!r}")
+
+
+def _is_single(b) -> bool:
+    import numpy as np
+
+    return np.asarray(b).dtype in (np.float32, np.complex64)
+
+
+def _single_aware(method):
+    """single op double -> single (MATLAB); integer classes still win (#461)."""
+
+    import numpy as np
+
+    def _wrapped(self, a, b, *args, **kw):
+        out = method(self, a, b, *args, **kw)
+        ops = [np.asarray(v.backend_buffer()) for v in (a, b) if hasattr(v, "backend_buffer")]
+        if any(_is_single(o) for o in ops):
+            buf = np.asarray(out.backend_buffer())
+            if buf.dtype in (np.float64, np.complex128):
+                return NDArrayValue(buf.astype(np.complex64 if np.iscomplexobj(buf) else np.float32))
+        return out
+
+    _wrapped.__name__ = method.__name__
+    return _wrapped
 
 
 class NumPyArrayBackend:
@@ -595,3 +623,7 @@ def _fractional_matrix_power(np, a, p):
     out = out.real + 1j * np.where(np.abs(out.imag) <= tol, 0.0, out.imag)
     return out
 
+
+
+for _m in ("matmul", "_elem", "power"):
+    setattr(NumPyArrayBackend, _m, _single_aware(getattr(NumPyArrayBackend, _m)))
