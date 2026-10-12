@@ -372,11 +372,28 @@ class Parser:
         first = self.parse_add()
         if not self.match(TokenType.COLON):
             return first
+        self._require_range_operand()
         second = self.parse_add()
         if self.match(TokenType.COLON):
+            self._require_range_operand()
             third = self.parse_add()
             return ColonExpr(start=first, step=second, stop=third)
         return ColonExpr(start=first, stop=second, step=None)
+
+    _RANGE_STOPPERS = (
+        TokenType.RPAREN, TokenType.RBRACKET, TokenType.RBRACE, TokenType.COMMA,
+        TokenType.SEMICOLON, TokenType.NEWLINE, TokenType.EOF,
+    )
+
+    def _require_range_operand(self) -> None:
+        tok = self.current()
+        if tok.type in self._RANGE_STOPPERS:
+            raise ParseError(
+                "Incomplete colon range: expected a value after ':' "
+                "(use A(i:end) or A(:))",
+                tok.line,
+                tok.column,
+            )
 
     def parse_add(self) -> Expr:
         left = self.parse_mul()
