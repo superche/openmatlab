@@ -660,6 +660,14 @@ features:
     tests: [tests/unit/test_logical_index_2d.py, tests/bdd/test_logical_index_2d_bdd.py]
 
 
+  - id: libs.type_predicates
+    layer: libs
+    name: class / islogical / isnumeric / ischar / iscell / isempty / any / all
+    status: done
+    depends_on: [libs.elmat_constructors]
+    notes: "logical results; any/all first non-singleton dim, dim arg, 'all' flag; NaN counts as true (#414)"
+    tests: [tests/unit/test_type_predicates.py]
+
   - id: libs.logical_true_false
     layer: libs
     name: logical / true / false
