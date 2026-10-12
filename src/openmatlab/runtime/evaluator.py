@@ -610,6 +610,10 @@ class Evaluator:
             self.workspace.set(name, val)
         return results[0]
 
+    @staticmethod
+    def _is_bare_colon(expr: ast.Expr) -> bool:
+        return isinstance(expr, ast.ColonExpr) and expr.start is None and expr.stop is None
+
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
         results = self._invoke_call(target_expr, arg_exprs, nargout=1)
         if results is None:
@@ -620,7 +624,14 @@ class Evaluator:
                 return self._eval_cell_paren_index(target, arg_exprs)
             target_a = self._require_array(target, "index")
             idxs = self._eval_subscripts(target_a, arg_exprs, label="index")
-            return self.numerics.index(target_a, idxs)
+            out = self.numerics.index(target_a, idxs)
+            if len(arg_exprs) == 1 and self._is_bare_colon(arg_exprs[0]):
+                # A(:) is always a numel×1 column (MATLAB), even for rows / empties
+                import numpy as np
+                from openmatlab.numerics.ndarray_value import NDArrayValue
+
+                out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
+            return out
         if not results:
             return self.numerics.from_nested([])
         return results[0]
