@@ -50,7 +50,8 @@ def saturate(vals, dtype) -> np.ndarray:
         r = np.sign(v) * np.floor(np.abs(v) + 0.5)
         r = np.where(np.isnan(r), 0.0, r)
         r = np.clip(r, float(info.min), float(info.max))
-    out = r.astype(dtype)
+    with np.errstate(invalid="ignore"):
+        out = r.astype(dtype)
     # float(info.max) for int64/uint64 rounds up to 2^63 / 2^64; pin the edges
     out = np.where(r >= float(info.max), info.max, out).astype(dtype)
     return out
@@ -70,3 +71,48 @@ def result_dtype(*bufs):
     if any(np.iscomplexobj(np.asarray(b)) for b in bufs):
         raise IntClassError("Complex integer arithmetic is not supported.")
     return ints[0]
+
+
+def _as_pyint(buf):
+    """Object array of Python ints, or None if a value is not integer-valued."""
+    b = np.asarray(buf)
+    if b.dtype == np.bool_ or is_int(b):
+        return b.astype(object)
+    if np.iscomplexobj(b) or not np.all(np.isfinite(b)) or np.any(b != np.floor(b)):
+        return None
+    return np.vectorize(int, otypes=[object])(b) if b.size else b.astype(object)
+
+
+def _div_round(n: int, d: int, info) -> int:
+    if d == 0:
+        return 0 if n == 0 else (info.max if n > 0 else info.min)
+    q, r = divmod(abs(n), abs(d))
+    q += 2 * r >= abs(d)  # round half away from zero
+    return q if (n >= 0) == (d > 0) else -q
+
+
+def exact_wide(op: str, x, y, dtype):
+    """Exact int64/uint64 add/subtract/multiply/divide via Python ints (#463).
+
+    Returns None when an operand is not integer-valued (falls back to double).
+    """
+    if np.dtype(dtype) not in (np.dtype(np.int64), np.dtype(np.uint64)):
+        return None
+    px, py = _as_pyint(x), _as_pyint(y)
+    if px is None or py is None:
+        return None
+    info = np.iinfo(dtype)
+    px, py = np.broadcast_arrays(px, py)
+    if op == "add":
+        r = px + py
+    elif op == "subtract":
+        r = px - py
+    elif op == "multiply":
+        r = px * py
+    elif op == "true_divide":
+        r = np.frompyfunc(lambda n, d: _div_round(int(n), int(d), info), 2, 1)(px, py)
+    else:
+        return None
+    r = np.asarray(r, dtype=object)
+    clip = np.frompyfunc(lambda v: min(max(int(v), int(info.min)), int(info.max)), 1, 1)
+    return np.asarray(clip(r) if r.size else r, dtype=object).astype(dtype)
