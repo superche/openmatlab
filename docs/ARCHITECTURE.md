@@ -128,7 +128,7 @@ logical `~ & | && ||` (#413), `if`/`elseif`/`else`/`for`/`end`, builtins `plot` 
 
 Also: `while`/`break`/`continue`/`return`/`switch`, scripts + `run`, `cellfun`, `@name` / anonymous `@(x) expr` handles (#280) (see "What works today").
 
-**Not yet:** `string` class (#78), nested functions (#141), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
+**Not yet:** `string` class (#78), `nargin`/`nargout` specials, N-D arrays (#74), integer classes (#72), complex (#71).
 
 ## Non-goals
 

@@ -39,12 +39,123 @@ def load_mfile(path: Path) -> FunctionDef | Script:
     stmts = parse(text)
     funcs = [s for s in stmts if isinstance(s, FunctionDef)]
     if funcs:
-        if len(funcs) != 1 or any(not isinstance(s, FunctionDef) for s in stmts):
-            raise ValueError(
-                f"Mixed function/script or multiple functions not supported: {path}"
+        if any(not isinstance(s, FunctionDef) for s in stmts):
+            raise ValueError(f"Mixed function/script not supported: {path}")
+        main = funcs[0]
+        if len(funcs) > 1:
+            # Local functions: carry them as trailing FunctionDefs of main.
+            main = FunctionDef(
+                name=main.name,
+                outputs=main.outputs,
+                inputs=main.inputs,
+                body=tuple(main.body) + tuple(LocalFunction(f) for f in funcs[1:]),
             )
-        return funcs[0]
+        return main
     return Script(body=tuple(stmts), source_path=path.resolve())
+
+
+@dataclass(frozen=True)
+class LocalFunction:
+    """Marker: a file-level local function (no shared scope), vs. nested."""
+
+    defn: FunctionDef
+
+
+def _names_in(node: Any, out: set) -> set:
+    """Collect identifiers used/assigned in a body, not descending into
+    nested FunctionDefs (their scope is separate)."""
+    from dataclasses import fields, is_dataclass
+
+    if isinstance(node, (FunctionDef, LocalFunction)):
+        return out
+    if isinstance(node, (list, tuple)):
+        for x in node:
+            _names_in(x, out)
+        return out
+    if is_dataclass(node):
+        for f in fields(node):
+            v = getattr(node, f.name)
+            if f.name in ("id", "name") and isinstance(v, str):
+                out.add(v)
+            elif f.name in ("names", "targets", "var") and isinstance(v, (str, tuple, list)):
+                for n in ([v] if isinstance(v, str) else v):
+                    if isinstance(n, str):
+                        out.add(n)
+                    else:
+                        _names_in(n, out)
+            else:
+                _names_in(v, out)
+    return out
+
+
+class _SharedWorkspace:
+    """Nested-function workspace: names shared with the parent (MATLAB:
+    textually used in both) read/write the parent frame; the rest are local."""
+
+    def __init__(self, parent: Any, shared: set) -> None:
+        from openmatlab.runtime.workspace import Workspace
+
+        self._own = Workspace()
+        self._parent = parent
+        self._shared = shared
+
+    def _ws(self, name: str):
+        return self._parent if name in self._shared else self._own
+
+    def get(self, name: str):
+        return self._ws(name).get(name)
+
+    def set(self, name: str, value: Any) -> None:
+        self._ws(name).set(name, value)
+
+    def __contains__(self, name: object) -> bool:
+        return name in self._ws(name)  # type: ignore[arg-type]
+
+    def clear(self, *names: str) -> None:
+        if not names:
+            self._own.clear()
+        for n in names:
+            self._ws(n).clear(n)
+
+    def names(self):
+        seen = set(self._own.names())
+        yield from seen
+        for n in self._shared:
+            if n not in seen and n in self._parent:
+                yield n
+
+    def depth(self) -> int:
+        return self._own.depth()
+
+    def push(self) -> None:
+        self._own.push()
+
+    def pop(self) -> None:
+        self._own.pop()
+
+    @property
+    def base(self):
+        return self._own.base
+
+
+class _ScopedResolver:
+    """Resolver view that sees a function's nested/local functions first."""
+
+    def __init__(self, inner: Any, local: Dict[str, Any]) -> None:
+        self._inner = inner
+        self._local = local
+
+    def resolve(self, name: str):
+        fn = self._local.get(name.lower())
+        return fn if fn is not None else self._inner.resolve(name)
+
+    def which(self, name: str) -> str:
+        if name.lower() in self._local:
+            return f"{name} is a local function"
+        return self._inner.which(name)
+
+    def __getattr__(self, attr: str):
+        return getattr(self._inner, attr)
 
 
 def parse_mfile(path: Path) -> FunctionDef:
@@ -69,6 +180,11 @@ class MFileCallable:
     plots: Any
     resolver: "FunctionResolver"
     source_path: Optional[Path] = None
+    # Resolver used inside the body (sees sibling local functions).
+    scope: Any = None
+    # For nested functions: (parent workspace getter, shared names).
+    parent_ws: Any = None
+    shared: Any = None
 
     def __call__(
         self,
@@ -90,14 +206,41 @@ class MFileCallable:
                 f"{self.defn.name}: expected {len(self.defn.inputs)} args, "
                 f"got {len(args)}"
             )
-        ws = Workspace()
+        ws = (
+            _SharedWorkspace(self.parent_ws, self.shared)
+            if self.parent_ws is not None
+            else Workspace()
+        )
+        base_scope = self.scope if self.scope is not None else self.resolver
+        local: Dict[str, Any] = {}
+        mine = _names_in(list(self.defn.body), set()) | set(self.defn.inputs) | set(self.defn.outputs)
+        if self.shared:
+            mine |= set(self.shared)
+        for stmt in self.defn.body:
+            if isinstance(stmt, LocalFunction):
+                local[stmt.defn.name.lower()] = MFileCallable(
+                    defn=stmt.defn, numerics=self.numerics, plots=self.plots,
+                    resolver=self.resolver, source_path=self.source_path,
+                )
+            elif isinstance(stmt, FunctionDef):
+                inner = _names_in(list(stmt.body), set())
+                shared = (inner & mine) - set(stmt.inputs) - set(stmt.outputs)
+                local[stmt.name.lower()] = MFileCallable(
+                    defn=stmt, numerics=self.numerics, plots=self.plots,
+                    resolver=self.resolver, source_path=self.source_path,
+                    parent_ws=ws, shared=shared,
+                )
+        scope = _ScopedResolver(base_scope, local) if local else base_scope
+        for fn in local.values():
+            # nested/local functions see each other and the enclosing scope
+            fn.scope = scope
         for name, val in zip(self.defn.inputs, args):
             if not isinstance(val, Array):
                 raise EvalError(f"{self.defn.name}: args must be Arrays")
             ws.set(name, val)
         ev = Evaluator(
             workspace=ws,
-            functions=self.resolver,
+            functions=scope,
             numerics=self.numerics,
             plots=self.plots,
         )
@@ -105,8 +248,8 @@ class MFileCallable:
         try:
             try:
                 for stmt in self.defn.body:
-                    if isinstance(stmt, FunctionDef):
-                        continue  # nested not supported
+                    if isinstance(stmt, (FunctionDef, LocalFunction)):
+                        continue  # bound above as nested/local functions
                     ev.eval_stmt(stmt)
             except _ReturnSignal:
                 pass  # early exit; collect assigned outputs below

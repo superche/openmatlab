@@ -239,8 +239,8 @@ features:
     name: return in .m functions/scripts
     status: done
     depends_on: [lang.parser, runtime.function_resolver, runtime.evaluator]
-    notes: "early exit; toplevel EvalError; no return-expr (#137)"
-    tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py]
+    notes: "early exit; toplevel EvalError; no return-expr (#137); return inside nested/local function exits only that frame (#141)"
+    tests: [tests/unit/test_return.py, tests/bdd/test_return_bdd.py, tests/unit/test_nested_functions.py]
 
   - id: lang.logical_ops
     layer: lang
@@ -429,8 +429,8 @@ features:
     name: function ... end syntax
     status: done
     depends_on: [lang.parser]
-    tests: [tests/unit/test_mfile_functions.py]
-    notes: "Parsed FunctionDef; loaded from .m via FunctionResolver [done per docs/design/ITER-024-feature-done-criteria.md]"
+    tests: [tests/unit/test_mfile_functions.py, tests/unit/test_nested_functions.py]
+    notes: "Parsed FunctionDef; loaded from .m via FunctionResolver [done per docs/design/ITER-024-feature-done-criteria.md]; nested functions share textually-common vars with parent; file-level local functions (#141)"
 
   # --- runtime ---
   - id: runtime.value_array_protocol
