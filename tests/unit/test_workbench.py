@@ -159,3 +159,11 @@ def test_cli_workbench_eval(capsys):
     assert ei.value.code == 0
     out = capsys.readouterr().out
     assert "x =" in out or "2" in out
+
+
+def test_cli_workbench_cwd(tmp_path: Path, capsys):
+    with pytest.raises(SystemExit) as ei:
+        main(["workbench", "--cwd", str(tmp_path), "--list-only"])
+    assert ei.value.code == 0
+    out = capsys.readouterr().out
+    assert "current_folder" in out

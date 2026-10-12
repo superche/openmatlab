@@ -593,6 +593,42 @@ class Workbench:
         refresh_figs()
         _sync_editor_ui()
 
+        def _demo_eval(line: str) -> None:
+            out.insert("end", f">> {line}\n")
+            try:
+                text = self.command_window.eval(line)
+                if text:
+                    out.insert("end", text)
+            except Exception as exc:
+                out.insert("end", f"Error: {exc}\n")
+            out.see("end")
+            refresh_ws()
+            refresh_figs()
+
+        def _schedule_demo() -> None:
+            """Scripted walkthrough for showcase recordings (--demo-ms)."""
+            sample = self.current_folder.pwd() / "showcase_demo.m"
+            if not sample.is_file():
+                sample.parent.mkdir(parents=True, exist_ok=True)
+                sample.write_text("% showcase demo\nx = 1:5;\ny = x .* x;\n", encoding="utf-8")
+                refresh_cf()
+
+            root.after(600, lambda: (_demo_eval("a = [1 2 3 4];"), nb.select(tab_ws)))
+            root.after(1400, lambda: _demo_eval("b = a .* 2"))
+            root.after(2200, lambda: (nb.select(tab_cf), refresh_cf()))
+            root.after(
+                3000,
+                lambda: (
+                    self.current_folder.open_mfile("showcase_demo.m", self.editor),
+                    _sync_editor_ui(),
+                    nb.select(tab_ed),
+                ),
+            )
+            root.after(4200, lambda: (_demo_eval("plot(1:8);"), nb.select(tab_fig)))
+            root.after(5200, lambda: _demo_eval("plot(1:4);"))
+            root.after(6000, refresh_figs)
+
         if demo_ms is not None and demo_ms > 0:
+            root.after(200, _schedule_demo)
             root.after(int(demo_ms), root.destroy)
         root.mainloop()
