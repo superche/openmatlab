@@ -300,8 +300,8 @@ features:
     name: scalar / square-matrix power ^
     status: done
     depends_on: [numerics.numpy_backend]
-    notes: "M2 C11 met; A^n via linalg.matrix_power; scalars via ** (#224)"
-    tests: [tests/unit/test_matrix_power.py, tests/bdd/test_matrix_power_bdd.py]
+    notes: "M2 C11 met; A^n via linalg.matrix_power; scalars via ** (#224); s^A via expm, fractional A^p (real), expm builtin; scalar*matrix scaling fix (#228)"
+    tests: [tests/unit/test_matrix_power.py, tests/bdd/test_matrix_power_bdd.py, tests/unit/test_matrix_power_expm.py]
   - id: runtime.name_zero_arg_constants
     layer: runtime
     name: bare NaN/Inf/pi via zero-arg builtins
