@@ -12,7 +12,7 @@
 ## Acceptance
 
 1. Vector expr/mask delete tests — **PASS**
-2. Matrix → column covered — **PASS**
+2. Matrix → column covered — **PASS** *(Erratum 2026-10-12: MATLAB reshapes a matrix to a **row**; corrected in #312.)*
 3. C06 thickened with logical delete — **PASS**
 4. Close #249; residuals — **PASS**
 

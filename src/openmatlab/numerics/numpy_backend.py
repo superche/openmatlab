@@ -298,7 +298,8 @@ class NumPyArrayBackend:
             return np.asarray(vbuf, dtype=np.float64).reshape(-1, order="F")
 
         def _delete_linear(flat: Any, drop_0based: Any) -> Array:
-            """Remove 0-based indices; preserve vector orientation."""
+            """Remove 0-based indices (MATLAB): row/column vectors keep orientation;
+            a matrix is reshaped to a 1-by-N row (public MATLAB indexing docs)."""
             keep = np.ones(flat.size, dtype=bool)
             drop_0based = np.unique(np.asarray(drop_0based, dtype=np.int64).reshape(-1))
             if np.any(drop_0based < 0) or np.any(drop_0based >= flat.size):
@@ -306,16 +307,9 @@ class NumPyArrayBackend:
             keep[drop_0based] = False
             kept = flat[keep]
             rows, cols = (data.shape + (1, 1))[:2]
-            if kept.size == 0:
-                if rows == 1 and cols >= 1:
-                    return NDArrayValue(kept.reshape(1, 0))
-                return NDArrayValue(kept.reshape(0, 1))
-            if rows == 1:
-                return NDArrayValue(kept.reshape(1, -1))
-            if cols == 1:
-                return NDArrayValue(kept.reshape(-1, 1))
-            # matrix linear delete → column (MATLAB)
-            return NDArrayValue(kept.reshape(-1, 1))
+            if cols == 1 and rows != 1:
+                return NDArrayValue(kept.reshape(-1, 1))  # column (incl. 0x1)
+            return NDArrayValue(kept.reshape(1, -1))  # row vector or matrix → 1xN
 
         if len(indices) == 1:
             ind_a = _as_nd(indices[0])

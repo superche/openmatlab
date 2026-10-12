@@ -647,8 +647,8 @@ features:
     name: logical-mask delete A(L)=[]
     status: done
     depends_on: [runtime.logical_index, runtime.array_delete_empty]
-    notes: "Epic #26 / #307; coverage for set_index empty+logical"
-    tests: [tests/unit/test_logical_delete.py, tests/bdd/test_logical_delete_bdd.py]
+    notes: "Epic #26 / #307; coverage for set_index empty+logical; MATLAB orientation: vectors keep, matrix → row, all-true → 1x0/0x1, A(:)=[] → 0x0; 2-sub delete whole rows/cols only (#312)"
+    tests: [tests/unit/test_logical_delete.py, tests/bdd/test_logical_delete_bdd.py, tests/unit/test_delete_orientation.py]
 
 
   - id: runtime.logical_index_2d
