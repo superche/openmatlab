@@ -152,7 +152,7 @@ features:
     name: MATLAB-aligned Workbench Host shell + layout regions
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W01 (#377); five host regions ready; plugin panels optional"
+    notes: "Epic #372; W01 met; layout parity W07–W09 (#390–#392) chrome+docks; W15 preset MVP"
     tests: [tests/unit/test_workbench.py]
 
   - id: host.workbench.command_window
@@ -160,7 +160,7 @@ features:
     name: Workbench Command Window (REPL eval + capture)
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W02 (#378); headless --eval + tk surface"
+    notes: "Epic #372; W02 met; W11 history (#394); headless --eval + Desktop CW"
     tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
 
   - id: host.workbench.editor
@@ -168,7 +168,7 @@ features:
     name: Workbench Editor panel
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W03 (#379); open/edit/save .m MVP (no LSP/debugger)"
+    notes: "Epic #372; W03 met; W10 multi-doc tabs (#393); no LSP/debugger"
     tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
 
   - id: host.workbench.workspace_browser
@@ -176,7 +176,7 @@ features:
     name: Workbench Workspace browser
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W04 (#380); name/size/class + refresh after eval"
+    notes: "Epic #372; W04 met; W12 Value column (#395)"
     tests: [tests/unit/test_workbench.py, tests/bdd/test_workbench_bdd.py]
 
   - id: host.workbench.current_folder
@@ -184,7 +184,7 @@ features:
     name: Workbench Current Folder browser
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W05 (#381); list/cd/open .m into Editor"
+    notes: "Epic #372; W05 met; W13 path toolbar (#396)"
     tests: [tests/unit/test_workbench.py]
 
   - id: host.workbench.figures
@@ -192,7 +192,7 @@ features:
     name: Workbench figure management
     status: partial
     spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372 / W06 (#382); list/close/focus via PlotSurface"
+    notes: "Epic #372; W06 met; W14 docked Figures region (#397)"
     tests: [tests/unit/test_workbench.py]
 
   - id: lang.tokens_reserved

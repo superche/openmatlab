@@ -9,31 +9,40 @@ GitHub milestone: https://github.com/superche/openmatlab/milestone/6
 
 ## Intent
 
-Ship a **MATLAB-aligned desktop workbench** as a **Host product**:
+Ship a **MATLAB Desktop / Workbench–aligned** Host product — not a thin
+two-pane notebook. The Host **owns** chrome and layout. Plugins fill **slots**
+(panels, menus, commands) — they never fork the shell (PLUGIN-CONTRACT).
 
-- Command Window
-- Editor
-- Workspace browser
-- Current Folder
-- Figure management
+### Honest split: panel MVP vs layout parity
 
-The Host **owns** chrome and layout. Plugins fill **slots** (panels, menus,
-commands) — they never fork the shell (PLUGIN-CONTRACT).
+| Tier | What | Status |
+|------|------|--------|
+| **Panel MVP** (W01–W06) | Five host regions with working APIs + tests | **met** |
+| **Layout parity** (W07–W15) | Menu bar, toolstrip, classic docks, multi-doc Editor, CW history, Workspace Value, path toolbar, docked Figures, layout presets | **required for milestone exit** — criteria met; epic OPEN pending E2E recording + user accept |
+
+Milestone exit is **not** satisfied by panel MVP alone. User acceptance
+requires MATLAB-like layout parity (see exit criteria below).
 
 ## Exit criteria (measurable)
 
 M-workbench-aligned is **done** only when **all** hold on `main`:
 
-1. **Host shell.** `openmatlab workbench` (or documented equivalent) opens /
-   lists a Host-owned layout with the five regions above (stubs allowed only
-   where criterion status is still `pending`).
-2. **Criteria W01–W06** in the table below are `met` with tests (unit and/or
-   BDD); pending rows use strict honesty (no fake `done` in feature_map).
-3. **No open `p0` Issue** on this milestone.
-4. **Docs sync.** PROCESS / AGENTS / ARCHITECTURE point at this milestone;
-   feature_map rows exist for each region.
+1. **Host shell.** `openmatlab workbench` opens a Host-owned **classic docked**
+   layout (Current Folder left · Editor center · Command Window bottom ·
+   Workspace + Figures right) with menu bar, toolstrip, and path toolbar.
+2. **Panel MVP W01–W06** are `met` with tests (unit and/or BDD).
+3. **Layout parity W07–W14** are `met` with tests; **W15** `met` or honestly
+   residual with an open Issue. Pending rows use strict honesty (no fake
+   `done` in feature_map).
+4. **No open `p0` Issue** on this milestone.
+5. **Docs sync.** PROCESS / AGENTS / ARCHITECTURE point at this milestone;
+   feature_map rows exist for each region; notes list layout-parity gaps.
+6. **E2E evidence.** Window recording of the Desktop-like chrome (not the old
+   notebook-only UI) attached to Epic #372 acceptance.
 
 ## Criteria (priority order — epic selection)
+
+### Panel MVP
 
 | # | Criterion | Priority | Tracking | Status |
 |---|-----------|----------|----------|--------|
@@ -44,23 +53,41 @@ M-workbench-aligned is **done** only when **all** hold on `main`:
 | W05 | Current Folder browser | p1 | #381 | **met** |
 | W06 | Figure management panel | p1 | #382 | **met** |
 
+### Layout parity (MATLAB Desktop chrome)
+
+| # | Criterion | Priority | Tracking | Status |
+|---|-----------|----------|----------|--------|
+| W07 | Menu bar (File / Edit / View / Layout) | p0 | #390 | **met** |
+| W08 | Toolstrip / toolbar (Home actions) | p0 | #391 | **met** |
+| W09 | Classic docked desktop layout (CF\|Editor/CW\|WS) | p0 | #392 | **met** |
+| W10 | Multi-document Editor tabs | p1 | #393 | **met** |
+| W11 | Command Window history | p1 | #394 | **met** |
+| W12 | Workspace details (Value column) | p1 | #395 | **met** |
+| W13 | Current Folder + path toolbar | p1 | #396 | **met** |
+| W14 | Docked Figures container | p1 | #397 | **met** |
+| W15 | Layout presets (Default / save-restore MVP) | p2 | #398 | **met** |
+
 Epic #372 takes unmet rows in this table (p0 before p1, then table order).
 
 ## Required feature_ids
 
-All six feature_ids at `partial`: `host.workbench.shell`,
+All six feature_ids at least `partial`: `host.workbench.shell`,
 `host.workbench.command_window`, `host.workbench.editor`,
 `host.workbench.workspace_browser`, `host.workbench.current_folder`,
-`host.workbench.figures`.
+`host.workbench.figures`. Layout-parity notes must stay honest until W07–W14
+met.
 
 ## Non-goals
 
 - Browser / micro-frontend workbench (Option D)
 - Marketplace
 - Closing Epic #349 without user acceptance
-- Full IDE (LSP, debugger) as W03 blocker
+- Full IDE (LSP, debugger) as W03/W10 blocker
+- Pixel-perfect MathWorks ribbon / proprietary toolbox menus
 
 ## Progress snapshot
 
-**6 / 6** criteria met (W01–W06). Epic **#372** OPEN until acceptance evidence
-+ user accept (window recording required).
+**Panel MVP:** 6 / 6 met (W01–W06).  
+**Layout parity:** 9 / 9 met (W07–W15) — Issues #390–#398 closed by layout-parity PR.  
+Epic **#372** OPEN until layout parity + acceptance evidence + user accept
+(new window recording required after chrome lands).
