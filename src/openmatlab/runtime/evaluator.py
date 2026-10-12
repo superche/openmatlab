@@ -379,16 +379,16 @@ class Evaluator:
             return rhs_val
 
         # Empty numeric → delete
+        # MATLAB: c(i) = non-cell is an error unless it is [] (delete)
+        not_possible = EvalError(
+            f"Conversion to cell from {rhs_val.matlab_class()} is not possible."
+        )
         try:
             rhs_arr = self._require_array(rhs_val, "cell () assign")
         except EvalError as exc:
-            raise EvalError(
-                "cell () assign: RHS must be [] or a 1x1 cell"
-            ) from exc
+            raise not_possible from exc
         if rhs_arr.numel() != 0:
-            raise EvalError(
-                "cell () assign: RHS must be [] or a 1x1 cell"
-            )
+            raise not_possible
         if not (1 <= len(idx_exprs) <= 2):
             raise EvalError("cell () delete: only 1 or 2 subscripts")
         rows, cols = cell.shape

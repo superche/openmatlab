@@ -38,5 +38,5 @@ def test_paren_delete_2sub():
 def test_paren_assign_rejects_numeric():
     s = Session.create_default()
     ReplSession(s).run_line("c = {1, 2};")
-    with pytest.raises(EvalError, match="1x1 cell|\\[\\]"):
+    with pytest.raises(EvalError, match="Conversion to cell from double is not possible"):
         ReplSession(s).run_line("c(1) = 5;")
