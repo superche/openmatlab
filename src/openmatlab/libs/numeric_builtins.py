@@ -363,7 +363,18 @@ def _char_flag(v: Value):
 
 
 def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
     _arity("sort", args, 1, 3)
+    if isinstance(args[0], CharValue):
+        # char row: sort by character code, result stays char
+        codes = _wrap([float(ord(ch)) for ch in args[0].text] or np.zeros((1, 0)))
+        out = _sort([codes, *args[1:]], nargout=nargout)
+        text = "".join(chr(int(c)) for c in np.asarray(out[0].backend_buffer()).reshape(-1))
+        return (CharValue(text), *out[1:])
+    if isinstance(args[0], CellValue):
+        return _sort_cellstr(args, nargout=nargout)
     b = _buf("sort", args[0])
     descend = False
     dim_args = []
@@ -396,6 +407,36 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         return (_wrap(sorted_b),)
     return (_wrap(sorted_b), _wrap(idx0.astype(np.float64) + 1.0))
 
+
+
+def _sort_cellstr(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """sort(C) for a cell vector of char: code-point (ASCII) order, stable."""
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    cell = args[0]
+    descend = False
+    for a in args[1:]:
+        f = _char_flag(a)
+        if f not in ("ascend", "descend"):
+            raise BuiltinError("sort: cellstr supports only 'ascend' / 'descend'")
+        descend = f == "descend"
+    rows, cols = cell.shape
+    if rows > 1 and cols > 1:
+        raise BuiltinError("sort: cell array input must be a vector of char")
+    items = [cell.get(i, j) for j in range(cols) for i in range(rows)]
+    if not all(isinstance(v, CharValue) for v in items):
+        raise BuiltinError("sort: cell array input must contain only char vectors")
+    # stable both ways (Python keeps tie order even with reverse=True)
+    order = sorted(range(len(items)), key=lambda k: items[k].text, reverse=descend)
+    picked = [items[k] for k in order]
+    if rows == 1:
+        out = CellValue(rows=(tuple(picked),)) if picked else cell
+        idx = _wrap([float(k + 1) for k in order] or np.zeros((1, 0)))
+    else:
+        out = CellValue(rows=tuple((v,) for v in picked))
+        idx = _wrap(np.asarray([float(k + 1) for k in order]).reshape(-1, 1))
+    return (out,) if nargout <= 1 else (out, idx)
 
 
 def _find(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
