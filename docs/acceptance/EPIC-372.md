@@ -11,6 +11,7 @@
 | Tip | SHA | Notes |
 |-----|-----|-------|
 | Layout parity (W07–W15) | `397bc3215b79266d4727775f14295082b0a7d67d` | Squash merge of [#399](https://github.com/superche/openmatlab/pull/399) |
+| Evidence (docs + sample) | `7ce9d65fea0a7032209e62a6db57d803584c9a3c` | Squash merge of [#400](https://github.com/superche/openmatlab/pull/400) |
 | Prior panel MVP (W01–W06) | `70acb2361de19e2d134e81b2663af9eb9c45ec0f` | Squash merge of [#387](https://github.com/superche/openmatlab/pull/387) |
 
 ## Verdict
