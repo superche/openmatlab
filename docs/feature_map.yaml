@@ -620,7 +620,7 @@ features:
     name: cellfun UniformOutput
     status: done
     depends_on: [lang.function_handle, lang.cell_assign]
-    notes: "M2 C10 final; apply handle per cell (#276)"
+    notes: "M2 C10 final; apply handle per cell (#276); char function name cellfun('numel', C) (#281)"
     tests: [tests/unit/test_cellfun.py, tests/bdd/test_cellfun_bdd.py]
 
 

@@ -511,8 +511,14 @@ def _issorted(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 
 
-def _cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    """cellfun(fh, C) or cellfun(fh, C, 'UniformOutput', false)."""
+def _cellfun(
+    args: Sequence[Value], *, nargout: int = 1, resolver=None
+) -> Sequence[Value]:
+    """cellfun(fh, C) or cellfun(fh, C, 'UniformOutput', false).
+
+    ``fh`` may also be a function name as char (``cellfun('numel', C)``),
+    resolved through the session's FunctionResolver like ``@numel``.
+    """
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.function_handle import FunctionHandleValue
 
@@ -520,8 +526,18 @@ def _cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         raise BuiltinError("cellfun: expected at least 2 arguments")
     fh = args[0]
     cell = args[1]
+    from openmatlab.runtime.char_value import CharValue
+
+    if isinstance(fh, CharValue) and resolver is not None:
+        name = fh.text
+        try:
+            fh = FunctionHandleValue(name=name, fn=resolver.resolve(name))
+        except Exception as exc:
+            raise BuiltinError(f"cellfun: undefined function '{name}'") from exc
     if not isinstance(fh, FunctionHandleValue):
-        raise BuiltinError("cellfun: expected function handle as first argument")
+        raise BuiltinError(
+            "cellfun: expected function handle or function name as first argument"
+        )
     if not isinstance(cell, CellValue):
         raise BuiltinError("cellfun: expected cell array as second argument")
     uniform = True
@@ -752,3 +768,8 @@ def register_numeric_builtins(resolver) -> None:
     """Install core numeric builtins into a FunctionResolver."""
     for name, fn in BUILTINS.items():
         resolver.register_builtin(name, fn)
+
+    def cellfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        return _cellfun(args, nargout=nargout, resolver=resolver)
+
+    resolver.register_builtin("cellfun", cellfun)
