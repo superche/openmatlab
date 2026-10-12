@@ -46,9 +46,9 @@ features:
     name: DisplayPolicy (semicolon suppress, ans, pretty-print)
     status: done
     spec: docs/ARCHITECTURE.md
-    tests: [tests/unit/test_evaluator.py, tests/unit/test_display_semantics.py]
+    tests: [tests/unit/test_evaluator.py, tests/unit/test_display_semantics.py, tests/unit/test_display_format.py]
     protocols: [openmatlab.host.display.DisplayPolicy]
-    notes: "ConsoleDisplay: ans, ';', pretty-print matrices [done per docs/design/ITER-024-feature-done-criteria.md] ; per-statement display in blocks, bare var shows own name, assignments never bind ans (#406)"
+    notes: "ConsoleDisplay: ans, ';', format-short pretty-print (no NumPy repr; #411) [done per docs/design/ITER-024-feature-done-criteria.md] ; per-statement display in blocks, bare var shows own name, assignments never bind ans (#406)"
 
   - id: host.plot_surface
     layer: host
