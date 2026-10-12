@@ -321,8 +321,8 @@ features:
     name: sort descend + find k first/last
     status: done
     depends_on: [libs.sort, libs.find]
-    notes: "M2 C05 met; NaN/empty-row find divergence residual (#189)"
-    tests: [tests/unit/test_sort_find_flags.py, tests/bdd/test_sort_find_flags_bdd.py, tests/conformance/test_m2_conformance.py]
+    notes: "M2 C05 met; NaN/empty-row find divergence residual (#189); sort char + cellstr (ASCII, stable, ascend/descend) (#198)"
+    tests: [tests/unit/test_sort_find_flags.py, tests/bdd/test_sort_find_flags_bdd.py, tests/conformance/test_m2_conformance.py, tests/unit/test_sort_char_cellstr.py]
   - id: libs.elmat_size_vector
     layer: libs
     name: zeros/ones/eye size-vector form
