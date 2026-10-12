@@ -37,10 +37,9 @@ def test_two_arg_and_eye_vector():
     assert np.allclose(s.workspace.get("A").backend_buffer(), np.eye(2, 3))
 
 
-def test_nd_size_vector_errors():
-    s = Session.create_default()
-    with pytest.raises(EvalError, match="N-D|size"):
-        ReplSession(s).run_line("A = zeros([2 3 4]);")
+def test_nd_size_vector_builds_nd():
+    """MATLAB zeros(sz) accepts an N-D size vector (#182); was a deferral error."""
+    assert _shape("A = zeros([2 3 4]);") == (2, 3, 4)
 
 
 def test_size_of_existing_array_sugar():

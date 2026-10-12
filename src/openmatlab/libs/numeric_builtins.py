@@ -56,8 +56,26 @@ def _arity(name: str, args: Sequence[Value], lo: int, hi: int) -> None:
         raise BuiltinError(f"{name}: expected {lo}..{hi} arguments, got {len(args)}")
 
 
+def _shapeN(name: str, args: Sequence[Value]) -> tuple:
+    """N-D size args (#182): (), n, (m,n,p,...), or a size vector [m n p ...]."""
+    if not args:
+        return (1, 1)
+    if len(args) >= 2:
+        return tuple(_dim(name, a) for a in args)
+    b = _buf(name, args[0])
+    if b.size == 1:
+        n = _dim(name, args[0])
+        return (n, n)
+    dims: List[int] = []
+    for x in b.reshape(-1, order="F"):
+        if float(x) != int(x):
+            raise BuiltinError(f"{name}: size arguments must be integers")
+        dims.append(max(0, int(x)))
+    return tuple(dims)
+
+
 def _shape2(name: str, args: Sequence[Value]) -> tuple:
-    """Resolve zeros/ones/eye/nan/cell size args (scalar, m,n, or size vector)."""
+    """Resolve eye/cell size args (scalar, m,n, or size vector) — 2-D only."""
     _arity(name, args, 0, 2)
     if not args:
         return (1, 1)
@@ -88,11 +106,11 @@ def _shape2(name: str, args: Sequence[Value]) -> tuple:
 
 
 def _zeros(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    return (_wrap(np.zeros(_shape2("zeros", args))),)
+    return (_wrap(np.zeros(_shapeN("zeros", args))),)
 
 
 def _ones(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-    return (_wrap(np.ones(_shape2("ones", args))),)
+    return (_wrap(np.ones(_shapeN("ones", args))),)
 
 
 def _eye(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
@@ -110,12 +128,12 @@ def _linspace(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
 def _nan(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     """MATLAB nan/NaN — scalar or filled array of NaNs (needed for omitnan max/min)."""
-    return (_wrap(np.full(_shape2("nan", args), np.nan)),)
+    return (_wrap(np.full(_shapeN("nan", args), np.nan)),)
 
 
 def _inf(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     """MATLAB Inf/inf — scalar or filled array of +Inf."""
-    return (_wrap(np.full(_shape2("Inf", args), np.inf)),)
+    return (_wrap(np.full(_shapeN("Inf", args), np.inf)),)
 
 
 def _pi(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
@@ -185,6 +203,87 @@ def _double(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     if isinstance(v, Array):
         return (NDArrayValue(np.asarray(v.backend_buffer(), dtype=float)),)
     raise BuiltinError("double: conversion from this class is not possible")
+
+
+def _ndims(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    _arity("ndims", args, 1, 1)
+    return (_wrap(len(_shape_of(args[0]))),)
+
+
+def _reshape(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """reshape(A, m, n, p, ...) / reshape(A, [m n p]); one [] dim is inferred."""
+    if len(args) < 2:
+        raise BuiltinError("reshape: not enough input arguments")
+    a = args[0]
+    if not isinstance(a, Array):
+        raise BuiltinError("reshape: expected numeric Array argument")
+    data = np.asarray(a.backend_buffer())
+    if len(args) == 2:
+        dims = [int(x) for x in _buf("reshape", args[1]).reshape(-1)]
+    else:
+        dims = []
+        for d in args[1:]:
+            b = _buf("reshape", d)
+            dims.append(-1 if b.size == 0 else _dim("reshape", d))
+    if dims.count(-1) > 1:
+        raise BuiltinError("reshape: only one dimension size can be []")
+    known = int(np.prod([d for d in dims if d != -1]))
+    if -1 in dims:
+        if known == 0 or data.size % known:
+            raise BuiltinError("reshape: size not divisible for [] dimension")
+        dims[dims.index(-1)] = data.size // known
+    if int(np.prod(dims)) != data.size:
+        raise BuiltinError(
+            "reshape: Number of elements must not change. Use [] as one of the "
+            "size inputs to automatically calculate the appropriate size for that dimension."
+        )
+    if len(dims) < 2:
+        raise BuiltinError("reshape: size vector must have at least two elements")
+    return (NDArrayValue(data.reshape(dims, order="F")),)
+
+
+def _squeeze(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """Drop singleton dims; 2-D arrays (incl. row vectors) are unchanged."""
+    _arity("squeeze", args, 1, 1)
+    a = args[0]
+    if not isinstance(a, Array):
+        return (a,)
+    data = np.asarray(a.backend_buffer())
+    if data.ndim <= 2:
+        return (a,)
+    dims = [d for d in data.shape if d != 1]
+    while len(dims) < 2:
+        dims.append(1)
+    if len(dims) == 2 and data.shape[0] == 1 and data.shape[1] == 1:
+        dims = [dims[0], dims[1]]  # 1x1xN → Nx1 (MATLAB)
+    return (NDArrayValue(data.reshape(dims, order="F")),)
+
+
+def _cat(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+    """cat(dim, A, B, ...): concatenate along any dimension (empties skipped)."""
+    if not args:
+        raise BuiltinError("cat: not enough input arguments")
+    ax = _axis_arg("cat", args[0])
+    parts = []
+    for v in args[1:]:
+        if not isinstance(v, Array):
+            raise BuiltinError("cat: expected numeric Array arguments")
+        b = np.asarray(v.backend_buffer())
+        if b.size == 0 and b.shape in ((0, 0),):
+            continue
+        b = b.reshape(b.shape + (1,) * max(0, ax + 1 - b.ndim))
+        parts.append(b)
+    if not parts:
+        return (_wrap(np.zeros((0, 0))),)
+    nd = max(p.ndim for p in parts)
+    parts = [p.reshape(p.shape + (1,) * (nd - p.ndim)) for p in parts]
+    try:
+        out = np.concatenate(parts, axis=ax)
+    except ValueError:
+        raise BuiltinError("Dimensions of arrays being concatenated are not consistent.") from None
+    if all(p.dtype == np.bool_ for p in parts):
+        return (NDArrayValue(out.astype(bool)),)
+    return (NDArrayValue(out.astype(np.float64)),)
 
 
 def _size(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
@@ -835,22 +934,8 @@ def _make_any_all(name: str, op, empty: bool):
 
 def _true_false(name: str, fill: bool):
     def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
-        _arity(name, args, 0, 2)
-        if not args:
-            return (NDArrayValue(np.asarray([[fill]], dtype=bool)),)
-        if len(args) == 1:
-            b = _buf(name, args[0])
-            if b.size == 1:
-                n = _dim(name, args[0])
-                return (NDArrayValue(np.full((n, n), fill, dtype=bool)),)
-            # size vector
-            flat = b.reshape(-1, order="F")
-            dims = [max(0, int(x)) for x in flat[:2]]
-            while len(dims) < 2:
-                dims.append(1)
-            return (NDArrayValue(np.full((dims[0], dims[1]), fill, dtype=bool)),)
-        m, n = _dim(name, args[0]), _dim(name, args[1])
-        return (NDArrayValue(np.full((m, n), fill, dtype=bool)),)
+        # N-D logical constructors true(m,n,p) / false([m n p]) (#330)
+        return (NDArrayValue(np.full(_shapeN(name, args), fill, dtype=bool)),)
 
     return _fn
 
@@ -899,6 +984,10 @@ BUILTINS: Dict[str, Builtin] = {
     "true": _true_false("true", True),
     "false": _true_false("false", False),
     "size": _size,
+    "ndims": _ndims,
+    "reshape": _reshape,
+    "squeeze": _squeeze,
+    "cat": _cat,
     "char": _char,
     "double": _double,
     "numel": _numel,

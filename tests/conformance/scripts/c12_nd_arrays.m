@@ -1,0 +1,15 @@
+A = zeros(2, 3, 4);
+nd = ndims(A);
+s = size(A);
+B = reshape(1:8, 2, 2, 2);
+x = B(2, 1, 2);
+e = B(end, end, end);
+f = B(1, end);
+B(:, :, 3) = 9;
+sB = size(B);
+s3 = sum(B, 3);
+m = B(B > 7)';
+t = true(2, 2, 2);
+nt = numel(t);
+C = cat(3, [1 2], [3 4]);
+sC = size(C);

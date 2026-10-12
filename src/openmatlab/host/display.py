@@ -51,9 +51,36 @@ class ConsoleDisplay:
 
     def show(self, value: object, *, name: Optional[str] = None) -> None:
         label = name if name is not None else "ans"
+        pages = _nd_pages(value)
+        if pages is not None:
+            # MATLAB shows N-D arrays page by page: A(:,:,k) = ... (#74)
+            for suffix, page in pages:
+                self.stream.write(f"{label}(:,:,{suffix}) =\n\n{format_array(page)}\n\n")
+            self.stream.flush()
+            return
         text = _format_value(value)
         self.stream.write(f"{label} =\n\n{text}\n\n")
         self.stream.flush()
+
+
+def _nd_pages(value: object):
+    """For an N-D Array, [(\"k\" or \"k,l\", 2-D page), ...] in column-major
+    page order; None for 2-D values."""
+    try:
+        from openmatlab.runtime.value import Array
+        import numpy as np
+    except Exception:  # pragma: no cover
+        return None
+    if not isinstance(value, Array):
+        return None
+    a = np.asarray(value.backend_buffer())
+    if a.ndim <= 2 or a.size == 0:
+        return None
+    out = []
+    for idx in np.ndindex(*a.shape[:1:-1]):
+        idx = idx[::-1]  # first page dim varies fastest (column-major)
+        out.append((",".join(str(i + 1) for i in idx), a[(slice(None), slice(None)) + idx]))
+    return out
 
 
 def _format_value(value: object) -> str:
@@ -125,8 +152,10 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
         a = a.reshape(1, 1)
     elif a.ndim == 1:
         a = a.reshape(1, -1)
+    if a.ndim > 2 and a.size:
+        return "[" + "x".join(str(d) for d in a.shape) + " double]"
     if a.size == 0:
-        return f"[]({a.shape[0]}x{a.shape[1]})"
+        return "[](" + "x".join(str(d) for d in a.shape) + ")"
     if np.iscomplexobj(a):
         return str(a)
     a = a.astype(np.float64)
