@@ -891,3 +891,21 @@ test_cases:
     impl: tests/bdd/test_int_string_classes_bdd.py
     status: active
     env: unit
+
+  - id: tc.string_arrays
+    kind: unit
+    title: string arrays and text methods (Epic #482)
+    features: [runtime.string_class, libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_string_arrays.py
+    status: active
+    env: unit
+
+  - id: tc.string_arrays_bdd
+    kind: bdd
+    title: string arrays Gherkin scenarios (Epic #482)
+    features: [runtime.string_class, libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_string_arrays_bdd.py
+    status: active
+    env: unit

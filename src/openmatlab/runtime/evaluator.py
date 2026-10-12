@@ -233,7 +233,9 @@ class Evaluator:
             if isinstance(operand, CharValue) and not getattr(operand, "is_string", False):
                 return _codes_char(self.numerics.transpose(_char_codes(operand)))
             if getattr(operand, "is_string", False):
-                return operand  # 1x1 string scalar
+                from openmatlab.runtime import string_array as sa
+
+                return sa.make(sa.to_grid(operand).T)  # (#459)
             return self.numerics.transpose(
                 self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
@@ -269,6 +271,16 @@ class Evaluator:
         from openmatlab.runtime.cell_value import CellValue
 
         target = self.eval_expr(expr.target)
+        if getattr(target, "is_string", False):  # s{k} is the char vector (#459)
+            from openmatlab.runtime.char_value import CharValue
+
+            picked = self._string_index(target, list(expr.indices))
+            if picked.numel() != 1:
+                raise EvalError("Brace indexing into a string array must select one element.")
+            g = picked.text if not hasattr(picked, "data") else picked.data.flat[0]
+            if g is None:
+                raise EvalError("Unable to use a missing string as a character vector.")
+            return CharValue(g)
         if not isinstance(target, CellValue):
             raise EvalError(
                 f"cell index: expected cell, got {type(target).__name__}"
@@ -314,7 +326,7 @@ class Evaluator:
 
         is_char = isinstance(arr, CharValue) and not getattr(arr, "is_string", False)
         if getattr(arr, "is_string", False):
-            raise EvalError("array assign: string arrays are not supported yet (#457 residual)")
+            return self._string_assign(name, arr, list(stmt.target.indices), rhs_val)
         arr_a = _char_codes(arr) if is_char else self._require_array(arr, "array assign")
         idxs = self._eval_subscripts(
             arr_a, list(stmt.target.indices), label="array assign"
@@ -495,6 +507,8 @@ class Evaluator:
             cell = self.workspace.get(name)
         except KeyError as exc:
             raise EvalError(f"Undefined variable: {name}") from exc
+        if getattr(cell, "is_string", False):  # s{k} = 'x' (#459)
+            return self._string_assign(name, cell, list(stmt.target.indices), self.eval_expr(stmt.value))
         if not isinstance(cell, CellValue):
             raise EvalError(
                 f"cell assign: expected cell, got {type(cell).__name__}"
@@ -774,11 +788,7 @@ class Evaluator:
             from openmatlab.runtime.char_value import CharValue
 
             if getattr(target, "is_string", False):
-                # string scalar: s(1) / s(:) / s(end) is the scalar itself
-                codes1 = self.numerics.from_scalar(1.0)
-                idxs = self._eval_subscripts(codes1, arg_exprs, label="index")
-                self.numerics.index(codes1, idxs)  # bounds check (≤ 1)
-                return target
+                return self._string_index(target, arg_exprs)  # (#459)
             if isinstance(target, CharValue):
                 # char indexing (#457): index the code matrix, convert back
                 codes = _char_codes(target)
@@ -1048,7 +1058,10 @@ class Evaluator:
     def _string_binop(self, op: str, lv: Value, rv: Value) -> Value:
         """string scalar ops (#78): + concatenates, comparisons are textual."""
         from openmatlab.runtime.char_value import StringValue
+        from openmatlab.runtime.string_array import StringArray
 
+        if isinstance(lv, StringArray) or isinstance(rv, StringArray):
+            return self._string_array_binop(op, lv, rv)
         a, b = _string_text(lv), _string_text(rv)
         if a is None or b is None:
             raise EvalError(f"Operator '{op}' is not supported for operands of type 'string'.")
@@ -1058,6 +1071,33 @@ class Evaluator:
         if op in cmp:
             return self._logical(np_bool(cmp[op]))
         raise EvalError(f"Operator '{op}' is not supported for operands of type 'string'.")
+
+    def _string_array_binop(self, op: str, lv: Value, rv: Value) -> Value:
+        """Elementwise string-array + and comparisons with scalar expansion (#459).
+        <missing> propagates through +; it compares unequal to everything."""
+        import numpy as np
+        from openmatlab.runtime import string_array as sa
+
+        ga, gb = sa.to_grid(lv), sa.to_grid(rv)
+        bad = EvalError(f"Operator '{op}' is not supported for operands of type 'string'.")
+        if ga is None or gb is None or op not in ("+", "==", "~=", "<", "<=", ">", ">="):
+            raise bad
+        if not (ga.size == 1 or gb.size == 1 or ga.shape == gb.shape):
+            raise EvalError("Arrays have incompatible sizes for this operation.")
+        a, b = np.broadcast_arrays(ga, gb)
+        if op == "+":
+            out = np.empty(a.shape, dtype=object)
+            for ix in np.ndindex(*a.shape):
+                x, y = a[ix], b[ix]
+                out[ix] = None if x is None or y is None else x + y
+            return sa.make(out)
+        fns = {"==": lambda x, y: x == y, "~=": lambda x, y: x != y, "<": lambda x, y: x < y,
+               "<=": lambda x, y: x <= y, ">": lambda x, y: x > y, ">=": lambda x, y: x >= y}
+        res = np.zeros(a.shape, dtype=bool)
+        for ix in np.ndindex(*a.shape):
+            x, y = a[ix], b[ix]
+            res[ix] = (op == "~=") if (x is None or y is None) else fns[op](x, y)
+        return self._logical(res)
 
     def _bool_buf(self, v: Value):
         """Logical view of a numeric/logical array (NaN is an error, as in MATLAB)."""
@@ -1106,6 +1146,8 @@ class Evaluator:
         flat = [v for r in rows for v in r]
         if any(isinstance(v, CellValue) for v in flat):
             return self._concat_cells(rows)
+        if any(getattr(v, "is_string", False) for v in flat):
+            return self._concat_strings(rows)
         if any(isinstance(v, CharValue) for v in flat):
             return self._concat_chars(rows)
         return self._concat_arrays(rows)
@@ -1179,6 +1221,96 @@ class Evaluator:
         if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:
             raise EvalError(self._CONCAT_ERR)
         return np.concatenate(parts, axis=axis)
+
+    def _concat_strings(self, rows: list):
+        """[\"a\" \"b\"; ...]: chars become one element per row, numbers convert (#459)."""
+        import numpy as np
+        from openmatlab.runtime import string_array as sa
+        from openmatlab.runtime.value import Array
+
+        blocks = []
+        for r in rows:
+            parts = []
+            for v in r:
+                if isinstance(v, Array) and v.numel() == 0:
+                    continue  # [] is skipped
+                g = sa.to_grid(v)
+                if g is None:
+                    raise EvalError(f"Conversion to string from {v.matlab_class()} is not possible.")
+                if g.size or g.shape[0]:
+                    parts.append(g)
+            if not parts:
+                continue
+            if len({p.shape[0] for p in parts}) != 1:
+                raise EvalError(self._CONCAT_ERR)
+            blocks.append(np.concatenate(parts, axis=1))
+        if not blocks:
+            return sa.StringArray(np.empty((0, 0), dtype=object))
+        if len({b.shape[1] for b in blocks}) != 1:
+            raise EvalError(self._CONCAT_ERR)
+        return sa.make(np.concatenate(blocks, axis=0))
+
+    def _string_positions(self, grid):
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+
+        return NDArrayValue(np.arange(1, grid.size + 1, dtype=np.float64).reshape(grid.shape, order="F"))
+
+    def _string_index(self, target, arg_exprs: list) -> Value:
+        """s(i), s(i,j), s(end), s(:), s(mask) on string arrays (#459): index a
+        position map with the numeric path, then gather."""
+        import numpy as np
+        from openmatlab.runtime import string_array as sa
+
+        g = sa.to_grid(target)
+        pos = self._string_positions(g)
+        idxs = self._eval_subscripts(pos, arg_exprs, label="index")
+        try:
+            out = np.asarray(self.numerics.index(pos, idxs).backend_buffer())
+        except Exception as exc:
+            raise EvalError(str(exc)) from exc
+        if len(arg_exprs) == 1 and self._is_bare_colon(arg_exprs[0]):
+            out = out.reshape(-1, 1)
+        out = out.reshape(1, 1) if out.ndim == 0 else out
+        flat = g.reshape(-1, order="F")
+        res = np.empty(out.shape, dtype=object)
+        for ix in np.ndindex(*out.shape):
+            res[ix] = flat[int(out[ix]) - 1]
+        return sa.make(res)
+
+    def _string_assign(self, name: str, arr, idx_exprs: list, rhs_val: Value) -> Value:
+        """s(i) = \"x\" / 'x' / 3, growth fills <missing>, s(i) = [] deletes (#459)."""
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+        from openmatlab.runtime import string_array as sa
+        from openmatlab.runtime.value import Array
+
+        g = sa.to_grid(arr)
+        n = g.size
+        pos = self._string_positions(g)
+        idxs = self._eval_subscripts(pos, idx_exprs, label="array assign")
+        delete = isinstance(rhs_val, Array) and rhs_val.numel() == 0 and not sa.is_string(rhs_val)
+        if delete:
+            rg = np.empty((0, 0), dtype=object)
+            rhs = rhs_val
+        else:
+            rg = sa.to_grid(rhs_val)
+            if rg is None:
+                raise EvalError(f"Conversion to string from {rhs_val.matlab_class()} is not possible.")
+            rhs = NDArrayValue(np.arange(n + 1, n + rg.size + 1, dtype=np.float64).reshape(rg.shape, order="F"))
+        try:
+            new_pos = np.asarray(self.numerics.set_index(pos, idxs, rhs).backend_buffer())
+        except Exception as exc:
+            raise EvalError(f"array assign: {exc}") from exc
+        if delete and len(idx_exprs) == 1 and self._is_bare_colon(idx_exprs[0]):
+            new_pos = np.zeros((0, 0))
+        lookup = [None] + list(g.reshape(-1, order="F")) + list(rg.reshape(-1, order="F"))
+        new_pos = new_pos.reshape(1, 1) if new_pos.ndim == 0 else new_pos
+        res = np.empty(new_pos.shape, dtype=object)
+        for ix in np.ndindex(*new_pos.shape):
+            res[ix] = lookup[int(new_pos[ix])]
+        self.workspace.set(name, sa.make(res))
+        return rhs_val
 
     def _concat_cells(self, rows: list):
         from openmatlab.runtime.cell_value import CellValue
@@ -1366,32 +1498,37 @@ class Evaluator:
         return last
 
     def _eval_for(self, stmt: ast.ForStmt) -> Value:
-        iterable = self._require_array(self.eval_expr(stmt.iterable), "for")
         import numpy as np
-
-        raw = np.asarray(iterable.backend_buffer())
-        keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw) or raw.dtype == np.float32
-        if not keep:
-            raw = np.asarray(raw, dtype=float)
-        if raw.ndim == 0:
-            raw = raw.reshape(1, 1)
-        # MATLAB iterates over columns of A(:,:) (#471).
-        cols = raw.reshape(raw.shape[0], int(np.prod(raw.shape[1:])), order="F")
-        if cols.shape[0] == 1:
-            vals = cols[0]
-        else:
-            vals = [cols[:, [k]] for k in range(cols.shape[1])]
-        last: Value = self.numerics.from_scalar(0.0)
         from openmatlab.numerics.ndarray_value import NDArrayValue
+
+        value = self.eval_expr(stmt.iterable)
+        if getattr(value, "is_string", False):  # columns of a string array (#459)
+            from openmatlab.runtime import string_array as sa
+
+            g = sa.to_grid(value)
+            items = [sa.make(g[:, [k]]) for k in range(g.shape[1])]
+        else:
+            raw = np.asarray(self._require_array(value, "for").backend_buffer())
+            keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw) or raw.dtype == np.float32
+            if not keep:
+                raw = np.asarray(raw, dtype=float)
+            if raw.ndim == 0:
+                raw = raw.reshape(1, 1)
+            # MATLAB iterates over columns of A(:,:) (#471).
+            cols = raw.reshape(raw.shape[0], int(np.prod(raw.shape[1:])), order="F")
+            if cols.shape[0] == 1:
+                items = (
+                    NDArrayValue(np.array([[x]], dtype=raw.dtype)) if keep
+                    else self.numerics.from_scalar(float(x))
+                    for x in cols[0]
+                )
+            else:
+                items = (NDArrayValue(np.array(cols[:, [k]], dtype=raw.dtype)) for k in range(cols.shape[1]))
+        last: Value = self.numerics.from_scalar(0.0)
         self._loop_depth += 1
         try:
-            for x in vals:
-                self.workspace.set(
-                    stmt.var,
-                    NDArrayValue(np.array(x, dtype=raw.dtype)) if np.ndim(x)
-                    else NDArrayValue(np.array([[x]], dtype=raw.dtype)) if keep
-                    else self.numerics.from_scalar(float(x)),
-                )
+            for item in items:
+                self.workspace.set(stmt.var, item)
                 try:
                     for s in stmt.body:
                         last = self.eval_stmt(s)

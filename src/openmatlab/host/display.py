@@ -83,6 +83,20 @@ def _nd_pages(value: object):
     return out
 
 
+def format_string_array(g) -> str:
+    """MATLAB string-array display (#459): size header, then left-aligned quoted
+    columns with a 4-space indent/gutter; <missing> unquoted."""
+    r, c = g.shape
+    if g.size == 1:
+        return "<missing>" if g.flat[0] is None else f'"{g.flat[0]}"'
+    if g.size == 0:
+        return f"  {r}x{c} empty string array"
+    cells = [["<missing>" if x is None else f'"{x}"' for x in row] for row in g]
+    widths = [max(len(cells[i][j]) for i in range(r)) for j in range(c)]
+    lines = ["    " + "    ".join(cells[i][j].ljust(widths[j]) for j in range(c)).rstrip() for i in range(r)]
+    return f"  {r}x{c} string array\n\n" + "\n".join(lines)
+
+
 def _cell_int_summary(v: object):
     """MATLAB shows non-scalar integer arrays inside cells as ``[1x2 int8]`` (#464)."""
     import numpy as np
@@ -90,6 +104,8 @@ def _cell_int_summary(v: object):
     from openmatlab.numerics.intclass import class_name
     from openmatlab.runtime.value import Array
 
+    if hasattr(v, "data") and getattr(v, "is_string", False) and v.numel() != 1:
+        return "[" + "x".join(str(d) for d in v.shape) + " string]"  # (#459)
     if not isinstance(v, Array):
         return None
     a = np.asarray(v.backend_buffer())
@@ -136,6 +152,8 @@ def _format_value(value: object) -> str:
         from openmatlab.runtime.char_value import CharValue
 
         if getattr(value, "is_string", False):
+            if hasattr(value, "data"):
+                return format_string_array(value.data)
             return f'"{value.text}"'
         if isinstance(value, CharValue):
             return "\n".join(value.rows)

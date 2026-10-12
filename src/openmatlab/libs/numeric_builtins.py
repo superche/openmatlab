@@ -160,6 +160,8 @@ def _shape_of(v: Value) -> tuple:
         return v.shape
     if isinstance(v, CellValue):
         return tuple(v.full_shape)
+    if getattr(v, "is_string", False):
+        return tuple(v.shape)  # string arrays (#459)
     if isinstance(v, Array):
         shape = tuple(np.asarray(v.backend_buffer()).shape)
         return shape + (1,) * (2 - len(shape)) if len(shape) < 2 else shape
@@ -1029,7 +1031,7 @@ def _isempty(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     elif isinstance(v, CellValue):
         r, c = v.shape
         n = r * c
-    elif isinstance(v, Array):
+    elif isinstance(v, Array) or getattr(v, "is_string", False):
         n = v.numel()
     else:
         n = 1  # function handles etc. are 1x1
@@ -1189,6 +1191,9 @@ _shape_builtins.register(BUILTINS)
 from openmatlab.libs import int_builtins as _int_builtins  # noqa: E402
 
 _int_builtins.register(BUILTINS)
+from openmatlab.libs import string_builtins as _string_builtins  # noqa: E402
+
+_string_builtins.register(BUILTINS)
 
 
 def register_numeric_builtins(resolver) -> None:
