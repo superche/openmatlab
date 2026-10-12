@@ -255,7 +255,7 @@ features:
     name: switch / case / otherwise
     status: done
     depends_on: [lang.parser, runtime.evaluator]
-    notes: "no fall-through; case {a,b} multi-match; scalar/char equality (#148)"
+    notes: "no fall-through; case {a,b} multi-match; scalar/char equality (#148); non-scalar switch expr errors (#152); string class waits on #78"
     tests: [tests/unit/test_switch.py, tests/bdd/test_switch_bdd.py]
 
   - id: runtime.array_assign_range

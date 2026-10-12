@@ -59,3 +59,25 @@ def test_char_case():
     r = ReplSession(s)
     r.run_line("switch 'b'\ncase 'a'\nc=1;\ncase 'b'\nc=2;\notherwise\nc=3;\nend")
     assert _scalar(s, "c") == 2
+
+
+def test_switch_expression_must_be_scalar_or_char():
+    """Issue #152: MATLAB rejects non-scalar numeric / cell switch expressions."""
+    from openmatlab.runtime.evaluator import EvalError
+
+    for expr in ("[1 2]", "{1}", "zeros(0, 0)"):
+        s = Session.create_default()
+        with pytest.raises(EvalError, match="SWITCH expression must be a scalar or a character vector"):
+            ReplSession(s).run_line(f"switch {expr}\ncase 1\ny = 1;\nend")
+
+
+def test_switch_char_and_cell_labels():
+    """Issue #152: char equality is whole-text; cell labels match any member."""
+    def y(code):
+        s = Session.create_default()
+        ReplSession(s).run_line(code)
+        return float(s.workspace.get("y").backend_buffer().reshape(-1)[0])
+
+    assert y("switch 'ab', case {'x', 'ab'}, y = 1; otherwise, y = 0; end") == 1.0
+    assert y("switch 'ab', case 'abc', y = 1; otherwise, y = 0; end") == 0.0
+    assert y("switch 2, case [1 2], y = 1; otherwise, y = 0; end") == 0.0
