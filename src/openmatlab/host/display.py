@@ -83,6 +83,23 @@ def _nd_pages(value: object):
     return out
 
 
+def _cell_int_summary(v: object):
+    """MATLAB shows non-scalar integer arrays inside cells as ``[1x2 int8]`` (#464)."""
+    import numpy as np
+
+    from openmatlab.numerics.intclass import class_name
+    from openmatlab.runtime.value import Array
+
+    if not isinstance(v, Array):
+        return None
+    a = np.asarray(v.backend_buffer())
+    cls = class_name(a.dtype) if np.issubdtype(a.dtype, np.integer) else None
+    if cls is None or a.size == 1:
+        return None
+    shape = a.shape if a.ndim >= 2 else (1,) * (2 - a.ndim) + a.shape
+    return "[" + "x".join(str(d) for d in shape) + f" {cls}]"
+
+
 def _format_value(value: object) -> str:
     try:
         from openmatlab.runtime.cell_value import CellValue
@@ -94,7 +111,7 @@ def _format_value(value: object) -> str:
             lines = [f"{{{r}x{c} cell}}"]
             for i in range(r):
                 for j in range(c):
-                    inner = _format_value(value.get(i, j))
+                    inner = _cell_int_summary(value.get(i, j)) or _format_value(value.get(i, j))
                     # indent multi-line
                     inner_lines = inner.splitlines() or [inner]
                     lines.append(f"  ({i+1},{j+1}) = {inner_lines[0]}")
@@ -155,7 +172,10 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
     elif a.ndim == 1:
         a = a.reshape(1, -1)
     if a.ndim > 2 and a.size:
-        return "[" + "x".join(str(d) for d in a.shape) + " double]"
+        from openmatlab.numerics.intclass import class_name
+
+        cls = class_name(a.dtype) if np.issubdtype(a.dtype, np.integer) else "double"
+        return "[" + "x".join(str(d) for d in a.shape) + f" {cls}]"
     if a.size == 0:
         return "[](" + "x".join(str(d) for d in a.shape) + ")"
     if np.iscomplexobj(a):
