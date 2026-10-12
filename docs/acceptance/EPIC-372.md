@@ -11,7 +11,7 @@
 | Tip | SHA | Notes |
 |-----|-----|-------|
 | Functional (W01–W06) | `70acb2361de19e2d134e81b2663af9eb9c45ec0f` | Squash merge of [#387](https://github.com/superche/openmatlab/pull/387) |
-| Evidence (this PR) | *(fill after merge)* | Acceptance + window recording |
+| Evidence (this PR) | `d899a7df7c12fafad0c18d688d40d256695b5e7e` | Squash merge of [#388](https://github.com/superche/openmatlab/pull/388) |
 
 ## Verdict
 
