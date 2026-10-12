@@ -320,7 +320,7 @@ features:
     name: zeros/ones/eye size-vector form
     status: done
     depends_on: [libs.elmat_constructors]
-    notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179)"
+    notes: "zeros([m n]); [n]≡scalar square; N-D size vector errors (#179); zeros(size(A)) / size(A,k) sugar verified (#184)"
     tests: [tests/unit/test_elmat_size_vector.py, tests/bdd/test_elmat_size_vector_bdd.py]
   - id: runtime.char_value
     layer: runtime
