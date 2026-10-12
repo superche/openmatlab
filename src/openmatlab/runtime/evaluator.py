@@ -1089,22 +1089,30 @@ class Evaluator:
 
         texts = []
         for r in rows:
-            t = ""
+            # each bracket row is a list of row-blocks; char matrices stack
+            block: list = [""]
             for v in r:
                 if isinstance(v, CharValue):
-                    t += v.text
+                    if not v.rows:
+                        continue
+                    if block == [""]:
+                        block = [""] * len(v.rows)
+                    if len(v.rows) != len(block):
+                        raise EvalError(self._CONCAT_ERR)
+                    block = [a + b for a, b in zip(block, v.rows)]
                     continue
                 b = np.asarray(self._require_array(v, "matrix").backend_buffer())
                 if b.ndim == 2 and min(b.shape) > 1:
                     raise EvalError(self._CONCAT_ERR)
-                t += "".join(chr(int(x)) for x in b.reshape(-1))
-            if t:
-                texts.append(t)
-        if len(texts) > 1:
-            if len({len(t) for t in texts}) != 1:
-                raise EvalError(self._CONCAT_ERR)
-            raise EvalError("multi-row char matrices are not supported yet")
-        return CharValue(texts[0] if texts else "")
+                if b.size == 0:
+                    continue
+                if len(block) != 1:
+                    raise EvalError(self._CONCAT_ERR)
+                block = [block[0] + "".join(chr(int(x)) for x in b.reshape(-1))]
+            texts.extend(t for t in block if t or len(block) > 1)
+        if len({len(t) for t in texts}) > 1:
+            raise EvalError(self._CONCAT_ERR)
+        return CharValue(rows=texts)
 
     def _eval_colon(self, expr: ast.ColonExpr) -> Array:
         if expr.start is None or expr.stop is None:

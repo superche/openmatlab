@@ -60,7 +60,7 @@ src/openmatlab/
     parser.py       parse() — matrix MVP + function defs
   runtime/        # execution model
     value.py        Value / Array protocols
-    char_value.py   CharValue (single/double-quoted char rows)
+    char_value.py   CharValue (2-D char matrix as equal-length rows)
     cell_value.py   CellValue
     function_handle.py FunctionHandleValue (@name)
     workspace.py    base + nested frames
