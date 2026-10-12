@@ -286,8 +286,8 @@ features:
     name: delete via A(i)=[] / c(i)=[]
     status: done
     depends_on: [runtime.array_assign_range, lang.cell_assign]
-    notes: "M2 C06 met; empty RHS shrinks; cell paren delete (#244)"
-    tests: [tests/unit/test_delete_empty.py, tests/bdd/test_delete_empty_bdd.py]
+    notes: "M2 C06 met; empty RHS shrinks; cell paren delete (#244); cell c(L)=[] / c([i j])=[] / c(end)=[] (#311)"
+    tests: [tests/unit/test_delete_empty.py, tests/bdd/test_delete_empty_bdd.py, tests/unit/test_cell_mask_delete.py]
   - id: runtime.logical_index
     layer: runtime
     name: logical indexing read + LHS assign
