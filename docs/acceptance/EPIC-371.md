@@ -17,6 +17,20 @@
 
 **Ready for user acceptance.** Milestone exit criteria 1–4 hold on `main` (D01–D04 **met**, no open `p0` on milestone/5). Children #373–#376 closed. **Epic remains OPEN** until the user accepts.
 
+
+## Showcase recording
+
+Clear large-font terminal window proving Epic #371 gates:
+
+1. **Reference-vector suite** — `pytest tests/conformance -m conformance`
+2. **D01** — `hamming(8)` vs golden reference vector (`match = True`)
+3. **D04** — PluginHost `which('hamming')` resolves via community.signal pathEntries
+
+- [`demos/plugins/showcase_domain_conformance.mp4`](../../demos/plugins/showcase_domain_conformance.mp4)
+- Recorder: [`demos/plugins/record_domain_conformance_showcase.sh`](../../demos/plugins/record_domain_conformance_showcase.sh)
+
+**Epic remains OPEN** until the user accepts.
+
 ## Traceability — Issues → PR → CI
 
 | Criterion | Issue | PR | CI (`test`) |
