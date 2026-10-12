@@ -18,7 +18,7 @@
 
 ## Verdict
 
-**Ready for user re-acceptance after shallow rejection.** M-plugins exit criteria 1–7 still hold. Children #350–#356 closed. **Epic remains OPEN** until the user accepts.
+**Ready for user re-acceptance after shallow rejection.** M-plugins exit criteria 1–7 still hold. Children #350–#356 closed. **Update:** Epic #349 closed on GitHub 2026-10-12 11:13 CST (user accepted); milestone closed.
 
 Shallow acceptance was rejected because the prior showcase only proved host plumbing (`demo OK` / `which sigdemo`). This package adds:
 

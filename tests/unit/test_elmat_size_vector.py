@@ -41,3 +41,14 @@ def test_nd_size_vector_errors():
     s = Session.create_default()
     with pytest.raises(EvalError, match="N-D|size"):
         ReplSession(s).run_line("A = zeros([2 3 4]);")
+
+
+def test_size_of_existing_array_sugar():
+    """Issue #184: constructors accept size(A) / size(A,k) of an existing array."""
+    pre = "B = [1 2 3; 4 5 6];"
+    assert _shape(pre + " A = zeros(size(B));") == (2, 3)
+    assert _shape(pre + " A = ones(size(B));") == (2, 3)
+    assert _shape(pre + " A = eye(size(B));") == (2, 3)
+    assert _shape(pre + " A = zeros(size(B'));") == (3, 2)
+    assert _shape(pre + " A = ones(size(B, 1), size(B, 2));") == (2, 3)
+    assert _shape(pre + " A = zeros(size(B, 2));") == (3, 3)
