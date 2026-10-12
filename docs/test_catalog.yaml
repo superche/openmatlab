@@ -784,6 +784,12 @@ test_cases:
     env: unit
 
 
+  - id: tc.comma_separator
+    kind: unit
+    title: Comma separates statements (top level, block headers, bodies)
+    features: [lang.parser]
+    use_cases: []
+    impl: tests/unit/test_comma_separator.py
   - id: tc.docs_drift
     kind: unit
     title: Core docs + inventories reference existing paths / ids

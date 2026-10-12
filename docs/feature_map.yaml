@@ -389,8 +389,8 @@ features:
     layer: lang
     name: Parser parse()
     status: done
-    tests: [tests/unit/test_parser_matrix.py]
-    notes: "Matrix MVP + MultiAssign + If/For/While/Break; continue later [done ITER-024; #34]"
+    tests: [tests/unit/test_parser_matrix.py, tests/unit/test_comma_separator.py]
+    notes: "Matrix MVP + MultiAssign + If/For/While/Break; continue later [done ITER-024; #34] ; comma statement separator (#407)"
 
   - id: lang.matrix_literal
     layer: lang
