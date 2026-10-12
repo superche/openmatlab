@@ -42,6 +42,12 @@ def test_m2_criterion(cid: str, script: str):
     expected = json.loads((SCRIPTS / f"{script}.expected.json").read_text())
     s = run_script(script)
     for name, want in expected.items():
+        if name.endswith(":size"):
+            # Direct shape assert (#302): works for cells, chars and arrays.
+            var = name[: -len(":size")]
+            got_shape = list(s.workspace.get(var).shape)
+            assert got_shape == list(want), f"{cid} size({var}) = {got_shape}, want {want}"
+            continue
         got = np.asarray(s.workspace.get(name).backend_buffer(), dtype=float)
         want_a = np.asarray(coerce_expected(want), dtype=float)
         assert_close(got, want_a, label=f"{cid} {name}")

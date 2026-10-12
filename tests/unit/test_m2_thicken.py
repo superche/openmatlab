@@ -32,6 +32,10 @@ def test_thickened_script(script: str):
     s = Session.create_default()
     ReplSession(s).run_line(f'run("{SCRIPTS / (script + ".m")}");')
     for name, want in expected.items():
+        if name.endswith(":size"):
+            var = name[: -len(":size")]
+            assert list(s.workspace.get(var).shape) == list(want), f"{script} size({var})"
+            continue
         got = np.asarray(s.workspace.get(name).backend_buffer(), dtype=float)
         want_a = np.asarray(coerce_expected(want), dtype=float)
         assert_close(got, want_a, label=f"{script}.{name}")
