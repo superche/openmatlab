@@ -88,24 +88,57 @@ def _format_value(value: object) -> str:
         from openmatlab.runtime.value import Array
 
         if isinstance(value, Array):
-            buf = value.backend_buffer()
-            if value.is_scalar():
-                v = float(buf.reshape(-1)[0])
-                import math
-
-                if math.isnan(v):
-                    return "NaN"
-                if math.isinf(v):
-                    return "-Inf" if v < 0 else "Inf"
-                if v == int(v) and abs(v) < 1e15:
-                    return str(int(v))
-                return repr(v)
-            try:
-                import numpy as np
-
-                return str(np.asarray(buf))
-            except Exception:
-                return str(buf)
+            return format_array(value.backend_buffer())
     except Exception:
         pass
     return str(value)
+
+
+def _fmt_real(v: float, integer: bool) -> str:
+    if v != v:
+        return "NaN"
+    if v in (float("inf"), float("-inf")):
+        return "Inf" if v > 0 else "-Inf"
+    if integer:
+        return str(int(v))
+    return f"{v:.4f}"
+
+
+def format_array(buf: object) -> str:
+    """MATLAB/Octave ``format short`` text for a 2-D array (no NumPy repr).
+
+    Integer-valued (and logical) data prints as integers; otherwise 4 decimals,
+    switching to ``%.4e`` when magnitudes leave [1e-4, 1e5). Columns are
+    right-aligned to a shared width with a 3-space gutter; scalars are bare.
+    Empty arrays print ``[](RxC)``.
+    """
+    import numpy as np
+
+    a = np.asarray(buf)
+    if a.ndim == 0:
+        a = a.reshape(1, 1)
+    elif a.ndim == 1:
+        a = a.reshape(1, -1)
+    if a.size == 0:
+        return f"[]({a.shape[0]}x{a.shape[1]})"
+    if np.iscomplexobj(a):
+        return str(a)
+    a = a.astype(np.float64)
+    finite = a[np.isfinite(a)]
+    integer = bool(np.all(finite == np.floor(finite))) and (
+        finite.size == 0 or float(np.max(np.abs(finite))) < 1e15
+    )
+    if integer:
+        cells = [[_fmt_real(v, True) for v in row] for row in a]
+    else:
+        nz = np.abs(finite[finite != 0])
+        sci = nz.size > 0 and (float(nz.max()) >= 1e5 or float(nz.min()) < 1e-4)
+        def one(v: float) -> str:
+            if sci and np.isfinite(v):
+                return f"{v:.4e}"
+            return _fmt_real(v, False)
+        cells = [[one(v) for v in row] for row in a]
+    if a.size == 1:
+        return cells[0][0]
+    width = max(len(c) for row in cells for c in row) + 3
+    return "\n".join("".join(c.rjust(width) for c in row) for row in cells)

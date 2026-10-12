@@ -804,3 +804,12 @@ test_cases:
     impl: tests/unit/test_docs_drift.py
     status: active
     env: unit
+
+  - id: tc.display_format
+    kind: unit
+    title: format-short array display (ints, decimals, sci, logical, NaN/Inf, empty)
+    features: [host.display_policy]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_display_format.py
+    status: active
+    env: unit
