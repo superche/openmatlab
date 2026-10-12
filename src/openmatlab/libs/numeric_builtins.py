@@ -381,7 +381,7 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.char_value import CharValue
 
-    _arity("sort", args, 1, 3)
+    _arity("sort", args, 1, 7)
     if isinstance(args[0], CharValue):
         # char row: sort by character code, result stays char
         codes = _wrap([float(ord(ch)) for ch in args[0].text] or np.zeros((1, 0)))
@@ -393,12 +393,27 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     b = _buf("sort", args[0])
     descend = False
     dim_args = []
-    for a in args[1:]:
+    method, missing = "auto", "auto"
+    rest = list(args[1:])
+    while rest:
+        a = rest.pop(0)
         f = _char_flag(a)
         if f is None:
             dim_args.append(a)
         elif f in ("descend", "ascend"):
             descend = f == "descend"
+        elif f in ("comparisonmethod", "missingplacement"):
+            if not rest or _char_flag(rest[0]) is None:
+                raise BuiltinError(f"sort: '{f}' needs a value")
+            v = _char_flag(rest.pop(0))
+            if f == "comparisonmethod":
+                if v not in ("auto", "real", "abs"):
+                    raise BuiltinError("sort: ComparisonMethod must be 'auto', 'real' or 'abs'")
+                method = v
+            else:
+                if v not in ("auto", "first", "last"):
+                    raise BuiltinError("sort: MissingPlacement must be 'auto', 'first' or 'last'")
+                missing = v
         else:
             raise BuiltinError(f"sort: unknown option '{f}'")
     if len(dim_args) > 1:
@@ -410,13 +425,18 @@ def _sort(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     if ax >= b.ndim:
         ones = np.ones(b.shape, dtype=np.float64)
         return (_wrap(b),) if nargout <= 1 else (_wrap(b), _wrap(ones))
-    if descend:
-        # stable descending: equal elements keep original order (MATLAB);
-        # NaN placed first for descend (MATLAB), last for ascend.
-        key = np.where(np.isnan(b), np.inf, -b)
-        idx0 = np.argsort(key, axis=ax, kind="stable")
-    else:
-        idx0 = np.argsort(b, axis=ax, kind="stable")
+    # Sort key: value ('real'/'auto' for real data) or |value| ('abs'; ties by value).
+    # NaN placement: 'auto' = last for ascend, first for descend (MATLAB).
+    vals = np.abs(b) if method == "abs" else b
+    nan_first = descend if missing == "auto" else missing == "first"
+    nan = np.isnan(b)
+    primary = np.where(nan, 0.0, -vals if descend else vals)
+    secondary = np.where(nan, 0.0, -b if descend else b)
+    nan_key = np.where(nan, 0 if nan_first else 1, 1 if nan_first else 0)
+    # lexsort: last key is primary; stable for ties
+    moved = [np.moveaxis(k, ax, -1) for k in (secondary, primary, nan_key)]
+    order = np.lexsort(moved, axis=-1)
+    idx0 = np.moveaxis(order, -1, ax)
     sorted_b = np.take_along_axis(b, idx0, axis=ax)
     if nargout <= 1:
         return (_wrap(sorted_b),)
