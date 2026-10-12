@@ -12,7 +12,7 @@
 | Tip | SHA | Notes |
 |-----|-----|-------|
 | Functional tip | `26a9c10974bbbf76e72f1219c98beb5dfcd0c553` | Squash merge of feature PR [#484](https://github.com/superche/openmatlab/pull/484) |
-| Evidence merge tip | *(recorded by the after-epic sync PR)* | Squash merge of this acceptance PR; re-run from here or `main` |
+| Evidence merge tip | `ecd4f7128cdc3f6c6f8be29acfa2f26d52912204` | Squash merge of [#485](https://github.com/superche/openmatlab/pull/485); re-run from here or `main` |
 
 ## Verdict
 
@@ -53,7 +53,7 @@ t =
 
     "b"    <missing>    "d"
 
-$ openmatlab -e 'p = split("a,b,,c", ","), j = join(p, "-"), c = contains(upper(p), "B")'''
+$ openmatlab -e "p = split(\"a,b,,c\", \",\"), j = join(p, \"-\"), c = contains(upper(p), \"B\")'"
 p =
 
   3x1 string array
@@ -123,3 +123,5 @@ libs.string_methods              libs       done     text methods for string/cha
 - Criteria met: **15 / 15** (C15 added at p2 and met by this epic)
 - Conformance scripts passing: **15 / 15** (xfail pending: none)
 - Remaining gaps (priority order, all p2): #451 sparse (next epic), #479 N-D cell residuals, #480 `eps(x)` relative, #483 string residuals
+
+After-epic sync: evidence tip recorded; the demo command line was corrected to match the exact command that was run (the output is unchanged).
