@@ -40,7 +40,7 @@ source .venv/bin/activate
 clear
 echo "############################################################"
 echo "# OpenMATLAB MATLAB-aligned Workbench showcase"
-echo "# Epic #372 · W01–W06 Host panels (CW/Editor/WS/Folder/Figs)"
+echo "# Epic #372 · W01–W15 Desktop chrome + panels (CW/Editor/WS/Folder/Figs)"
 echo "############################################################"
 sleep 1.2
 
@@ -57,9 +57,9 @@ openmatlab workbench --eval 'a = [1 2 3]; b = a + 1'
 sleep 1.5
 
 echo
-echo "=== 3 Open Host tk workbench (scripted W03–W06 walkthrough) ==="
-echo ">> openmatlab workbench --cwd demos/workbench/sample_project --demo-ms 9000"
-openmatlab workbench --cwd demos/workbench/sample_project --demo-ms 9000
+echo "=== 3 Open Host tk workbench (scripted Desktop layout walkthrough) ==="
+echo ">> openmatlab workbench --cwd demos/workbench/sample_project --demo-ms 10000"
+openmatlab workbench --cwd demos/workbench/sample_project --demo-ms 10000
 sleep 0.5
 
 echo

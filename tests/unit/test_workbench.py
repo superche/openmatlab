@@ -167,3 +167,70 @@ def test_cli_workbench_cwd(tmp_path: Path, capsys):
     assert ei.value.code == 0
     out = capsys.readouterr().out
     assert "current_folder" in out
+
+
+def test_menu_bar_and_toolbar_specs():
+    wb = Workbench.create()
+    menus = dict(wb.menu_bar())
+    assert "File" in menus
+    assert "Open…" in menus["File"]
+    assert "Layout" in menus
+    assert "New Script" in wb.toolbar()
+    assert "Run" in wb.toolbar()
+
+
+def test_classic_dock_layout():
+    wb = Workbench.create()
+    dock = wb.dock_layout()
+    assert dock["current_folder"] == "left"
+    assert dock["editor"] == "center"
+    assert dock["command_window"] == "bottom"
+    assert dock["workspace_browser"] == "right"
+    assert dock["figures"] == "right"
+    assert dock["menu_bar"] == "top"
+    assert dock["toolstrip"] == "top"
+    assert dock["path_toolbar"] == "top"
+    table = wb.list_regions_table()
+    assert "DOCK" in table
+    assert "bottom" in table
+    assert wb.apply_layout_preset("default") == "default"
+
+
+def test_command_window_history():
+    cw = CommandWindow.create()
+    assert cw.history() == []
+    cw.eval("a = 1;")
+    cw.eval("b = 2")
+    assert cw.history() == ["a = 1;", "b = 2"]
+
+
+def test_editor_multi_document_tabs(tmp_path: Path):
+    f1 = tmp_path / "one.m"
+    f2 = tmp_path / "two.m"
+    f1.write_text("a=1;\n", encoding="utf-8")
+    f2.write_text("b=2;\n", encoding="utf-8")
+    wb = Workbench.create(cwd=tmp_path)
+    wb.documents.open_file(f1)
+    assert wb.editor.path == f1.resolve()
+    assert wb.documents.list_titles() == ["one.m"]
+    wb.documents.open_file(f2)
+    assert wb.editor.path == f2.resolve()
+    assert wb.documents.list_titles() == ["one.m", "two.m"]
+    wb.documents.switch(0)
+    assert wb.editor.path == f1.resolve()
+    wb.documents.close_active()
+    assert wb.documents.list_titles() == ["two.m"]
+    wb.documents.new_script()
+    assert len(wb.documents.panels) == 2
+    assert wb.editor.path is None
+
+
+def test_workspace_value_column():
+    wb = Workbench.create()
+    wb.eval("v = [1 2 3];")
+    rows = {r.name: r for r in wb.workspace_browser.refresh()}
+    assert "v" in rows
+    assert rows["v"].value
+    assert "1" in rows["v"].value
+    table = wb.workspace_browser.as_table()
+    assert "Value" in table
