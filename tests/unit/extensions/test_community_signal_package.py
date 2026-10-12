@@ -59,6 +59,13 @@ def test_list_panel_summaries_helper():
 
 
 def test_panel_factory_builds_tk_widget():
+    import os
+
+    import pytest
+
+    if not os.environ.get("DISPLAY"):
+        pytest.skip("tk panel widget requires DISPLAY (headless CI uses --list-only)")
+
     import tkinter as tk
 
     host = _activated_host()
