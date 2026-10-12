@@ -1179,7 +1179,13 @@ class Evaluator:
         return av == bv
 
     def _eval_switch(self, stmt: ast.SwitchStmt) -> Value:
+        from openmatlab.runtime.char_value import CharValue
+
         needle = self.eval_expr(stmt.expr)
+        if not isinstance(needle, CharValue) and not (
+            isinstance(needle, Array) and needle.numel() == 1
+        ):
+            raise EvalError("SWITCH expression must be a scalar or a character vector.")
         last: Value = self.numerics.from_scalar(0.0)
         for case in stmt.cases:
             for vexpr in case.values:

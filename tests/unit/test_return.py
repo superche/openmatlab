@@ -46,3 +46,14 @@ def test_return_toplevel_errors():
     s = Session.create_default()
     with pytest.raises(EvalError, match="return outside"):
         ReplSession(s).run_line("return;")
+
+
+def test_early_return_with_multiple_outputs(tmp_path: Path):
+    """Issue #140: assign outputs, then early `return` (MATLAB pattern)."""
+    (tmp_path / "early.m").write_text(
+        "function [a, b] = early(x)\na = 1;\nif x > 0\n  b = 2;\n  return\nend\nb = 3;\nend\n"
+    )
+    s = Session.create_default()
+    ReplSession(s).run_line(f'addpath("{tmp_path}"); [p, q] = early(1); [r, t] = early(-1);')
+    got = [float(s.workspace.get(n).backend_buffer().reshape(-1)[0]) for n in ("p", "q", "r", "t")]
+    assert got == [1.0, 2.0, 1.0, 3.0]
