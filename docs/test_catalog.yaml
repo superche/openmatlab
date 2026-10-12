@@ -828,3 +828,12 @@ test_cases:
     impl: tests/unit/test_type_predicates.py
     status: active
     env: unit
+
+  - id: tc.concat
+    kind: unit
+    title: Matrix concatenation (arrays, empties, logical, char, cell, whitespace rules)
+    features: [lang.matrix_literal]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_concat.py
+    status: active
+    env: unit
