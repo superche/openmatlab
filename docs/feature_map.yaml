@@ -590,8 +590,8 @@ features:
     status: partial
     spec: docs/design/EPIC-449-complex.md
     depends_on: [numerics.array_backend, libs.elfun]
-    notes: "Epic #449 (M2 C13 met): 3+4i / 2j literals; complex128 buffers end to end with MATLAB narrowing; real/imag/abs/conj/angle/complex/isreal; ' vs .'; complex matrix power (#229) + fractional/negative-base results (#228); max/min/sort by |z| then angle; format short 'a + bi'. Residual: sparse, complex unique/issorted, scaled complex display, complex trig coverage; complex unique/issorted by |z| then angle (#452)"
-    tests: [tests/unit/test_complex_numbers.py, tests/bdd/test_complex_numbers_bdd.py, tests/unit/test_matrix_power_expm.py, tests/unit/test_complex_unique_issorted.py]
+    notes: "Epic #449 (M2 C13 met): 3+4i / 2j literals; complex128 buffers end to end with MATLAB narrowing; real/imag/abs/conj/angle/complex/isreal; ' vs .'; complex matrix power (#229) + fractional/negative-base results (#228); max/min/sort by |z| then angle; format short 'a + bi'. Residual: sparse, complex unique/issorted, scaled complex display, complex trig coverage; complex unique/issorted by |z| then angle (#452); scaled complex display: %.4e scalars, common 1.0e+NN * factor for matrices (#453)"
+    tests: [tests/unit/test_complex_numbers.py, tests/bdd/test_complex_numbers_bdd.py, tests/unit/test_matrix_power_expm.py, tests/unit/test_complex_unique_issorted.py, tests/unit/test_complex_scaled_display.py]
   - id: libs.elfun
     layer: libs
     name: abs / sqrt / exp / log / sin / cos / floor / ceil / round / mod
