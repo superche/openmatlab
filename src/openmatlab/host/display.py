@@ -108,11 +108,13 @@ def _fmt_real(v: float, integer: bool) -> str:
     return f"{v:.4f}"
 
 
-def format_array(buf: object) -> str:
+def format_array(buf: object, terminal_width: int = 80) -> str:
     """MATLAB/Octave ``format short`` text for a 2-D array (no NumPy repr).
 
     Integer-valued (and logical) data prints as integers; otherwise 4 decimals,
-    switching to ``%.4e`` when magnitudes leave [1e-4, 1e5). Columns are
+    when magnitudes leave [1e-4, 1e5) matrices get a common ``1.0e+NN *``
+    scale header (scalars use ``%.4e``). Wider than ``terminal_width``
+    pages into ``Columns i through j`` blocks. Columns are
     right-aligned to a shared width with a 3-space gutter; scalars are bare.
     Empty arrays print ``[](RxC)``.
     """
@@ -132,17 +134,46 @@ def format_array(buf: object) -> str:
     integer = bool(np.all(finite == np.floor(finite))) and (
         finite.size == 0 or float(np.max(np.abs(finite))) < 1e15
     )
+    header = ""
     if integer:
         cells = [[_fmt_real(v, True) for v in row] for row in a]
     else:
         nz = np.abs(finite[finite != 0])
         sci = nz.size > 0 and (float(nz.max()) >= 1e5 or float(nz.min()) < 1e-4)
-        def one(v: float) -> str:
-            if sci and np.isfinite(v):
-                return f"{v:.4e}"
-            return _fmt_real(v, False)
-        cells = [[one(v) for v in row] for row in a]
+        # matrices: MATLAB scales once max|x| >= 1e3 (e.g. [1000.5 2000])
+        big = 1e5 if a.size == 1 else 1e3
+        sci = nz.size > 0 and (float(nz.max()) >= big or float(nz.min()) < 1e-4)
+        if sci and a.size == 1:
+            cells = [[f"{float(a[0, 0]):.4e}"]]
+        else:
+            # MATLAB format short: matrices share a common scale factor
+            # 10^e with e = floor(log10(max|x|)); no header when e == 0 (#417).
+            e = int(np.floor(np.log10(float(nz.max())))) if sci else 0
+            scale = 10.0 ** e
+            if e:
+                header = f"   1.0e{e:+03d} *\n\n"
+            cells = [[_fmt_real(v / scale if np.isfinite(v) else v, False) for v in row] for row in a]
     if a.size == 1:
         return cells[0][0]
     width = max(len(c) for row in cells for c in row) + 3
-    return "\n".join("".join(c.rjust(width) for c in row) for row in cells)
+    return header + _page_columns(cells, width, terminal_width)
+
+
+def _page_columns(cells, width: int, terminal_width: int) -> str:
+    """Rows of right-aligned cells; split into MATLAB 'Columns i through j'
+    blocks when the matrix is wider than the terminal (#417)."""
+    ncols = len(cells[0])
+    per = max(1, terminal_width // width)
+    if ncols <= per:
+        return "\n".join("".join(c.rjust(width) for c in row) for row in cells)
+    blocks = []
+    for start in range(0, ncols, per):
+        stop = min(start + per, ncols)
+        title = (
+            f"  Column {start + 1}"
+            if stop - start == 1
+            else f"  Columns {start + 1} through {stop}"
+        )
+        body = "\n".join("".join(c.rjust(width) for c in row[start:stop]) for row in cells)
+        blocks.append(f"{title}\n\n{body}")
+    return "\n\n".join(blocks)
