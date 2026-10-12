@@ -657,8 +657,8 @@ features:
     name: logical / true / false
     status: done
     depends_on: [libs.elmat_constructors]
-    notes: "Epic #28 (#327); absorbs #238 #321"
-    tests: [tests/unit/test_logical_pack.py]
+    notes: "Epic #28 (#327); absorbs #238 #321; arithmetic on logical promotes to double (#239)"
+    tests: [tests/unit/test_logical_pack.py, tests/unit/test_logical_promotion.py]
 
 
   - id: libs.eps_realmax_realmin
