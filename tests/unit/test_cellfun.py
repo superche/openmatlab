@@ -39,3 +39,17 @@ def test_handle_value():
     fh = s.workspace.get("fh")
     assert isinstance(fh, FunctionHandleValue)
     assert fh.matlab_class() == "function_handle"
+
+
+def test_cellfun_char_function_name():
+    """Issue #281: cellfun('name', C) resolves like @name (builtins and .m)."""
+    s = Session.create_default()
+    ReplSession(s).run_line("c = {1, [1 2], []}; n = cellfun('numel', c); m = cellfun('sum', {[1 2], 3});")
+    assert np.asarray(s.workspace.get("n").backend_buffer()).reshape(-1).tolist() == [1, 2, 0]
+    assert np.asarray(s.workspace.get("m").backend_buffer()).reshape(-1).tolist() == [3, 3]
+
+
+def test_cellfun_unknown_char_name_errors():
+    s = Session.create_default()
+    with pytest.raises(Exception, match="undefined function 'nope'"):
+        ReplSession(s).run_line("n = cellfun('nope', {1});")
