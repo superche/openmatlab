@@ -1200,6 +1200,10 @@ from openmatlab.libs import strfun_builtins as _strfun_builtins  # noqa: E402
 
 _strfun_builtins.register(BUILTINS)
 
+from openmatlab.libs import decomp_builtins as _decomp_builtins  # noqa: E402
+
+_decomp_builtins.register(BUILTINS)
+
 from openmatlab.libs import class_builtins as _class_builtins  # noqa: E402
 
 _class_builtins.register(BUILTINS)
