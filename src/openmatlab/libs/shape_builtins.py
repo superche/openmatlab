@@ -126,6 +126,50 @@ def _isequal(args, *, nargout=1):
     return (NDArrayValue(np.array([[ok]])),)
 
 
+def _cell_obj_index(name: str, fn):
+    """Run an index-reshaping builtin on a cell through an index map (#479):
+    the builtin moves positions 1..n, then the cell elements follow."""
+
+    def _wrapped(args, *, nargout=1):
+        from openmatlab.runtime.cell_value import CellValue
+
+        cells = [k for k, a in enumerate(args) if isinstance(a, CellValue)]
+        if not cells:
+            return fn(args, nargout=nargout)
+        if name == "cat":
+            parts = [a for a in args[1:]]
+            if not all(isinstance(a, CellValue) for a in parts):
+                raise _err("cat: cannot concatenate cell arrays with non-cell arrays")
+            objs = [a.to_obj() for a in parts]
+            ax = int(np.asarray(args[0].backend_buffer()).reshape(-1)[0]) - 1
+            nd = max([o.ndim for o in objs] + [ax + 1])
+            objs = [o.reshape(o.shape + (1,) * (nd - o.ndim)) for o in objs if o.size or o.shape != (0, 0)]
+            try:
+                out = np.concatenate(objs, axis=ax) if objs else np.empty((0, 0), dtype=object)
+            except ValueError:
+                raise _err("Dimensions of arrays being concatenated are not consistent.") from None
+            return (CellValue.from_obj(out),)
+        if cells != [0]:
+            raise _err(f"{name}: cell arrays are only supported as the first argument")
+        obj = args[0].to_obj()
+        pos = NDArrayValue(np.arange(1, obj.size + 1, dtype=np.float64).reshape(obj.shape, order="F"))
+        out = np.asarray(fn((pos, *args[1:]), nargout=1)[0].backend_buffer())
+        flat = obj.reshape(-1, order="F")
+        res = np.empty(out.shape, dtype=object)
+        for ix in np.ndindex(*out.shape):
+            res[ix] = flat[int(out[ix]) - 1]
+        return (CellValue.from_obj(res),)
+
+    return _wrapped
+
+
+def register_cell_shape(builtins: Dict[str, Callable]) -> None:
+    """Called after all array builtins exist (numeric_builtins)."""
+    for k in ("reshape", "permute", "ipermute", "squeeze", "cat", "flip", "fliplr", "flipud", "circshift"):
+        if k in builtins:
+            builtins[k] = _cell_obj_index(k, builtins[k])
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     builtins.update(
         permute=_permute, ipermute=_ipermute, flip=_flip, circshift=_circshift,

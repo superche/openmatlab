@@ -56,6 +56,30 @@ class CellValue:
         n = self.full_shape[1]
         return CellValue(rows=tuple(r[off * n:(off + 1) * n] for r in self.rows))
 
+    def to_obj(self):
+        """NumPy object array of the full (N-D) shape, column-major over trailing dims (#479)."""
+        import numpy as np
+
+        r, c = self.shape
+        folded = np.empty((r, c), dtype=object)
+        for i in range(r):
+            for j in range(c):
+                folded[i, j] = self.rows[i][j]
+        return folded.reshape(self.full_shape, order="F")
+
+    @staticmethod
+    def from_obj(a) -> "CellValue":
+        """CellValue from an object array; trailing singleton dims beyond 2 drop (#479)."""
+        import numpy as np
+
+        a = np.asarray(a, dtype=object)
+        shape = list(a.shape) if a.ndim >= 2 else [1, a.size]
+        while len(shape) > 2 and shape[-1] == 1:
+            shape.pop()
+        folded = a.reshape(shape[0], int(np.prod(shape[1:])), order="F")
+        rows = tuple(tuple(folded[i, j] for j in range(folded.shape[1])) for i in range(folded.shape[0]))
+        return CellValue(rows=rows, nd=tuple(shape) if len(shape) > 2 else ())
+
     @staticmethod
     def empty(m: int, n: int) -> "CellValue":
         """m×n cell of empty 0×0 double arrays (filled by caller/libs)."""
