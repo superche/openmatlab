@@ -1333,6 +1333,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.interp_poly
+    kind: unit
+    title: splines, pchip, ppval, interp1 spline/pchip, interp2, polyder, polyint (Epic #626)
+    features: [numerics.interp_poly]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_interp_poly.py
+    status: active
+    env: unit
+
+  - id: tc.interp_poly_bdd
+    kind: bdd
+    title: splines, pchip, ppval, interp1 spline/pchip, interp2, polyder, polyint Gherkin scenarios (Epic #626)
+    features: [numerics.interp_poly]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_interp_poly_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
