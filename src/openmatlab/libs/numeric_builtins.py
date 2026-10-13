@@ -1194,6 +1194,9 @@ _int_builtins.register(BUILTINS)
 from openmatlab.libs import string_builtins as _string_builtins  # noqa: E402
 
 _string_builtins.register(BUILTINS)
+from openmatlab.libs import sparse_builtins as _sparse_builtins  # noqa: E402
+
+_sparse_builtins.register(BUILTINS)
 
 
 def register_numeric_builtins(resolver) -> None:

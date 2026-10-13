@@ -83,6 +83,28 @@ def _nd_pages(value: object):
     return out
 
 
+def format_sparse(buf) -> str:
+    """MATLAB sparse display (#451): ``(i,j)  v`` triplets in column-major order."""
+    import numpy as np
+
+    a = np.asarray(buf)
+    r, c = a.shape
+    cols, rows = np.nonzero(a.T)  # column-major order
+    if rows.size == 0:
+        return f"   All zero sparse: {r}x{c}"
+    vals = a[rows, cols]
+    text = format_array(vals.reshape(-1, 1) if vals.dtype != np.bool_ else vals.reshape(-1, 1).astype(np.uint8))
+    lines = text.split("\n")
+    header = []
+    if len(lines) > vals.size:  # common scale factor header
+        header, lines = lines[: len(lines) - vals.size], lines[len(lines) - vals.size:]
+    idx = [f"({i + 1},{j + 1})" for i, j in zip(rows, cols)]
+    w = max(len(x) for x in idx)
+    vw = max(len(x.strip()) for x in lines)
+    body = [f"   {x.ljust(w)}    {v.strip().rjust(vw)}" for x, v in zip(idx, lines)]
+    return "\n".join(header + body)
+
+
 def format_string_array(g) -> str:
     """MATLAB string-array display (#459): size header, then left-aligned quoted
     columns with a 4-space indent/gutter; <missing> unquoted."""
@@ -163,6 +185,8 @@ def _format_value(value: object) -> str:
         from openmatlab.numerics.ndarray_value import NDArrayValue
         from openmatlab.runtime.value import Array
 
+        if getattr(value, "issparse", False):
+            return format_sparse(value.backend_buffer())
         if isinstance(value, Array):
             return format_array(value.backend_buffer())
     except Exception:

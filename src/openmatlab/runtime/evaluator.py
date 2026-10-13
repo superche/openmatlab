@@ -213,6 +213,10 @@ class Evaluator:
             if expr.op == "+":
                 return v
             if expr.op == "-":
+                from openmatlab.numerics import sparse as _sp
+
+                if _sp.is_sparse(v):  # -S stays sparse (#451)
+                    return _sp.to_sparse(-v.backend_buffer())
                 z = self.numerics.from_scalar(0.0)
                 return self.numerics.sub(z, v)
             if expr.op == "~":
@@ -1207,6 +1211,10 @@ class Evaluator:
             for r in rows for v in r if hasattr(v, "backend_buffer")
         ):  # [single double] is single (#461)
             out = out.astype(np.complex64 if np.iscomplexobj(out) else np.float32)
+        from openmatlab.numerics import sparse as _sp
+
+        if any(_sp.is_sparse(v) for r in rows for v in r):
+            return _sp.to_sparse(np.array(out))  # [S S] is sparse (#451)
         return NDArrayValue(np.array(out))
 
     def _cat_nd(self, parts: list, *, axis: int):
@@ -1430,6 +1438,10 @@ class Evaluator:
             r = r.reshape(1, 1)
         elif r.ndim == 1:
             r = r.reshape(1, -1)
+        from openmatlab.numerics import sparse as _sp
+
+        if _sp.is_sparse(left) or _sp.is_sparse(right):
+            return _sp.to_sparse(r)  # relational ops on sparse are sparse (#451)
         return NDArrayValue(r)
 
     def _truthy(self, val: Value) -> bool:
