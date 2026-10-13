@@ -51,8 +51,8 @@ Priority reflects impact on a typical user:
 | Mathematics | Linear solve / `inv det rank pinv norm expm` (M2 C17) | **present** | `"A=[2 1;1 3]; x=A\\[3;5]"` → 0.8 1.4 | — | — |
 | Mathematics | Decompositions `eig svd lu qr chol null orth trace cross dot` | **present** | delivered in M7 (Epic #538); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-LINALG-DECOMP |
 | Mathematics | Sparse (M2 C16/C19, #522/#523) | **present** | `"S=sparse(1e5,1e5); E=speye(1e5); nnz(E)"` → 100000 | — | — |
-| Polynomials | `polyfit polyval roots poly conv deconv polyder polyint` | **missing** | missing: `polyfit` `polyval` `roots` `poly` `conv` `deconv` `polyder` `polyint` | p1 | M3-POLY-INTERP |
-| Interpolation | `interp1 interp2 spline pchip` | **missing** | missing: `interp1` `interp2` `spline` `pchip` | p1 | M3-POLY-INTERP |
+| Polynomials | `polyfit polyval roots poly conv deconv polyder polyint` | **present** | `polyfit polyval roots conv deconv` present; `poly polyder polyint` delivered in M3-E2 (#626) (verified 2026-10-13) | — | M3-POLY-INTERP |
+| Interpolation | `interp1 interp2 spline pchip` | **present** | `interp1` present; `interp1` spline/pchip, `interp2`, `spline`, `pchip`, `ppval` delivered in M3-E2 (#626); residual #649 (verified 2026-10-13) | — | M3-POLY-INTERP |
 | Integration | `trapz cumtrapz integral integral2 quad` | **missing** | missing: `trapz` `cumtrapz` `integral` `integral2` `quad` | p1 | M3-CALCULUS-ODE-OPT |
 | ODE | `ode45 ode23` | **missing** | missing: `ode45` `ode23` | p1 | M3-CALCULUS-ODE-OPT |
 | Optimization | `fzero fminsearch fminbnd` | **missing** | missing: `fzero` `fminsearch` `fminbnd` | p1 | M3-CALCULUS-ODE-OPT |

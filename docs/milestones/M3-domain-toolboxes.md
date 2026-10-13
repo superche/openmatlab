@@ -39,7 +39,7 @@ M3 is **done** only when **all** of these hold on `main`:
 | # | Criterion | Script | Priority | Ships as | Epic | Status |
 |---|-----------|--------|----------|----------|------|--------|
 | T01 | FFT family: `fft`/`ifft` with n and dim, `fft2`/`ifft2`, `fftshift`/`ifftshift`, `nextpow2` | m3_t01_fft | p1 | core | #625 | met (Epic #625; residual #630) |
-| T02 | `spline` (not-a-knot and clamped), `pchip`, `ppval`, `interp1` spline/pchip/extrap, `interp2`, `polyder`/`polyint` forms | m3_t02_poly_interp | p1 | core | #626 | pending |
+| T02 | `spline` (not-a-knot and clamped), `pchip`, `ppval`, `interp1` spline/pchip/extrap, `interp2`, `polyder`/`polyint` forms | m3_t02_poly_interp | p1 | core | #626 | met (Epic #626; residual #649) |
 | T03 | `ode45`/`ode23` (tspan, odeset, systems), `integral2`, `quad`, `integral` options, `fminbnd`, `optimset` with `fzero`/`fminsearch` | m3_t03_calculus_ode_opt | p1 | core | #627 (#581) | pending |
 | T04 | `quantile`/`prctile`, `movmean`/`movsum`/`movmedian`, `cummax`/`cummin`, `mode`, `var`/`std` weights, `histc`, `bounds` | m3_t04_stats | p1 | core | #628 (#581) | pending |
 | T05 | `jsonencode`/`jsondecode`, `csvread` offsets, `dlmwrite` delimiter/precision/append, `dlmread` | m3_t05_data_io | p1 | core | #629 | pending |
@@ -62,4 +62,4 @@ M3 is **done** only when **all** of these hold on `main`:
 
 M3 criteria were set on 2026-10-13.
 
-**1 / 7** criteria met: T01 (Epic #625). Next: O-E3 property validation (#620), then M3-E2 (#626)
+**2 / 7** criteria met: T01 (Epic #625), T02 (Epic #626). Next: M3-E3 ODE/quadrature/optimisation (#627)

@@ -378,6 +378,14 @@ features:
     notes: "(dims) Class {validators} with MATLAB conversion/reshape; mustBe* validators; Abstract classes/methods; O-E3 (#620)"
     tests: [tests/unit/test_classdef_validation.py, tests/bdd/test_classdef_validation_bdd.py]
 
+  - id: numerics.interp_poly
+    layer: numerics
+    name: splines, pchip, ppval, interp1 spline/pchip, interp2, polyder, polyint
+    status: done
+    depends_on: []
+    notes: "not-a-knot/clamped spline, Fritsch-Carlson pchip, pp structs, interp2 linear/nearest; M3-E2"
+    tests: [tests/unit/test_interp_poly.py, tests/bdd/test_interp_poly_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
