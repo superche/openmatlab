@@ -627,3 +627,25 @@ def _fractional_matrix_power(np, a, p):
 
 for _m in ("matmul", "_elem", "power"):
     setattr(NumPyArrayBackend, _m, _single_aware(getattr(NumPyArrayBackend, _m)))
+
+
+def _sparse_aware(name, method):
+    """Sparse propagation (#451) layered over every backend op."""
+    from openmatlab.numerics import sparse as _sp
+
+    def _wrapped(self, a, *args, **kw):
+        out = method(self, a, *args, **kw)
+        if name == "matmul":
+            return _sp.sparse_result("matmul", out, a, args[0])
+        if name == "_elem":
+            return _sp.sparse_result("elem", out, a, args[0], args[1])
+        if name == "power":
+            return _sp.sparse_result("power", out, a, args[0])
+        return _sp.sparse_result(name, out, a) if _sp.is_sparse(a) else out
+
+    _wrapped.__name__ = method.__name__
+    return _wrapped
+
+
+for _m in ("matmul", "_elem", "power", "transpose", "index", "set_index"):
+    setattr(NumPyArrayBackend, _m, _sparse_aware(_m, getattr(NumPyArrayBackend, _m)))

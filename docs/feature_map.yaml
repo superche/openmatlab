@@ -355,6 +355,15 @@ features:
     notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Epic #482 (M2 C15 met, #459): StringArray grid with <missing>; [..] construction, strings(), string(cell/num/char matrix); s(i)/s(i,j)/s(end)/s(:)/mask, s{k}; assign/grow/delete; elementwise + and comparisons; transpose, char, cellstr, isequal, for; 'RxC string array' display. Residuals: #483"
     tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py]
 
+  - id: numerics.sparse
+    layer: numerics
+    name: "sparse matrices (sparse attribute)"
+    status: done
+    spec: docs/design/EPIC-487-sparse.md
+    depends_on: [numerics.nd_arrays]
+    notes: "Epic #487 (M2 C16 met, #451): SparseValue(NDArrayValue) over a dense buffer; sparse(A|m,n|i,j,v[,m,n]), full, issparse, nnz, nonzeros, nzmax, speye, spones; MATLAB propagation rules incl. S^p; (i,j) triplet display. Residual: #488 (compressed storage, spdiags/sprand, solvers)"
+    tests: [tests/unit/test_sparse.py, tests/bdd/test_sparse_bdd.py]
+
   - id: libs.string_methods
     layer: libs
     name: "text methods for string/char/cellstr"

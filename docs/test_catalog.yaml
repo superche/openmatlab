@@ -909,3 +909,21 @@ test_cases:
     impl: tests/bdd/test_string_arrays_bdd.py
     status: active
     env: unit
+
+  - id: tc.sparse
+    kind: unit
+    title: sparse matrices (Epic #487)
+    features: [numerics.sparse]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_sparse.py
+    status: active
+    env: unit
+
+  - id: tc.sparse_bdd
+    kind: bdd
+    title: sparse Gherkin scenarios (Epic #487)
+    features: [numerics.sparse]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_sparse_bdd.py
+    status: active
+    env: unit
