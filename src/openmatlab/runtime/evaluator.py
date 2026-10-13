@@ -240,8 +240,8 @@ class Evaluator:
             if expr.op == "-":
                 from openmatlab.numerics import sparse as _sp
 
-                if _sp.is_sparse(v):  # -S stays sparse (#451)
-                    return _sp.to_sparse(-v.backend_buffer())
+                if _sp.is_sparse(v):  # -S stays sparse (#451), natively (#516)
+                    return _sp.SparseValue(v.store.neg())
                 z = self.numerics.from_scalar(0.0)
                 return self.numerics.sub(z, v)
             if expr.op == "~":
@@ -919,6 +919,8 @@ class Evaluator:
                 import numpy as np
                 from openmatlab.numerics.ndarray_value import NDArrayValue
 
+                if getattr(out, "issparse", False):  # S(:) stays sparse (#517)
+                    return type(out)(out.store.reshape(out.numel(), 1))
                 out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
             return out
         if not results:
@@ -1318,6 +1320,11 @@ class Evaluator:
     def _concat_arrays(self, rows: list) -> Array:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
+        from openmatlab.numerics import sparse as _sp
+
+        native = _sp.concat_native(rows)
+        if native is not None:
+            return native  # [S F; ...] in compressed storage (#517)
 
         bufs = []
         for r in rows:

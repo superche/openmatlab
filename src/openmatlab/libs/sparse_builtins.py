@@ -9,6 +9,7 @@ import numpy as np
 from openmatlab.numerics import intclass as ic
 from openmatlab.numerics.ndarray_value import NDArrayValue
 from openmatlab.numerics.sparse import SparseValue, is_sparse, to_sparse
+from openmatlab.numerics.sparse_store import Store
 from openmatlab.runtime.value import Array, Value
 
 
@@ -35,6 +36,8 @@ def _dim(name: str, v: Value) -> int:
 
 
 def _sparse(args, *, nargout=1):
+    if len(args) == 1 and is_sparse(args[0]):
+        return (SparseValue(args[0].store),)
     if len(args) == 1:
         b = _num("sparse", args[0])
         if b.ndim > 2:
@@ -43,7 +46,7 @@ def _sparse(args, *, nargout=1):
             b = b.astype(np.complex128 if np.iscomplexobj(b) else np.float64)
         return (to_sparse(b.copy()),)
     if len(args) == 2:
-        return (to_sparse(np.zeros((_dim("sparse", args[0]), _dim("sparse", args[1])))),)
+        return (SparseValue(Store.zeros(_dim("sparse", args[0]), _dim("sparse", args[1]))),)
     if len(args) not in (3, 5, 6):
         raise _err("sparse: usage sparse(A), sparse(m,n), sparse(i,j,v[,m,n[,nz]])")
     i, j, v = (_num("sparse", a).reshape(-1, order="F") for a in args[:3])
@@ -62,15 +65,13 @@ def _sparse(args, *, nargout=1):
             raise _err("sparse: Index exceeds matrix dimensions.")
     else:
         m, k = (int(ii.max()) + 1, int(jj.max()) + 1) if n else (0, 0)
-    if v.dtype == np.bool_:
-        out = np.zeros((m, k), dtype=bool)
-        np.logical_or.at(out, (ii, jj), v)
-    else:
-        out = np.zeros((m, k), dtype=np.complex128 if np.iscomplexobj(v) else np.float64)
-        np.add.at(out, (ii, jj), v)  # duplicates add (MATLAB)
-        if np.iscomplexobj(out) and not np.any(out.imag):
-            out = out.real.copy()
-    return (to_sparse(out),)
+    if v.dtype == np.bool_:  # duplicates OR (logical)
+        return (SparseValue(Store(m, k, ii, jj, v, dtype=np.bool_)),)
+    dt = np.complex128 if np.iscomplexobj(v) else np.float64
+    st = Store(m, k, ii, jj, v.astype(dt), dtype=dt)  # duplicates add (MATLAB)
+    if dt == np.complex128 and not np.any(st.data.imag):
+        st = st.astype(np.float64)
+    return (SparseValue(st),)
 
 
 def _full(args, *, nargout=1):
@@ -78,7 +79,7 @@ def _full(args, *, nargout=1):
         raise _err("full: expected 1 argument")
     v = args[0]
     if is_sparse(v):
-        return (NDArrayValue(np.array(v.backend_buffer())),)
+        return (NDArrayValue(v.store.to_dense()),)
     return (v,)
 
 
@@ -91,12 +92,16 @@ def _issparse(args, *, nargout=1):
 def _nnz(args, *, nargout=1):
     if len(args) != 1 or not isinstance(args[0], Array):
         raise _err("nnz: expected one numeric or logical argument")
+    if is_sparse(args[0]):
+        return (NDArrayValue(np.array([[float(args[0].store.nnz)]])),)
     return (NDArrayValue(np.array([[float(np.count_nonzero(args[0].backend_buffer()))]])),)
 
 
 def _nonzeros(args, *, nargout=1):
     if len(args) != 1 or not isinstance(args[0], Array):
         raise _err("nonzeros: expected one numeric or logical argument")
+    if is_sparse(args[0]):
+        return (NDArrayValue(args[0].store.data.reshape(-1, 1).copy()),)
     b = np.asarray(args[0].backend_buffer()).reshape(-1, order="F")
     return (NDArrayValue(b[b != 0].reshape(-1, 1).copy()),)
 
@@ -111,20 +116,100 @@ def _speye(args, *, nargout=1):
         m, n = (int(b[0]), int(b[0])) if b.size == 1 else (int(b[0]), int(b[1]))
     else:
         m, n = _dim("speye", args[0]), _dim("speye", args[1])
-    return (to_sparse(np.eye(m, n)),)
+    return (SparseValue(Store.eye(m, n)),)
 
 
 def _spones(args, *, nargout=1):
     if len(args) != 1:
         raise _err("spones: expected 1 argument")
+    if is_sparse(args[0]):
+        st = args[0].store
+        return (SparseValue(st.with_data(np.ones(st.nnz), np.float64)),)
     b = _num("spones", args[0])
     return (to_sparse((b != 0).astype(np.float64)),)
 
 
-def _keep_sparse(fn):
+def _round_half_away(x):
+    if np.iscomplexobj(x):
+        return _round_half_away(x.real) + 1j * _round_half_away(x.imag)
+    return np.sign(x) * np.floor(np.abs(x) + 0.5)
+
+
+def _real_in(lo, hi):
+    def ok(d):
+        return d.dtype != np.complex128 and bool(np.all((d >= lo) & (d <= hi)))
+    return ok
+
+
+_NATIVE_MAP = {
+    "abs": (np.abs, None), "sqrt": (np.sqrt, _real_in(0, np.inf)), "sin": (np.sin, None),
+    "tan": (np.tan, None), "sinh": (np.sinh, None), "tanh": (np.tanh, None),
+    "asin": (np.arcsin, _real_in(-1, 1)), "atan": (np.arctan, None), "asinh": (np.arcsinh, None),
+    "atanh": (np.arctanh, _real_in(-1, 1)), "floor": (np.floor, None), "ceil": (np.ceil, None),
+    "round": (_round_half_away, None), "fix": (np.trunc, None), "real": (np.real, None),
+    "imag": (np.imag, None), "conj": (np.conj, None),
+}
+
+
+def _sum_dim(st, args):
+    if len(args) == 1:
+        return 1 if st.m == 1 and st.n != 1 else 0
+    if len(args) == 2 and isinstance(args[1], NDArrayValue) and not is_sparse(args[1]):
+        b = np.asarray(args[1].backend_buffer()).reshape(-1)
+        if b.size == 1 and b.dtype != object and b[0] in (1, 2):
+            return int(b[0]) - 1
+    return None
+
+
+def native_sparse_call(name, args, nargout):
+    """Compressed-storage implementation of a zero-preserving builtin, or None (#516)."""
+    if not args or not is_sparse(args[0]) or nargout > 1:
+        return None
+    st = args[0].store
+    if name in _NATIVE_MAP and len(args) == 1:
+        fn, ok = _NATIVE_MAP[name]
+        if st.dtype == np.bool_ and name in ("real", "imag", "conj"):
+            return None
+        if ok is not None and not ok(st.data.astype(np.float64) if st.dtype == np.bool_ else st.data):
+            return None
+        r = st.map(fn)
+        if r is not None and name in ("real", "imag", "abs"):
+            r = r.astype(np.float64)
+        return None if r is None else SparseValue(r)
+    if name == "transpose" and len(args) == 1:
+        return SparseValue(st.transpose())
+    if name == "double" and len(args) == 1:
+        return SparseValue(st.astype(np.float64))
+    if name == "logical" and len(args) == 1:
+        if st.dtype != np.bool_ and (st.dtype == np.complex128 or np.any(np.isnan(st.data))):
+            return None
+        return SparseValue(st.astype(np.bool_))
+    if name == "sum":
+        ax = _sum_dim(st, args)
+        if ax is None or st.dtype == np.bool_ and False:
+            return None
+        return SparseValue(st.sum(ax))
+    if name in ("max", "min"):
+        if len(args) == 1:
+            ax = 1 if st.m == 1 and st.n != 1 else 0
+        elif len(args) == 3 and args[1].numel() == 0:
+            ax = _sum_dim(st, [args[0], args[2]])
+        else:
+            return None
+        if ax is None or (st.m == 0 or st.n == 0):
+            return None
+        r = st.extreme(ax, name == "max")
+        return None if r is None else SparseValue(r)
+    return None
+
+
+def _keep_sparse(fn, name=""):
     """Zero-preserving builtins return sparse for sparse input (MATLAB)."""
 
     def _wrapped(args, *, nargout=1):
+        nat = native_sparse_call(name, args, nargout)
+        if nat is not None:
+            return (nat,)
         out = fn(args, nargout=nargout)
         if args and is_sparse(args[0]) and out and isinstance(out[0], NDArrayValue):
             return (to_sparse(out[0].backend_buffer()), *out[1:])
@@ -148,7 +233,7 @@ def _spalloc(args, *, nargout=1):
     m, n = _dim("spalloc", args[0]), _dim("spalloc", args[1])
     if len(args) == 3:
         _dim("spalloc", args[2])  # capacity hint; storage is dense (see design doc)
-    return (SparseValue(np.zeros((m, n))),)
+    return (SparseValue(Store.zeros(m, n)),)
 
 
 def _diag_index(k: int, m: int, n: int):
@@ -173,13 +258,19 @@ def _spdiags(args, *, nargout=1):
             B = np.full((max(m, n), d.size), B.reshape(-1)[0])
         if B.shape[1] != d.size:
             raise _err("spdiags: B must have one column per diagonal")
-        out = np.zeros((m, n), dtype=np.result_type(B, np.float64))
-        for c, k in enumerate(d):
+        R, C, V = [], [], []
+        for c, k in enumerate(d):  # later diagonals overwrite earlier (assignment)
             i, j, b = _diag_index(int(k), m, n)
             ok = b < B.shape[0]
-            out[i[ok], j[ok]] = B[b[ok], c]
-        return (SparseValue(out),)
+            R.append(i[ok]); C.append(j[ok]); V.append(B[b[ok], c])
+        dt = np.result_type(B, np.float64)
+        st = Store.zeros(m, n, dt)
+        for r_, c_, v_ in zip(R, C, V):
+            st = st.assign_linear(c_ * m + r_, v_.astype(dt), m, n) if r_.size else st
+        return (SparseValue(st),)
     if len(args) in (1, 2):  # B = spdiags(A[, d]), [B, d] = spdiags(A)
+        if is_sparse(args[0]):
+            return _spdiags_extract(args, nargout)
         A = _num("spdiags", args[0])
         A = A.reshape(1, 1) if A.ndim == 0 else A
         m, n = A.shape
@@ -198,7 +289,30 @@ def _spdiags(args, *, nargout=1):
     raise _err("spdiags: usage spdiags(B, d, m, n) or spdiags(A[, d])")
 
 
+def _spdiags_extract(args, nargout):
+    st = args[0].store
+    m, n = st.shape
+    diag = st.cols - st.rows
+    if len(args) == 2:
+        d = _num("spdiags", args[1]).reshape(-1).real.astype(int)
+    else:
+        d = np.unique(diag).astype(int)
+    out = np.zeros((min(m, n), d.size), dtype=st.dtype if st.dtype != np.bool_ else np.float64)
+    for c, k in enumerate(d):
+        sel = diag == k
+        i, j = st.rows[sel], st.cols[sel]
+        b = j if m >= n else i
+        out[b, c] = st.data[sel]
+    res = [NDArrayValue(out)]
+    if nargout > 1:
+        res.append(NDArrayValue(d.reshape(-1, 1).astype(float)))
+    return tuple(res)
+
+
 def _sprand(args, *, nargout=1):
+    if len(args) == 1 and is_sparse(args[0]):
+        st = args[0].store
+        return (SparseValue(st.with_data(np.random.random_sample(st.nnz), np.float64)),)
     if len(args) == 1:  # same sparsity pattern as S, uniform random values
         A = _num("sprand", args[0])
         A = A.reshape(1, 1) if A.ndim == 0 else A
@@ -210,12 +324,18 @@ def _sprand(args, *, nargout=1):
     dens = float(_num("sprand", args[2]).reshape(-1)[0].real)
     if not 0 <= dens <= 1:
         raise _err("sprand: density must be between 0 and 1")
-    flat = np.zeros(m * n)
     k = int(round(dens * m * n))
-    if k:
-        flat[np.random.choice(m * n, size=k, replace=False)] = np.random.random_sample(k)
-    out = flat.reshape((m, n), order="F")
-    return (SparseValue(out),)
+    if not k:
+        return (SparseValue(Store.zeros(m, n)),)
+    if m * n <= 10_000_000:
+        pos = np.random.choice(m * n, size=k, replace=False)
+    else:  # bounded memory: rejection-sample distinct positions
+        pos = np.unique(np.random.randint(0, m * n, size=k, dtype=np.int64))
+        while pos.size < k:
+            pos = np.unique(np.concatenate([pos, np.random.randint(0, m * n, size=k - pos.size, dtype=np.int64)]))
+    vals = np.random.random_sample(k)
+    c, r = np.divmod(pos.astype(np.int64), m)
+    return (SparseValue(Store(m, n, r, c, vals)),)
 
 
 def _spfun(args, *, nargout=1):
@@ -223,18 +343,46 @@ def _spfun(args, *, nargout=1):
 
     if len(args) != 2 or not isinstance(args[0], FunctionHandleValue):
         raise _err("spfun: usage spfun(fh, S)")
-    A = _num("spfun", args[1])
-    A = A.reshape(1, 1) if A.ndim == 0 else A
-    rows, cols = np.nonzero(A.T)  # column-major order of nonzeros
-    rows, cols = cols, rows
-    vals = A[rows, cols].reshape(-1, 1)
+    if is_sparse(args[1]):
+        st = args[1].store
+        rows, cols, vals = st.rows, st.cols, st.data.reshape(-1, 1)
+        shape = st.shape
+    else:
+        A = _num("spfun", args[1])
+        A = A.reshape(1, 1) if A.ndim == 0 else A
+        rows, cols = np.nonzero(A.T)  # column-major order of nonzeros
+        rows, cols = cols, rows
+        vals = A[rows, cols].reshape(-1, 1)
+        shape = A.shape
     res = args[0].call([NDArrayValue(vals.astype(np.float64) if vals.dtype == np.bool_ else vals)], nargout=1)
     if not res or not isinstance(res[0], Array) or res[0].numel() != vals.size:
         raise _err("spfun: function must return one value per nonzero element")
     rv = np.asarray(res[0].backend_buffer()).reshape(-1)
-    out = np.zeros(A.shape, dtype=np.result_type(rv, np.float64))
-    out[rows, cols] = rv
-    return (SparseValue(out),)
+    dt = np.result_type(rv, np.float64)
+    return (SparseValue(Store(shape[0], shape[1], rows, cols, rv.astype(dt), dtype=dt)),)
+
+
+def _find_sparse(fn):
+    """find(S) / [i,j] / [i,j,v] straight from the compressed arrays (#515)."""
+
+    def _wrapped(args, *, nargout=1):
+        if len(args) != 1 or not is_sparse(args[0]):
+            return fn(args, nargout=nargout)
+        st = args[0].store
+        row = st.m == 1 and st.n != 1
+
+        def col(x):
+            x = np.asarray(x)
+            return NDArrayValue(x.reshape(1, -1).copy() if row else x.reshape(-1, 1).copy())
+
+        if nargout <= 1:
+            return (col((st.keys + 1).astype(np.float64)),)
+        out = [col((st.rows + 1).astype(np.float64)), col((st.cols + 1).astype(np.float64))]
+        if nargout >= 3:
+            out.append(col(st.data))
+        return tuple(out)
+
+    return _wrapped
 
 
 def register(builtins: Dict[str, Callable]) -> None:
@@ -245,4 +393,6 @@ def register(builtins: Dict[str, Callable]) -> None:
     )
     for k in _ZERO_PRESERVING:
         if k in builtins:
-            builtins[k] = _keep_sparse(builtins[k])
+            builtins[k] = _keep_sparse(builtins[k], k)
+    if "find" in builtins:
+        builtins["find"] = _find_sparse(builtins["find"])

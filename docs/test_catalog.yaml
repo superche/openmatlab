@@ -1017,3 +1017,21 @@ test_cases:
     impl: tests/unit/test_struct_residuals.py
     status: active
     env: unit
+
+  - id: tc.sparse_csc
+    kind: unit
+    title: compressed sparse storage (Epic #520)
+    features: [numerics.sparse_csc]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_sparse_csc.py
+    status: active
+    env: unit
+
+  - id: tc.sparse_csc_bdd
+    kind: bdd
+    title: compressed sparse storage Gherkin scenarios (Epic #520)
+    features: [numerics.sparse_csc]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_sparse_csc_bdd.py
+    status: active
+    env: unit

@@ -27,4 +27,5 @@ CRITERIA = {
     "C16": ("c16_sparse", "p2", [451], "met"),
     "C17": ("c17_linear_solve", "p2", [496], "met"),
     "C18": ("c18_structs", "p2", [506, 504], "met"),
+    "C19": ("c19_sparse_csc", "p2", [520, 515, 516, 517], "met"),
 }

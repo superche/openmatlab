@@ -364,6 +364,15 @@ features:
     notes: "Epic #487 (M2 C16 met, #451): SparseValue(NDArrayValue) over a dense buffer; sparse(A|m,n|i,j,v[,m,n]), full, issparse, nnz, nonzeros, nzmax, speye, spones; MATLAB propagation rules incl. S^p; (i,j) triplet display. Residual: #488 (compressed storage, spdiags/sprand, solvers); #488: S.^0 stays full (all ones), for over sparse yields sparse columns, S backslash S / inv(S) sparse, spdiags (create and extract), spalloc, sprand, spfun; compressed storage split to its own issue"
     tests: [tests/unit/test_sparse.py, tests/bdd/test_sparse_bdd.py, tests/unit/test_sparse_residuals.py]
 
+  - id: numerics.sparse_csc
+    layer: numerics
+    name: "compressed sparse storage (CSC)"
+    status: done
+    spec: docs/design/EPIC-520-sparse-csc.md
+    depends_on: [numerics.sparse]
+    notes: "Epic #520 (M2 C19 met; #515 #516 #517): SparseValue holds a sparse_store.Store (CSC order: rows, column pointers, values; O(nnz) memory); construction, nnz/nonzeros/nzmax/find/size/full/display, S*x, x*S, S*S, S+-S, S.*S, S.*X, S./X, k*S, -S, S', S.^p, zero-preserving elementwise functions, sum/max/min, S(i,j)/S(k)/S(mask)/S(:), assignment with growth, deletion and [S S] run without densifying; other ops densify lazily (counted by DENSIFY_COUNT); Inf/NaN operands take the dense path to keep IEEE results"
+    tests: [tests/unit/test_sparse_csc.py, tests/bdd/test_sparse_csc_bdd.py]
+
   - id: numerics.linear_solve
     layer: numerics
     name: "linear solve mldivide/mrdivide, inv/det/rank/pinv"

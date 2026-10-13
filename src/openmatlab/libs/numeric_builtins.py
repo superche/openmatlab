@@ -162,6 +162,8 @@ def _shape_of(v: Value) -> tuple:
         return tuple(v.full_shape)
     if getattr(v, "is_string", False) or getattr(v, "is_struct", False):
         return tuple(v.shape)  # string arrays (#459), struct arrays (#506)
+    if getattr(v, "issparse", False):
+        return tuple(v.shape)  # compressed storage: no densify (#515)
     if isinstance(v, Array):
         shape = tuple(np.asarray(v.backend_buffer()).shape)
         return shape + (1,) * (2 - len(shape)) if len(shape) < 2 else shape

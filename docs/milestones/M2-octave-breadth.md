@@ -54,6 +54,7 @@ Harness: `tests/conformance/m2_expected.py` coerces Inf/NaN tokens. Remaining sm
 | C16 | Sparse matrices: `sparse`/`full`/`nnz`, MATLAB sparsity rules, `S^p`, triplet display | c16_sparse | p2 | #451 | **met** (Epic #487) |
 | C17 | Linear solve: `A\b`, `B/A` (square, least squares, basic solution), singular/rank warnings, `inv`/`det`/`rank`/`pinv` | c17_linear_solve | p2 | #496 | **met** (Epic #496) |
 | C18 | Structs: `s.f`, nested and dynamic fields, struct arrays `s(i).f`, `struct()` with cells, field functions, cs-lists, regexp `names` | c18_structs | p2 | #506 #504 | **met** (Epic #506) |
+| C19 | Compressed sparse storage: `sparse(1e5,1e5)`/`speye(1e5)` in O(nnz) memory; native `S*x`, `S*S`, `S±S`, `k*S`, `S'`, `sum`, `find`, `S(i,j)`, assignment, deletion, `[S; S]` | c19_sparse_csc | p2 | #520 #515 #516 #517 | **met** (Epic #520) |
 
 Epic #15 (C05, p1) was opened before this rule. From Epic #16 on, the next epic
 takes the **first pending row** in this table (p0 before p1, then table order).
@@ -87,6 +88,8 @@ All three exit criteria hold on `main` after Epic #23:
 Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
 
 ## Progress snapshot
+
+After Epic #520 (compressed sparse storage, adds C19 p2): **19/19** criteria met. Remaining M2 work is residual p2 breadth (see open issues).
 
 After Epic #506 (structs, adds C18 p2): **18/18** criteria met. Remaining M2 work is residual p2 breadth (see open issues).
 
