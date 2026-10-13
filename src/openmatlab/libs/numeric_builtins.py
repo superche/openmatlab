@@ -1214,6 +1214,10 @@ from openmatlab.libs import struct_builtins as _struct_builtins  # noqa: E402
 
 _struct_builtins.register(BUILTINS)
 _struct_builtins.register_residuals(BUILTINS)
+
+from openmatlab.libs import error_builtins as _error_builtins  # noqa: E402
+
+_error_builtins.register(BUILTINS)
 _shape_builtins.register_cell_shape(BUILTINS)
 
 

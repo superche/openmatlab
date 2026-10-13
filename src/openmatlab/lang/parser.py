@@ -19,6 +19,7 @@ from openmatlab.lang.ast_nodes import (
     ReturnStmt,
     SwitchCase,
     SwitchStmt,
+    TryStmt,
     WhileStmt,
     ForStmt,
     FunctionDef,
@@ -132,6 +133,8 @@ class Parser:
             return ReturnStmt()
         if self.current().type == TokenType.KW_SWITCH:
             return self.parse_switch()
+        if self.current().type == TokenType.KW_TRY:
+            return self.parse_try()
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)
@@ -323,6 +326,27 @@ class Parser:
             otherwise = tuple(self._parse_block(TokenType.KW_END))
         self.expect(TokenType.KW_END)
         return SwitchStmt(expr=expr, cases=tuple(cases), otherwise=otherwise)
+
+    def parse_try(self) -> TryStmt:
+        """try body [catch [ident] handler] end — ident only on the catch line."""
+        self.expect(TokenType.KW_TRY)
+        while self._match_sep():
+            pass
+        body = self._parse_block(TokenType.KW_CATCH, TokenType.KW_END)
+        ident = None
+        handler: List[Stmt] = []
+        if self.current().type == TokenType.KW_CATCH:
+            self.advance()
+            nxt = self.tokens[self.pos + 1].type if self.pos + 1 < len(self.tokens) else TokenType.EOF
+            if self.current().type == TokenType.IDENT and nxt in (
+                TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.COMMA, TokenType.EOF, TokenType.KW_END
+            ):
+                ident = self.advance().value
+            while self._match_sep():
+                pass
+            handler = self._parse_block(TokenType.KW_END)
+        self.expect(TokenType.KW_END)
+        return TryStmt(body=tuple(body), ident=ident, handler=tuple(handler))
 
     def parse_for(self) -> ForStmt:
         self.expect(TokenType.KW_FOR)

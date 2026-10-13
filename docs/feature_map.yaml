@@ -258,6 +258,14 @@ features:
     notes: "no fall-through; case {a,b} multi-match; scalar/char equality (#148); non-scalar switch expr errors (#152); string class waits on #78"
     tests: [tests/unit/test_switch.py, tests/bdd/test_switch_bdd.py]
 
+  - id: lang.try_catch
+    layer: lang
+    name: try/catch, error, MException, assert, lasterr
+    status: done
+    depends_on: [lang.parser, runtime.evaluator, runtime.structs]
+    notes: "Epic #530: try/catch [ident]; error(msg literal | id,fmt,... | struct); MException/throw/rethrow/getReport; assert; lasterr; MATLAB ids on builtin errors (badsubscript, UndefinedFunction, sizeDimensionsMustMatch, ...); break/continue/return never caught. Residual #565 (stack, size-mismatch text)"
+    tests: [tests/unit/test_errors.py, tests/bdd/test_errors_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

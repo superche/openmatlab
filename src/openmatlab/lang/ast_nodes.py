@@ -280,6 +280,15 @@ class SwitchStmt(AstNode):
     otherwise: Optional[Sequence["Stmt"]] = None
 
 
+@dataclass(frozen=True)
+class TryStmt(AstNode):
+    """try ... catch [ident] ... end (Epic #530)."""
+
+    body: Sequence["Stmt"]
+    ident: Optional[str] = None
+    handler: Sequence["Stmt"] = ()
+
+
 Stmt = Union[
     Assign,
     CellAssign,
@@ -294,5 +303,6 @@ Stmt = Union[
     ContinueStmt,
     ReturnStmt,
     SwitchStmt,
+    TryStmt,
 ]
 Program = List[Stmt]

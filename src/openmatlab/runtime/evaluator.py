@@ -16,7 +16,11 @@ if TYPE_CHECKING:
 
 
 class EvalError(Exception):
-    pass
+    """User-visible MATLAB error; ``identifier`` is the MATLAB message id (Epic #530)."""
+
+    def __init__(self, message: str = "", identifier: str = "") -> None:
+        super().__init__(message)
+        self.identifier = identifier
 
 
 class _BreakSignal(Exception):
@@ -154,6 +158,8 @@ class Evaluator:
             return self._eval_for(stmt)
         if isinstance(stmt, ast.WhileStmt):
             return self._eval_while(stmt)
+        if isinstance(stmt, ast.TryStmt):
+            return self._eval_try(stmt)
         if isinstance(stmt, ast.BreakStmt):
             if self._loop_depth <= 0:
                 raise EvalError("break outside of a for or while loop")
@@ -1719,6 +1725,26 @@ class Evaluator:
         finally:
             self._loop_depth -= 1
         return last
+
+    def _eval_try(self, stmt: ast.TryStmt) -> Value:
+        """try/catch (Epic #530): any MATLAB error in the body runs the handler."""
+        from openmatlab.runtime import errors as _er
+
+        try:
+            for s in stmt.body:
+                self.eval_stmt(s)
+        except (_BreakSignal, _ContinueSignal, _ReturnSignal):
+            raise
+        except Exception as exc:  # every user-visible failure is catchable (MATLAB)
+            if not isinstance(exc, EvalError):
+                exc = EvalError(str(exc))
+            me = _er.from_eval_error(exc)
+            _er.record(str(exc), me.elems[0]["identifier"].text)
+            if stmt.ident:
+                self.workspace.set(stmt.ident, me)
+            for s in stmt.handler:
+                self.eval_stmt(s)
+        return self.numerics.from_scalar(0.0)
 
     def _eval_while(self, stmt: ast.WhileStmt) -> Value:
         last: Value = self.numerics.from_scalar(0.0)
