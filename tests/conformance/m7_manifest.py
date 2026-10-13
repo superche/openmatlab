@@ -14,7 +14,7 @@ CRITERIA = {
     "C03": ("m7_c03_command_syntax", "p0", [532, 545, 546], "met"),
     "C04": ("m7_c04_file_io", "p0", [533, 547, 548], "met"),
     "C05": ("m7_c05_core_math", "p0", [534, 550, 551, 552], "met"),
-    "C06": ("m7_c06_arrays_sets", "p0", [535, 553, 554], "pending"),
+    "C06": ("m7_c06_arrays_sets", "p0", [535, 553, 554], "met"),
     "C07": ("m7_c07_strings", "p0", [536, 555, 556], "pending"),
     "C08": ("m7_c08_graphics_core", "p0", [537, 557, 558, 559], "pending"),
     "C09": ("m7_c09_linalg_decomp", "p1", [538, 560], "pending"),
