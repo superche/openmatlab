@@ -1200,6 +1200,7 @@ _string_builtins.register(BUILTINS)
 from openmatlab.libs import sparse_builtins as _sparse_builtins  # noqa: E402
 
 _sparse_builtins.register(BUILTINS)
+_shape_builtins.register_cell_shape(BUILTINS)
 
 
 def register_numeric_builtins(resolver) -> None:

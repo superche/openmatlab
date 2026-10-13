@@ -50,5 +50,8 @@ def test_cell_nd_display_labels():
 def test_cell_nd_errors():
     with pytest.raises(EvalError, match="Index in position 3 exceeds array bounds"):
         _ws("c = cell(2,2,2); x = c{1,1,3};")
-    with pytest.raises(EvalError, match="positive integer scalars"):
-        _ws("c = cell(2,2,2); x = c{1,1,1:2};")
+    # trailing ranges were rejected until #479; they now select (see test_nd_cell_residuals.py)
+    ws = _ws("c = cell(2,2,2); x = c(1,1,1:2); s = size(x);")
+    assert _v(ws, "s").tolist() == [[1, 1, 2]]
+    with pytest.raises(EvalError, match="positive integers"):
+        _ws("c = cell(2,2,2); x = c{1,1,0};")
