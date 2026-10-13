@@ -31,6 +31,8 @@ class Script:
 
     body: Sequence[Stmt]
     source_path: Optional[Path] = None
+    # Local functions defined after the script code (MATLAB R2016b+, #529).
+    local_functions: Tuple[FunctionDef, ...] = ()
 
 
 def load_mfile(path: Path) -> FunctionDef | Script:
@@ -38,9 +40,17 @@ def load_mfile(path: Path) -> FunctionDef | Script:
     text = path.read_text(encoding="utf-8")
     stmts = parse(text)
     funcs = [s for s in stmts if isinstance(s, FunctionDef)]
+    if funcs and not isinstance(stmts[0], FunctionDef):
+        # Script with local functions: all function blocks must come last (MATLAB).
+        first = next(i for i, s in enumerate(stmts) if isinstance(s, FunctionDef))
+        if any(not isinstance(s, FunctionDef) for s in stmts[first:]):
+            raise ValueError(
+                f"Mixed function/script in {path.name}: local functions in a script must be defined at the end of the file"
+            )
+        return Script(body=tuple(stmts[:first]), source_path=path.resolve(), local_functions=tuple(funcs))
     if funcs:
         if any(not isinstance(s, FunctionDef) for s in stmts):
-            raise ValueError(f"Mixed function/script not supported: {path}")
+            raise ValueError(f"Mixed function/script in {path.name}: statements after function definitions are not allowed")
         main = funcs[0]
         if len(funcs) > 1:
             # Local functions: carry them as trailing FunctionDefs of main.
@@ -167,8 +177,27 @@ def parse_mfile(path: Path) -> FunctionDef:
 
 
 def eval_script(script: Script, evaluator: Any) -> Optional[Value]:
-    """Evaluate a script in the given evaluator's workspace (shared base WS)."""
-    return evaluator.eval_program(list(script.body))
+    """Evaluate a script in the given evaluator's workspace (shared base WS).
+
+    Local functions (#529) are visible to the script body, to each other and as
+    handles (``@name``) for the duration of the run."""
+    if not script.local_functions:
+        return evaluator.eval_program(list(script.body))
+    outer = evaluator.functions
+    local: Dict[str, Any] = {}
+    for f in script.local_functions:
+        local[f.name.lower()] = MFileCallable(
+            defn=f, numerics=evaluator.numerics, plots=evaluator.plots,
+            resolver=outer, source_path=script.source_path,
+        )
+    scope = _ScopedResolver(outer, local)
+    for fn in local.values():
+        fn.scope = scope
+    evaluator.functions = scope
+    try:
+        return evaluator.eval_program(list(script.body))
+    finally:
+        evaluator.functions = outer
 
 
 @dataclass

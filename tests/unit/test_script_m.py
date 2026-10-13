@@ -53,7 +53,17 @@ def test_eval_script_shares_workspace(tmp_path: Path):
 
 
 def test_mixed_file_rejected(tmp_path: Path):
+    # #529: a script followed by local functions is valid MATLAB (R2016b+);
+    # code *after* a local function is still rejected.
+    ok = tmp_path / "okscript.m"
+    ok.write_text("x = 1;\nfunction y = f(a)\ny = a;\nend\n")
+    loaded = load_mfile(ok)
+    assert isinstance(loaded, Script) and [f.name for f in loaded.local_functions] == ["f"]
     f = tmp_path / "bad.m"
-    f.write_text("x = 1;\nfunction y = f(a)\ny = a;\nend\n")
+    f.write_text("x = 1;\nfunction y = f(a)\ny = a;\nend\nz = 2;\n")
     with pytest.raises(ValueError, match="Mixed|multiple"):
         load_mfile(f)
+    g = tmp_path / "bad2.m"
+    g.write_text("function y = f(a)\ny = a;\nend\nz = 2;\n")
+    with pytest.raises(ValueError, match="Mixed|multiple"):
+        load_mfile(g)

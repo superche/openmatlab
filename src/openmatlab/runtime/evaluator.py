@@ -217,10 +217,14 @@ class Evaluator:
                     mfile = None
                 if mfile is not None:
                     from openmatlab.runtime.functions import Script, eval_script, load_mfile
-                    loaded = load_mfile(mfile)
+                    try:
+                        loaded = load_mfile(mfile)
+                    except ValueError as exc:  # malformed file: MATLAB-style error (#529)
+                        raise EvalError(str(exc)) from None
                     if isinstance(loaded, Script):
                         eval_script(loaded, self)
-                        return self.numerics.from_scalar(0.0)
+                        self._no_output = self.numerics.from_nested([])  # a script shows no ans (MATLAB)
+                        return self._no_output
                     # else fall through to function resolve via _invoke_call
                 # MATLAB: unbound name may be a zero-arg function/builtin (NaN, pi, …)
                 try:
@@ -1122,7 +1126,8 @@ class Evaluator:
             )
         assert isinstance(loaded, Script)
         eval_script(loaded, self)
-        return self.numerics.from_scalar(1.0)
+        self._no_output = self.numerics.from_nested([])  # run(...) shows no ans (MATLAB)
+        return self._no_output
 
     def _eval_binop(self, expr: ast.BinOp) -> Value:
         from openmatlab.runtime.char_value import CharValue
