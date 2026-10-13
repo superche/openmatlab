@@ -406,7 +406,7 @@ class NumPyArrayBackend:
     def _grown_vector_shape(self, data: Any, new_numel: int) -> tuple:
         """Orientation after linear grow: row stays row, else column."""
         rows, cols = (self._np.asarray(data).shape + (1, 1))[:2]
-        if rows == 1:
+        if rows == 1 or (rows == 0 and cols == 0):  # x = []; x(3) = 1 is 1x3 (MATLAB)
             return (1, int(new_numel))
         return (int(new_numel), 1)
 

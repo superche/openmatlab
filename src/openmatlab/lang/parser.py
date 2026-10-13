@@ -7,6 +7,8 @@ from typing import List, Optional, Sequence
 from openmatlab.lang.ast_nodes import (
     Assign,
     CellAssign,
+    ChainAssign,
+    FieldExpr,
     ArrayAssign,
     BinOp,
     ColonExpr,
@@ -147,6 +149,8 @@ class Parser:
         if self.match(TokenType.ASSIGN):
             value = self.parse_expression()
             suppress = self._trailing_suppress()
+            if self._is_chain_lvalue(expr):
+                return ChainAssign(target=expr, value=value, suppress=suppress)
             if isinstance(expr, CellIndexExpr):
                 return CellAssign(target=expr, value=value, suppress=suppress)
             if isinstance(expr, IndexExpr):
@@ -159,6 +163,17 @@ class Parser:
             )
         suppress = self._trailing_suppress()
         return ExprStmt(expr=expr, suppress=suppress)
+
+    @staticmethod
+    def _is_chain_lvalue(expr) -> bool:
+        """True for an LHS chain ending in a Name that is not plain A(...) / c{...}."""
+        if isinstance(expr, (IndexExpr, CellIndexExpr)) and isinstance(expr.target, Name):
+            return False
+        node, seen = expr, False
+        while isinstance(node, (IndexExpr, CellIndexExpr, FieldExpr)):
+            seen = True
+            node = node.target
+        return seen and isinstance(node, Name)
 
     def _try_parse_multi_assign(self) -> Optional[MultiAssign]:
         """Parse [a, b] = expr; rewind if not that pattern (matrix / other)."""
@@ -451,6 +466,21 @@ class Parser:
                 args = self._parse_arg_list(TokenType.RPAREN)
                 self.expect(TokenType.RPAREN)
                 expr = IndexExpr(target=expr, indices=args)
+                continue
+            if self.match(TokenType.DOT):
+                if self.match(TokenType.LPAREN):
+                    saved, self._in_subscript = self._in_subscript, 0
+                    try:
+                        name_expr = self.parse_expression()
+                    finally:
+                        self._in_subscript = saved
+                    self.expect(TokenType.RPAREN)
+                    expr = FieldExpr(target=expr, name=None, name_expr=name_expr)
+                    continue
+                tok = self.advance()
+                if not isinstance(tok.value, str) or not tok.value[:1].isalpha():
+                    raise ParseError("Expected a field name after '.'", tok.line, tok.column)
+                expr = FieldExpr(target=expr, name=tok.value)
                 continue
             if self.match(TokenType.LBRACE):
                 args = self._parse_arg_list(TokenType.RBRACE)

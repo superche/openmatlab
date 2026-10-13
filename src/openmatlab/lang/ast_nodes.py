@@ -122,6 +122,15 @@ class AnonFuncExpr(AstNode):
     text: str = ""  # display form, e.g. "@(x)x.^2+1"
 
 
+@dataclass(frozen=True)
+class FieldExpr(AstNode):
+    """s.name, or s.(expr) when ``name`` is None (Epic #506)."""
+
+    target: "Expr"
+    name: Optional[str] = None
+    name_expr: Optional["Expr"] = None
+
+
 Expr = Union[
     NumberLiteral,
     StringLiteral,
@@ -137,6 +146,7 @@ Expr = Union[
     TransposeExpr,
     CallExpr,
     FuncHandleExpr,
+    FieldExpr,
 ]
 
 
@@ -158,6 +168,16 @@ class CellAssign(AstNode):
 
     target: CellIndexExpr
     value: Expr
+    suppress: bool = False
+
+
+@dataclass(frozen=True)
+class ChainAssign(AstNode):
+    """Assignment to an indexing chain that has a field or nested part, e.g.
+    s.a = v, s(2).b.c = v, c{1}.x = v, s.a(3) = v (Epic #506)."""
+
+    target: "Expr"
+    value: "Expr"
     suppress: bool = False
 
 

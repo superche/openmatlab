@@ -102,7 +102,19 @@ class Evaluator:
             names = (base.id,) if isinstance(base, ast.Name) else ()
         elif isinstance(stmt, ast.MultiAssign):
             names = stmt.names
+        elif isinstance(stmt, ast.ChainAssign):
+            from openmatlab.runtime import struct_eval as _se
+
+            names = (_se._steps(stmt.target)[0],)
         elif isinstance(stmt, ast.ExprStmt):
+            from openmatlab.runtime.struct_value import CsList
+
+            if isinstance(value, CsList):  # each value shows as ans (MATLAB)
+                for v in value.values:
+                    d.bind_ans(v)
+                    if show:
+                        d.show(v)
+                return
             if isinstance(stmt.expr, ast.Name) and stmt.expr.id in self.workspace:
                 if show:
                     d.show(value, name=stmt.expr.id)
@@ -122,6 +134,10 @@ class Evaluator:
             value = self.eval_expr(stmt.value)
             self.workspace.set(stmt.name, value)
             return value
+        if isinstance(stmt, ast.ChainAssign):  # s.a = v, s(2).b = v ... (Epic #506)
+            from openmatlab.runtime import struct_eval as _se
+
+            return _se.chain_assign(self, stmt)
         if isinstance(stmt, ast.CellAssign):
             return self._eval_cell_assign(stmt)
         if isinstance(stmt, ast.ArrayAssign):
@@ -149,6 +165,10 @@ class Evaluator:
         if isinstance(stmt, ast.SwitchStmt):
             return self._eval_switch(stmt)
         if isinstance(stmt, ast.ExprStmt):
+            if isinstance(stmt.expr, ast.FieldExpr):  # s.f on a struct array is a cs-list
+                from openmatlab.runtime import struct_eval as _se
+
+                return _se.read_field(self, stmt.expr)
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
             raise EvalError(
@@ -234,6 +254,10 @@ class Evaluator:
             from openmatlab.runtime.char_value import CharValue
 
             operand = self.eval_expr(expr.operand)
+            if getattr(operand, "is_struct", False):
+                from openmatlab.runtime import struct_eval as _se
+
+                return _se.transpose(operand)
             if isinstance(operand, CharValue) and not getattr(operand, "is_string", False):
                 return _codes_char(self.numerics.transpose(_char_codes(operand)))
             if getattr(operand, "is_string", False):
@@ -244,6 +268,10 @@ class Evaluator:
                 self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
             )
+        if isinstance(expr, ast.FieldExpr):  # (Epic #506)
+            from openmatlab.runtime import struct_eval as _se
+
+            return _se.single(_se.read_field(self, expr))
         if isinstance(expr, ast.CellIndexExpr):
             return self._eval_cell_index(expr)
         if isinstance(expr, ast.IndexExpr):
@@ -260,8 +288,11 @@ class Evaluator:
             return CellValue(rows=tuple())
         rows = []
         width = None
+        from openmatlab.runtime import struct_eval as _se
+
         for row in expr.rows:
-            vals = [self.eval_expr(cell) for cell in row]
+            vals = [v for cell in row for v in (_se.expand(self, cell) if isinstance(cell, ast.FieldExpr)
+                                                else [self.eval_expr(cell)])]
             if width is None:
                 width = len(vals)
             elif len(vals) != width:
@@ -323,6 +354,14 @@ class Evaluator:
         except KeyError as exc:
             raise EvalError(f"Undefined variable: {name}") from exc
         rhs_val = self.eval_expr(stmt.value)
+        if getattr(arr, "is_struct", False) or (
+            getattr(rhs_val, "is_struct", False) and isinstance(arr, Array) and arr.numel() == 0
+        ):  # s(i) = t / s(i) = [] (Epic #506)
+            from openmatlab.runtime import struct_eval as _se
+
+            cur = arr if getattr(arr, "is_struct", False) else None
+            self.workspace.set(name, _se.struct_paren_assign(self, cur, list(stmt.target.indices), rhs_val))
+            return rhs_val
         # c(i)=[] delete on cell arrays
         if isinstance(arr, CellValue):
             return self._eval_cell_paren_delete_or_assign(
@@ -816,6 +855,10 @@ class Evaluator:
 
             if isinstance(target, CellValue):
                 return self._eval_cell_paren_index(target, arg_exprs)
+            if getattr(target, "is_struct", False):  # s(i) (Epic #506)
+                from openmatlab.runtime import struct_eval as _se
+
+                return _se.struct_index(self, target, arg_exprs)
             if isinstance(target, FunctionHandleValue):
                 outs = target.call(self._eval_call_args(arg_exprs), nargout=1)
                 if not outs:
@@ -878,6 +921,11 @@ class Evaluator:
 
         out: list = []
         for a in arg_exprs:
+            if isinstance(a, ast.FieldExpr):  # s.f cs-list expands into arguments (#506)
+                from openmatlab.runtime import struct_eval as _se
+
+                out.extend(_se.expand(self, a))
+                continue
             # CSL: content index with only bare colon(s) or multi result cell from {}
             if isinstance(a, ast.CellIndexExpr):
                 val = self.eval_expr(a)
@@ -1190,6 +1238,10 @@ class Evaluator:
 
         rows = [self._matrix_row_values(row) for row in expr.rows]
         flat = [v for r in rows for v in r]
+        if any(getattr(v, "is_struct", False) for v in flat):  # (#506)
+            from openmatlab.runtime import struct_eval as _se
+
+            return _se.concat_structs(rows)
         if any(isinstance(v, CellValue) for v in flat):
             return self._concat_cells(rows)
         if any(getattr(v, "is_string", False) for v in flat):
@@ -1203,6 +1255,11 @@ class Evaluator:
 
         out: list = []
         for el in row:
+            if isinstance(el, ast.FieldExpr):  # [s.f] expands the cs-list (#506)
+                from openmatlab.runtime import struct_eval as _se
+
+                out.extend(_se.expand(self, el))
+                continue
             val = self.eval_expr(el)
             # CSL inside []: [c{:}] expands contents into the row
             if (
@@ -1561,6 +1618,11 @@ class Evaluator:
 
             g = sa.to_grid(value)
             items = [sa.make(g[:, [k]]) for k in range(g.shape[1])]
+        elif getattr(value, "is_struct", False):  # columns of a struct array (#506)
+            from openmatlab.runtime import struct_eval as _se
+
+            pos = _se.positions(value).backend_buffer()
+            items = [_se.from_positions(value, pos[:, [k]]) for k in range(pos.shape[1])]
         elif getattr(value, "issparse", False):  # columns stay sparse (#488)
             from openmatlab.numerics import sparse as _sp
 
