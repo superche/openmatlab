@@ -999,3 +999,12 @@ test_cases:
     impl: tests/unit/test_num2str_layout.py
     status: active
     env: unit
+
+  - id: tc.nd_strings
+    kind: unit
+    title: N-D string arrays and row split (#503)
+    features: [libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_nd_strings.py
+    status: active
+    env: unit
