@@ -1,0 +1,18 @@
+A = [4 -2 1; 3 6 -4; 2 1 8];
+b = [12; -25; 32];
+x = A \ b;
+res = max(abs(A * x - b)) < 1e-12;
+y = [1 2; 3 4] / [1 2; 3 4];
+ls = [1 1; 1 2; 1 3] \ [1; 2; 2];
+un = [1 2 3] \ 6;
+warning('off', 'all');
+rd = [1 1; 1 1; 1 1] \ [1; 2; 3];
+w = startsWith(lastwarn, 'Rank deficient, rank = 1');
+s = [1 2; 2 4] \ [1; 2];
+ws = strcmp(lastwarn, 'Matrix is singular to working precision.');
+warning('on', 'all');
+I = inv([1 2; 3 4]);
+d = det([1 2; 3 4]);
+r = rank([1 2; 2 4]);
+P = pinv([1 2; 2 4]);
+e = [2 4] .\ [4 4];

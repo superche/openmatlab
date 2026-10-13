@@ -1066,8 +1066,19 @@ class Evaluator:
             return n.sub(left, right)
         if op == "*":
             return n.matmul(left, right)
-        if op == "/":
-            return n.elem_div(left, right)
+        if op in ("/", "\\"):
+            if op == "/" and (left.numel() == 1 or right.numel() == 1) and right.numel() == 1:
+                return n.elem_div(left, right)
+            if op == "\\" and left.numel() == 1:
+                return n.elem_div(right, left)
+            from openmatlab.libs.linalg_builtins import solve  # mldivide/mrdivide (#496)
+
+            try:
+                return solve("mrdivide" if op == "/" else "mldivide", left, right)
+            except Exception as exc:
+                raise EvalError(str(exc)) from exc
+        if op == ".\\":
+            return n.elem_div(right, left)
         if op == ".*":
             return n.elem_mul(left, right)
         if op == "./":
