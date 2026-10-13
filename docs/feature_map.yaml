@@ -361,8 +361,8 @@ features:
     status: done
     spec: docs/design/EPIC-487-sparse.md
     depends_on: [numerics.nd_arrays]
-    notes: "Epic #487 (M2 C16 met, #451): SparseValue(NDArrayValue) over a dense buffer; sparse(A|m,n|i,j,v[,m,n]), full, issparse, nnz, nonzeros, nzmax, speye, spones; MATLAB propagation rules incl. S^p; (i,j) triplet display. Residual: #488 (compressed storage, spdiags/sprand, solvers)"
-    tests: [tests/unit/test_sparse.py, tests/bdd/test_sparse_bdd.py]
+    notes: "Epic #487 (M2 C16 met, #451): SparseValue(NDArrayValue) over a dense buffer; sparse(A|m,n|i,j,v[,m,n]), full, issparse, nnz, nonzeros, nzmax, speye, spones; MATLAB propagation rules incl. S^p; (i,j) triplet display. Residual: #488 (compressed storage, spdiags/sprand, solvers); #488: S.^0 stays full (all ones), for over sparse yields sparse columns, S backslash S / inv(S) sparse, spdiags (create and extract), spalloc, sprand, spfun; compressed storage split to its own issue"
+    tests: [tests/unit/test_sparse.py, tests/bdd/test_sparse_bdd.py, tests/unit/test_sparse_residuals.py]
 
   - id: numerics.linear_solve
     layer: numerics

@@ -945,3 +945,12 @@ test_cases:
     impl: tests/bdd/test_linear_solve_bdd.py
     status: active
     env: unit
+
+  - id: tc.sparse_residuals
+    kind: unit
+    title: sparse residuals spdiags/sprand/spfun/spalloc, solve, loops (#488)
+    features: [numerics.sparse]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_sparse_residuals.py
+    status: active
+    env: unit
