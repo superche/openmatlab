@@ -490,12 +490,34 @@ def _num2str(args, *, nargout=1):
             not np.iscomplexobj(b) and np.all(np.isfinite(b) == np.isfinite(b)) and
             np.all((b == np.floor(b)) | ~np.isfinite(b)))
         one = (lambda v: _int_text(v)) if integer else (lambda v: _g(v, max(5, _digits(b) + 4)))
+    if b.size != 1 and not np.iscomplexobj(b) and (len(args) == 2 or not integer):
+        return (CharValue(rows=_num2str_float_matrix(b, prec if len(args) == 2 else None)),)
     cells = [[one(v) for v in row] for row in b.tolist()]
     if b.size == 1:
         return (CharValue(cells[0][0]),)
     w = max(len(c) for row in cells for c in row)
     rows = ["  ".join(c.rjust(w) for c in row) for row in cells]
     return (CharValue(rows=rows),)
+
+
+def _num2str_float_matrix(b, prec):
+    """MATLAB num2str layout for non-integer matrices (#505): every element uses
+    %<w>.<d>g with d = clamp(floor(log10(max|x|)) + 5, 5, 16), or the given
+    precision, and w = d + 7 (+1 if any element is negative). Then the blank
+    columns common to all rows are trimmed from both sides."""
+    f = np.abs(b[np.isfinite(b)].astype(float))
+    if prec is None:
+        top = f.max() if f.size else 0.0
+        d = int(np.floor(np.log10(top))) if top > 0 else 0
+        d = min(max(d + 5, 5), 16)
+    else:
+        d = prec
+    w = d + 7 + (1 if np.any(b < 0) else 0)
+    rows = ["".join(_g(v, d).rjust(w) for v in row) for row in b.tolist()]
+    lead = min((len(r) - len(r.lstrip(" ")) for r in rows), default=0)
+    rows = [r[lead:] for r in rows]
+    tail = min((len(r) - len(r.rstrip(" ")) for r in rows), default=0)
+    return [r[: len(r) - tail] if tail else r for r in rows]
 
 
 def _digits(b) -> int:

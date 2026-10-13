@@ -990,3 +990,12 @@ test_cases:
     impl: tests/unit/test_linalg_residuals.py
     status: active
     env: unit
+
+  - id: tc.num2str_layout
+    kind: unit
+    title: num2str float matrix layout and sprintf ties (#505)
+    features: [libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_num2str_layout.py
+    status: active
+    env: unit
