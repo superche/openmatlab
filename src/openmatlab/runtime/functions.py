@@ -109,6 +109,9 @@ class _SharedWorkspace:
         self._parent = parent
         self._shared = shared
 
+    def bind_ref(self, name, store, default) -> None:
+        self._ws(name).bind_ref(name, store, default)
+
     def _ws(self, name: str):
         return self._parent if name in self._shared else self._own
 
@@ -163,6 +166,12 @@ class _ScopedResolver:
         if name.lower() in self._local:
             return f"{name} is a local function"
         return self._inner.which(name)
+
+    def global_store(self):
+        return self._inner.global_store()
+
+    def persistent_store(self, key):
+        return self._inner.persistent_store(key)
 
     def __getattr__(self, attr: str):
         return getattr(self._inner, attr)
@@ -230,11 +239,15 @@ class MFileCallable:
 )
         from openmatlab.runtime.workspace import Workspace
 
-        if len(args) != len(self.defn.inputs):
-            raise EvalError(
-                f"{self.defn.name}: expected {len(self.defn.inputs)} args, "
-                f"got {len(args)}"
-            )
+        inputs = list(self.defn.inputs)
+        variadic_in = bool(inputs) and inputs[-1] == "varargin"
+        fixed_in = inputs[:-1] if variadic_in else inputs
+        if not variadic_in and len(args) > len(inputs):
+            raise EvalError("Too many input arguments.", "MATLAB:TooManyInputs")
+        outputs = list(self.defn.outputs)
+        variadic_out = bool(outputs) and outputs[-1] == "varargout"
+        if not variadic_out and nargout > max(len(outputs), 1):
+            raise EvalError("Too many output arguments.", "MATLAB:TooManyOutputs")
         ws = (
             _SharedWorkspace(self.parent_ws, self.shared)
             if self.parent_ws is not None
@@ -263,10 +276,13 @@ class MFileCallable:
         for fn in local.values():
             # nested/local functions see each other and the enclosing scope
             fn.scope = scope
-        for name, val in zip(self.defn.inputs, args):
-            if not isinstance(val, Array):
-                raise EvalError(f"{self.defn.name}: args must be Arrays")
-            ws.set(name, val)
+        for name, val in zip(fixed_in, args):
+            ws.set(name, val)  # any MATLAB value (cell, struct, handle, ...) (#531)
+        if variadic_in:
+            from openmatlab.runtime.cell_value import CellValue
+
+            extra = list(args[len(fixed_in):])
+            ws.set("varargin", CellValue(rows=(tuple(extra),)) if extra else CellValue(rows=()))
         ev = Evaluator(
             workspace=ws,
             functions=scope,
@@ -274,6 +290,8 @@ class MFileCallable:
             plots=self.plots,
         )
         ev._return_ok += 1
+        ev._nargs = (len(args), nargout)
+        ev._persist_key = (str(self.source_path), self.defn.name)
         try:
             try:
                 for stmt in self.defn.body:
@@ -288,19 +306,37 @@ class MFileCallable:
                 raise EvalError("continue outside of a for or while loop") from None
         finally:
             ev._return_ok -= 1
-        if not self.defn.outputs:
+        if not outputs:
             return ()
+        want = max(nargout, 1)
+        fixed_out = outputs[:-1] if variadic_out else outputs
         outs: List[Value] = []
-        for o in self.defn.outputs:
+        for o in fixed_out:
             try:
                 outs.append(ws.get(o))
-            except KeyError as exc:
+            except KeyError:
+                if len(outs) < want and (nargout >= 1 and len(outs) < nargout):
+                    raise EvalError(
+                        f'Output argument "{o}" (and possibly others) not assigned a value '
+                        f'in the execution with "{self.defn.name}" function.',
+                        "MATLAB:unassignedOutputs",
+                    ) from None
+                break
+        if variadic_out and len(outs) == len(fixed_out):
+            try:
+                vo = ws.get("varargout")
+            except KeyError:
+                vo = None
+            if vo is not None:
+                rows, cols = vo.shape
+                outs.extend(vo.get(i, j) for j in range(cols) for i in range(rows))
+            if nargout > len(outs):
                 raise EvalError(
-                    f"{self.defn.name}: output {o!r} was not assigned"
-                ) from exc
-        if nargout <= 0:
-            return tuple(outs)
-        return tuple(outs[:nargout])
+                    f'Output argument "varargout{{{len(outs) + 1}}}" not assigned a value '
+                    f'in the execution with "{self.defn.name}" function.',
+                    "MATLAB:unassignedOutputs",
+                )
+        return tuple(outs[:want])
 
 
 @dataclass
@@ -342,6 +378,16 @@ class FunctionResolver:
         if mfile is not None:
             return str(mfile)
         return ""
+
+    def global_store(self) -> Dict[str, Any]:
+        if not hasattr(self, "_globals"):
+            self._globals = {}
+        return self._globals
+
+    def persistent_store(self, key) -> Dict[str, Any]:
+        if not hasattr(self, "_persist"):
+            self._persist = {}
+        return self._persist.setdefault(key, {})
 
     def _find(self, name: str):
         if self.path is None:

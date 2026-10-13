@@ -289,6 +289,14 @@ class TryStmt(AstNode):
     handler: Sequence["Stmt"] = ()
 
 
+@dataclass(frozen=True)
+class DeclStmt(AstNode):
+    """global / persistent declaration (Epic #531)."""
+
+    names: Sequence[str]
+    kind: str = "global"
+
+
 Stmt = Union[
     Assign,
     CellAssign,
@@ -304,5 +312,6 @@ Stmt = Union[
     ReturnStmt,
     SwitchStmt,
     TryStmt,
+    DeclStmt,
 ]
 Program = List[Stmt]

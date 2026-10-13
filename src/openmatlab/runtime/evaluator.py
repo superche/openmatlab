@@ -58,6 +58,8 @@ class Evaluator:
         self._return_ok = 0
         self._end_stack: list[float] = []
         self._no_output = None
+        self._nargs = None  # (nargin, nargout) inside an .m function call (#531)
+        self._persist_key = None
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -160,6 +162,10 @@ class Evaluator:
             return self._eval_while(stmt)
         if isinstance(stmt, ast.TryStmt):
             return self._eval_try(stmt)
+        if isinstance(stmt, ast.DeclStmt):
+            from openmatlab.libs import function_intrinsics as _fi
+
+            return _fi.declare(self, stmt)
         if isinstance(stmt, ast.BreakStmt):
             if self._loop_depth <= 0:
                 raise EvalError("break outside of a for or while loop")
@@ -179,6 +185,35 @@ class Evaluator:
                 from openmatlab.runtime import struct_eval as _se
 
                 return _se.read_field(self, stmt.expr)
+            ex = stmt.expr
+            if (
+                isinstance(ex, (ast.CallExpr, ast.IndexExpr))
+                and isinstance(getattr(ex, "func", getattr(ex, "target", None)), ast.Name)
+                and getattr(ex, "func", getattr(ex, "target", None)).id.lower() == "eval"
+                and not self._name_bound("eval")
+            ):  # statement eval: the evaluated code displays itself (#531)
+                from openmatlab.libs import function_intrinsics as _fi
+
+                args = list(ex.args if isinstance(ex, ast.CallExpr) else ex.indices)
+                outs = _fi._eval(self, self._eval_call_args(args), 0)
+                self._no_output = self.numerics.from_nested([])
+                return outs[0] if outs else self._no_output
+            if isinstance(ex, (ast.CallExpr, ast.IndexExpr)):
+                tgt = getattr(ex, "func", getattr(ex, "target", None))
+                if isinstance(tgt, ast.Name) and not self._name_bound(tgt.id):
+                    from openmatlab.runtime.functions import MFileCallable
+
+                    try:
+                        fn = self.functions.resolve(tgt.id)
+                    except Exception:
+                        fn = None
+                    if isinstance(fn, MFileCallable):  # statement call: nargout == 0 (MATLAB)
+                        args = self._eval_call_args(list(ex.args if isinstance(ex, ast.CallExpr) else ex.indices))
+                        outs = list(fn(args, nargout=0))
+                        if not outs:
+                            self._no_output = self.numerics.from_nested([])
+                            return self._no_output
+                        return outs[0]
             return self.eval_expr(stmt.expr)
         if isinstance(stmt, ast.FunctionDef):
             raise EvalError(
@@ -1031,6 +1066,10 @@ class Evaluator:
             if nargout != 1:
                 raise EvalError("run: only one output supported")
             return (self._builtin_run(arg_exprs),)
+        from openmatlab.libs import function_intrinsics as _fi
+
+        if key in _fi.INTRINSICS:  # need the caller's frame (#531)
+            return _fi.INTRINSICS[key](self, self._eval_call_args(arg_exprs), nargout)
         try:
             fn = self.functions.resolve(n)
         except LookupError as exc:

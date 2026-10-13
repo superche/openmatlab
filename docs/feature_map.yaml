@@ -266,6 +266,14 @@ features:
     notes: "Epic #530: try/catch [ident]; error(msg literal | id,fmt,... | struct); MException/throw/rethrow/getReport; assert; lasterr; MATLAB ids on builtin errors (badsubscript, UndefinedFunction, sizeDimensionsMustMatch, ...); break/continue/return never caught. Residual #565 (stack, size-mismatch text)"
     tests: [tests/unit/test_errors.py, tests/bdd/test_errors_bdd.py]
 
+  - id: lang.functions_variadic
+    layer: lang
+    name: varargin/varargout, nargin/nargout, global/persistent, eval/feval, exist, str2func/func2str
+    status: done
+    depends_on: [lang.function_def, runtime.function_resolver, runtime.evaluator]
+    notes: "Epic #531: varargin/varargout; nargin/nargout (+named form), narginchk/nargoutchk; fewer inputs allowed, too many -> MATLAB:TooManyInputs; unassigned outputs -> MATLAB:unassignedOutputs (statement calls nargout 0); any value as argument; global/persistent declarations; eval (value, statement, catch string); feval; exist; str2func/func2str; functional operators plus..vertcat. Residual #569"
+    tests: [tests/unit/test_functions_531.py, tests/bdd/test_functions_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

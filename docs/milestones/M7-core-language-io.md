@@ -25,7 +25,7 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 | # | Criterion | Script | Priority | Epic | Issues | Status |
 |---|-----------|--------|----------|------|--------|--------|
 | C01 | Errors & exceptions: `try/catch [e]`, `error(msg)`, `error(id,fmt,...)`, `error(struct)`, `MException`/`throw`/`rethrow`, `assert`, `lasterr`, MATLAB ids on builtin errors | m7_c01_errors | p0 | #530 | #540 #541 | met (Epic #530; residual #565) |
-| C02 | Functions: `nargin`/`nargout`, `varargin`/`varargout`, `narginchk`, `MATLAB:TooManyInputs`, local functions in scripts, `global`/`persistent`, `eval` (+catch), `feval`, `str2func`/`func2str`, `exist` | m7_c02_functions | p0 | #531 | #529 #542 #543 #544 | pending |
+| C02 | Functions: `nargin`/`nargout`, `varargin`/`varargout`, `narginchk`, `MATLAB:TooManyInputs`, local functions in scripts, `global`/`persistent`, `eval` (+catch), `feval`, `str2func`/`func2str`, `exist` | m7_c02_functions | p0 | #531 | #529 #542 #543 #544 | met (Epic #531; residual #569) |
 | C03 | Command syntax and workspace commands: `clear` (names, wildcards), `exist(...,'var')`, `format`, `evalc`, `who`/`whos`, `pwd`/`cd ..`/`dir`, `which`, `help`, `clc`, `disp hello`, `isvarname` | m7_c03_command_syntax | p0 | #532 | #545 #546 | pending |
 | C04 | Formatted and file I/O: `fprintf` (fid and console, recycling), `fopen`/`fclose`/`fgetl`/`fgets`/`fscanf`/`fread`/`fwrite`, `fileread`, `delete`, `exist(f,'file')`, `save`/`load` (MAT, struct form, selection) | m7_c04_file_io | p0 | #533 | #547 #548 (#549 p1) | pending |
 | C05 | Core math: `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial round(x,n)`, `median mode std var`, `rand randn randi rng randperm`, `tic toc pause` | m7_c05_core_math | p0 | #534 | #550 #551 #552 | pending |
@@ -44,4 +44,4 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 
 M7 opened 2026-10-13. #529 (local-function crash) fixed in PR #564.
 
-**1 / 10** criteria met: C01 (Epic #530, errors & exceptions). Next: Epic #531 (C02).
+**2 / 10** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531). Next: Epic #532 (C03).
