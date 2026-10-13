@@ -1222,6 +1222,10 @@ _error_builtins.register(BUILTINS)
 from openmatlab.libs import operator_builtins as _operator_builtins  # noqa: E402
 
 _operator_builtins.register(BUILTINS)
+
+from openmatlab.libs import file_builtins as _file_builtins  # noqa: E402
+
+_file_builtins.register(BUILTINS)
 _shape_builtins.register_cell_shape(BUILTINS)
 
 

@@ -375,5 +375,5 @@ INTRINSICS = {
     "clc": _clc, "help": _help, "pwd": _pwd, "cd": _cd, "dir": _dir, "ls": _ls, "evalc": _evalc,
 }
 # statement forms that print instead of binding ans (MATLAB)
-STATEMENT_ZERO = {"clear", "clearvars", "who", "whos", "format", "clc", "help", "cd", "dir", "ls", "eval"}
+STATEMENT_ZERO = {"clear", "clearvars", "who", "whos", "format", "clc", "help", "cd", "dir", "ls", "eval", "save", "load", "fprintf"}
 COMMAND_ONLY = {"which": _which_cmd}
