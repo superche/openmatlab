@@ -634,6 +634,9 @@ def _sparse_aware(name, method):
     from openmatlab.numerics import sparse as _sp
 
     def _wrapped(self, a, *args, **kw):
+        nat = _sp.native_op(name, a, args, kw)  # compressed storage first (#516, #517)
+        if nat is not None:
+            return nat
         out = method(self, a, *args, **kw)
         if name == "matmul":
             return _sp.sparse_result("matmul", out, a, args[0])

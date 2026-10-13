@@ -97,15 +97,20 @@ def _nd_pages(value: object):
 
 
 def format_sparse(buf) -> str:
-    """MATLAB sparse display (#451): ``(i,j)  v`` triplets in column-major order."""
+    """MATLAB sparse display (#451): ``(i,j)  v`` triplets in column-major order.
+
+    ``buf`` is a compressed ``Store`` (#515) or, for legacy callers, a dense array."""
     import numpy as np
 
-    a = np.asarray(buf)
-    r, c = a.shape
-    cols, rows = np.nonzero(a.T)  # column-major order
+    if hasattr(buf, "rows") and hasattr(buf, "cols"):
+        (r, c), rows, cols, vals = buf.shape, buf.rows, buf.cols, buf.data
+    else:
+        a = np.asarray(buf)
+        r, c = a.shape
+        cols, rows = np.nonzero(a.T)  # column-major order
+        vals = a[rows, cols]
     if rows.size == 0:
         return f"   All zero sparse: {r}\u00d7{c}"
-    vals = a[rows, cols]
     text = format_array(vals.reshape(-1, 1) if vals.dtype != np.bool_ else vals.reshape(-1, 1).astype(np.uint8))
     lines = text.split("\n")
     header = []
@@ -294,7 +299,7 @@ def _format_value(value: object) -> str:
         from openmatlab.runtime.value import Array
 
         if getattr(value, "issparse", False):
-            return format_sparse(value.backend_buffer())
+            return format_sparse(value.store)
         if isinstance(value, Array):
             return format_array(value.backend_buffer())
     except Exception:
