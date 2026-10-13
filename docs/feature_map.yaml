@@ -213,8 +213,8 @@ features:
     layer: lang
     name: Lexer tokenize()
     status: done
-    tests: [tests/unit/test_lexer.py]
-    notes: "Matrix MVP + if/for/while/break/end + STRING; continue/cells later [done ITER-024; #34]"
+    tests: [tests/unit/test_lexer.py, tests/unit/test_string_residuals.py]
+    notes: "Matrix MVP + if/for/while/break/end + STRING; continue/cells later [done ITER-024; #34]; double-quoted literals: no backslash escapes, doubled quote is a quote (MATLAB, #483)"
 
 
   - id: lang.char_literal
@@ -352,7 +352,7 @@ features:
     status: done
     spec: docs/design/EPIC-482-string-arrays.md
     depends_on: [runtime.char_value]
-    notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Epic #482 (M2 C15 met, #459): StringArray grid with <missing>; [..] construction, strings(), string(cell/num/char matrix); s(i)/s(i,j)/s(end)/s(:)/mask, s{k}; assign/grow/delete; elementwise + and comparisons; transpose, char, cellstr, isequal, for; 'RxC string array' display. Residuals: #483"
+    notes: "Epic #457 (#78): StringValue(CharValue) class string, 1x1; + concat, textual compare; string/strlength/isstring/char/double; display \"abc\". Epic #482 (M2 C15 met, #459): StringArray grid with <missing>; [..] construction, strings(), string(cell/num/char matrix); s(i)/s(i,j)/s(end)/s(:)/mask, s{k}; assign/grow/delete; elementwise + and comparisons; transpose, char, cellstr, isequal, for; 'RxC string array' display. Residuals: #494"
     tests: [tests/unit/test_int_string_classes.py, tests/bdd/test_int_string_classes_bdd.py, tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py]
 
   - id: numerics.sparse
@@ -370,8 +370,8 @@ features:
     status: done
     spec: docs/design/EPIC-482-string-arrays.md
     depends_on: [runtime.string_class]
-    notes: "Epic #482 (#460): upper/lower/strip/strtrim/replace/strrep/split/join/contains/startsWith/endsWith/strcmp/strcmpi; kind in = kind out (string/char/cellstr); <missing> propagates. Residuals: #483"
-    tests: [tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py]
+    notes: "Epic #482 (#460): upper/lower/strip/strtrim/replace/strrep/split/join/contains/startsWith/endsWith/strcmp/strcmpi; kind in = kind out (string/char/cellstr); <missing> propagates. Residuals: #483; #483: missing/ismissing, sort/unique on strings, split of string columns, sprintf/compose, regexp/regexpi/regexprep, extractBetween/After/Before, insertAfter/Before, pad, reverse, num2str, str2double; follow-ups #494"
+    tests: [tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py, tests/unit/test_string_residuals.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals

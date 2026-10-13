@@ -82,4 +82,4 @@ def test_undefined_function(tmp_path: Path):
     s = Session.create_default()
     s.path.addpath(tmp_path)
     with pytest.raises(EvalError, match="Undefined"):
-        ReplSession(s).run_line("missing(1)")
+        ReplSession(s).run_line("no_such_function_xyz(1)")
