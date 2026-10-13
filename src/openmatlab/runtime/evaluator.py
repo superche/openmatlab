@@ -354,11 +354,21 @@ class Evaluator:
         if not isinstance(target_expr, ast.Name):
             raise EvalError("array assign: LHS must be name(...) in this MVP")
         name = target_expr.id
+        rhs_val = self.eval_expr(stmt.value)
         try:
             arr = self.workspace.get(name)
-        except KeyError as exc:
-            raise EvalError(f"Undefined variable: {name}") from exc
-        rhs_val = self.eval_expr(stmt.value)
+        except KeyError:  # x(3) = v on an undefined x starts from [] (MATLAB, #508)
+            import numpy as np
+            from openmatlab.numerics.ndarray_value import NDArrayValue
+
+            if isinstance(rhs_val, CellValue):
+                arr = CellValue(rows=())
+            elif getattr(rhs_val, "is_string", False):
+                from openmatlab.runtime.string_array import StringArray
+
+                arr = StringArray(np.empty((0, 0), dtype=object))
+            else:
+                arr = NDArrayValue(np.zeros((0, 0)))
         if getattr(rhs_val, "is_missing_value", False):  # x(i) = missing (#504)
             from openmatlab.runtime import missing_value as _mv
 
@@ -567,8 +577,8 @@ class Evaluator:
         name = target_expr.id
         try:
             cell = self.workspace.get(name)
-        except KeyError as exc:
-            raise EvalError(f"Undefined variable: {name}") from exc
+        except KeyError:  # c{2} = v on an undefined c creates a cell (MATLAB, #508)
+            cell = CellValue(rows=())
         if getattr(cell, "is_string", False):  # s{k} = 'x' (#459)
             return self._string_assign(name, cell, list(stmt.target.indices), self.eval_expr(stmt.value))
         if not isinstance(cell, CellValue):
@@ -810,10 +820,21 @@ class Evaluator:
         return val
 
     def _eval_multi_assign(self, stmt: ast.MultiAssign) -> Value:
+        from openmatlab.runtime import struct_eval as _se
+
+        if stmt.targets is not None:  # [s.f] = deal(...), [c{1:2}] = ... (#508)
+            return _se.multi_assign_targets(self, stmt)
         nargout = len(stmt.names)
         if nargout < 1:
             raise EvalError("multi-assign: empty output list")
         expr = stmt.value
+        if isinstance(expr, (ast.FieldExpr, ast.CellIndexExpr)):  # [a, b] = s.f / c{:} (#508)
+            vals = _se.expand_rhs(self, expr)
+            if len(vals) < nargout:
+                raise EvalError("Insufficient number of outputs from right hand side of equal sign to satisfy assignment.")
+            for name, val in zip(stmt.names, vals):
+                self.workspace.set(name, val)
+            return vals[0]
         if isinstance(expr, ast.IndexExpr):
             target_expr, arg_exprs = expr.target, list(expr.indices)
         elif isinstance(expr, ast.Name):  # [a, b] = f with no parentheses

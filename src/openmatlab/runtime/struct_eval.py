@@ -61,11 +61,7 @@ def _as_2d(shape):
         return (1, 1)
     if len(shape) == 1:
         return (1, shape[0])
-    if len(shape) > 2:
-        if all(d == 1 for d in shape[2:]):
-            return shape[:2]
-        raise _err("N-D struct arrays are not supported.")
-    return shape
+    return shape  # N-D struct arrays are allowed (#508)
 
 
 def from_positions(sv: StructValue, grid, extra=()) -> StructValue:
@@ -362,7 +358,104 @@ def concat_structs(rows) -> StructValue:
 
 
 def transpose(sv: StructValue) -> StructValue:
+    if len(sv.shape) > 2:
+        raise _err("Transpose on ND array is not defined. Use PERMUTE instead.")
     g = np.arange(sv.numel()).reshape(sv.shape, order="F").T
     return StructValue.build(g.shape, sv.fields, [sv.elems[k] for k in g.reshape(-1, order="F")])
 
 
+
+
+# --- #508: cs-lists on both sides of multi-assignment -------------------------------
+
+def expand_rhs(ev, expr) -> List:
+    """All values of s.f / c{...} on the right of [a, b] = ..."""
+    if isinstance(expr, ast.FieldExpr):
+        return expand(ev, expr)
+    from openmatlab.runtime.cell_value import CellValue
+
+    target = ev.eval_expr(expr.target)
+    if isinstance(target, CellValue):
+        t = "__om_rhs"
+        ev.workspace.set(t, target)
+        try:
+            sub = ev._eval_cell_paren_index(target, list(expr.indices))
+        finally:
+            ev.workspace.clear(t)
+        obj = sub.to_obj()
+        return list(obj.reshape(-1, order="F"))
+    return [ev.eval_expr(expr)]
+
+
+def _target_count(ev, t) -> int:
+    """How many outputs a target takes: s.f on an n-element struct takes n; c{idx} takes numel(idx)."""
+    if isinstance(t, ast.FieldExpr):
+        try:
+            base = ev.eval_expr(t.target)
+        except Exception:
+            return 1
+        return base.numel() if is_struct(base) and base.numel() > 1 else 1
+    if isinstance(t, ast.CellIndexExpr) and isinstance(t.target, ast.Name) and t.target.id in ev.workspace:
+        cur = ev.workspace.get(t.target.id)
+        from openmatlab.runtime.cell_value import CellValue
+
+        if isinstance(cur, CellValue):
+            try:
+                return max(1, ev._eval_cell_paren_index(cur, list(t.indices)).numel())
+            except Exception:
+                return 1
+    return 1
+
+
+def _assign_one(ev, target, value) -> None:
+    if isinstance(target, ast.Name):
+        ev.workspace.set(target.id, value)
+        return
+    t = "__om_mv"
+    ev.workspace.set(t, value)
+    try:
+        if isinstance(target, ast.IndexExpr) and isinstance(target.target, ast.Name):
+            ev._eval_array_assign(ast.ArrayAssign(target=target, value=ast.Name(t)))
+        elif isinstance(target, ast.CellIndexExpr) and isinstance(target.target, ast.Name):
+            ev._eval_cell_assign(ast.CellAssign(target=target, value=ast.Name(t)))
+        else:
+            chain_assign(ev, ast.ChainAssign(target=target, value=ast.Name(t)))
+    finally:
+        ev.workspace.clear(t)
+
+
+def multi_assign_targets(ev, stmt):
+    counts = [_target_count(ev, t) for t in stmt.targets]
+    total = sum(counts)
+    expr = stmt.value
+    if isinstance(expr, (ast.FieldExpr, ast.CellIndexExpr)):
+        vals = expand_rhs(ev, expr)
+    else:
+        if isinstance(expr, ast.IndexExpr):
+            target_expr, arg_exprs = expr.target, list(expr.indices)
+        elif isinstance(expr, ast.Name):
+            target_expr, arg_exprs = expr, []
+        else:
+            raise _err("multi-assign RHS must be a function call")
+        vals = list(ev._invoke_call(target_expr, arg_exprs, nargout=total) or [])
+    if len(vals) < total:
+        raise _err("Insufficient number of outputs from right hand side of equal sign to satisfy assignment.")
+    k = 0
+    for t, n in zip(stmt.targets, counts):
+        if n == 1 or not isinstance(t, (ast.FieldExpr, ast.CellIndexExpr)):
+            _assign_one(ev, t, vals[k])
+        elif isinstance(t, ast.FieldExpr):  # [s.f] = ...: element by element
+            for j in range(n):
+                idx = ast.IndexExpr(target=t.target, indices=[ast.NumberLiteral(float(j + 1))])
+                _assign_one(ev, ast.FieldExpr(target=idx, name=t.name, name_expr=t.name_expr), vals[k + j])
+        else:  # [c{1:2}] = ...: linear positions of the selection
+            from openmatlab.runtime.cell_value import CellValue
+
+            cur = ev.workspace.get(t.target.id)
+            pos = NDArrayValue(np.arange(1, cur.numel() + 1, dtype=float).reshape(cur.full_shape, order="F"))
+            sel = np.asarray(ev.numerics.index(pos, ev._eval_subscripts(pos, list(t.indices), label="index"))
+                             .backend_buffer()).reshape(-1, order="F")
+            for j, p in enumerate(sel):
+                _assign_one(ev, ast.CellIndexExpr(target=t.target, indices=[ast.NumberLiteral(float(p))]), vals[k + j])
+        k += n
+    return vals[0]

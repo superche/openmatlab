@@ -198,9 +198,33 @@ def _field_summary(v: object) -> str:
         if getattr(v, "issparse", False) or len(shape) > 2 or (shape[0] != 1):
             pre = "sparse " if getattr(v, "issparse", False) else ""
             return f"[{_dims(shape)} {pre}{cls}]"
-        txt = " ".join(format_array(a.reshape(shape)).split())
-        return txt if a.size == 1 else f"[{txt}]"
+        if a.size == 1:
+            return " ".join(format_array(a.reshape(shape)).split())
+        return "[" + " ".join(_short_elem(x) for x in a.reshape(-1)) + "]"  # MATLAB: [1.5000 2] (#508)
     return _format_value(v)
+
+
+def _short_elem(x) -> str:
+    """One element of a row vector inside a struct field summary (MATLAB short per element)."""
+    import numpy as np
+
+    if isinstance(x, (bool, np.bool_)):
+        return str(int(x))
+    if np.iscomplexobj(x):
+        re_, im = _short_elem(x.real), _short_elem(abs(x.imag))
+        return f"{re_}{'-' if x.imag < 0 else '+'}{im}i"
+    if np.issubdtype(type(x), np.integer):
+        return str(int(x))
+    f = float(x)
+    if f != f:
+        return "NaN"
+    if f in (float("inf"), float("-inf")):
+        return "Inf" if f > 0 else "-Inf"
+    if f == int(f) and abs(f) < 1e10:
+        return str(int(f))
+    if 1e-3 <= abs(f) < 1e5:
+        return f"{f:.4f}"
+    return f"{f:.4e}"
 
 
 def format_struct(v) -> str:

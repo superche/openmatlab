@@ -1211,6 +1211,7 @@ _linalg_builtins.register(BUILTINS)
 from openmatlab.libs import struct_builtins as _struct_builtins  # noqa: E402
 
 _struct_builtins.register(BUILTINS)
+_struct_builtins.register_residuals(BUILTINS)
 _shape_builtins.register_cell_shape(BUILTINS)
 
 

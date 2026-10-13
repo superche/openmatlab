@@ -1008,3 +1008,12 @@ test_cases:
     impl: tests/unit/test_nd_strings.py
     status: active
     env: unit
+
+  - id: tc.struct_residuals
+    kind: unit
+    title: struct residuals disp/deal/arrayfun/structfun/N-D (#508)
+    features: [runtime.structs]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_struct_residuals.py
+    status: active
+    env: unit

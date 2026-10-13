@@ -165,6 +165,12 @@ class Parser:
         return ExprStmt(expr=expr, suppress=suppress)
 
     @staticmethod
+    def _base_name(expr) -> str:
+        while not isinstance(expr, Name):
+            expr = expr.target
+        return expr.id
+
+    @staticmethod
     def _is_chain_lvalue(expr) -> bool:
         """True for an LHS chain ending in a Name that is not plain A(...) / c{...}."""
         if isinstance(expr, (IndexExpr, CellIndexExpr)) and isinstance(expr.target, Name):
@@ -185,7 +191,10 @@ class Parser:
             self.pos = saved
             return None
         try:
-            names = self._parse_name_list()
+            targets = [self.parse_postfix()]
+            while self.current().type in (TokenType.COMMA, TokenType.IDENT):
+                self.match(TokenType.COMMA)
+                targets.append(self.parse_postfix())
             if self.current().type != TokenType.RBRACKET:
                 self.pos = saved
                 return None
@@ -196,9 +205,16 @@ class Parser:
         except ParseError:
             self.pos = saved
             return None
+        if not all(isinstance(t, Name) or self._is_chain_lvalue(t) or
+                   (isinstance(t, (IndexExpr, CellIndexExpr)) and isinstance(t.target, Name)) for t in targets):
+            self.pos = saved
+            return None
         value = self.parse_expression()
         suppress = self._trailing_suppress()
-        return MultiAssign(names=tuple(names), value=value, suppress=suppress)
+        if all(isinstance(t, Name) for t in targets):
+            return MultiAssign(names=tuple(t.id for t in targets), value=value, suppress=suppress)
+        names = tuple(self._base_name(t) for t in targets)
+        return MultiAssign(names=names, value=value, suppress=suppress, targets=tuple(targets))
 
     def parse_function_def(self) -> FunctionDef:
         self.expect(TokenType.KW_FUNCTION)
