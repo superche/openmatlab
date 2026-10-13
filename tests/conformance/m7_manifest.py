@@ -13,7 +13,7 @@ CRITERIA = {
     "C02": ("m7_c02_functions", "p0", [531, 529, 542, 543, 544], "met"),
     "C03": ("m7_c03_command_syntax", "p0", [532, 545, 546], "met"),
     "C04": ("m7_c04_file_io", "p0", [533, 547, 548], "met"),
-    "C05": ("m7_c05_core_math", "p0", [534, 550, 551, 552], "pending"),
+    "C05": ("m7_c05_core_math", "p0", [534, 550, 551, 552], "met"),
     "C06": ("m7_c06_arrays_sets", "p0", [535, 553, 554], "pending"),
     "C07": ("m7_c07_strings", "p0", [536, 555, 556], "pending"),
     "C08": ("m7_c08_graphics_core", "p0", [537, 557, 558, 559], "pending"),
