@@ -19,4 +19,5 @@ CRITERIA = {
     "C08": ("m7_c08_graphics_core", "p0", [537, 557, 558, 559], "met"),
     "C09": ("m7_c09_linalg_decomp", "p1", [538, 560], "met"),
     "C10": ("m7_c10_map_datetime", "p1", [539, 561, 562], "met"),
+    "C11": ("m7_c11_frames_help", "p0", [610, 608], "met"),
 }

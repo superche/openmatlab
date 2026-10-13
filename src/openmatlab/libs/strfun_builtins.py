@@ -278,9 +278,12 @@ def _str2num(args, *, nargout=1):
     from openmatlab.host.repl import ReplSession
     from openmatlab.runtime.session import Session
 
+    from openmatlab.runtime import frames as _frames
+
     s = Session.create_default()
     try:
-        ReplSession(s).run_line("__str2num_v__ = [" + src + "];")
+        with _frames.isolated():  # a nested session is its own base workspace
+            ReplSession(s).run_line("__str2num_v__ = [" + src + "];")
         v = s.workspace.get("__str2num_v__")
         ok = True
     except BaseException:  # noqa: BLE001 - any failure means ok = false (MATLAB)
