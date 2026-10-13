@@ -53,9 +53,9 @@ Priority reflects impact on a typical user:
 | Mathematics | Sparse (M2 C16/C19, #522/#523) | **present** | `"S=sparse(1e5,1e5); E=speye(1e5); nnz(E)"` → 100000 | — | — |
 | Polynomials | `polyfit polyval roots poly conv deconv polyder polyint` | **present** | `polyfit polyval roots conv deconv` present; `poly polyder polyint` delivered in M3-E2 (#626) (verified 2026-10-13) | — | M3-POLY-INTERP |
 | Interpolation | `interp1 interp2 spline pchip` | **present** | `interp1` present; `interp1` spline/pchip, `interp2`, `spline`, `pchip`, `ppval` delivered in M3-E2 (#626); residual #649 (verified 2026-10-13) | — | M3-POLY-INTERP |
-| Integration | `trapz cumtrapz integral integral2 quad` | **missing** | missing: `trapz` `cumtrapz` `integral` `integral2` `quad` | p1 | M3-CALCULUS-ODE-OPT |
-| ODE | `ode45 ode23` | **missing** | missing: `ode45` `ode23` | p1 | M3-CALCULUS-ODE-OPT |
-| Optimization | `fzero fminsearch fminbnd` | **missing** | missing: `fzero` `fminsearch` `fminbnd` | p1 | M3-CALCULUS-ODE-OPT |
+| Integration | `trapz cumtrapz integral integral2 quad` | **present** | `trapz cumtrapz integral` present; `integral2`, `quad`, `integral` ArrayValued delivered in M3-E3 (#627); residual #657 (verified 2026-10-13) | — | M3-CALCULUS-ODE-OPT |
+| ODE | `ode45 ode23` | **present** | `ode45 ode23 odeset odeget` delivered in M3-E3 (#627); stiff solvers/Events → #657 (verified 2026-10-13) | — | M3-CALCULUS-ODE-OPT |
+| Optimization | `fzero fminsearch fminbnd` | **present** | `fzero fminsearch` present; `fminbnd`, `optimset`/`optimget` and fminsearch options delivered in M3-E3 (#627) (verified 2026-10-13) | — | M3-CALCULUS-ODE-OPT |
 | FFT / filtering | `fft ifft fft2 filter filtfilt` | **partial** | `fft ifft fft2 ifft2 fftn ifftn fftshift ifftshift nextpow2` delivered in M3-E1 (#625); `filter` present; `filtfilt` → community.signal plugin (#630) (verified 2026-10-13) | p1 | M3-SIGNAL |
 | Statistics | `mean max min` present; `median mode std var` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Statistics | `histcounts quantile prctile corrcoef cov movmean cummax cummin` | **missing** | missing: `histcounts` `quantile` `prctile` `corrcoef` `cov` `movmean` `cummax` `cummin` | p1 | M3-STATS |

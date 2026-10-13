@@ -1302,3 +1302,5 @@ _validators_mod = __import__("openmatlab.libs.validators", fromlist=["register"]
 _validators_mod.register(BUILTINS)
 _interp_mod = __import__("openmatlab.libs.interp", fromlist=["register"])
 _interp_mod.register(BUILTINS)
+_odeopt_mod = __import__("openmatlab.libs.odeopt", fromlist=["register"])
+_odeopt_mod.register(BUILTINS)

@@ -1042,7 +1042,14 @@ def _fminsearch(args, *, nargout=1):
     simplex = np.array(simplex)
     fv = np.array([f(s) for s in simplex])
     tolx = tolf = 1e-4
-    for it in range(200 * n):
+    maxit = 200 * n
+    if len(args) > 2 and getattr(args[2], "is_struct", False):  # optimset options (M3-E3 #627)
+        from openmatlab.libs.odeopt import _opt
+
+        tolx = float(_opt(args[2], "TolX", tolx))
+        tolf = float(_opt(args[2], "TolFun", tolf))
+        maxit = int(_opt(args[2], "MaxIter", maxit))
+    for it in range(maxit):
         order = np.argsort(fv, kind="stable")
         simplex, fv = simplex[order], fv[order]
         if np.max(np.abs(fv[1:] - fv[0])) <= tolf and np.max(np.abs(simplex[1:] - simplex[0])) <= tolx:
