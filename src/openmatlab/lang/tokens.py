@@ -72,3 +72,4 @@ class TokenType(Enum):
     KW_CATCH = auto()
     KW_GLOBAL = auto()
     KW_PERSISTENT = auto()
+    COMMAND = auto()  # command syntax `name arg ...` (Epic #532); value is JSON

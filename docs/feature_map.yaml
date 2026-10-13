@@ -274,6 +274,14 @@ features:
     notes: "Epic #531: varargin/varargout; nargin/nargout (+named form), narginchk/nargoutchk; fewer inputs allowed, too many -> MATLAB:TooManyInputs; unassigned outputs -> MATLAB:unassignedOutputs (statement calls nargout 0); any value as argument; global/persistent declarations; eval (value, statement, catch string); feval; exist; str2func/func2str; functional operators plus..vertcat. Residual #569"
     tests: [tests/unit/test_functions_531.py, tests/bdd/test_functions_bdd.py]
 
+  - id: lang.command_syntax
+    layer: lang
+    name: command syntax and workspace commands
+    status: done
+    depends_on: [lang.parser, runtime.evaluator]
+    notes: "Epic #532: name arg ... command syntax (lexer COMMAND token at statement start; MATLAB operator-spacing rule; a variable name re-reads as an expression); clear (names, wildcards, -regexp, all, global), clearvars -except, who/whos (values and listings), format short/long, clc, help (m-file H1 block), pwd/cd/dir/ls, evalc, which command form, isvarname/iskeyword. Residual 573"
+    tests: [tests/unit/test_command_syntax.py, tests/bdd/test_command_syntax_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
