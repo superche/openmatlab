@@ -652,18 +652,40 @@ def _writematrix(args, *, nargout=1):
 def _dlmwrite(args, *, nargout=1):
     name = _text(args[0], "dlmwrite")
     a = _buf(args[1])
-    delim, prec = ",", "%.5g"
-    rest = list(args[2:])
-    if rest and _is_text(rest[0]) and _text(rest[0], "dlmwrite").lower() not in ("delimiter", "precision"):
+    delim, prec, append, nl, r0, c0 = ",", "%.5g", False, "\n", 0, 0
+    rest = [x for x in args[2:]]
+    if "-append" in [_text(x, "dlmwrite").lower() if _is_text(x) else None for x in rest]:  # M3-E5 #629
+        append = True
+        rest = [x for x in rest if not (_is_text(x) and _text(x, "dlmwrite").lower() == "-append")]
+    keys = ("delimiter", "precision", "newline", "roffset", "coffset")
+    if rest and _is_text(rest[0]) and _text(rest[0], "dlmwrite").lower() not in keys:
         delim = _text(rest.pop(0), "dlmwrite").replace("\\t", "\t")
+        nums = []
+        while rest and not _is_text(rest[0]) and len(nums) < 2:
+            nums.append(int(_scalar(rest.pop(0), "dlmwrite")))
+        r0, c0 = (nums + [0, 0])[:2]
     while len(rest) >= 2:
         k, v = _text(rest[0], "dlmwrite").lower(), rest[1]
         if k == "delimiter":
             delim = _text(v, "dlmwrite").replace("\\t", "\t")
         elif k == "precision":
             prec = _text(v, "dlmwrite") if _is_text(v) else f"%.{int(_scalar(v, 'dlmwrite'))}g"
+        elif k == "newline":
+            nl = "\r\n" if _text(v, "dlmwrite").lower() == "pc" else "\n"
+        elif k == "roffset":
+            r0 = int(_scalar(v, "dlmwrite"))
+        elif k == "coffset":
+            c0 = int(_scalar(v, "dlmwrite"))
+        else:
+            raise _err(f"dlmwrite: unknown option '{k}'")
         rest = rest[2:]
-    _write_table(name, a, delim, prec)
+    a = np.atleast_2d(np.asarray(a, dtype=float))
+    lines = [delim * (a.shape[1] + c0 - 1 if a.size else 0)] * r0
+    lines += [delim * c0 + delim.join(_fmt_num(x, prec) for x in row) for row in a]
+    text = "".join(line + nl for line in lines)
+    p = Path(name).expanduser()
+    with open(p, "a" if append else "w", encoding=ENC, newline="") as fh:
+        fh.write(text)
     return ()
 
 

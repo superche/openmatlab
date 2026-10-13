@@ -1405,6 +1405,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.json_dlm_io
+    kind: unit
+    title: jsonencode/jsondecode and dlmwrite append/offsets (Epic #629)
+    features: [libs.json_dlm_io]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_json_dlm_io.py
+    status: active
+    env: unit
+
+  - id: tc.json_dlm_io_bdd
+    kind: bdd
+    title: JSON and delimited I/O Gherkin scenarios (Epic #629)
+    features: [libs.json_dlm_io]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_json_dlm_io_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

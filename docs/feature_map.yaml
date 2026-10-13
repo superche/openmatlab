@@ -410,6 +410,14 @@ features:
     notes: "MATLAB exact quantile method; shrink/discard/fill endpoints, omitnan; histc bins; M3-E4 (residual 661)"
     tests: [tests/unit/test_stats_m3.py, tests/bdd/test_stats_m3_bdd.py]
 
+  - id: libs.json_dlm_io
+    layer: libs
+    name: jsonencode/jsondecode, dlmwrite -append/offsets/newline, csvread/dlmread offsets
+    status: done
+    depends_on: []
+    notes: "MATLAB JSON consolidation rules and makeValidName keys; M3-E5 (residual 665)"
+    tests: [tests/unit/test_json_dlm_io.py, tests/bdd/test_json_dlm_io_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
