@@ -748,8 +748,8 @@ features:
     name: eps realmax realmin
     status: done
     depends_on: [libs.elmat_constructors]
-    notes: "Epic #29 (#217)"
-    tests: [tests/unit/test_epic29_batch.py]
+    notes: "Epic #29 (#217); eps(x) is the spacing at |x|, elementwise; integer input errors (#480)"
+    tests: [tests/unit/test_epic29_batch.py, tests/unit/test_eps_relative.py]
   - id: runtime.power_eval_error
     layer: runtime
     name: wrap ^ NumericsError as EvalError
