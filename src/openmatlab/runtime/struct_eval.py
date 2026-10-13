@@ -134,7 +134,7 @@ def read_field(ev, expr: ast.FieldExpr):
             raise _err("Expected one output from a curly brace or dot indexing expression, but there were "
                        f"{len(base.values)} results.")
         base = base.values[0]
-    if getattr(base, "is_class_instance", False):  # s.obj.prop (M8)
+    if getattr(base, "is_object", False) and hasattr(base, "get_prop"):  # obj.prop, s.obj.prop (M8, #569)
         return base.get_prop(field_name(ev, expr))
     if not is_struct(base):
         raise _err("Dot indexing is not supported for variables of this type.")
@@ -228,7 +228,7 @@ def _assign(ev, cur, steps, rhs, depth):
         return rhs
     kind, arg = steps[0]
     rest = steps[1:]
-    if kind == "field" and getattr(cur, "is_class_instance", False):  # obj.prop = v (M8)
+    if kind == "field" and (getattr(cur, "is_class_instance", False) or hasattr(cur, "set_prop")):  # obj.prop = v (M8)
         name = field_name(ev, arg)
         child = cur.get_prop(name) if rest else None
         return cur.set_prop(name, _assign(ev, child, rest, rhs, depth + 1))
