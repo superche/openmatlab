@@ -42,3 +42,9 @@ def test_print_exports_png(tmp_path):
 def test_display_prints_value(capsys):
     _run("display(7)")
     assert "7" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("src", ["path({})", "path([])", "path(1,2)", "rmpath({})", "rmpath([])", "rmpath(1,2)"])
+def test_path_rmpath_reject_non_char(src):
+    s = _run("try, %s; ok = 0; catch e, ok = strcmp(e.identifier(end-12:end), ':InvalidInput'); end" % src)
+    assert np.asarray(s.workspace.get("ok").backend_buffer()).item() == 1
