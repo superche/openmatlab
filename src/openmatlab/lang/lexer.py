@@ -23,8 +23,102 @@ class LexerError(Exception):
         self.column = column
 
 
-def tokenize(source: str) -> List[Token]:
-    return _split_signed_matrix_elements(source, list(_iter_tokens(source)))
+def tokenize(source: str, commands: bool = True) -> List[Token]:
+    toks = _track(source) if commands else _iter_tokens(source)
+    return _split_signed_matrix_elements(source, list(toks))
+
+
+_OPEN = {TokenType.LPAREN, TokenType.LBRACKET, TokenType.LBRACE}
+_CLOSE = {TokenType.RPAREN, TokenType.RBRACKET, TokenType.RBRACE}
+_STMT_SEP = {TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.COMMA}
+_BLOCK_KW = {
+    TokenType.KW_ELSE, TokenType.KW_TRY, TokenType.KW_OTHERWISE, TokenType.KW_END,
+    TokenType.KW_BREAK, TokenType.KW_CONTINUE, TokenType.KW_RETURN,
+}
+
+
+def _track(source: str) -> Iterator[Token]:
+    """Feed nesting / statement-start state back to the scanner (command syntax)."""
+    state = {"nest": 0, "start": True}
+    for tok in _iter_tokens(source, state):
+        if tok.type in _OPEN:
+            state["nest"] += 1
+        elif tok.type in _CLOSE:
+            state["nest"] = max(0, state["nest"] - 1)
+        state["start"] = state["nest"] == 0 and (tok.type in _STMT_SEP or tok.type in _BLOCK_KW)
+        yield tok
+
+
+_BIN_OPS = ("==", "~=", "<=", ">=", "&&", "||", ".*", "./", ".\\", ".^", "+", "-", "*", "/", "\\", "^", "<", ">", "&", "|", ":")
+
+
+def _command_args(source: str, j: int):
+    """Scan command-syntax arguments from ``j``; return (args, end_index).
+
+    MATLAB rules: blank-separated words; '...' groups (with '' for a quote) and
+    the quotes are removed; the command ends at newline, ';', ',' or '%'
+    outside quotes."""
+    n = len(source)
+    args, cur, have, q = [], [], False, False
+    while j < n:
+        ch = source[j]
+        if q:
+            if ch == "'":
+                if source[j + 1:j + 2] == "'":
+                    cur.append("'")
+                    j += 2
+                    continue
+                q = False
+                j += 1
+                continue
+            if ch == "\n":
+                break
+            cur.append(ch)
+            j += 1
+            continue
+        if ch in "\n;,%":
+            break
+        if ch in " \t\r":
+            if have:
+                args.append("".join(cur))
+                cur, have = [], False
+            j += 1
+            continue
+        if ch == "'":
+            q, have = True, True
+            j += 1
+            continue
+        cur.append(ch)
+        have = True
+        j += 1
+    if have:
+        args.append("".join(cur))
+    return args, j
+
+
+def _is_command(source: str, i: int) -> bool:
+    """After an identifier ending at ``i`` (statement start): command syntax?"""
+    n = len(source)
+    if i >= n or source[i] not in " \t":
+        return False
+    j = i
+    while j < n and source[j] in " \t":
+        j += 1
+    if j >= n:
+        return False
+    c = source[j]
+    if c in "\n\r;,%(":
+        return False
+    if c == "=" and source[j + 1:j + 2] != "=":
+        return False  # assignment
+    for op in _BIN_OPS:
+        if source.startswith(op, j):
+            after = source[j + len(op):j + len(op) + 1]
+            # `a - b` / `a == b` are expressions; `a -b` is a command (MATLAB)
+            return not (after in ("", " ", "\t", "\n", "\r") or op in ("==", "~=", "<=", ">=", "&&", "||"))
+    if c == "'":
+        return True
+    return c.isalnum() or c in "_.@$#!?{[~\"\\/-"
 
 
 _VALUE_END = {
@@ -97,7 +191,7 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
     return out
 
 
-def _iter_tokens(source: str) -> Iterator[Token]:
+def _iter_tokens(source: str, state=None) -> Iterator[Token]:
     i = 0
     line = 1
     col = 1
@@ -260,6 +354,17 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "persistent": TokenType.KW_PERSISTENT,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
+            if typ == TokenType.IDENT and state is not None and state["start"] and _is_command(source, i):
+                import json
+
+                args, j = _command_args(source, i)
+                raw = source[start:j]
+                col += j - i
+                i = j
+                tok = Token(TokenType.COMMAND, json.dumps([word, args, raw]), start_line, start_col)
+                yield tok
+                last_sig = TokenType.IDENT
+                continue
             tok = Token(typ, word, start_line, start_col)
             yield tok
             last_sig = tok.type

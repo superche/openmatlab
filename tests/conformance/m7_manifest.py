@@ -11,7 +11,7 @@ from __future__ import annotations
 CRITERIA = {
     "C01": ("m7_c01_errors", "p0", [530, 540, 541], "met"),
     "C02": ("m7_c02_functions", "p0", [531, 529, 542, 543, 544], "met"),
-    "C03": ("m7_c03_command_syntax", "p0", [532, 545, 546], "pending"),
+    "C03": ("m7_c03_command_syntax", "p0", [532, 545, 546], "met"),
     "C04": ("m7_c04_file_io", "p0", [533, 547, 548], "pending"),
     "C05": ("m7_c05_core_math", "p0", [534, 550, 551, 552], "pending"),
     "C06": ("m7_c06_arrays_sets", "p0", [535, 553, 554], "pending"),

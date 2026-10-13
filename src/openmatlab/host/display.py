@@ -308,6 +308,14 @@ def _format_value(value: object) -> str:
     return str(value)
 
 
+# ``format short`` / ``format long`` (Epic #532): digits after the point.
+FORMAT = {"mode": "short"}
+
+
+def _digits() -> int:
+    return 15 if FORMAT["mode"] == "long" else 4
+
+
 def _fmt_real(v: float, integer: bool) -> str:
     if v != v:
         return "NaN"
@@ -315,7 +323,7 @@ def _fmt_real(v: float, integer: bool) -> str:
         return "Inf" if v > 0 else "-Inf"
     if integer:
         return str(int(v))
-    return f"{v:.4f}"
+    return f"{v:.{_digits()}f}"
 
 
 def format_array(buf: object, terminal_width: int = 80) -> str:
@@ -367,7 +375,7 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
         big = 1e5 if a.size == 1 else 1e3
         sci = nz.size > 0 and (float(nz.max()) >= big or float(nz.min()) < 1e-4)
         if sci and a.size == 1:
-            cells = [[f"{float(a[0, 0]):.4e}"]]
+            cells = [[f"{float(a[0, 0]):.{_digits()}e}"]]
         else:
             # MATLAB format short: matrices share a common scale factor
             # 10^e with e = floor(log10(max|x|)); no header when e == 0 (#417).

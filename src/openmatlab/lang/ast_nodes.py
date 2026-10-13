@@ -206,6 +206,17 @@ class ExprStmt(AstNode):
 
 
 @dataclass(frozen=True)
+class CommandStmt(ExprStmt):
+    """``name arg1 arg2`` command syntax == ``name('arg1','arg2')`` (Epic #532).
+
+    ``raw`` is the source text: if ``name`` is a variable at run time the
+    statement is re-read as an expression (MATLAB precedence)."""
+
+    name: str = ""
+    raw: str = ""
+
+
+@dataclass(frozen=True)
 class FunctionDef(AstNode):
     """Reserved: function [outs] = name(ins) ... end"""
 

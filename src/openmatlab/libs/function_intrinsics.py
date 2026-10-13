@@ -254,3 +254,7 @@ INTRINSICS: Dict[str, Callable] = {
     "str2func": _str2func,
     "func2str": _func2str,
 }
+
+from openmatlab.libs import workspace_commands as _wc  # noqa: E402
+
+INTRINSICS.update(_wc.INTRINSICS)

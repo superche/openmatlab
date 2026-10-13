@@ -20,6 +20,7 @@ from openmatlab.lang.ast_nodes import (
     SwitchCase,
     SwitchStmt,
     TryStmt,
+    CommandStmt,
     DeclStmt,
     WhileStmt,
     ForStmt,
@@ -136,6 +137,13 @@ class Parser:
             return self.parse_switch()
         if self.current().type == TokenType.KW_TRY:
             return self.parse_try()
+        if self.current().type == TokenType.COMMAND:
+            import json
+
+            tok = self.advance()
+            name, args, raw = json.loads(tok.value)
+            call = IndexExpr(target=Name(id=name), indices=tuple(StringLiteral(value=a) for a in args))
+            return CommandStmt(expr=call, suppress=self._trailing_suppress(), name=name, raw=raw)
         if self.current().type in (TokenType.KW_GLOBAL, TokenType.KW_PERSISTENT):
             kind = "global" if self.advance().type == TokenType.KW_GLOBAL else "persistent"
             names: List[str] = []
@@ -687,5 +695,5 @@ class Parser:
             self._in_subscript -= 1
 
 
-def parse(source: str) -> Program:
-    return Parser(tokenize(source)).parse()
+def parse(source: str, commands: bool = True) -> Program:
+    return Parser(tokenize(source, commands=commands)).parse()

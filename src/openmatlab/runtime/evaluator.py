@@ -186,18 +186,34 @@ class Evaluator:
 
                 return _se.read_field(self, stmt.expr)
             ex = stmt.expr
-            if (
-                isinstance(ex, (ast.CallExpr, ast.IndexExpr))
-                and isinstance(getattr(ex, "func", getattr(ex, "target", None)), ast.Name)
-                and getattr(ex, "func", getattr(ex, "target", None)).id.lower() == "eval"
-                and not self._name_bound("eval")
-            ):  # statement eval: the evaluated code displays itself (#531)
-                from openmatlab.libs import function_intrinsics as _fi
+            if isinstance(stmt, ast.CommandStmt) and self._name_bound(stmt.name):
+                # `x -1` with a variable x is an expression, not a command (MATLAB)
+                from openmatlab.lang.parser import parse as _parse
 
-                args = list(ex.args if isinstance(ex, ast.CallExpr) else ex.indices)
-                outs = _fi._eval(self, self._eval_call_args(args), 0)
-                self._no_output = self.numerics.from_nested([])
-                return outs[0] if outs else self._no_output
+                last = self.numerics.from_scalar(0.0)
+                for st in _parse(stmt.raw, commands=False):
+                    last = self._exec_stmt(st)
+                return last
+            tgt = ex if isinstance(ex, ast.Name) else getattr(ex, "func", getattr(ex, "target", None))
+            if (
+                isinstance(ex, (ast.Name, ast.CallExpr, ast.IndexExpr))
+                and isinstance(tgt, ast.Name)
+                and not self._name_bound(tgt.id)
+            ):
+                from openmatlab.libs import function_intrinsics as _fi
+                from openmatlab.libs import workspace_commands as _wc
+
+                key = tgt.id.lower()
+                fn0 = None
+                if key in _wc.STATEMENT_ZERO:
+                    fn0 = _fi.INTRINSICS[key]
+                elif isinstance(stmt, ast.CommandStmt) and key in _wc.COMMAND_ONLY:
+                    fn0 = _wc.COMMAND_ONLY[key]
+                if fn0 is not None:  # statement form: prints, no ans (#531/#532)
+                    a = [] if isinstance(ex, ast.Name) else list(ex.args if isinstance(ex, ast.CallExpr) else ex.indices)
+                    outs = fn0(self, self._eval_call_args(a), 0)
+                    self._no_output = self.numerics.from_nested([])
+                    return outs[0] if outs else self._no_output
             if isinstance(ex, (ast.CallExpr, ast.IndexExpr)):
                 tgt = getattr(ex, "func", getattr(ex, "target", None))
                 if isinstance(tgt, ast.Name) and not self._name_bound(tgt.id):
