@@ -1044,3 +1044,12 @@ test_cases:
     impl: tests/unit/test_sparse_solve.py
     status: active
     env: unit
+
+  - id: tc.m7_conformance
+    kind: conformance
+    title: M7 core language & I/O conformance scripts (strict xfail until met)
+    features: [qa.conformance_suite]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/conformance/test_m7_conformance.py
+    status: active
+    env: unit

@@ -10,9 +10,9 @@ proprietary MATLAB binaries.
 
 ### Status (v0.0.2+ — post-MVP workbench)
 
-Closed milestones: Workbench MVP (M1), Plugin host (M4), Domain business-conformance (M5),
-MATLAB-aligned Workbench (M6). Octave-breadth (M2) is open with all 11 exit criteria met
-(p1/p2 backlog in Issues). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
+Closed milestones: Workbench MVP (M1), Octave-breadth (M2, 19/19 criteria), Plugin host (M4),
+Domain business-conformance (M5), MATLAB-aligned Workbench (M6). Active: **M7 — MATLAB core
+language & I/O** (`docs/milestones/M7-core-language-io.md`; gaps in `docs/GAP-ANALYSIS.md`). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
 flow, scripts and `.m` functions, cells, `addpath`/`which`, plot MVP, community plugin host
 (`openmatlab plugins`), Desktop-style workbench (`openmatlab workbench`). Language is a
 **matrix+procedural MVP**, not full MATLAB.
@@ -46,7 +46,7 @@ QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.ya
 4. Plot MVP — **done** (Epic #1); interactive policy — **done** (Epic #2)
 5. Functions / path / scripts / control flow / cells — **done** (Workbench MVP + M2 exit)
 6. Plugin host, domain conformance gate, MATLAB-aligned Workbench — **done** (M4–M6)
-7. Octave-breadth residuals (M2 p1/p2 Issues); Domain toolboxes (M3, reserved)
+7. MATLAB core language & I/O (M7, active); Domain toolboxes (M3, reserved)
 8. Simulink-class — *out of scope near-term*
 
 ### License
@@ -62,7 +62,7 @@ MIT © Shaw Che / superche, 2026
 
 ### 状态（v0.0.2+ — 后 MVP 工作台）
 
-已关闭里程碑：M1 Workbench MVP、M4 插件宿主、M5 领域业务一致性、M6 MATLAB 对齐工作台；M2 Octave-breadth 仍开放（11/11 退出准则已满足，p1/p2 待办见 Issues）。已可用：矩阵 REPL、NumPy、控制流、脚本与 `.m` 函数、cell、`addpath`/`which`、plot MVP、社区插件宿主、`openmatlab workbench`。语言仍是 **矩阵+过程式 MVP**，不是完整 MATLAB。详见 `docs/ARCHITECTURE.md` 与 `docs/acceptance/`。
+已关闭里程碑：M1 Workbench MVP、M2 Octave-breadth（19/19 准则）、M4 插件宿主、M5 领域业务一致性、M6 MATLAB 对齐工作台；进行中：M7 MATLAB 核心语言与 I/O（见 `docs/milestones/M7-core-language-io.md` 与 `docs/GAP-ANALYSIS.md`）。已可用：矩阵 REPL、NumPy、控制流、脚本与 `.m` 函数、cell、`addpath`/`which`、plot MVP、社区插件宿主、`openmatlab workbench`。语言仍是 **矩阵+过程式 MVP**，不是完整 MATLAB。详见 `docs/ARCHITECTURE.md` 与 `docs/acceptance/`。
 
 ### 明确非目标
 

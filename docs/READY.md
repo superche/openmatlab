@@ -5,7 +5,7 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; CI live; branch protection on.** Milestones 1/4/5/6 closed; M2 open (exit met).
+**READY — public repo; CI live; branch protection on.** Milestones 1/2/4/5/6 closed; M7 (MATLAB core language & I/O) active.
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab
 - **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-Next work comes from open M2 Issues (p1 before p2) per `docs/milestones/M2-octave-breadth.md`.
+Next work comes from the top unmet M7 criterion (p0 before p1) per `docs/milestones/M7-core-language-io.md`.
 
 | Item | URL / command |
 |------|----------------|
