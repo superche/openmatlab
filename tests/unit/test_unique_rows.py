@@ -38,5 +38,11 @@ def test_issorted_rows(code, expected):
 
 
 def test_unique_unknown_option_errors():
-    with pytest.raises(Exception, match="only the 'rows' option"):
-        _ws("C = unique([1 2], 'stable');")
+    # Changed with user approval (Epic #535): 'stable' is a valid MATLAB option.
+    with pytest.raises(Exception, match="unknown option"):
+        _ws("C = unique([1 2], 'bogus');")
+
+
+def test_unique_stable_keeps_first_occurrence_order():
+    get = _ws("C = unique([5 5 3 4], 'stable');")
+    assert get("C") == [[5, 3, 4]]

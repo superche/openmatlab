@@ -109,7 +109,7 @@ class Evaluator:
             base = stmt.target.target
             names = (base.id,) if isinstance(base, ast.Name) else ()
         elif isinstance(stmt, ast.MultiAssign):
-            names = stmt.names
+            names = tuple(n for n in stmt.names if n != "~")
         elif isinstance(stmt, ast.ChainAssign):
             from openmatlab.runtime import struct_eval as _se
 
@@ -901,7 +901,8 @@ class Evaluator:
             if len(vals) < nargout:
                 raise EvalError("Insufficient number of outputs from right hand side of equal sign to satisfy assignment.")
             for name, val in zip(stmt.names, vals):
-                self.workspace.set(name, val)
+                if name != "~":
+                    self.workspace.set(name, val)
             return vals[0]
         if isinstance(expr, ast.IndexExpr):
             target_expr, arg_exprs = expr.target, list(expr.indices)
@@ -917,7 +918,8 @@ class Evaluator:
                 f"multi-assign: expected {nargout} outputs, got {len(results)}"
             )
         for name, val in zip(stmt.names, results):
-            self.workspace.set(name, val)
+            if name != "~":  # [~, i] = f(...) discards that output
+                self.workspace.set(name, val)
         return results[0]
 
     def _make_anon(self, expr: ast.AnonFuncExpr):

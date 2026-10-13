@@ -208,14 +208,22 @@ class Parser:
             return None
         saved = self.pos
         self.advance()  # [
-        if self.current().type != TokenType.IDENT:
+        if self.current().type not in (TokenType.IDENT, TokenType.TILDE):
             self.pos = saved
             return None
+
+        def target():
+            # [~, i] = f(...): '~' discards that output (MATLAB)
+            if self.current().type == TokenType.TILDE and self.tokens[min(self.pos + 1, len(self.tokens) - 1)].type in (TokenType.COMMA, TokenType.RBRACKET):
+                self.advance()
+                return Name(id="~")
+            return self.parse_postfix()
+
         try:
-            targets = [self.parse_postfix()]
-            while self.current().type in (TokenType.COMMA, TokenType.IDENT):
+            targets = [target()]
+            while self.current().type in (TokenType.COMMA, TokenType.IDENT, TokenType.TILDE):
                 self.match(TokenType.COMMA)
-                targets.append(self.parse_postfix())
+                targets.append(target())
             if self.current().type != TokenType.RBRACKET:
                 self.pos = saved
                 return None

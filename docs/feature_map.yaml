@@ -298,6 +298,14 @@ features:
     notes: "Epic #534: fix rem sign hypot log2(2-out) log1p expm1 nthroot diff cumprod cummax cummin gcd lcm primes factor isprime nchoosek factorial round(x,n[,'significant']); median mode var std (weights, dims, omitnan, all) cov corrcoef range bounds; rng/rand (bit-identical MATLAB twister stream) randn randi randperm; tic toc pause; isnan isinf isfinite; degree trig, atan2, sec csc cot; cross dot kron trapz cumtrapz; polyfit polyval roots conv deconv filter interp1 histcounts accumarray; fzero fminsearch integral. Integer classes saturate. Residual 581"
     tests: [tests/unit/test_core_math.py, tests/bdd/test_core_math_bdd.py]
 
+  - id: libs.arrays_sets
+    layer: libs
+    name: array builders, sets and sorting
+    status: done
+    depends_on: [libs.core_math]
+    notes: "repmat/meshgrid/ndgrid/cell2mat/num2cell, set engine numeric/char/cellstr with stable/rows/last, sortrows, [~,i] placeholders"
+    tests: [tests/unit/test_arrays_sets.py, tests/bdd/test_arrays_sets_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

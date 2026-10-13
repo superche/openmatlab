@@ -1144,6 +1144,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.arrays_sets
+    kind: unit
+    title: array builders, sets and sorting (Epic #535)
+    features: [libs.arrays_sets]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_arrays_sets.py
+    status: active
+    env: unit
+
+  - id: tc.arrays_sets_bdd
+    kind: bdd
+    title: array builders, sets and sorting Gherkin scenarios (Epic #535)
+    features: [libs.arrays_sets]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_arrays_sets_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
