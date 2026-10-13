@@ -344,6 +344,10 @@ class Evaluator:
         if isinstance(expr, ast.FieldExpr):  # (Epic #506)
             from openmatlab.runtime import struct_eval as _se
 
+            obj = self._object_field(expr)  # obj.Prop / containers.Map (Epic #539)
+            if obj is not None:
+                return obj
+
             return _se.single(_se.read_field(self, expr))
         if isinstance(expr, ast.CellIndexExpr):
             return self._eval_cell_index(expr)
@@ -437,6 +441,10 @@ class Evaluator:
                 arr = StringArray(np.empty((0, 0), dtype=object))
             else:
                 arr = NDArrayValue(np.zeros((0, 0)))
+        if getattr(arr, "is_object", False):  # m(key) = v; handles mutate in place (Epic #539)
+            out = arr.assign([self.eval_expr(a) for a in stmt.target.indices], rhs_val)
+            self.workspace.set(name, out)
+            return out
         if getattr(rhs_val, "is_missing_value", False):  # x(i) = missing (#504)
             from openmatlab.runtime import missing_value as _mv
 
@@ -949,9 +957,15 @@ class Evaluator:
         return isinstance(expr, ast.ColonExpr) and expr.start is None and expr.stop is None
 
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
+        if isinstance(target_expr, ast.FieldExpr):  # containers.Map(...), obj.method(...) (Epic #539)
+            out = self._object_call(target_expr, arg_exprs)
+            if out is not None:
+                return out
         results = self._invoke_call(target_expr, arg_exprs, nargout=1)
         if results is None:
             target = self.eval_expr(target_expr)
+            if getattr(target, "is_object", False):  # obj(args) (Epic #539)
+                return target.index([self.eval_expr(a) for a in arg_exprs])
             from openmatlab.runtime.cell_value import CellValue
             from openmatlab.runtime.function_handle import FunctionHandleValue
 
@@ -1206,6 +1220,63 @@ class Evaluator:
         self._no_output = self.numerics.from_nested([])  # run(...) shows no ans (MATLAB)
         return self._no_output
 
+    # ---------------------------------------------------------- objects (Epic #539)
+    _OBJECT_METHODS = {"keys", "values", "iskey", "remove", "length", "isempty"}
+
+    def _object_binop(self, op, lv, rv):
+        if getattr(lv, "is_object", False):
+            out = lv.binop(op, rv, False)
+            if out is not NotImplemented:
+                return out
+        if getattr(rv, "is_object", False):
+            out = rv.binop(op, lv, True)
+            if out is not NotImplemented:
+                return out
+        raise EvalError(f"Operator '{op}' is not supported for operands of type "
+                        f"'{lv.matlab_class()}' and '{rv.matlab_class()}'.", "MATLAB:UndefinedFunction")
+
+    def _object_base(self, expr):
+        if isinstance(expr.target, ast.Name) and expr.name is not None:
+            if expr.target.id == "containers" and not self._name_bound("containers"):
+                return "containers"
+            try:
+                v = self.workspace.get(expr.target.id)
+            except KeyError:
+                return None
+            return v if getattr(v, "is_object", False) else None
+        return None
+
+    def _object_field(self, expr):
+        base = self._object_base(expr)
+        if base is None:
+            return None
+        if base == "containers":
+            return self._object_call(expr, [])
+        if expr.name.lower() in self._OBJECT_METHODS:
+            return self._object_call(expr, [])
+        return base.get_prop(expr.name)
+
+    def _object_call(self, expr, arg_exprs):
+        base = self._object_base(expr)
+        if base is None:
+            return None
+        args = self._eval_call_args(arg_exprs)
+        if base == "containers":
+            if expr.name != "Map":
+                raise EvalError(f"Undefined function or variable: containers.{expr.name}")
+            fn, args = self.functions.resolve("containers.Map"), args
+        else:
+            if expr.name.lower() not in self._OBJECT_METHODS:
+                if arg_exprs:
+                    raise EvalError(f"Unrecognized method '{expr.name}' for class '{base.matlab_class()}'.", "MATLAB:noSuchMethodOrField")
+                return base.get_prop(expr.name)
+            fn, args = self.functions.resolve(expr.name), [base] + list(args)
+        try:
+            outs = list(fn(args, nargout=1))
+        except ValueError as exc:
+            raise EvalError(str(exc)) from exc
+        return outs[0] if outs else self.numerics.from_nested([])
+
     def _eval_binop(self, expr: ast.BinOp) -> Value:
         from openmatlab.runtime.char_value import CharValue
         import numpy as np
@@ -1216,6 +1287,8 @@ class Evaluator:
             return self._eval_short_circuit(expr)
         lv = self.eval_expr(expr.left)
         rv = self.eval_expr(expr.right)
+        if getattr(lv, "is_object", False) or getattr(rv, "is_object", False):  # (Epic #539)
+            return self._object_binop(op, lv, rv)
 
         def _as_numeric(v: Value, side: str) -> Array:
             if isinstance(v, CharValue):
