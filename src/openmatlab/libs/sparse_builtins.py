@@ -161,6 +161,68 @@ def _sum_dim(st, args):
     return None
 
 
+def _scalars(vals):
+    out = []
+    for v in vals:
+        if not isinstance(v, NDArrayValue) or is_sparse(v):
+            return None
+        b = np.asarray(v.backend_buffer()).reshape(-1)
+        if b.dtype == object or np.iscomplexobj(b) or np.any(b != np.floor(b)):
+            return None
+        out.extend(int(x) for x in b)
+    return out
+
+
+def _reshape_dims(rest):
+    d = _scalars(rest)
+    if d is None or len(d) != 2 or min(d) < 0:
+        return None
+    return d
+
+
+def _cumsum(st, ax):
+    t = st if ax == 0 else st.transpose()
+    d = t.data.astype(np.float64) if t.dtype == np.bool_ else t.data
+    R, C, V = [], [], []
+    ptr = t.indptr
+    for j in np.nonzero(np.diff(ptr))[0]:
+        lo, hi = ptr[j], ptr[j + 1]
+        rr = t.rows[lo:hi]
+        acc = np.zeros(t.m - rr[0], dtype=d.dtype)
+        acc[rr - rr[0]] = d[lo:hi]
+        acc = np.cumsum(acc)
+        R.append(np.arange(rr[0], t.m)); C.append(np.full(acc.size, j)); V.append(acc)
+    if not R:
+        out = Store.zeros(t.m, t.n, d.dtype)
+    else:
+        out = Store(t.m, t.n, np.concatenate(R), np.concatenate(C), np.concatenate(V), dtype=d.dtype)
+    return out if ax == 0 else out.transpose()
+
+
+def _flip(st, ax):
+    if ax == 0:
+        return Store(st.m, st.n, st.m - 1 - st.rows, st.cols, st.data, dtype=st.dtype)
+    return Store(st.m, st.n, st.rows, st.n - 1 - st.cols, st.data, dtype=st.dtype)
+
+
+def _circshift(st, args):
+    k = _scalars(args[1:2])
+    if k is None or len(args) > 3:
+        return None
+    if len(args) == 3:
+        dim = _scalars(args[2:3])
+        if dim is None or len(dim) != 1 or dim[0] not in (1, 2) or len(k) != 1:
+            return None
+        k = [k[0], 0] if dim[0] == 1 else [0, k[0]]
+    elif len(k) == 1:
+        k = [0, k[0]] if (st.m == 1 and st.n != 1) else [k[0], 0]
+    if len(k) != 2:
+        return None
+    r = (st.rows + k[0]) % st.m if st.m else st.rows
+    c = (st.cols + k[1]) % st.n if st.n else st.cols
+    return SparseValue(Store(st.m, st.n, r, c, st.data, dtype=st.dtype))
+
+
 def native_sparse_call(name, args, nargout):
     """Compressed-storage implementation of a zero-preserving builtin, or None (#516)."""
     if not args or not is_sparse(args[0]) or nargout > 1:
@@ -189,6 +251,39 @@ def native_sparse_call(name, args, nargout):
         if ax is None or st.dtype == np.bool_ and False:
             return None
         return SparseValue(st.sum(ax))
+    if name == "mean":
+        ax = _sum_dim(st, args)
+        if ax is None or (st.m == 0 or st.n == 0):
+            return None
+        r = st.sum(ax)
+        return SparseValue(r.with_data(r.data / (st.m if ax == 0 else st.n)))
+    if name == "cumsum":
+        ax = _sum_dim(st, args)
+        return None if ax is None else SparseValue(_cumsum(st, ax))
+    if name == "reshape":
+        dims = _reshape_dims(args[1:])
+        if dims is None or dims[0] * dims[1] != st.m * st.n:
+            return None
+        return SparseValue(st.reshape(*dims))
+    if name in ("flipud", "fliplr", "flip"):
+        if name == "flip":
+            ax = _sum_dim(st, args)
+        else:
+            ax = 0 if name == "flipud" else 1
+            if len(args) != 1:
+                return None
+        if ax is None:
+            return None
+        return SparseValue(_flip(st, ax))
+    if name == "circshift":
+        return _circshift(st, args)
+    if name == "permute" and len(args) == 2:
+        p = np.asarray(args[1].backend_buffer()).reshape(-1).tolist() if isinstance(args[1], NDArrayValue) else None
+        if p == [1, 2]:
+            return SparseValue(st)
+        if p == [2, 1]:
+            return SparseValue(st.transpose())
+        return None
     if name in ("max", "min"):
         if len(args) == 1:
             ax = 1 if st.m == 1 and st.n != 1 else 0

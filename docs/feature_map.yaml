@@ -370,8 +370,8 @@ features:
     status: done
     spec: docs/design/EPIC-520-sparse-csc.md
     depends_on: [numerics.sparse]
-    notes: "Epic #520 (M2 C19 met; #515 #516 #517): SparseValue holds a sparse_store.Store (CSC order: rows, column pointers, values; O(nnz) memory); construction, nnz/nonzeros/nzmax/find/size/full/display, S*x, x*S, S*S, S+-S, S.*S, S.*X, S./X, k*S, -S, S', S.^p, zero-preserving elementwise functions, sum/max/min, S(i,j)/S(k)/S(mask)/S(:), assignment with growth, deletion and [S S] run without densifying; other ops densify lazily (counted by DENSIFY_COUNT); Inf/NaN operands take the dense path to keep IEEE results"
-    tests: [tests/unit/test_sparse_csc.py, tests/bdd/test_sparse_csc_bdd.py]
+    notes: "Epic #520 (M2 C19 met; #515 #516 #517): SparseValue holds a sparse_store.Store (CSC order: rows, column pointers, values; O(nnz) memory); construction, nnz/nonzeros/nzmax/find/size/full/display, S*x, x*S, S*S, S+-S, S.*S, S.*X, S./X, k*S, -S, S', S.^p, zero-preserving elementwise functions, sum/max/min, S(i,j)/S(k)/S(mask)/S(:), assignment with growth, deletion and [S S] run without densifying; other ops densify lazily (counted by DENSIFY_COUNT); Inf/NaN operands take the dense path to keep IEEE results; #522 native S\\b and b/S (diagonal, triangular, banded LU, RCM reordering); #523 S(:), relational ops, mean/cumsum/reshape/flip/circshift/permute, S^p, for over columns without densifying"
+    tests: [tests/unit/test_sparse_csc.py, tests/bdd/test_sparse_csc_bdd.py, tests/unit/test_sparse_solve.py]
 
   - id: numerics.linear_solve
     layer: numerics
