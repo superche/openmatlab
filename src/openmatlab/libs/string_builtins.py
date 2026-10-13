@@ -299,11 +299,22 @@ def _join(args, *, nargout=1):
     return (_text_out("string" if k == "string" else "char", out),)
 
 
-def _strcmp(name: str, fold: bool):
+def _strcmp(name: str, fold: bool, prefix: bool = False):
     def _f(args, *, nargout=1):
-        if len(args) != 2:
-            raise _err(f"{name}: requires two inputs")
-        a, b = args
+        if len(args) != (3 if prefix else 2):
+            raise _err(f"{name}: requires {'three' if prefix else 'two'} inputs")
+        a, b = args[0], args[1]
+        n = None
+        if prefix:  # strncmp / strncmpi: compare the first n characters (#498)
+            nb = np.asarray(args[2].backend_buffer()).reshape(-1) if hasattr(args[2], "backend_buffer") else None
+            if nb is None or nb.size != 1 or nb[0] != np.floor(nb[0]):
+                raise _err(f"{name}: N must be a numeric integer scalar")
+            n = max(0, int(nb[0]))
+
+        def eq(p, q):
+            if n is not None:
+                p, q = p[:n], q[:n]
+            return (p.lower() == q.lower()) if fold else p == q
 
         def grid(v):
             k = _kind(v)
@@ -319,14 +330,14 @@ def _strcmp(name: str, fold: bool):
             return (NDArrayValue(np.array([[False]])),)  # non-text: false (MATLAB)
         if not (arr_a or arr_b):
             x, y = ga.flat[0], gb.flat[0]
-            return (NDArrayValue(np.array([[x.lower() == y.lower() if fold else x == y]])),)
+            return (NDArrayValue(np.array([[x is not None and y is not None and eq(x, y)]])),)
         if not (ga.size == 1 or gb.size == 1 or ga.shape == gb.shape):
             raise _err(f"{name}: Inputs must be the same size or either one can be a scalar.")
         x, y = np.broadcast_arrays(ga, gb)
         out = np.zeros(x.shape, dtype=bool)
         for ix in np.ndindex(*x.shape):
             p, q = x[ix], y[ix]
-            out[ix] = p is not None and q is not None and ((p.lower() == q.lower()) if fold else p == q)
+            out[ix] = p is not None and q is not None and eq(p, q)
         return (NDArrayValue(out),)
 
     return _f
@@ -341,5 +352,6 @@ def register(builtins: Dict[str, Callable]) -> None:
         startsWith=_match("startsWith", lambda x, p: x.startswith(p)),
         endsWith=_match("endsWith", lambda x, p: x.endswith(p)),
         split=_split, join=_join, strcmp=_strcmp("strcmp", False), strcmpi=_strcmp("strcmpi", True),
+        strncmp=_strcmp("strncmp", False, True), strncmpi=_strcmp("strncmpi", True, True),
     )
     builtins["char"] = _char_wrap(builtins["char"])
