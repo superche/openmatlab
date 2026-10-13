@@ -19,6 +19,14 @@ def _err(msg, ident=""):
     return EvalError(msg, ident)
 
 
+def _dirtext(v, fn):
+    from openmatlab.runtime.char_value import CharValue
+
+    if not isinstance(v, CharValue):
+        raise _err(f"{fn}: folder arguments must be character vectors.", f"MATLAB:{fn}:InvalidInput")
+    return v.text
+
+
 def _scalar(v, fn):
     if not hasattr(v, "backend_buffer"):
         raise _err(f"{fn}: arguments must be numeric scalars.", f"MATLAB:{fn}:InvalidInput")
@@ -60,7 +68,7 @@ def _rmpath(ev, args, nargout):
 
     p = _paths(ev)
     for a in args:
-        for d in a.text.split(os.pathsep):
+        for d in _dirtext(a, "rmpath").split(os.pathsep):
             if d:
                 p.rmpath(d)
     return ()
@@ -73,9 +81,11 @@ def _path(ev, args, nargout):
 
     p = _paths(ev)
     if args:
+        for a in args:
+            _dirtext(a, "path")
         p.entries = []
         for a in reversed(args):
-            for d in reversed(a.text.split(os.pathsep)):
+            for d in reversed(_dirtext(a, "path").split(os.pathsep)):
                 if d:
                     p.addpath(d)
     text = os.pathsep.join(str(e) for e in p.list())
