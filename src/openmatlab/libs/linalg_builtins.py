@@ -51,6 +51,10 @@ def solve(kind: str, a: Value, b: Value) -> NDArrayValue:
     except la.LinalgError as exc:
         raise _err(str(exc)) from None
     out = _out(x)
+    if getattr(a, "issparse", False) and getattr(b, "issparse", False):
+        from openmatlab.numerics.sparse import to_sparse
+
+        return to_sparse(out.backend_buffer())  # S\\S and S/S are sparse (#488)
     if any(isinstance(v, Array) and np.asarray(v.backend_buffer()).dtype in (np.float32, np.complex64) for v in (a, b)):
         buf = np.asarray(out.backend_buffer())
         out = NDArrayValue(buf.astype(np.complex64 if np.iscomplexobj(buf) else np.float32))
@@ -73,6 +77,12 @@ def _inv(args, *, nargout=1):
     if len(args) != 1:
         raise _err("inv: expected 1 argument")
     a = _mat("inv", args[0], square=True)
+    if getattr(args[0], "issparse", False):  # inv(S) is sparse (#488)
+        from openmatlab.numerics.sparse import to_sparse
+
+        args = list(args)
+        r = _inv([NDArrayValue(a)], nargout=nargout)[0]
+        return (to_sparse(r.backend_buffer()),)
     n = a.shape[0]
     if n == 0:
         return (_out(a),)

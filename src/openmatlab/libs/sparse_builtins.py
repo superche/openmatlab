@@ -140,10 +140,108 @@ _ZERO_PRESERVING = (
 )
 
 
+# --- #488 residuals: spalloc / spdiags / sprand / spfun ---------------------
+
+def _spalloc(args, *, nargout=1):
+    if len(args) not in (2, 3):
+        raise _err("spalloc: usage spalloc(m, n, nz)")
+    m, n = _dim("spalloc", args[0]), _dim("spalloc", args[1])
+    if len(args) == 3:
+        _dim("spalloc", args[2])  # capacity hint; storage is dense (see design doc)
+    return (SparseValue(np.zeros((m, n))),)
+
+
+def _diag_index(k: int, m: int, n: int):
+    """Rows/cols of diagonal k in an m x n matrix, plus the B row index MATLAB uses."""
+    i = np.arange(max(0, -k), min(m, n - k))
+    j = i + k
+    # MATLAB: for m >= n, B(j, :) aligns with columns; for m < n, with rows.
+    b = j if m >= n else i
+    return i, j, b
+
+
+def _spdiags(args, *, nargout=1):
+    if len(args) == 4:  # S = spdiags(B, d, m, n)
+        B = _num("spdiags", args[0])
+        d = _num("spdiags", args[1]).reshape(-1).real.astype(int)
+        m, n = _dim("spdiags", args[2]), _dim("spdiags", args[3])
+        if B.ndim < 2:
+            B = B.reshape(-1, 1)
+        elif d.size == 1 and B.shape[0] == 1:
+            B = B.reshape(-1, 1)  # a row vector of values for one diagonal
+        if B.size == 1:
+            B = np.full((max(m, n), d.size), B.reshape(-1)[0])
+        if B.shape[1] != d.size:
+            raise _err("spdiags: B must have one column per diagonal")
+        out = np.zeros((m, n), dtype=np.result_type(B, np.float64))
+        for c, k in enumerate(d):
+            i, j, b = _diag_index(int(k), m, n)
+            ok = b < B.shape[0]
+            out[i[ok], j[ok]] = B[b[ok], c]
+        return (SparseValue(out),)
+    if len(args) in (1, 2):  # B = spdiags(A[, d]), [B, d] = spdiags(A)
+        A = _num("spdiags", args[0])
+        A = A.reshape(1, 1) if A.ndim == 0 else A
+        m, n = A.shape
+        if len(args) == 2:
+            d = _num("spdiags", args[1]).reshape(-1).real.astype(int)
+        else:
+            d = np.array([k for k in range(-(m - 1), n) if np.any(np.diagonal(A, k))], dtype=int)
+        out = np.zeros((min(m, n), d.size), dtype=A.dtype if A.dtype != np.bool_ else np.float64)
+        for c, k in enumerate(d):
+            i, j, b = _diag_index(int(k), m, n)
+            out[b, c] = A[i, j]
+        res = [NDArrayValue(out)]
+        if nargout > 1:
+            res.append(NDArrayValue(d.reshape(-1, 1).astype(float)))
+        return tuple(res)
+    raise _err("spdiags: usage spdiags(B, d, m, n) or spdiags(A[, d])")
+
+
+def _sprand(args, *, nargout=1):
+    if len(args) == 1:  # same sparsity pattern as S, uniform random values
+        A = _num("sprand", args[0])
+        A = A.reshape(1, 1) if A.ndim == 0 else A
+        out = np.where(A != 0, np.random.random_sample(A.shape), 0.0)
+        return (SparseValue(out),)
+    if len(args) != 3:
+        raise _err("sprand: usage sprand(m, n, density) or sprand(S)")
+    m, n = _dim("sprand", args[0]), _dim("sprand", args[1])
+    dens = float(_num("sprand", args[2]).reshape(-1)[0].real)
+    if not 0 <= dens <= 1:
+        raise _err("sprand: density must be between 0 and 1")
+    flat = np.zeros(m * n)
+    k = int(round(dens * m * n))
+    if k:
+        flat[np.random.choice(m * n, size=k, replace=False)] = np.random.random_sample(k)
+    out = flat.reshape((m, n), order="F")
+    return (SparseValue(out),)
+
+
+def _spfun(args, *, nargout=1):
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    if len(args) != 2 or not isinstance(args[0], FunctionHandleValue):
+        raise _err("spfun: usage spfun(fh, S)")
+    A = _num("spfun", args[1])
+    A = A.reshape(1, 1) if A.ndim == 0 else A
+    rows, cols = np.nonzero(A.T)  # column-major order of nonzeros
+    rows, cols = cols, rows
+    vals = A[rows, cols].reshape(-1, 1)
+    res = args[0].call([NDArrayValue(vals.astype(np.float64) if vals.dtype == np.bool_ else vals)], nargout=1)
+    if not res or not isinstance(res[0], Array) or res[0].numel() != vals.size:
+        raise _err("spfun: function must return one value per nonzero element")
+    rv = np.asarray(res[0].backend_buffer()).reshape(-1)
+    out = np.zeros(A.shape, dtype=np.result_type(rv, np.float64))
+    out[rows, cols] = rv
+    return (SparseValue(out),)
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     builtins.update(
         sparse=_sparse, full=_full, issparse=_issparse, nnz=_nnz, nonzeros=_nonzeros,
         nzmax=_nnz, speye=_speye, spones=_spones,
+        spalloc=_spalloc, spdiags=_spdiags, sprand=_sprand, spfun=_spfun,
     )
     for k in _ZERO_PRESERVING:
         if k in builtins:

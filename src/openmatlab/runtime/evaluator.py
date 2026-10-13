@@ -1561,6 +1561,11 @@ class Evaluator:
 
             g = sa.to_grid(value)
             items = [sa.make(g[:, [k]]) for k in range(g.shape[1])]
+        elif getattr(value, "issparse", False):  # columns stay sparse (#488)
+            from openmatlab.numerics import sparse as _sp
+
+            raw = np.asarray(value.backend_buffer())
+            items = [_sp.to_sparse(raw[:, [k]]) for k in range(raw.shape[1])]
         else:
             raw = np.asarray(self._require_array(value, "for").backend_buffer())
             keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw) or raw.dtype == np.float32
