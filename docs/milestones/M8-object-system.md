@@ -38,8 +38,8 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | O03 | Inheritance: multilevel, `obj@Super(...)`, `method@Super(obj)`, dynamic dispatch from base methods, `superclasses`, handle subclasses | m8_o03_inheritance | p0 | #619 | met (Epic #619; residual #636) |
 | O04 | Property attributes: `Constant`, `Dependent` with `get.`/`set.` methods, `SetAccess`/`Access = private`, a validating setter, a setter not re-entered while it sets its own property | m8_o04_property_attributes | p1 | #620 | met (delivered with Epic #618; validation residual #620) |
 | O05 | `Static` methods, `+package` functions and classes, `import pkg.*` | m8_o05_static_packages | p1 | #622 | pending |
-| O06 | Operator overloading (either operand an object), `horzcat`, conversion (`double`/`char`), overloaded builtins | m8_o06_operator_overloading | p1 | #621 | pending |
-| O07 | `subsref`/`subsasgn` overloads with `builtin()` fallback, multi-level indexing, no recursion inside methods | m8_o07_subsref_subsasgn | p1 | #621 | pending |
+| O06 | Operator overloading (either operand an object), `horzcat`, conversion (`double`/`char`), overloaded builtins | m8_o06_operator_overloading | p1 | #621 | met (Epic #621; residual #653) |
+| O07 | `subsref`/`subsasgn` overloads with `builtin()` fallback, multi-level indexing, no recursion inside methods | m8_o07_subsref_subsasgn | p1 | #621 | met (Epic #621; residual #653) |
 | O08 | Enumerations: plain, integer-based (`< int32`), with properties and a constructor; `enumeration()`, `switch`, arrays | m8_o08_enumerations | p1 | #622 | pending |
 | O09 | Introspection: `properties`, `methods`, `ismethod`, `isprop`, `fieldnames`, `metaclass`, `?Class`, `which` | m8_o09_introspection | p1 | #622 | pending |
 | O10 | Display (default "with properties", `disp` overload) and dot notation on built-in objects (graphics `h.Prop`, `datetime` `.Year`) | m8_o10_display_dot_objects | p1 | #621, #623 (#593, #602) | pending |
@@ -67,4 +67,4 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 M8 opened 2026-10-13.
 
-**4 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619). Next: O-E4 operators/indexing/display (#621), interleaved with M3-E2..E5.
+**6 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621). Next: M3-E3 ODE/quadrature/optimisation (#627), then O-E5 packages/enums/introspection (#622)

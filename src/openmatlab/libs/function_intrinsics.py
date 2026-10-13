@@ -277,3 +277,7 @@ INTRINSICS.update(_gl.INTRINSICS)
 from openmatlab.libs import frame_help_intrinsics as _fh  # noqa: E402
 
 INTRINSICS.update(_fh.INTRINSICS)
+
+from openmatlab.runtime import classdef_subs as _cs  # noqa: E402  (O-E4 #621)
+
+INTRINSICS.update(_cs.INTRINSICS)

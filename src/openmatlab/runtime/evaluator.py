@@ -35,6 +35,13 @@ class _ReturnSignal(Exception):
     """Internal: return exits current function/script body."""
 
 
+_SUBS_NODES = (ast.FieldExpr, ast.IndexExpr, ast.CallExpr, ast.CellIndexExpr)
+
+
+def _is_class_obj(v) -> bool:
+    return bool(getattr(v, "is_class_instance", False))
+
+
 class Evaluator:
     """Walk AST against Workspace + ArrayBackend (+ optional PlotSurface)."""
 
@@ -123,23 +130,50 @@ class Evaluator:
                 for v in value.values:
                     d.bind_ans(v)
                     if show:
-                        d.show(v)
+                        self._show_value(d, v)
                 return
             if isinstance(stmt.expr, ast.Name) and stmt.expr.id in self.workspace:
                 if show:
-                    d.show(value, name=stmt.expr.id)
+                    self._show_value(d, value, name=stmt.expr.id)
                 return
             d.bind_ans(value)
             if show:
-                d.show(value)
+                self._show_value(d, value)
             return
         else:
             return
         if show:
             for n in names:
-                d.show(self.workspace.get(n), name=n)
+                self._show_value(d, self.workspace.get(n), name=n)
+
+    def _show_value(self, d, value, name=None):
+        """Variable display; a class's display/disp overload takes over (O-E4)."""
+        if _is_class_obj(value) and getattr(d, "stream", None) is not None:
+            from openmatlab.runtime import classdef as _cd, frames as _frames
+            from openmatlab.runtime.char_value import CharValue
+
+            m = value.info.find_method("display")
+            if m is not None:
+                with _frames.calling(self):
+                    m([value], nargout=0)
+                return
+            m = value.info.find_method("disp")
+            if m is not None:
+                fp = self.functions.resolve("fprintf")
+                fp([CharValue("%s =\n\n"), CharValue(name or "ans")], nargout=0)
+                with _frames.calling(self):
+                    m([value], nargout=0)
+                fp([CharValue("\n")], nargout=0)
+                return
+        d.show(value, name=name)
 
     def _exec_stmt(self, stmt: ast.Stmt) -> Value:
+        if isinstance(stmt, (ast.ArrayAssign, ast.CellAssign, ast.ChainAssign)):  # subsasgn overloads (O-E4)
+            from openmatlab.runtime import classdef_subs as _cs
+
+            out = _cs.try_asgn(self, stmt.target, stmt.value)
+            if out is not None:
+                return out
         if isinstance(stmt, ast.Assign):
             value = self.eval_expr(stmt.value)
             self.workspace.set(stmt.name, value)
@@ -246,12 +280,23 @@ class Evaluator:
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
     def eval_expr(self, expr: ast.Expr) -> Value:
+        if isinstance(expr, _SUBS_NODES):  # subsref overloads (O-E4)
+            from openmatlab.runtime import classdef_subs as _cs
+
+            r = _cs.try_ref(self, expr)
+            if r is not None:
+                if not r:
+                    self._no_output = self.numerics.from_nested([])
+                    return self._no_output
+                return r[0]
         if isinstance(expr, ast.FuncHandleExpr):
             from openmatlab.runtime.function_handle import FunctionHandleValue
             try:
                 fn = self.functions.resolve(expr.name)
             except Exception as e:
-                raise EvalError(f"function handle: undefined function '{expr.name}'") from e
+                fn = self._dotted_callable(expr.name) if "." in expr.name else None
+                if fn is None:
+                    raise EvalError(f"function handle: undefined function '{expr.name}'") from e
             return FunctionHandleValue(name=expr.name, fn=fn)
         if isinstance(expr, ast.AnonFuncExpr):
             return self._make_anon(expr)
@@ -305,7 +350,10 @@ class Evaluator:
                     return results[0]
                 raise EvalError(f"Undefined variable: {expr.id}")
         if isinstance(expr, ast.UnaryOp):
-            v = self._require_array(self.eval_expr(expr.operand), "unary")
+            v = self.eval_expr(expr.operand)
+            if _is_class_obj(v):  # uminus/uplus/not overloads (O-E4)
+                return self._overload_or_fail({"-": "uminus", "+": "uplus", "~": "not"}[expr.op], [v], expr.op)
+            v = self._require_array(v, "unary")
             if expr.op == "+":
                 return v
             if expr.op == "-":
@@ -330,6 +378,9 @@ class Evaluator:
             from openmatlab.runtime.char_value import CharValue
 
             operand = self.eval_expr(expr.operand)
+            if _is_class_obj(operand):  # ctranspose/transpose overloads (O-E4)
+                return self._overload_or_fail("ctranspose" if expr.conjugate else "transpose", [operand],
+                                              "'" if expr.conjugate else ".'")
             if getattr(operand, "is_struct", False):
                 from openmatlab.runtime import struct_eval as _se
 
@@ -1307,7 +1358,53 @@ class Evaluator:
     # ---------------------------------------------------------- objects (Epic #539)
     _OBJECT_METHODS = {"keys", "values", "iskey", "remove", "length", "isempty"}
 
+    _OP_METHODS = {"+": "plus", "-": "minus", "*": "mtimes", ".*": "times", "/": "mrdivide", "./": "rdivide",
+                   "\\": "mldivide", ".\\": "ldivide", "^": "mpower", ".^": "power", "==": "eq", "~=": "ne",
+                   "<": "lt", "<=": "le", ">": "gt", ">=": "ge", "&": "and", "|": "or"}
+
+    def _dotted_callable(self, name):
+        """@Class.staticMethod -> a callable (M8)."""
+        from openmatlab.runtime import classdef as _cd
+
+        cls, _, meth = name.rpartition(".")
+        try:
+            ctor = self.functions.resolve(cls)
+        except Exception:
+            return None
+        info = getattr(ctor, "info", None)
+        if not isinstance(ctor, _cd.ClassConstructor) or info is None:
+            return None
+        m = info.find_method(meth)
+        return m if m is not None and m.static else None
+
+    def _overload(self, name, args, nargout=1):
+        """Call a class method overload ``name(args...)`` if any argument's class defines it (O-E4)."""
+        from openmatlab.runtime import classdef as _cd, frames as _frames
+
+        m = _cd.find_method_for_args(name, args)
+        if m is None:
+            return NotImplemented
+        with _frames.calling(self):
+            outs = list(m(list(args), nargout=nargout))
+        if not outs:
+            self._no_output = self.numerics.from_nested([])
+            return self._no_output
+        return outs[0]
+
+    def _overload_or_fail(self, name, args, op):
+        out = self._overload(name, args)
+        if out is NotImplemented:
+            cls = args[0].matlab_class()
+            raise EvalError(f"Operator '{op}' is not supported for operands of type '{cls}'.", "MATLAB:UndefinedFunction")
+        return out
+
     def _object_binop(self, op, lv, rv):
+        if _is_class_obj(lv) or _is_class_obj(rv):  # operator overloading (O-E4)
+            name = self._OP_METHODS.get(op)
+            if name is not None:
+                out = self._overload(name, [lv, rv])
+                if out is not NotImplemented:
+                    return out
         if getattr(lv, "is_object", False):
             out = lv.binop(op, rv, False)
             if out is not NotImplemented:
@@ -1524,6 +1621,8 @@ class Evaluator:
 
         rows = [self._matrix_row_values(row) for row in expr.rows]
         flat = [v for r in rows for v in r]
+        if any(_is_class_obj(v) for v in flat):  # horzcat/vertcat overloads (O-E4)
+            return self._concat_objects(rows)
         if any(getattr(v, "is_missing_value", False) for v in flat):  # [1 missing], ["a" missing] (#504)
             from openmatlab.runtime import missing_value as _mv
 
@@ -1542,6 +1641,21 @@ class Evaluator:
         if any(isinstance(v, CharValue) for v in flat):
             return self._concat_chars(rows)
         return self._concat_arrays(rows)
+
+    def _concat_objects(self, rows):
+        def cat(name, parts):
+            parts = [p for p in parts if not (getattr(p, "numel", None) and not _is_class_obj(p) and p.numel() == 0)]
+            if len(parts) == 1:
+                return parts[0]
+            out = self._overload(name, parts)
+            if out is NotImplemented:
+                cls = next(p for p in parts if _is_class_obj(p)).matlab_class()
+                raise EvalError(f"Concatenation of '{cls}' objects requires a {name} method "
+                                "(object arrays are not supported yet).", "MATLAB:class:concatenation")
+            return out
+
+        hs = [cat("horzcat", r) for r in rows if r]
+        return cat("vertcat", hs) if hs else self.numerics.from_nested([])
 
     def _matrix_row_values(self, row) -> list:
         from openmatlab.runtime.cell_value import CellValue
