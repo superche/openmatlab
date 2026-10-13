@@ -25,7 +25,7 @@ def _empty() -> Value:
 
 @dataclass(frozen=True)
 class StructValue:
-    shape: Tuple[int, int]
+    shape: Tuple[int, ...]  # 2-D or N-D (#508)
     fields: Tuple[str, ...]
     elems: Tuple[Dict[str, Value], ...]  # column-major, len == prod(shape)
 
@@ -37,10 +37,13 @@ class StructValue:
 
     @property
     def ndim(self) -> int:
-        return 2
+        return len(self.shape)
 
     def numel(self) -> int:
-        return self.shape[0] * self.shape[1]
+        n = 1
+        for d in self.shape:
+            n *= int(d)
+        return n
 
     def is_scalar(self) -> bool:
         return self.numel() == 1
@@ -55,7 +58,12 @@ class StructValue:
     def build(shape, fields, elems) -> "StructValue":
         fields = tuple(fields)
         elems = tuple({f: e.get(f, _empty()) for f in fields} for e in elems)
-        return StructValue((int(shape[0]), int(shape[1])), fields, elems)
+        shape = [int(d) for d in shape] or [1, 1]
+        if len(shape) == 1:
+            shape = [1, shape[0]]
+        while len(shape) > 2 and shape[-1] == 1:  # trailing singleton dims drop
+            shape.pop()
+        return StructValue(tuple(shape), fields, elems)
 
     # --- field operations ---------------------------------------------------
     def has(self, name: str) -> bool:

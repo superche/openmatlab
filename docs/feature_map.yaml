@@ -379,8 +379,8 @@ features:
     status: done
     spec: docs/design/EPIC-506-structs.md
     depends_on: [runtime.cell_value]
-    notes: "Epic #506 (M2 C18 met): StructValue; s.f, nested and dynamic s.(name) fields; chained assignment through fields, parens and braces; struct arrays s(i).f with growth, deletion, concat, transpose, for-loops; struct() with cell args; fieldnames/isfield/rmfield/setfield/getfield/isstruct/orderfields; cs-lists in [], {} and call args; MATLAB struct display; regexp names returns a struct (#504)"
-    tests: [tests/unit/test_structs.py, tests/bdd/test_structs_bdd.py]
+    notes: "Epic #506 (M2 C18 met): StructValue; s.f, nested and dynamic s.(name) fields; chained assignment through fields, parens and braces; struct arrays s(i).f with growth, deletion, concat, transpose, for-loops; struct() with cell args; fieldnames/isfield/rmfield/setfield/getfield/isstruct/orderfields; cs-lists in [], {} and call args; MATLAB struct display; regexp names returns a struct (#504); #508: disp, isrow/iscolumn/isvector/isscalar/ismatrix, deal, [a,b] = s.f and [s.f] = deal(...), struct2cell/cell2struct, structfun/arrayfun, N-D struct arrays, short per-element field summaries; indexed assignment creates undefined variables"
+    tests: [tests/unit/test_structs.py, tests/bdd/test_structs_bdd.py, tests/unit/test_struct_residuals.py]
 
   - id: libs.string_methods
     layer: libs

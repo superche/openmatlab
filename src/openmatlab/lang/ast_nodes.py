@@ -195,6 +195,8 @@ class MultiAssign(AstNode):
     names: Sequence[str]
     value: Expr
     suppress: bool = False
+    # #508: general targets ([s.f] = deal(...), [c{1:2}] = ...); None when all are plain names
+    targets: Optional[Sequence["Expr"]] = None
 
 
 @dataclass(frozen=True)
