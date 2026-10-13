@@ -34,6 +34,7 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 | C08 | Graphics core: figure/axes/line handles with `get`/`set`, `hold`, `subplot`, `title`/`xlabel`/`ylabel`/`legend`/`grid`/`axis`/`xlim`/`ylim`, `gca`/`gcf`, `close`, `saveas`, `bar`/`scatter`/`histogram` | m7_c08_graphics_core | p0 | #537 | #557 #558 (#559 p1) | met (Epic #537; residual #593) |
 | C09 | Dense decompositions: `eig svd lu qr chol null orth trace cross dot`, `MATLAB:posdef` | m7_c09_linalg_decomp | p1 | #538 | #560 | met (Epic #538; residual #598) |
 | C10 | `containers.Map` (handle semantics, KeyType) and date/time basics (`datetime`, `days`/`seconds`/`minutes`, `datenum`/`datestr`, `clock`, `weekday`) | m7_c10_map_datetime | p1 | #539 | #561 #562 | met (Epic #539; residual #602) |
+| C11 | Caller/base workspaces and help browsing: `evalin` (`'base'`/`'caller'`, catch string), `assignin`, `doc`, `lookfor`, `what` (added 2026-10-13 after the user ruled #608 P0) | m7_c11_frames_help | p0 | #610 | #608 | met (Epic #610; residual #611) |
 
 **First principles for scope:**
 - `containers.Map` and `datetime` are in M7 because ordinary scripts use them for bookkeeping. Tables, timetables and categorical stay out: they are a data-analysis subsystem (GAP-ANALYSIS p2).
@@ -44,12 +45,12 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 
 M7 opened 2026-10-13. #529 (local-function crash) fixed in PR #564.
 
-**10 / 10** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531), C03 (Epic #532), C04 (Epic #533), C05 (Epic #534), C06 (Epic #535), C07 (Epic #536), C08 (Epic #537), C09 (Epic #538), C10 (Epic #539). Next: M7 close-readiness review.
+**11 / 11** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531), C03 (Epic #532), C04 (Epic #533), C05 (Epic #534), C06 (Epic #535), C07 (Epic #536), C08 (Epic #537), C09 (Epic #538), C10 (Epic #539), C11 (Epic #610). Next: M7 close-readiness review (rerun).
 
 ## Close-readiness review (2026-10-13)
 
-1. **Conformance.** All 10 criteria are `met`, and there are 0 M7 xfails on `main`.
-2. **Open p0 issues.** Epics #531–#537 are open only for user acceptance (their packages are complete). All p0 child issues are closed, and #606 (builtin argument leak) is fixed. The leftovers from GAP p0 rows (`evalin`, `doc`/`lookfor`/`what`) are filed as #608 at p1, pending the user's ruling.
+1. **Conformance.** All criteria are `met` (C01–C11 after Epic #610), and there are 0 M7 xfails on `main`.
+2. **Open p0 issues.** You accepted and closed epics #530–#539. Epic #610 is open only for user acceptance. All p0 child issues are closed, and #606 (builtin argument leak) is fixed. You ruled #608 P0, and it was delivered as criterion C11 (Epic #610).
 3. **No Python traceback.** A sweep of all GAP-ANALYSIS probes plus every builtin and intrinsic called with five malformed argument shapes showed 0 leaks after #606.
 
 The GAP-ANALYSIS M7 rows, README and READY were updated in the same PR as this note.

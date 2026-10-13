@@ -338,6 +338,14 @@ features:
     notes: "object protocol; containers.Map handle; datetime/duration arithmetic; datenum/datestr/weekday/clock"
     tests: [tests/unit/test_map_datetime.py, tests/bdd/test_map_datetime_bdd.py]
 
+  - id: libs.frames_help
+    layer: libs
+    name: caller/base workspaces and help browsing
+    status: done
+    depends_on: [lang.functions_variadic]
+    notes: "frame stack; evalin/assignin base+caller with catch string; doc/lookfor/what"
+    tests: [tests/unit/test_frames_help.py, tests/bdd/test_frames_help_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

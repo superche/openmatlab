@@ -6,8 +6,9 @@ p=R+'tests/conformance/m7_manifest.py'; s=open(p).read()
 s2=re.sub(r'("%s": \("%s", "p\d", \[[^\]]*\], )"pending"' % (cid, script), r'\1"met"', s); assert s2!=s; open(p,'w').write(s2)
 p=R+'docs/milestones/M7-core-language-io.md'; s=open(p).read()
 s2=re.sub(r'(\| %s \|.*\| )pending \|' % script, r'\1met (Epic #%s; residual #%s) |' % (epic, resid), s); assert s2!=s
-m=re.search(r'\*\*\d+ / 10\*\* criteria met: (.*?)\. Next: .*', s2); assert m
-s2=s2.replace(m.group(0), '**%s / 10** criteria met: %s, %s (Epic #%s). Next: %s' % (met, m.group(1), cid, epic, nxt))
+m=re.search(r'\*\*\d+ / \d+\*\* criteria met: (.*?)\. Next: .*', s2); assert m
+total=len(re.findall(r'^\| C\d+ \|', s2, re.M))
+s2=s2.replace(m.group(0), '**%s / %s** criteria met: %s, %s (Epic #%s). Next: %s' % (met, total, m.group(1), cid, epic, nxt))
 open(p,'w').write(s2)
 p=R+'docs/feature_map.yaml'; s=open(p).read()
 entry=f'''  - id: {fid}

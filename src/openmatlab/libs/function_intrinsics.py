@@ -156,8 +156,11 @@ def _feval(ev, args, nargout):
     if not args:
         raise _err("Not enough input arguments.", "MATLAB:minrhs")
     fn = _resolve_callable(ev, args[0])
+    from openmatlab.runtime import frames as _frames
+
     try:
-        return tuple(fn(list(args[1:]), nargout=nargout))
+        with _frames.calling(ev):
+            return tuple(fn(list(args[1:]), nargout=nargout))
     except ValueError as exc:
         raise _err(str(exc)) from exc
 
@@ -270,3 +273,7 @@ INTRINSICS.update(_gb.INTRINSICS)
 from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
 
 INTRINSICS.update(_gl.INTRINSICS)
+
+from openmatlab.libs import frame_help_intrinsics as _fh  # noqa: E402
+
+INTRINSICS.update(_fh.INTRINSICS)

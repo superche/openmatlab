@@ -68,7 +68,7 @@ Priority reflects impact on a typical user:
 | Scripts & functions | Function files (fixed arity) | **present** | `"addpath(...); r = f(x)"` resolves `.m` functions (lang.mfile BDD) | — | — |
 | Scripts & functions | `varargin varargout nargin nargout narginchk nargoutchk` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
 | Scripts & functions | Local functions in script files | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
-| Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **partial** | delivered in M7 (Epic #531); still missing: `evalin` → #608 (verified 2026-10-13) | p1 | E-FUNCTIONS |
+| Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **present** | delivered in M7 (Epic #531; `evalin`/`doc`/`lookfor`/`what` added by Epic #610, C11); verified 2026-10-13 | — | E-FUNCTIONS |
 | Scripts & functions | `global persistent` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
 | Scripts & functions | `inputParser validateattributes` | **partial** | delivered in M7 (Epic #531); still missing: `inputParser` `validateattributes` → #569 (verified 2026-10-13) | p1 | E-FUNCTIONS |
 | OOP | `classdef` (properties, methods, constructors) | **missing** | `run_c` (uses `classdef Pt`) → `Unexpected token KW_END at line 4` | p1 | new milestone: Object system |
@@ -82,7 +82,7 @@ Priority reflects impact on a typical user:
 | Graphics | `bar scatter histogram pie area stairs stem errorbar semilogx semilogy loglog` | **partial** | delivered in M7 (Epic #537); still missing: `pie` `area` `stairs` `stem` `errorbar` `semilogx` `semilogy` `loglog` → #593 (verified 2026-10-13) | p1 | E-GRAPHICS-CORE |
 | Graphics | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | **missing** | missing: `surf` `mesh` `contour` `plot3` `imagesc` `colorbar` `colormap` `text` `line` `patch` `fill` | p2 | M3-SCI-GRAPHICS |
 | App / Workbench | Command window, editor (tabs), workspace browser, current folder, figures (M6) | **partial** | `openmatlab workbench --help`; feature_map `host.workbench.*` all `partial`; editor note "no LSP/debugger" | — | — |
-| App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **partial** | delivered in M7 (Epic #532); still missing: `doc` `lookfor` `what` → #608 (verified 2026-10-13) | p1 | E-COMMAND-SYNTAX |
+| App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **present** | delivered in M7 (Epic #532; `evalin`/`doc`/`lookfor`/`what` added by Epic #610, C11); verified 2026-10-13 | — | E-COMMAND-SYNTAX |
 | App / Workbench | Debugger (breakpoints, dbstop/dbstep), variable editor, help browser | **missing** | feature_map: no `debugger`/`variable_editor` feature id; `host.workbench.editor` notes "no LSP/debugger" | p2 | M6 follow-up (Workbench) |
 | Octave extensions | `x++`, `do ... until` | **missing** | `"x = 3; x++"` → `Unexpected token EOF` | p2 | non-goal (MATLAB first) |
 

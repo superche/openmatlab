@@ -1234,6 +1234,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.frames_help
+    kind: unit
+    title: caller/base workspaces and help browsing (Epic #610)
+    features: [libs.frames_help]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_frames_help.py
+    status: active
+    env: unit
+
+  - id: tc.frames_help_bdd
+    kind: bdd
+    title: caller/base workspaces and help browsing Gherkin scenarios (Epic #610)
+    features: [libs.frames_help]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_frames_help_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

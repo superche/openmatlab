@@ -230,7 +230,10 @@ class Evaluator:
                         fn = None
                     if isinstance(fn, MFileCallable):  # statement call: nargout == 0 (MATLAB)
                         args = self._eval_call_args(list(ex.args if isinstance(ex, ast.CallExpr) else ex.indices))
-                        outs = list(fn(args, nargout=0))
+                        from openmatlab.runtime import frames as _frames
+
+                        with _frames.calling(self):
+                            outs = list(fn(args, nargout=0))
                         if not outs:
                             self._no_output = self.numerics.from_nested([])
                             return self._no_output
@@ -976,7 +979,10 @@ class Evaluator:
 
                 return _se.struct_index(self, target, arg_exprs)
             if isinstance(target, FunctionHandleValue):
-                outs = target.call(self._eval_call_args(arg_exprs), nargout=1)
+                from openmatlab.runtime import frames as _frames
+
+                with _frames.calling(self):
+                    outs = target.call(self._eval_call_args(arg_exprs), nargout=1)
                 if not outs:
                     raise EvalError("function handle call returned no value")
                 return outs[0]
@@ -1110,8 +1116,11 @@ class Evaluator:
         except LookupError as exc:
             raise EvalError(str(exc)) from exc
         args = self._eval_call_args(arg_exprs)
+        from openmatlab.runtime import frames as _frames
+
         try:
-            results = list(fn(args, nargout=nargout))
+            with _frames.calling(self):  # callee sees this frame as its caller (evalin/assignin)
+                results = list(fn(args, nargout=nargout))
         except ValueError as exc:  # builtin argument errors (e.g. BuiltinError)
             msg = str(exc)
             raise EvalError(msg if msg.startswith(f"{n}:") else f"{n}: {msg}") from exc
@@ -1277,7 +1286,10 @@ class Evaluator:
                 return base.get_prop(expr.name)
             fn, args = self.functions.resolve(expr.name), [base] + list(args)
         try:
-            outs = list(fn(args, nargout=1))
+            from openmatlab.runtime import frames as _frames
+
+            with _frames.calling(self):
+                outs = list(fn(args, nargout=1))
         except ValueError as exc:
             raise EvalError(str(exc)) from exc
         return outs[0] if outs else self.numerics.from_nested([])
