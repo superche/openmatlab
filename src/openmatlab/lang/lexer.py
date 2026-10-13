@@ -256,6 +256,8 @@ def _iter_tokens(source: str) -> Iterator[Token]:
                 "otherwise": TokenType.KW_OTHERWISE,
                 "try": TokenType.KW_TRY,
                 "catch": TokenType.KW_CATCH,
+                "global": TokenType.KW_GLOBAL,
+                "persistent": TokenType.KW_PERSISTENT,
             }
             typ = keywords.get(word.lower(), TokenType.IDENT)
             tok = Token(typ, word, start_line, start_col)

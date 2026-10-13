@@ -20,6 +20,7 @@ from openmatlab.lang.ast_nodes import (
     SwitchCase,
     SwitchStmt,
     TryStmt,
+    DeclStmt,
     WhileStmt,
     ForStmt,
     FunctionDef,
@@ -135,6 +136,15 @@ class Parser:
             return self.parse_switch()
         if self.current().type == TokenType.KW_TRY:
             return self.parse_try()
+        if self.current().type in (TokenType.KW_GLOBAL, TokenType.KW_PERSISTENT):
+            kind = "global" if self.advance().type == TokenType.KW_GLOBAL else "persistent"
+            names: List[str] = []
+            while self.current().type == TokenType.IDENT:
+                names.append(self.advance().value)
+            if not names:
+                raise ParseError(f"{kind}: expected variable names")
+            self._trailing_suppress()
+            return DeclStmt(names=tuple(names), kind=kind)
         if (
             self.current().type == TokenType.IDENT
             and self.pos + 1 < len(self.tokens)

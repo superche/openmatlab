@@ -70,3 +70,5 @@ class TokenType(Enum):
     KW_OTHERWISE = auto()
     KW_TRY = auto()
     KW_CATCH = auto()
+    KW_GLOBAL = auto()
+    KW_PERSISTENT = auto()
