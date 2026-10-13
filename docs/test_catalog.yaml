@@ -1198,6 +1198,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.decomp
+    kind: unit
+    title: dense linear algebra decompositions (Epic #538)
+    features: [libs.linalg_decomp]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_decomp.py
+    status: active
+    env: unit
+
+  - id: tc.decomp_bdd
+    kind: bdd
+    title: dense linear algebra decompositions Gherkin scenarios (Epic #538)
+    features: [libs.linalg_decomp]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_decomp_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
