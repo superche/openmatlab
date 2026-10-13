@@ -344,6 +344,15 @@ class Evaluator:
                 self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
             )
+        if isinstance(expr, (ast.FieldExpr, ast.SuperRef, ast.MetaClassExpr)):  # classdef objects (M8)
+            from openmatlab.runtime import classdef_eval as _cde
+
+            r = _cde.call(self, expr, None if isinstance(expr, ast.FieldExpr) else [], 1)
+            if r is not None:
+                if not r:
+                    self._no_output = self.numerics.from_nested([])
+                    return self._no_output
+                return r[0]
         if isinstance(expr, ast.FieldExpr):  # (Epic #506)
             from openmatlab.runtime import struct_eval as _se
 
@@ -959,7 +968,28 @@ class Evaluator:
     def _is_bare_colon(expr: ast.Expr) -> bool:
         return isinstance(expr, ast.ColonExpr) and expr.start is None and expr.stop is None
 
+    def _index_with_exprs(self, value, arg_exprs) -> Value:
+        """value(arg_exprs...) for an already computed value (end and : resolve against it)."""
+        Evaluator._tmp_seq += 1
+        t = f"__om_ix{Evaluator._tmp_seq}"
+        self.workspace.set(t, value)
+        try:
+            return self.eval_expr(ast.IndexExpr(target=ast.Name(t), indices=tuple(arg_exprs)))
+        finally:
+            self.workspace.clear(t)
+
+    _tmp_seq = 0
+
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
+        if isinstance(target_expr, (ast.FieldExpr, ast.SuperRef)):  # classdef objects (M8)
+            from openmatlab.runtime import classdef_eval as _cde
+
+            r = _cde.call(self, target_expr, arg_exprs, 1)
+            if r is not None:
+                if not r:
+                    self._no_output = self.numerics.from_nested([])
+                    return self._no_output
+                return r[0]
         if isinstance(target_expr, ast.FieldExpr):  # containers.Map(...), obj.method(...) (Epic #539)
             out = self._object_call(target_expr, arg_exprs)
             if out is not None:
@@ -1082,6 +1112,12 @@ class Evaluator:
         nargout: int,
     ):
         """Return output sequence for a function call, or None if indexing."""
+        if isinstance(target_expr, (ast.FieldExpr, ast.SuperRef)):  # [a, b] = obj.m(...) (M8)
+            from openmatlab.runtime import classdef_eval as _cde
+
+            r = _cde.call(self, target_expr, arg_exprs, nargout)
+            if r is not None:
+                return r
         if not (
             isinstance(target_expr, ast.Name)
             and not self._name_bound(target_expr.id)
@@ -1108,15 +1144,29 @@ class Evaluator:
                 raise EvalError("run: only one output supported")
             return (self._builtin_run(arg_exprs),)
         from openmatlab.libs import function_intrinsics as _fi
+        from openmatlab.runtime import classdef as _cd
+        from openmatlab.runtime import frames as _frames
 
+        args = None
+        if key in _cd.method_names(self.functions):  # f(obj, ...) runs obj's method f first (MATLAB precedence, M8)
+            try:
+                args = self._eval_call_args(arg_exprs)
+            except EvalError:
+                if not self._callable_name(n):
+                    raise EvalError(f"Undefined function or variable: {n}") from None
+                raise
+            m = _cd.find_method_for_args(n, args)
+            if m is not None:
+                with _frames.calling(self):
+                    return list(m(args, nargout=nargout))
         if key in _fi.INTRINSICS:  # need the caller's frame (#531)
-            return _fi.INTRINSICS[key](self, self._eval_call_args(arg_exprs), nargout)
+            return _fi.INTRINSICS[key](self, args if args is not None else self._eval_call_args(arg_exprs), nargout)
         try:
             fn = self.functions.resolve(n)
         except LookupError as exc:
             raise EvalError(str(exc)) from exc
-        args = self._eval_call_args(arg_exprs)
-        from openmatlab.runtime import frames as _frames
+        if args is None:
+            args = self._eval_call_args(arg_exprs)
 
         try:
             with _frames.calling(self):  # callee sees this frame as its caller (evalin/assignin)

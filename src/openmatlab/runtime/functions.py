@@ -35,9 +35,20 @@ class Script:
     local_functions: Tuple[FunctionDef, ...] = ()
 
 
+@dataclass(frozen=True)
+class ClassFile:
+    """Marker returned by load_mfile for a classdef file (M8); the resolver loads it as a class."""
+
+    path: Path
+
+
 def load_mfile(path: Path) -> FunctionDef | Script:
     """Load a .m file as a function or a script."""
     text = path.read_text(encoding="utf-8")
+    from openmatlab.lang.classdef_parser import is_classdef_source
+
+    if is_classdef_source(text):  # a class file is neither a script nor a function (M8)
+        return ClassFile(path.resolve())
     stmts = parse(text)
     funcs = [s for s in stmts if isinstance(s, FunctionDef)]
     if funcs and not isinstance(stmts[0], FunctionDef):
@@ -229,6 +240,7 @@ class MFileCallable:
         args: Sequence[Value],
         *,
         nargout: int = 1,
+        prebind: Optional[Dict[str, Value]] = None,
     ) -> Sequence[Value]:
         from openmatlab.runtime.evaluator import (
     EvalError,
@@ -276,6 +288,8 @@ class MFileCallable:
         for fn in local.values():
             # nested/local functions see each other and the enclosing scope
             fn.scope = scope
+        for name, val in (prebind or {}).items():  # constructor output pre-set to the default object (M8)
+            ws.set(name, val)
         for name, val in zip(fixed_in, args):
             ws.set(name, val)  # any MATLAB value (cell, struct, handle, ...) (#531)
         if variadic_in:
@@ -367,7 +381,7 @@ class FunctionResolver:
             return self.builtins[key]
         mfile = self._find(name)
         if mfile is not None:
-            return self._load(mfile)
+            return self._load(mfile, name)
         raise LookupError(f"Undefined function or variable: {name}")
 
     def which(self, name: str) -> str:
@@ -394,7 +408,7 @@ class FunctionResolver:
             return None
         return self.path.find_mfile(name)
 
-    def _load(self, mfile: Path) -> MFileCallable:
+    def _load(self, mfile: Path, name: str = "") -> MFileCallable:
         key = str(mfile.resolve())
         if key in self._cache:
             return self._cache[key]
@@ -402,6 +416,30 @@ class FunctionResolver:
             raise RuntimeError(
                 "FunctionResolver.bind_runtime(numerics) required before loading .m"
             )
+        from openmatlab.lang.classdef_parser import is_classdef_source
+
+        text = mfile.read_text(encoding="utf-8")
+        if is_classdef_source(text):  # classdef file (M8)
+            from openmatlab.lang.classdef_parser import parse_classdef
+            from openmatlab.lang.parser import ParseError
+            from openmatlab.runtime import classdef as _cd
+
+            try:
+                node = parse_classdef(text)
+            except ParseError as exc:
+                raise ValueError(f"Error in class file {mfile.name}: {exc}") from None
+            full = name if name and name.rsplit(".", 1)[-1] == node.name else node.name
+            if node.name != mfile.stem:
+                raise ValueError(f"The class name '{node.name}' must match the file name '{mfile.stem}'.")
+            ctor = _cd.ClassConstructor(None)
+            self._cache[key] = ctor  # registered before members load (self-references in defaults)
+            try:
+                ctor.info = _cd.ClassInfo(node, self, mfile, full)
+            except BaseException:
+                self._cache.pop(key, None)
+                raise
+            _cd.register_class(ctor.info)
+            return ctor
         defn = parse_mfile(mfile)
         fn = MFileCallable(
             defn=defn,

@@ -10,10 +10,10 @@ from __future__ import annotations
 
 # id -> (script, priority, tracking issues, status)
 CRITERIA = {
-    "O01": ("m8_o01_value_class", "p0", [618], "pending"),
+    "O01": ("m8_o01_value_class", "p0", [618], "met"),
     "O02": ("m8_o02_handle_class", "p0", [619], "pending"),
     "O03": ("m8_o03_inheritance", "p0", [619], "pending"),
-    "O04": ("m8_o04_property_attributes", "p1", [620], "pending"),
+    "O04": ("m8_o04_property_attributes", "p1", [620, 618], "met"),
     "O05": ("m8_o05_static_packages", "p1", [622], "pending"),
     "O06": ("m8_o06_operator_overloading", "p1", [621], "pending"),
     "O07": ("m8_o07_subsref_subsasgn", "p1", [621], "pending"),

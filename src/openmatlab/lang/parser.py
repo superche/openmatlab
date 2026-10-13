@@ -33,6 +33,8 @@ from openmatlab.lang.ast_nodes import (
     MatrixLiteral,
     CellLiteral,
     Name,
+    SuperRef,
+    MetaClassExpr,
     EndExpr,
     AnonFuncExpr,
     FuncHandleExpr,
@@ -266,6 +268,9 @@ class Parser:
         else:
             tok = self.current()
             raise ParseError("Expected function name", tok.line, tok.column)
+        if name in ("get", "set") and self.current().type == TokenType.DOT:  # get.Prop / set.Prop (M8)
+            self.advance()
+            name = name + "." + self.expect(TokenType.IDENT).value
         self.expect(TokenType.LPAREN)
         inputs: List[str] = []
         if self.current().type != TokenType.RPAREN:
@@ -568,7 +573,24 @@ class Parser:
             return StringLiteral(value=tok.value, is_string=tok.type == TokenType.STRING)
         if tok.type == TokenType.IDENT:
             self.advance()
+            nxt = self.current()
+            if (nxt.type == TokenType.AT and nxt.line == tok.line
+                    and nxt.column == tok.column + len(tok.value)
+                    and self.tokens[self.pos + 1].type == TokenType.IDENT):  # obj@Super / meth@Super (M8)
+                self.advance()
+                parts = [self.advance().value]
+                while self.current().type == TokenType.DOT and self.tokens[self.pos + 1].type == TokenType.IDENT:
+                    self.advance()
+                    parts.append(self.advance().value)
+                return SuperRef(method=tok.value, cls=".".join(parts))
             return Name(id=tok.value)
+        if tok.type == TokenType.QUESTION:  # ?ClassName (M8)
+            self.advance()
+            parts = [self.expect(TokenType.IDENT).value]
+            while self.current().type == TokenType.DOT and self.tokens[self.pos + 1].type == TokenType.IDENT:
+                self.advance()
+                parts.append(self.advance().value)
+            return MetaClassExpr(name=".".join(parts))
         if tok.type == TokenType.AT:
             self.advance()
             if self.match(TokenType.LPAREN):
@@ -680,6 +702,8 @@ class Parser:
         elems.append(self.parse_expression())
         while True:
             if self.match(TokenType.COMMA):
+                if self.current().type in (TokenType.RBRACE, TokenType.RBRACKET, TokenType.SEMICOLON):
+                    break  # trailing comma before a row end: [1, 2, ] (MATLAB)
                 elems.append(self.parse_expression())
                 continue
             # whitespace juxtaposition: next primary starts a new element
