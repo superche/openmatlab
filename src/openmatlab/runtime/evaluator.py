@@ -205,8 +205,13 @@ class Evaluator:
 
                 key = tgt.id.lower()
                 fn0 = None
+                from openmatlab.libs import math_builtins as _mb
+
                 if key in _wc.STATEMENT_ZERO:
                     fn0 = _fi.INTRINSICS[key]
+                elif key in _mb.STATEMENT_ZERO and key in getattr(self.functions, "builtins", {}):
+                    _b = self.functions.builtins[key]
+                    fn0 = lambda _ev, a, n, _b=_b: tuple(_b(a, nargout=0))  # noqa: E731
                 elif isinstance(stmt, ast.CommandStmt) and key in _wc.COMMAND_ONLY:
                     fn0 = _wc.COMMAND_ONLY[key]
                 if fn0 is not None:  # statement form: prints, no ans (#531/#532)
@@ -287,6 +292,8 @@ class Evaluator:
                 try:
                     results = self._invoke_call(expr, [], nargout=1)
                 except (EvalError, ValueError, LookupError):
+                    if self._callable_name(expr.id):
+                        raise  # a real function failed: keep its MATLAB error (#534)
                     results = None
                 if results is not None:
                     if not results:
@@ -1108,6 +1115,17 @@ class Evaluator:
         if isinstance(val, CharValue):
             return val.text
         raise EvalError(f"{fname}: expected char/string argument")
+
+    def _callable_name(self, name: str) -> bool:
+        from openmatlab.libs import function_intrinsics as _fi
+
+        if name.lower() in _fi.INTRINSICS:
+            return True
+        try:
+            self.functions.resolve(name)
+            return True
+        except Exception:
+            return False
 
     def _name_bound(self, name: str) -> bool:
         try:

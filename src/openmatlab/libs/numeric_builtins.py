@@ -1188,6 +1188,10 @@ BUILTINS: Dict[str, Builtin] = {
 }
 
 
+from openmatlab.libs import math_builtins as _math_builtins  # noqa: E402
+
+_math_builtins.register(BUILTINS)
+
 from openmatlab.libs import class_builtins as _class_builtins  # noqa: E402
 
 _class_builtins.register(BUILTINS)
