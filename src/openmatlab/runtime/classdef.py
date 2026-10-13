@@ -78,6 +78,104 @@ class PropInfo:
         self.constant = bool(a.get("constant"))
         self.dependent = bool(a.get("dependent"))
         self.hidden = bool(a.get("hidden"))
+        self.abstract = bool(a.get("abstract"))
+        self.dims = getattr(decl, "dims", None)
+        self.cls = getattr(decl, "cls", None)
+        self.validators = tuple(getattr(decl, "validators", ()) or ())
+
+    @property
+    def has_spec(self) -> bool:
+        return bool(self.dims is not None or self.cls or self.validators)
+
+    def _fail(self, msg, ident):
+        return _err(f"Error setting property '{self.name}' of class '{self.owner.name}'. {msg}", ident)
+
+    def validate(self, value):
+        """Property validation (O-E3): class conversion, size, then validator functions."""
+        if not self.has_spec:
+            return value
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+        import numpy as np
+
+        R = self.owner.resolver
+        call = lambda f, *xs: R.resolve(f)(list(xs), nargout=1)[0]
+        if self.cls:
+            cur = call("class", value)
+            cur = getattr(cur, "text", cur)
+            lc = self.cls.lower()
+            ok = cur == self.cls or (is_instance(value) and value.info.isa(self.cls))
+            if not ok:
+                conv = lc in ("double", "single", "logical", "char", "string", "int8", "int16", "int32",
+                              "int64", "uint8", "uint16", "uint32", "uint64")
+                try:
+                    if not conv:
+                        raise ValueError
+                    value = call(lc, value)
+                except Exception:
+                    raise self._fail(f"Value must be '{self.cls}' or be convertible to '{self.cls}'.",
+                                     "MATLAB:validation:UnableToConvert") from None
+        if self.dims is not None:
+            sz = [int(x) for x in np.asarray(call("size", value).backend_buffer()).reshape(-1)]
+            want = list(self.dims)
+            n = max(len(sz), len(want))
+            szp, wp = sz + [1] * (n - len(sz)), want + [1] * (n - len(want))
+            fits = lambda a: all(w is None or w == x for w, x in zip(wp, a))
+            if not fits(szp):
+                numel = int(np.prod(sz))
+                vec = sum(1 for x in sz if x != 1) <= 1
+                if numel == 1 and all(w is not None for w in wp):
+                    value = call("repmat", value, NDArrayValue(np.array([[float(w) for w in wp]])))
+                elif vec and sum(1 for w in wp if w != 1) == 1:
+                    tgt = [float(numel) if w != 1 else 1.0 for w in wp]
+                    if fits([int(t) for t in tgt]):
+                        value = call("reshape", value, NDArrayValue(np.array([tgt])))
+                    else:
+                        raise self._size_err()
+                else:
+                    raise self._size_err()
+        for v in self.validators:
+            self._run_validator(v, value)
+        return value
+
+    def _size_err(self):
+        d = "-by-".join(":" if w is None else str(w) for w in self.dims)
+        return self._fail(f"Value must be {d}.", "MATLAB:validation:IncompatibleSize")
+
+    def _run_validator(self, expr, value):
+        from openmatlab.lang import ast_nodes as ast
+
+        name, args = None, []
+        if isinstance(expr, ast.Name):
+            name = expr.id
+        elif isinstance(expr, (ast.CallExpr, ast.IndexExpr)) and isinstance(getattr(expr, "func", getattr(expr, "target", None)), ast.Name):
+            name = getattr(expr, "func", getattr(expr, "target", None)).id
+            raw = list(getattr(expr, "args", None) or getattr(expr, "indices", ()))
+            if raw and isinstance(raw[0], ast.Name) and raw[0].id == self.name:
+                raw = raw[1:]
+            args = [self.owner._eval(a) for a in raw]
+        if name is None:
+            raise self._fail("Invalid validation function.", "MATLAB:validation:InvalidValidator")
+        try:
+            self.owner.resolver.resolve(name)([value] + args, nargout=0)
+        except Exception as e:
+            msg = getattr(e, "message", None) or (e.args[0] if e.args else str(e))
+            raise self._fail(str(msg), getattr(e, "identifier", "") or "MATLAB:validators:failed") from None
+
+    def implicit_default(self):
+        """Default of a property with a class/size spec and no explicit default (MATLAB: zeros of the class)."""
+        import numpy as np
+        from openmatlab.numerics.ndarray_value import NDArrayValue
+
+        lc = (self.cls or "").lower()
+        numeric = lc in ("double", "single", "logical", "int8", "int16", "int32", "int64",
+                         "uint8", "uint16", "uint32", "uint64")
+        if not numeric:
+            return None
+        shape = (0, 0)
+        if self.dims is not None and all(d is not None for d in self.dims):
+            shape = tuple(self.dims)
+        v = NDArrayValue(np.zeros(shape))
+        return self.owner.resolver.resolve(lc)([v], nargout=1)[0] if lc != "double" else v
 
 
 class ClassInfo:
@@ -215,9 +313,14 @@ class ClassInfo:
             d: Dict[str, Any] = {}
             for c in reversed(self.mro()):
                 for k, p in c.own_props.items():
-                    if p.constant or p.dependent:
+                    if p.constant or p.dependent or p.abstract:
                         continue
-                    d[k] = self._eval(p.default) if p.default is not None else _empty()
+                    if p.default is not None:
+                        d[k] = p.validate(self._eval(p.default))
+                    else:
+                        d[k] = p.implicit_default() if p.has_spec else None
+                        if d[k] is None:
+                            d[k] = _empty()
             order = [k for k in self.all_props() if k in d]
             self._defaults = {k: d[k] for k in order}
         return self._defaults
@@ -230,6 +333,26 @@ class ClassInfo:
         if name not in owner._constants:
             owner._constants[name] = owner._eval(p.default) if p.default is not None else _empty()
         return owner._constants[name]
+
+    def abstract_members(self) -> List[str]:
+        """Abstract methods/properties not implemented along the MRO (O-E3)."""
+        pending: Dict[str, None] = {}
+        for c in reversed(self.mro()):
+            for k in c.own_methods:
+                pending.pop(k, None)
+            for k, p in c.own_props.items():
+                if not p.abstract:
+                    pending.pop(k, None)
+            for k in getattr(c.node, "abstract_methods", ()):
+                pending[k] = None
+            for k, p in c.own_props.items():
+                if p.abstract:
+                    pending[k] = None
+        return list(pending)
+
+    @property
+    def is_abstract(self) -> bool:
+        return bool(self.node.attrs.get("abstract")) or bool(self.abstract_members())
 
     def new_instance(self) -> "ClassInstance":
         return ClassInstance(self, dict(self.defaults()))
@@ -249,6 +372,9 @@ def construct(info: ClassInfo, args: list, obj: Optional["ClassInstance"] = None
     from openmatlab.lang import ast_nodes as ast
 
     if obj is None:
+        if info.is_abstract:
+            raise _err(f"Abstract classes cannot be instantiated. Class '{info.name}' defines abstract methods "
+                       "and/or properties.", "MATLAB:class:abstract")
         obj = info.new_instance()
     ctor = info.constructor()
     if ctor is None:
@@ -369,6 +495,7 @@ class ClassInstance:
             raise _err(f"Cannot set the Constant property '{name}' of class '{info.name}'.",
                        "MATLAB:class:SetProhibited")
         _check_access(p, p.set_access, "set")
+        value = p.validate(value)
         key = (id(self.props), name)
         setter = info.find_accessor("setters", name)
         if setter is not None and key not in _IN_ACCESSOR.get():

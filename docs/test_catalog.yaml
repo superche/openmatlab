@@ -1315,6 +1315,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.classdef_validation
+    kind: unit
+    title: classdef property validation and Abstract classes (Epic #620)
+    features: [lang.classdef_validation]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_classdef_validation.py
+    status: active
+    env: unit
+
+  - id: tc.classdef_validation_bdd
+    kind: bdd
+    title: classdef property validation Gherkin scenarios (Epic #620)
+    features: [lang.classdef_validation]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_classdef_validation_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
