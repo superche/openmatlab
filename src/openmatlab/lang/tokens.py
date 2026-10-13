@@ -43,6 +43,7 @@ class TokenType(Enum):
     COMMA = auto()
     COLON = auto()  # 1:n , indexing ranges
     AT = auto()  # @ function handle
+    QUESTION = auto()  # ?ClassName meta-class query (M8)
     TILDE = auto()  # ~ (unary not)
     AMP = auto()  # &
     PIPE = auto()  # |

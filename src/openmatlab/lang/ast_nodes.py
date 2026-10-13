@@ -34,6 +34,21 @@ class Name(AstNode):
 
 
 @dataclass(frozen=True)
+class SuperRef(AstNode):
+    """obj@Super (constructor call) or method@Super (superclass method), M8."""
+
+    method: str
+    cls: str
+
+
+@dataclass(frozen=True)
+class MetaClassExpr(AstNode):
+    """?ClassName, M8."""
+
+    name: str
+
+
+@dataclass(frozen=True)
 class EndExpr(AstNode):
     """end — last index in a subscript context."""
 

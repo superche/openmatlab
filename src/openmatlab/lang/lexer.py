@@ -230,6 +230,14 @@ def _iter_tokens(source: str, state=None) -> Iterator[Token]:
                 col += 1
             continue
 
+        if ch == "." and source.startswith("...", i):  # line continuation: rest of line is ignored (MATLAB)
+            while i < n and source[i] != "\n":
+                i += 1
+            i += 1
+            line += 1
+            col = 1
+            continue
+
         start_line, start_col = line, col
 
         # Double-quoted string MVP ("..."); single quote stays transpose
@@ -428,6 +436,7 @@ def _iter_tokens(source: str, state=None) -> Iterator[Token]:
             ",": TokenType.COMMA,
             ":": TokenType.COLON,
             "@": TokenType.AT,
+            "?": TokenType.QUESTION,
         }
         # Context-sensitive single quote: transpose vs char literal
         if ch == "'":
