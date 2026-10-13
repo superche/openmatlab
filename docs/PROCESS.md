@@ -95,8 +95,8 @@ States on 2026-10-13: milestone/1, /2, /4, /5, /6, /7 **closed**; /3 Domain tool
 | **Plugin host (VS Code–style)** | Published plugin contract + host for **community** plugins (not MathWorks proprietary). Doc: [`milestones/M-plugins.md`](milestones/M-plugins.md); contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) |
 | **Domain business-conformance** | Reference vectors / tests for plugin domains (`hamming` etc.). Doc: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md); GitHub milestone/5 |
 | **MATLAB-aligned Workbench** | Host product: command window, editor, workspace browser, current folder, figure mgmt via plugin slots. Doc: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md); GitHub milestone/6 |
-| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate) |
-| **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8 |
+| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate). Doc: [`milestones/M3-domain-toolboxes.md`](milestones/M3-domain-toolboxes.md); manifest `tests/conformance/m3_manifest.py` |
+| **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8. Doc: [`milestones/M8-object-system.md`](milestones/M8-object-system.md); manifest `tests/conformance/m8_manifest.py` |
 | **Core backlog** | Core-language p1/p2 residuals not tied to an active criterion; promoted into a milestone criterion when prioritized. GitHub milestone/9 |
 
 **Rules**

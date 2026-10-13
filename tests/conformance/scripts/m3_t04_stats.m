@@ -1,0 +1,21 @@
+% M3 T04 - descriptive statistics (quantile/prctile/moving/cumulative/var weights/histc/bounds)
+x = [2 4 6 8 10];
+p1 = quantile(x, 0.5);
+p2 = prctile(x, 25);
+p3 = prctile(x, [0 100]);
+p4 = quantile(x, 0.9);
+p5 = quantile([1 2; 3 4; 5 6], 0.5);
+p6 = movmean([1 2 3 4 5], 3);
+p7 = movsum([1 2 3 4 5], 3);
+p8 = movmean([1 2 3 4 5], [1 0]);
+p9 = cummax([1 3 2 5 4]);
+p10 = cummin([5 3 4 1 2]);
+p11 = mode([1 2 2 3 3]);
+p12 = var([1 2 3 4], 1);
+p13 = std([2 4 4 4 5 5 7 9], 1);
+p14 = histc([1 2 2 3 5], 1:5);
+p15 = movmedian([1 5 2 8 3], 3);
+[lo, hi] = bounds([3 1 2]);
+p16 = [lo hi];
+p17 = var([1 2 3 4], [1 1 1 1]);
+p18 = quantile([1 2 3 4], [0.25 0.5 0.75]);

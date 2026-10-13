@@ -2,6 +2,7 @@
 import json, subprocess, sys
 c = json.load(open(sys.argv[1]))
 R = str(__import__('pathlib').Path(__file__).resolve().parents[2])
+sys.path.insert(0, R + '/scripts/epic'); from milestones import MS, total; MK = c.get('ms', 'm7'); M = MS[MK]; TOT = total(MK)
 def sh(cmd):
     return subprocess.run(cmd, shell=True, cwd=R, capture_output=True, text=True, executable='/bin/bash')
 sh('git checkout -q main && git pull -q')
@@ -18,9 +19,9 @@ for cmd in c['demos']:
 def pt(args):
     r = subprocess.run(f'. .venv/bin/activate && pytest {args} --tb=no -p no:warnings -o addopts="" 2>&1 | tail -1', shell=True, cwd=R, capture_output=True, text=True, executable='/bin/bash').stdout
     return r.strip().strip('=').strip()
-conf = f'"tests/conformance/test_m7_conformance.py::test_m7_criterion[{c["cid"]}-{c["script"]}]"'
+conf = f'"{M['test']}::{M['fn']}[{c["cid"]}-{c["script"]}]"'
 tf = ' '.join(c['tests'])
-gates = [('-m "unit or bdd"', pt('-m "unit or bdd"')), (f'{tf} {conf}', pt(f'{tf} {conf}')), ('tests/conformance/test_m7_conformance.py', pt('tests/conformance/test_m7_conformance.py'))]
+gates = [('-m "unit or bdd"', pt('-m "unit or bdd"')), (f'{tf} {conf}', pt(f'{tf} {conf}')), (M['test'], pt(M['test']))]
 feat = sh(f"bash -c '. .venv/bin/activate && openmatlab features | rg -F {c['feature']}'").stdout.rstrip()
 rows = '\n'.join(f"| {r[1]} | #{r[0]} | [#{pr}](https://github.com/superche/openmatlab/pull/{pr}) | " + (f"[job {jobid}]({job}) **{concl}**" if i == 0 else "same job") + " |" for i, r in enumerate(c['trace']))
 pending = ', '.join(c['pending']) if c['pending'] else 'none'
@@ -28,7 +29,7 @@ doc = f"""# Acceptance evidence: Epic #{c['epic']} ({c['title']})
 
 **Epic:** [#{c['epic']}](https://github.com/superche/openmatlab/issues/{c['epic']})  
 **Feature PR:** [#{pr}](https://github.com/superche/openmatlab/pull/{pr}) ({', '.join('#'+str(r[0]) for r in c['trace'])})  
-**Milestone:** [MATLAB core language & I/O (M7)](https://github.com/superche/openmatlab/milestone/7) · [`docs/milestones/M7-core-language-io.md`](../milestones/M7-core-language-io.md)  
+**Milestone:** [{M['title']}](https://github.com/superche/openmatlab/milestone/{M['num']}) · [`{M['doc']}`](../milestones/{M['doc'].split('/')[-1]})  
 **Design + adversarial review:** [`docs/design/{c['design']}`](../design/{c['design']})  
 **Captured:** 2026-10-13 (Asia/Shanghai) on `{R}`  
 **Rule:** Outputs below come from real local commands. None are invented.
@@ -42,7 +43,7 @@ doc = f"""# Acceptance evidence: Epic #{c['epic']} ({c['title']})
 
 ## Verdict
 
-**Ready for user acceptance.** M7 criterion {c['cid']} is **met**. Epic #{c['epic']} stays **open** until the user accepts it.
+**Ready for user acceptance.** {M['label']} criterion {c['cid']} is **met**. Epic #{c['epic']} stays **open** until the user accepts it.
 
 {c['verdict']}
 
@@ -79,10 +80,10 @@ $ openmatlab features | rg -F {c['feature']}
 
 {c['residuals']}
 
-## Milestone progress (M7)
+## Milestone progress ({M['label']})
 
-- Criteria met: **{c['met']} / 10** ({c['metlist']})
-- Conformance scripts passing: **{c['met']} / 10** (strict xfail pending: {pending})
+- Criteria met: **{c['met']} / {TOT}** ({c['metlist']})
+- Conformance scripts passing: **{c['met']} / {TOT}** (strict xfail pending: {pending})
 - Next: {c['next']}
 """
 open(f"{R}/docs/acceptance/EPIC-{c['epic']}.md", 'w').write(doc)

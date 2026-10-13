@@ -86,6 +86,6 @@ libs.frames_help                 libs       done     caller/base workspaces and 
 
 ## Milestone progress (M7)
 
-- Criteria met: **11 / 10** (C01–C11)
-- Conformance scripts passing: **11 / 10** (strict xfail pending: none)
+- Criteria met: **11 / 11** (C01–C11)
+- Conformance scripts passing: **11 / 11** (strict xfail pending: none)
 - Next: M7 close-readiness review (rerun); M7 to be closed by user

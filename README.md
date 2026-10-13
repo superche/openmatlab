@@ -12,7 +12,7 @@ proprietary MATLAB binaries.
 
 Closed milestones: Workbench MVP (M1), Octave-breadth (M2, 19/19 criteria), Plugin host (M4),
 Domain business-conformance (M5), MATLAB-aligned Workbench (M6), MATLAB core language & I/O (M7, 11/11 criteria,
-closed 2026-10-13; `docs/milestones/M7-core-language-io.md`). Next: Domain toolboxes (M3), Object system, Core backlog (gaps in `docs/GAP-ANALYSIS.md`). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
+closed 2026-10-13; `docs/milestones/M7-core-language-io.md`). Active: Object system (M8, `docs/milestones/M8-object-system.md`) and Domain toolboxes (M3, `docs/milestones/M3-domain-toolboxes.md`), plus Core backlog (gaps in `docs/GAP-ANALYSIS.md`). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
 flow, scripts and `.m` functions, cells, `addpath`/`which`, handle graphics (figure/axes/get/set, hold, subplot, saveas), try/catch, varargin, file I/O and save/load, containers.Map, datetime, community plugin host
 (`openmatlab plugins`), Desktop-style workbench (`openmatlab workbench`). Language is a
 **matrix+procedural MVP**, not full MATLAB.
