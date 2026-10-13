@@ -1,0 +1,22 @@
+% M3 T01 - FFT family (fft/ifft/fft2/ifft2/fftshift/ifftshift/nextpow2)
+x = [1 2 3 4];
+X = fft(x);
+k1 = real(X);
+k2 = imag(X);
+k3 = real(ifft(X));
+k4 = max(abs(imag(ifft(X)))) < 1e-12;
+k5 = real(fft(x, 2));
+A = [1 2; 3 4];
+k6 = real(fft(A));
+k7 = real(fft(A, [], 2));
+k8 = real(fft2(A));
+k9 = real(ifft2(fft2(A)));
+k10 = fftshift([1 2 3 4 5]);
+k11 = ifftshift([1 2 3 4 5]);
+k12 = nextpow2(100);
+s = sin(2*pi*(0:15)/16*3);
+S = abs(fft(s));
+k13 = round([S(4) S(14)]);
+k14 = size(fft(ones(1, 5), 8));
+k15 = real(fft([1 2 3]', 5))';
+k16 = round(1e6 * imag(fft([1 2 3]', 5)))';

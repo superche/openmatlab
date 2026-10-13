@@ -2,12 +2,13 @@
 import sys, re, json
 cid, script, epic, resid, fid, fname, deps, notes, unit, bdd, nxt, met = sys.argv[1:13]
 R=str(__import__('pathlib').Path(__file__).resolve().parents[2])+'/'
-p=R+'tests/conformance/m7_manifest.py'; s=open(p).read()
+import os; sys.path.insert(0, R+'scripts/epic'); from milestones import MS; M=MS[os.environ.get('MS','m7')]
+p=R+M['manifest']; s=open(p).read()
 s2=re.sub(r'("%s": \("%s", "p\d", \[[^\]]*\], )"pending"' % (cid, script), r'\1"met"', s); assert s2!=s; open(p,'w').write(s2)
-p=R+'docs/milestones/M7-core-language-io.md'; s=open(p).read()
+p=R+M['doc']; s=open(p).read()
 s2=re.sub(r'(\| %s \|.*\| )pending \|' % script, r'\1met (Epic #%s; residual #%s) |' % (epic, resid), s); assert s2!=s
 m=re.search(r'\*\*\d+ / \d+\*\* criteria met: (.*?)\. Next: .*', s2); assert m
-total=len(re.findall(r'^\| C\d+ \|', s2, re.M))
+total=len(re.findall(r'^\| [A-Z]\d+ \|', s2, re.M))
 s2=s2.replace(m.group(0), '**%s / %s** criteria met: %s, %s (Epic #%s). Next: %s' % (met, total, m.group(1), cid, epic, nxt))
 open(p,'w').write(s2)
 p=R+'docs/feature_map.yaml'; s=open(p).read()

@@ -1,0 +1,24 @@
+% M3 T02 - polynomials and interpolation (spline/pchip/ppval/interp1 methods/interp2/polyder/polyint)
+x = 0:3;
+y = x.^3;
+l1 = spline(x, y, 1.5);
+l2 = pchip(x, y, 1.5);
+l3 = interp1(x, y, 1.5, 'spline');
+l4 = interp1(x, y, 1.5, 'pchip');
+pp = spline(x, y);
+l5 = ppval(pp, 2.5);
+l6 = numel(pp.breaks);
+[X, Y] = meshgrid(1:3, 1:2);
+Z = X + 10*Y;
+l7 = interp2(X, Y, Z, 2.5, 1.5);
+l8 = interp2(Z, 2.5, 1.5);
+l9 = isnan(interp2(X, Y, Z, 5, 1));
+l10 = interp2(X, Y, Z, 2.4, 1.6, 'nearest');
+l11 = polyder([1 2 3]);
+l12 = polyint([3 2 1]);
+l13 = polyder([1 1], [1 -1]);
+l14 = polyint([1 1], 2);
+l15 = spline(x, [0 y 27], 1.5);
+l16 = interp1(x, y, [0.5 2.5], 'spline');
+l17 = interp1(x, y, 4, 'linear', 'extrap');
+l18 = pchip(x, y, [0 3]);

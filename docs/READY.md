@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-M7 is closed. All 11 criteria (C01–C11) are met and all epics are accepted; see the close-out in `docs/milestones/M7-core-language-io.md`. Its residuals were re-homed to [Object system](https://github.com/superche/openmatlab/milestone/8), [Core backlog](https://github.com/superche/openmatlab/milestone/9) and Domain toolboxes (M3). The next phase is chosen by the user from the M3 / Object system proposal.
+M7 is closed. All 11 criteria (C01–C11) are met and all epics are accepted; see the close-out in `docs/milestones/M7-core-language-io.md`. Its residuals were re-homed to [Object system](https://github.com/superche/openmatlab/milestone/8), [Core backlog](https://github.com/superche/openmatlab/milestone/9) and Domain toolboxes (M3). Active since the 2026-10-13 approval: [M8 Object system](milestones/M8-object-system.md) (O01–O10) and [M3 Domain toolboxes](milestones/M3-domain-toolboxes.md) (T01–T07), run interleaved.
 
 | Item | URL / command |
 |------|----------------|
