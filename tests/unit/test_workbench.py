@@ -124,7 +124,11 @@ def test_figure_manager_list_close_focus():
     assert len(figs) == 1
     assert figs[0].handle == 1.0
     assert "Figure" in figs[0].title
+    # Changed with user approval (Epic #537): plot reuses the current figure
+    # (MATLAB); a second window needs an explicit figure call.
     wb.eval("plot(1:3);")
+    assert len(wb.figures.list_figures()) == 1
+    wb.eval("figure; plot(1:3);")
     assert len(wb.figures.list_figures()) == 2
     wb.figures.focus(1.0)
     wb.figures.close(1.0)

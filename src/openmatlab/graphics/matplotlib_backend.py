@@ -124,6 +124,31 @@ class MatplotlibGraphicsBackend:
             except Exception:
                 pass
 
+    def render_figure(self, number: int, draw) -> Any:
+        """Create or reuse figure slot ``number`` (1-based) and redraw it (Epic #537)."""
+        while len(self._figures) < number:
+            self._figures.append(None)
+        fig = self._figures[number - 1]
+        if fig is None:
+            fig = self._plt.figure()
+            self._figures[number - 1] = fig
+            try:
+                fig.canvas.manager.set_window_title(f"Figure {number}")
+            except Exception:
+                pass
+        draw(fig)
+        try:
+            fig.canvas.draw_idle()
+        except Exception:
+            pass
+        return fig
+
+    def save_figure(self, number: int, path: str, fmt: Optional[str] = None) -> None:
+        fig = self._figures[number - 1] if 0 < number <= len(self._figures) else None
+        if fig is None:
+            raise GraphicsError(f"saveas: figure {number} is not open")
+        fig.savefig(path, format=fmt)
+
     @property
     def interactive(self) -> bool:
         return self._interactive

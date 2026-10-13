@@ -1071,10 +1071,6 @@ class Evaluator:
             return None
         n = target_expr.id
         key = n.lower()
-        if key == "plot":
-            if nargout != 1:
-                raise EvalError("plot: only one output supported")
-            return (self._builtin_plot(arg_exprs),)
         if key == "addpath":
             if nargout != 1:
                 raise EvalError("addpath: only one output supported")

@@ -44,7 +44,10 @@ def test_host_surface_and_eval_builtin():
     ev = Evaluator(workspace=ws, numerics=NumPyArrayBackend(), plots=plots)
     ev.eval_source("x = 1:5; y = x .* x; h = plot(x, y);")
     assert ws.get("h").is_scalar()
-    assert float(ws.get("h").backend_buffer().reshape(-1)[0]) == 1.0
+    # Changed with user approval (Epic #537): plot returns a Line handle, as in MATLAB.
+    ev.eval_source("t = get(h, 'Type'); f = get(get(h, 'Parent'), 'Parent');")
+    assert ws.get("t").text == "line"
+    assert float(ws.get("f").backend_buffer().reshape(-1)[0]) == 1.0
     assert len(graphics.last_figure.axes[0].lines) == 1
 
 
