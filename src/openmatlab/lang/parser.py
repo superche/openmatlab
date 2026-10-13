@@ -618,7 +618,11 @@ class Parser:
                 text = "@(" + ",".join(params) + ")" + src
                 return AnonFuncExpr(params=tuple(params), body=body, text=text)
             name_tok = self.expect(TokenType.IDENT)
-            return FuncHandleExpr(name=name_tok.value)
+            name = name_tok.value
+            while (self.current().type == TokenType.DOT and self.pos + 1 < len(self.tokens) and self.tokens[self.pos + 1].type == TokenType.IDENT):
+                self.advance()  # @Class.staticMethod, @pkg.fn (M8)
+                name += "." + self.advance().value
+            return FuncHandleExpr(name=name)
         if tok.type == TokenType.KW_END and self._in_subscript > 0:
             self.advance()
             return EndExpr()
