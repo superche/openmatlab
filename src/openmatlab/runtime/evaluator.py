@@ -1115,6 +1115,11 @@ class Evaluator:
         except ValueError as exc:  # builtin argument errors (e.g. BuiltinError)
             msg = str(exc)
             raise EvalError(msg if msg.startswith(f"{n}:") else f"{n}: {msg}") from exc
+        except (IndexError, TypeError, KeyError, AttributeError, ZeroDivisionError) as exc:
+            # a builtin hit bad arguments it does not validate: never leak a Python error (#606)
+            if not args:
+                raise EvalError("Not enough input arguments.", "MATLAB:minrhs") from exc
+            raise EvalError(f"Error using {n}: invalid input arguments.", f"MATLAB:{n}:invalidInput") from exc
         for i, out in enumerate(results):
             if not isinstance(out, Value):
                 raise EvalError(f"{n}: output {i} is not a Value")
