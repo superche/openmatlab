@@ -1,6 +1,6 @@
 # M2 — Octave-breadth language & numerics
 
-GitHub milestone: https://github.com/superche/openmatlab/milestone/2
+GitHub milestone: https://github.com/superche/openmatlab/milestone/2 (**closed 2026-10-13**)
 
 ## Exit criteria (measurable)
 
@@ -73,7 +73,7 @@ Expected JSON may carry `"<var>:size": [r, c]` keys for direct shape asserts
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
 - **p1**: *(none open)*
-- **p2**: #527 (sparse mostly-true results / large singular `S\b`)
+- **p2**: *(none — #527 moved to Domain toolboxes at close-out)*
   *(snapshot 2026-10-13; live list: `gh issue list --milestone "Octave-breadth language & numerics"`. The issues listed in earlier snapshots are all closed. Core-language gaps outside the C01–C19 criteria are inventoried in [`docs/GAP-ANALYSIS.md`](../GAP-ANALYSIS.md).)*
 
 ## M2 close readiness (Epic #23)
@@ -86,6 +86,17 @@ All three exit criteria hold on `main` after Epic #23:
 
 **Exit criteria still hold** (11/11, 0 p0). User accepted Epic #23 but **left milestone #2 OPEN** to continue p1/p2 breadth on M2.
 Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
+
+## M2 close-out (2026-10-13)
+
+**Final: 19 / 19 criteria met** (C01–C19, 0 xfail). All required feature_ids are `done`, no p0/p1 is open, and the GitHub milestone is closed on the user's decision.
+
+- **Honest gap note:** M2's criteria cover indexing, cells, structs, N-D, complex, integer/string classes, string arrays, sparse and linear solve. They do **not** cover several base-language features that ordinary scripts need, such as `try/catch`, `error`, `varargin`/`nargin`, local functions, command syntax, `fprintf`/file I/O, `save`/`load`, core math/sets/strings and plot decorations. The inventory, with CLI evidence, is in [`docs/GAP-ANALYSIS.md`](../GAP-ANALYSIS.md). That work continues in **M7 — MATLAB core language & I/O** ([`M7-core-language-io.md`](M7-core-language-io.md), milestone/7).
+- **Weak-but-met notes:**
+  - C09 does not cover cellstr `unique`; M7 C06 does.
+  - C03 and C10 are short scripts, but their behaviour is exercised more deeply by M7 C02 and C06.
+  - `numerics.nd_arrays` and `numerics.complex` remain `partial` in the feature map.
+- **Residual re-homed:** #527 (sparse mostly-true results / large singular `S\b`) moved to Domain toolboxes (milestone/3).
 
 ## Progress snapshot
 
