@@ -362,6 +362,14 @@ features:
     notes: "handle identity semantics; isvalid/delete; MRO dispatch; obj@Super and meth@Super; implicit super constructors"
     tests: [tests/unit/test_classdef_handle.py, tests/bdd/test_classdef_handle_bdd.py]
 
+  - id: numerics.fft
+    layer: numerics
+    name: FFT family (fft/ifft/fft2/ifft2/fftn/ifftn/fftshift/ifftshift/nextpow2)
+    status: done
+    depends_on: []
+    notes: "MATLAB n/dim semantics, [] n, first non-singleton default, ifft symmetric; M3-E1"
+    tests: [tests/unit/test_fft.py, tests/bdd/test_fft_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 # id -> (script, priority, tracking issues, status)
 CRITERIA = {
-    "T01": ("m3_t01_fft", "p1", [625], "pending"),
+    "T01": ("m3_t01_fft", "p1", [625], "met"),
     "T02": ("m3_t02_poly_interp", "p1", [626], "pending"),
     "T03": ("m3_t03_calculus_ode_opt", "p1", [627, 581], "pending"),
     "T04": ("m3_t04_stats", "p1", [628, 581], "pending"),

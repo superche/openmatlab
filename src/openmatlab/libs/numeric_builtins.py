@@ -1296,3 +1296,5 @@ _classdef_builtins_mod.register_late(BUILTINS)
 
 _inputparser_mod = __import__("openmatlab.libs.inputparser", fromlist=["register"])
 _inputparser_mod.register(BUILTINS)
+_fft_mod = __import__("openmatlab.libs.fft", fromlist=["register"])
+_fft_mod.register(BUILTINS)

@@ -56,7 +56,7 @@ Priority reflects impact on a typical user:
 | Integration | `trapz cumtrapz integral integral2 quad` | **missing** | missing: `trapz` `cumtrapz` `integral` `integral2` `quad` | p1 | M3-CALCULUS-ODE-OPT |
 | ODE | `ode45 ode23` | **missing** | missing: `ode45` `ode23` | p1 | M3-CALCULUS-ODE-OPT |
 | Optimization | `fzero fminsearch fminbnd` | **missing** | missing: `fzero` `fminsearch` `fminbnd` | p1 | M3-CALCULUS-ODE-OPT |
-| FFT / filtering | `fft ifft fft2 filter filtfilt` | **missing** | missing: `fft` `ifft` `fft2` `filter` `filtfilt` | p1 | M3-SIGNAL |
+| FFT / filtering | `fft ifft fft2 filter filtfilt` | **partial** | `fft ifft fft2 ifft2 fftn ifftn fftshift ifftshift nextpow2` delivered in M3-E1 (#625); `filter` present; `filtfilt` → community.signal plugin (#630) (verified 2026-10-13) | p1 | M3-SIGNAL |
 | Statistics | `mean max min` present; `median mode std var` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Statistics | `histcounts quantile prctile corrcoef cov movmean cummax cummin` | **missing** | missing: `histcounts` `quantile` `prctile` `corrcoef` `cov` `movmean` `cummax` `cummin` | p1 | M3-STATS |
 | Random numbers | `rand randn randi rng randperm` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
@@ -77,7 +77,7 @@ Priority reflects impact on a typical user:
 | Scripts & functions | Local functions in script files | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
 | Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **present** | delivered in M7 (Epic #531; `evalin`/`doc`/`lookfor`/`what` added by Epic #610, C11); verified 2026-10-13 | — | E-FUNCTIONS |
 | Scripts & functions | `global persistent` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
-| Scripts & functions | `inputParser validateattributes` | **present** | delivered in #569 (inputParser, validateattributes, multi-input cellfun, inputname); edge residuals → see #569 follow-up (verified 2026-10-13) | — | E-FUNCTIONS |
+| Scripts & functions | `inputParser validateattributes` | **present** | delivered in #569 (inputParser, validateattributes, multi-input cellfun, inputname); edge residuals → #640 (verified 2026-10-13) | — | E-FUNCTIONS |
 | OOP | `classdef` (properties, methods, constructors) | **missing** | `run_c` (uses `classdef Pt`) → `Unexpected token KW_END at line 4` | p1 | [Object system](https://github.com/superche/openmatlab/milestone/8) (milestone/8)|
 | File I/O | `disp` / `sprintf` present; `fprintf display` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
