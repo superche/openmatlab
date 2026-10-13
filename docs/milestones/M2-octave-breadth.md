@@ -52,6 +52,7 @@ Harness: `tests/conformance/m2_expected.py` coerces Inf/NaN tokens. Remaining sm
 | C14 | Integer classes, `zeros(...,'like',A)`, `"string"` scalars, char indexing | c14_int_string_classes | p2 | #72 #78 #183 | **met** (Epic #457) |
 | C15 | String arrays `["a" "b"]`, `strings`, assign/grow/delete, text methods (`split`/`join`/`contains`/`replace`…) | c15_string_arrays | p2 | #459 #460 | **met** (Epic #482) |
 | C16 | Sparse matrices: `sparse`/`full`/`nnz`, MATLAB sparsity rules, `S^p`, triplet display | c16_sparse | p2 | #451 | **met** (Epic #487) |
+| C17 | Linear solve: `A\b`, `B/A` (square, least squares, basic solution), singular/rank warnings, `inv`/`det`/`rank`/`pinv` | c17_linear_solve | p2 | #496 | **met** (Epic #496) |
 
 Epic #15 (C05, p1) was opened before this rule. From Epic #16 on, the next epic
 takes the **first pending row** in this table (p0 before p1, then table order).
@@ -85,6 +86,8 @@ All three exit criteria hold on `main` after Epic #23:
 Close remains optional/explicit; open p1/p2 stay on M2 until retargeted.
 
 ## Progress snapshot
+
+After Epic #496 (linear solve, adds C17 p2): **17/17** criteria met. Remaining M2 work is residual p2 breadth (see open issues).
 
 After Epic #487 (sparse matrices, adds C16 p2): **16/16** criteria met. Remaining M2 work is residual p2 breadth (see open issues).
 

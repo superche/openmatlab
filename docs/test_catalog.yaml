@@ -927,3 +927,21 @@ test_cases:
     impl: tests/bdd/test_sparse_bdd.py
     status: active
     env: unit
+
+  - id: tc.linear_solve
+    kind: unit
+    title: linear solve mldivide/mrdivide (Epic #496)
+    features: [numerics.linear_solve]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_linear_solve.py
+    status: active
+    env: unit
+
+  - id: tc.linear_solve_bdd
+    kind: bdd
+    title: linear solve Gherkin scenarios (Epic #496)
+    features: [numerics.linear_solve]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_linear_solve_bdd.py
+    status: active
+    env: unit

@@ -25,4 +25,5 @@ CRITERIA = {
     "C12": ("c12_nd_arrays", "p2", [74, 182, 173, 259, 322, 330], "met"),
     "C15": ("c15_string_arrays", "p2", [459, 460], "met"),
     "C16": ("c16_sparse", "p2", [451], "met"),
+    "C17": ("c17_linear_solve", "p2", [496], "met"),
 }
