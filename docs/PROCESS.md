@@ -85,17 +85,19 @@ opens or updates an Issue (with labels + milestone) before or as it acts.
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 
-States on 2026-10-13: milestone/1, /2, /4, /5, /6 **closed**; /7 **active**; /3 **reserved**.
+States on 2026-10-13: milestone/1, /2, /4, /5, /6, /7 **closed**; /3 Domain toolboxes, /8 Object system and /9 Core backlog **open**.
 
 | Milestone | Intent |
 |-----------|--------|
 | **Workbench MVP** | Foundation REPL/scripts/control (epics #1 #19 #33) — closed when accepted |
 | **Octave-breadth language & numerics** | Language + numeric core toward MATLAB/Octave parity (builtins, cells, assign, control flow, indexing). Closed 2026-10-13 at 19/19 |
-| **MATLAB core language & I/O** | Base-language completeness: errors, functions, command syntax, file I/O, core math/arrays/strings, graphics core. Doc: [`milestones/M7-core-language-io.md`](milestones/M7-core-language-io.md); GitHub milestone/7 |
+| **MATLAB core language & I/O** | Base-language completeness: errors, functions, command syntax, file I/O, core math/arrays/strings, graphics core. Doc: [`milestones/M7-core-language-io.md`](milestones/M7-core-language-io.md); GitHub milestone/7. Closed 2026-10-13 at 11/11 |
 | **Plugin host (VS Code–style)** | Published plugin contract + host for **community** plugins (not MathWorks proprietary). Doc: [`milestones/M-plugins.md`](milestones/M-plugins.md); contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) |
 | **Domain business-conformance** | Reference vectors / tests for plugin domains (`hamming` etc.). Doc: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md); GitHub milestone/5 |
 | **MATLAB-aligned Workbench** | Host product: command window, editor, workspace browser, current folder, figure mgmt via plugin slots. Doc: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md); GitHub milestone/6 |
 | **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate) |
+| **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8 |
+| **Core backlog** | Core-language p1/p2 residuals not tied to an active criterion; promoted into a milestone criterion when prioritized. GitHub milestone/9 |
 
 **Rules**
 

@@ -5,7 +5,7 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; CI live; branch protection on.** Milestones 1/2/4/5/6 closed; M7 (MATLAB core language & I/O) active.
+**READY — public repo; CI live; branch protection on.** Milestones 1/2/4/5/6/7 closed (M7 MATLAB core language & I/O closed 2026-10-13). Open: M3 Domain toolboxes, Object system, Core backlog.
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab
 - **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-All M7 criteria (C01–C10) are met; M7 closes after user acceptance of its epics (see the close-readiness note in `docs/milestones/M7-core-language-io.md`).
+M7 is closed. All 11 criteria (C01–C11) are met and all epics are accepted; see the close-out in `docs/milestones/M7-core-language-io.md`. Its residuals were re-homed to [Object system](https://github.com/superche/openmatlab/milestone/8), [Core backlog](https://github.com/superche/openmatlab/milestone/9) and Domain toolboxes (M3). The next phase is chosen by the user from the M3 / Object system proposal.
 
 | Item | URL / command |
 |------|----------------|

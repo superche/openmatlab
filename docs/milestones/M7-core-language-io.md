@@ -55,3 +55,29 @@ M7 opened 2026-10-13. #529 (local-function crash) fixed in PR #564.
 
 The GAP-ANALYSIS M7 rows, README and READY were updated in the same PR as this note.
 
+
+## Close-out (2026-10-13)
+
+**Status: closed.** You accepted every epic (#530–#539, #610), and the GitHub milestone is closed.
+
+- **Criteria:** 11 / 11 met (C01–C11), with 0 xfails.
+- **Open p0 issues:** none.
+- **Traceback sweep:** 0 leaks after #606 and #615.
+- **Doc drift:** the drift test passes.
+- **`main` CI:** green.
+
+**Residuals re-homed** (none remain on M7):
+
+| Issue | Pri | Topic | New milestone |
+|---|---|---|---|
+| #565 | p2 | Error message text, MException.stack/getReport | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #569 | p1 | cellfun/arrayfun multi-input, nargin edge cases, inputParser/validateattributes (`evalin`/`assignin` done in #610) | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #573 | p2 | format modes, dir/ls layout, evalc in functions | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #577 | p2 | MAT v7.3, textscan breadth, encodings, readtable | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #585 | p2 | Arrays/sets edge cases | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #589 | p2 | Strings edge cases | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #598 | p2 | Linalg breadth (QZ, expm/logm, eigs/svds) | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #611 | p2 | Frames/help residual (dbstack/inputname, doc browser) | [Core backlog](https://github.com/superche/openmatlab/milestone/9) |
+| #593 | p2 | Graphics: `h.Prop` dot notation, findobj, 3-D, colormap | [Object system](https://github.com/superche/openmatlab/milestone/8) (dot-notation needs the object model) |
+| #602 | p2 | datetime/duration/Map breadth (calendarDuration, NaT, time zones) | [Object system](https://github.com/superche/openmatlab/milestone/8) |
+| #581 | p2 | Core-math parity: stats/interp/optim options | [Domain toolboxes](https://github.com/superche/openmatlab/milestone/3) |
