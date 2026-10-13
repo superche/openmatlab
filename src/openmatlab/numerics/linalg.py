@@ -109,15 +109,15 @@ def mldivide(a, b):
     if m == n:
         x, singular = _lu_solve(a, b.astype(np.result_type(a, b)))
         if singular:
-            mw.emit("Matrix is singular to working precision.")
+            mw.emit("Matrix is singular to working precision.", "MATLAB:singularMatrix")
         else:
             rc = rcond(a)
             if rc < EPS:
-                mw.emit(f"Matrix is close to singular or badly scaled. Results may be inaccurate. RCOND = {rc:e}.")
+                mw.emit(f"Matrix is close to singular or badly scaled. Results may be inaccurate. RCOND = {rc:e}.", "MATLAB:nearlySingularMatrix")
         return x
     x, rank, tol = _pivoted_qr_basic(a, b.astype(np.result_type(a, b)))
     if rank < min(m, n):
-        mw.emit(f"Rank deficient, rank = {rank}, tol = {tol:e}.")
+        mw.emit(f"Rank deficient, rank = {rank}, tol = {tol:e}.", "MATLAB:rankDeficientMatrix")
     return x
 
 

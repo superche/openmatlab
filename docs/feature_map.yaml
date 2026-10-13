@@ -370,8 +370,8 @@ features:
     status: done
     spec: docs/design/EPIC-496-linear-solve.md
     depends_on: [numerics.nd_arrays]
-    notes: "Epic #496 (M2 C17 met): A\\b and B/A per MATLAB docs; square LU with partial pivoting, singular and RCOND warnings; non-square basic least squares via column-pivoted QR with rank-deficient warning; .\\ elementwise; inv/det/rank/pinv; warning/lastwarn channel"
-    tests: [tests/unit/test_linear_solve.py, tests/bdd/test_linear_solve_bdd.py]
+    notes: "Epic #496 (M2 C17 met): A\\b and B/A per MATLAB docs; square LU with partial pivoting, singular and RCOND warnings; non-square basic least squares via column-pivoted QR with rank-deficient warning; .\\ elementwise; inv/det/rank/pinv; warning/lastwarn channel; #498: norm (vector p-norms, matrix 1/2/Inf/fro), cond, rcond, magic; warning identifiers with per-id off/on/query and [msg,id] = lastwarn"
+    tests: [tests/unit/test_linear_solve.py, tests/bdd/test_linear_solve_bdd.py, tests/unit/test_linalg_residuals.py]
 
   - id: runtime.structs
     layer: runtime
@@ -388,8 +388,8 @@ features:
     status: done
     spec: docs/design/EPIC-482-string-arrays.md
     depends_on: [runtime.string_class]
-    notes: "Epic #482 (#460): upper/lower/strip/strtrim/replace/strrep/split/join/contains/startsWith/endsWith/strcmp/strcmpi; kind in = kind out (string/char/cellstr); <missing> propagates. Residuals: #483; #483: missing/ismissing, sort/unique on strings, split of string columns, sprintf/compose, regexp/regexpi/regexprep, extractBetween/After/Before, insertAfter/Before, pad, reverse, num2str, str2double; follow-ups #494; #504: missing is its own class (MissingValue) and converts to NaN or <missing> by context; regexp names returns a struct"
-    tests: [tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py, tests/unit/test_string_residuals.py, tests/unit/test_missing_class.py]
+    notes: "Epic #482 (#460): upper/lower/strip/strtrim/replace/strrep/split/join/contains/startsWith/endsWith/strcmp/strcmpi; kind in = kind out (string/char/cellstr); <missing> propagates. Residuals: #483; #483: missing/ismissing, sort/unique on strings, split of string columns, sprintf/compose, regexp/regexpi/regexprep, extractBetween/After/Before, insertAfter/Before, pad, reverse, num2str, str2double; follow-ups #494; #504: missing is its own class (MissingValue) and converts to NaN or <missing> by context; regexp names returns a struct; #498: strncmp/strncmpi"
+    tests: [tests/unit/test_string_arrays.py, tests/bdd/test_string_arrays_bdd.py, tests/unit/test_string_residuals.py, tests/unit/test_missing_class.py, tests/unit/test_linalg_residuals.py]
   - id: runtime.char_value
     layer: runtime
     name: CharValue carrier for ' and \" literals

@@ -88,11 +88,11 @@ def _inv(args, *, nargout=1):
         return (_out(a),)
     x, singular = la._lu_solve(a, np.eye(n, dtype=a.dtype))
     if singular:
-        mw.emit("Matrix is singular to working precision.")
+        mw.emit("Matrix is singular to working precision.", "MATLAB:singularMatrix")
         return (_out(np.full((n, n), np.inf)),)  # MATLAB inv of a singular matrix is all Inf
     rc = la.rcond(a)
     if rc < la.EPS:
-        mw.emit(f"Matrix is close to singular or badly scaled. Results may be inaccurate. RCOND = {rc:e}.")
+        mw.emit(f"Matrix is close to singular or badly scaled. Results may be inaccurate. RCOND = {rc:e}.", "MATLAB:nearlySingularMatrix")
     return (_out(x),)
 
 
@@ -132,6 +132,9 @@ def _pinv(args, *, nargout=1):
     return (_out((vh.conj().T * sinv) @ u.conj().T),)
 
 
+_ID = __import__("re").compile(r"^[A-Za-z][\w-]*(:[\w-]+)+$")
+
+
 def _warning(args, *, nargout=1):
     from openmatlab.libs.text_builtins import _flat_args, _format
     from openmatlab.libs.string_builtins import _scalar_text
@@ -139,12 +142,23 @@ def _warning(args, *, nargout=1):
     if not args:
         raise _err("warning: not enough input arguments")
     first = _scalar_text("warning", args[0], "message")
-    if first.lower() in ("off", "on") and (len(args) == 1 or _scalar_text("warning", args[1], "id").lower() == "all"):
-        mw.set_enabled(first.lower() == "on")
+    state = first.lower()
+    if state in ("off", "on", "query") and len(args) <= 2:
+        target = _scalar_text("warning", args[1], "id") if len(args) == 2 else "all"
+        if state == "query":
+            from openmatlab.runtime.char_value import CharValue
+
+            return (CharValue("on" if (mw.is_on(target) if target != "all" else mw.is_on("")) else "off"),)
+        if target.lower() == "all":
+            mw.set_enabled(state == "on")
+        else:
+            mw.set_id(target, state == "on")
         return ()
-    if first.lower() in ("off", "on"):
-        return ()  # per-identifier control is a non-goal; accepted silently
-    mw.emit(_format(first, _flat_args(args[1:])) if len(args) > 1 else first)
+    ident = ""
+    if len(args) > 1 and _ID.match(first):  # warning(id, fmt, ...) (#498)
+        ident, args = first, args[1:]
+        first = _scalar_text("warning", args[0], "message")
+    mw.emit(_format(first, _flat_args(args[1:])) if len(args) > 1 or ident else first, ident)
     return ()
 
 
@@ -152,14 +166,121 @@ def _lastwarn(args, *, nargout=1):
     from openmatlab.runtime.char_value import CharValue
     from openmatlab.libs.string_builtins import _scalar_text
 
-    prev = mw.last()
+    prev, prev_id = mw.last(), mw.last_id()
     if args:
-        mw.set_last(_scalar_text("lastwarn", args[0], "message"))
-    return (CharValue(prev),)
+        mw.set_last(_scalar_text("lastwarn", args[0], "message"),
+                    _scalar_text("lastwarn", args[1], "id") if len(args) > 1 else "")
+    return (CharValue(prev), CharValue(prev_id)) if nargout > 1 else (CharValue(prev),)
+
+
+def _magic(args, *, nargout=1):
+    if len(args) != 1:
+        raise _err("magic: expected 1 argument")
+    n = int(np.asarray(args[0].backend_buffer()).reshape(-1)[0].real)
+    return (_out(magic_square(n)),)
+
+
+def magic_square(n: int) -> np.ndarray:
+    """MATLAB's magic(n) construction (odd: siamese; 4k: complement pattern; 4k+2: LUX quadrants)."""
+    if n < 1:
+        return np.zeros((0, 0))
+    if n == 1:
+        return np.array([[1.0]])
+    if n == 2:
+        return np.array([[4.0, 3.0], [1.0, 2.0]])
+    if n % 2 == 1:
+        j, i = np.meshgrid(np.arange(1, n + 1), np.arange(1, n + 1))
+        a = np.mod(i + j - (n + 3) // 2, n)
+        b = np.mod(i + 2 * j - 2, n)
+        return (n * a + b + 1).astype(float)
+    if n % 4 == 0:
+        j, i = np.meshgrid(np.arange(1, n + 1), np.arange(1, n + 1))
+        k = np.fix(np.mod(i, 4) / 2) == np.fix(np.mod(j, 4) / 2)
+        m = np.arange(1, n * n + 1, dtype=float).reshape(n, n)  # row-major 1..n^2
+        m[k] = n * n + 1 - m[k]
+        return m
+    p = n // 2
+    a = magic_square(p)
+    m = np.block([[a, a + 2 * p * p], [a + 3 * p * p, a + p * p]])
+    k = (n - 2) // 4
+    cols = list(range(k)) + list(range(n - k + 1, n))
+    for c in cols:
+        m[[*range(p), *range(p, n)], c] = m[[*range(p, n), *range(p)], c]
+    for c in (0, k):
+        m[[k, k + p], c] = m[[k + p, k], c]
+    return m
+
+
+def _norm(args, *, nargout=1):
+    if len(args) not in (1, 2):
+        raise _err("norm: usage norm(X[, p])")
+    a = _mat("norm", args[0])
+    p = 2.0
+    if len(args) == 2:
+        from openmatlab.runtime.char_value import CharValue
+
+        if isinstance(args[1], CharValue):
+            if args[1].text.lower() not in ("fro", "inf"):
+                raise _err("norm: the only matrix norms available are 1, 2, inf, and 'fro'.")
+            p = "fro" if args[1].text.lower() == "fro" else np.inf
+        else:
+            p = float(np.asarray(args[1].backend_buffer()).reshape(-1)[0].real)
+    if a.size == 0:
+        return (_out(np.array([[0.0]])),)
+    vec = 1 in a.shape
+    v = a.reshape(-1)
+    if vec:
+        if p == "fro":
+            r = np.sqrt(np.sum(np.abs(v) ** 2))
+        elif p == np.inf:
+            r = np.max(np.abs(v))
+        elif p == -np.inf:
+            r = np.min(np.abs(v))
+        else:
+            r = np.sum(np.abs(v) ** p) ** (1.0 / p)
+    else:
+        if p == "fro":
+            r = np.linalg.norm(a, "fro")
+        elif p in (1.0, 2.0, np.inf):
+            r = np.linalg.norm(a, {1.0: 1, 2.0: 2, np.inf: np.inf}[p])
+        else:
+            raise _err("norm: the only matrix norms available are 1, 2, inf, and 'fro'.")
+    return (_out(np.array([[float(r)]])),)
+
+
+def _cond(args, *, nargout=1):
+    if len(args) not in (1, 2):
+        raise _err("cond: usage cond(A[, p])")
+    a = _mat("cond", args[0])
+    if len(args) == 1 or float(np.asarray(args[1].backend_buffer()).reshape(-1)[0].real) == 2 \
+            if not hasattr(args[1] if len(args) == 2 else None, "text") else False:
+        if a.size == 0:
+            return (_out(np.array([[0.0]])),)
+        s = np.linalg.svd(a, compute_uv=False)
+        r = np.inf if s[-1] == 0 else s[0] / s[-1]
+        return (_out(np.array([[float(r)]])),)
+    if a.shape[0] != a.shape[1]:
+        raise _err("cond: A must be square for p ~= 2.")
+    try:
+        inv = np.linalg.inv(a)
+    except np.linalg.LinAlgError:
+        return (_out(np.array([[np.inf]])),)
+    na = _norm([NDArrayValue(a), args[1]])[0].backend_buffer().item()
+    ni = _norm([NDArrayValue(inv), args[1]])[0].backend_buffer().item()
+    return (_out(np.array([[na * ni]])),)
+
+
+def _rcond(args, *, nargout=1):
+    if len(args) != 1:
+        raise _err("rcond: expected 1 argument")
+    a = _mat("rcond", args[0], square=True)
+    if a.size == 0:
+        return (_out(np.array([[np.inf]])),)
+    return (_out(np.array([[la.rcond(a)]])),)
 
 
 def register(builtins: Dict[str, Callable]) -> None:
     builtins.update(
         mldivide=_mldivide, mrdivide=_mrdivide, inv=_inv, det=_det, rank=_rank, pinv=_pinv,
-        warning=_warning, lastwarn=_lastwarn,
+        warning=_warning, lastwarn=_lastwarn, magic=_magic, norm=_norm, cond=_cond, rcond=_rcond,
     )

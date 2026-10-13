@@ -53,6 +53,7 @@ class Evaluator:
         self._loop_depth = 0
         self._return_ok = 0
         self._end_stack: list[float] = []
+        self._no_output = None
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -78,6 +79,7 @@ class Evaluator:
     def eval_stmt(self, stmt: ast.Stmt) -> Value:
         from openmatlab.numerics.numpy_backend import NumericsError
 
+        self._no_output = None
         try:
             value = self._exec_stmt(stmt)
         except NumericsError as exc:
@@ -109,6 +111,8 @@ class Evaluator:
         elif isinstance(stmt, ast.ExprStmt):
             from openmatlab.runtime.struct_value import CsList
 
+            if self._no_output is value:  # a call with no outputs shows nothing (MATLAB)
+                return
             if isinstance(value, CsList):  # each value shows as ans (MATLAB)
                 for v in value.values:
                     d.bind_ans(v)
@@ -225,7 +229,8 @@ class Evaluator:
                     results = None
                 if results is not None:
                     if not results:
-                        return self.numerics.from_nested([])
+                        self._no_output = self.numerics.from_nested([])
+                        return self._no_output
                     return results[0]
                 raise EvalError(f"Undefined variable: {expr.id}")
         if isinstance(expr, ast.UnaryOp):
@@ -811,6 +816,8 @@ class Evaluator:
         expr = stmt.value
         if isinstance(expr, ast.IndexExpr):
             target_expr, arg_exprs = expr.target, list(expr.indices)
+        elif isinstance(expr, ast.Name):  # [a, b] = f with no parentheses
+            target_expr, arg_exprs = expr, []
         elif isinstance(expr, ast.CallExpr):
             target_expr, arg_exprs = expr.func, list(expr.args)
         else:
@@ -894,7 +901,8 @@ class Evaluator:
                 out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
             return out
         if not results:
-            return self.numerics.from_nested([])
+            self._no_output = self.numerics.from_nested([])
+            return self._no_output
         return results[0]
 
     def _eval_cell_paren_index(

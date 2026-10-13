@@ -981,3 +981,12 @@ test_cases:
     impl: tests/unit/test_missing_class.py
     status: active
     env: unit
+
+  - id: tc.linalg_residuals
+    kind: unit
+    title: norm/cond/rcond/magic, strncmp, warning ids (#498)
+    features: [numerics.linear_solve, libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_linalg_residuals.py
+    status: active
+    env: unit
