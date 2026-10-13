@@ -1200,6 +1200,9 @@ _string_builtins.register(BUILTINS)
 from openmatlab.libs import sparse_builtins as _sparse_builtins  # noqa: E402
 
 _sparse_builtins.register(BUILTINS)
+from openmatlab.libs import text_builtins as _text_builtins  # noqa: E402
+
+_text_builtins.register(BUILTINS)
 _shape_builtins.register_cell_shape(BUILTINS)
 
 
