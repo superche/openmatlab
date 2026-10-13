@@ -322,6 +322,14 @@ features:
     notes: "figure/axes/line model with get/set, hold, subplot, decorations, limits, bar/scatter/histogram, saveas"
     tests: [tests/unit/test_handle_graphics.py, tests/bdd/test_handle_graphics_bdd.py]
 
+  - id: libs.linalg_decomp
+    layer: libs
+    name: dense linear algebra decompositions
+    status: done
+    depends_on: [libs.core_math]
+    notes: "eig/svd/lu/qr/chol/null/orth/trace/cross/dot/sqrtm, NumPy-only, MATLAB shapes and error IDs"
+    tests: [tests/unit/test_decomp.py, tests/bdd/test_decomp_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

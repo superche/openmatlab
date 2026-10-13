@@ -1,6 +1,6 @@
 % M7 C09 - dense decompositions
 A = [4 1; 2 3];
-e = eig(A);
+e = sort(eig(A));  % order-independent (user-approved, Epic #538)
 [V, D] = eig(A);
 r1 = norm(A*V - V*D) < 1e-10;
 es = eig([2 1; 1 2]);
