@@ -1182,11 +1182,12 @@ class Evaluator:
             raise EvalError(str(exc)) from exc
         if args is None:
             args = self._eval_call_args(arg_exprs)
-            m = _cd.find_method_for_args(n, args) if any(_cd.is_instance(a) for a in args) else None
+            m = _cd.find_method_for_args(n, args) if any(_cd.dispatchable(a) for a in args) else None
             if m is not None:
                 with _frames.calling(self):
                     return list(m(args, nargout=nargout))
 
+        self._call_arg_exprs = arg_exprs  # for inputname in the callee (#569)
         try:
             with _frames.calling(self):  # callee sees this frame as its caller (evalin/assignin)
                 results = list(fn(args, nargout=nargout))
@@ -1335,7 +1336,7 @@ class Evaluator:
             return None
         if base == "containers":
             return self._object_call(expr, [])
-        if expr.name.lower() in self._OBJECT_METHODS:
+        if expr.name.lower() in self._OBJECT_METHODS or (hasattr(base, "has_method") and base.has_method(expr.name)):
             return self._object_call(expr, [])
         return base.get_prop(expr.name)
 
@@ -1348,6 +1349,13 @@ class Evaluator:
             if expr.name != "Map":
                 raise EvalError(f"Undefined function or variable: containers.{expr.name}")
             fn, args = self.functions.resolve("containers.Map"), args
+        elif hasattr(base, "call_method") and base.has_method(expr.name):  # inputParser ... (#569)
+            with __import__("openmatlab.runtime.frames", fromlist=["calling"]).calling(self):
+                outs = list(base.call_method(expr.name, args, 1))
+            if not outs:
+                self._no_output = self.numerics.from_nested([])
+                return self._no_output
+            return outs[0]
         else:
             if expr.name.lower() not in self._OBJECT_METHODS:
                 if arg_exprs:

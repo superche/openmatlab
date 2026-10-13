@@ -219,5 +219,26 @@ def _what(ev, args, nargout):
     return ()
 
 
-INTRINSICS = {"evalin": _evalin, "assignin": _assignin, "doc": _doc, "lookfor": _lookfor, "what": _what}
+def _inputname(ev, args, nargout):
+    """inputname(k): the caller's variable name for argument k, or '' for an expression (#569)."""
+    from openmatlab.lang import ast_nodes as ast
+    from openmatlab.runtime.char_value import CharValue
+
+    if len(args) not in (1, 2):
+        raise _err("Not enough input arguments." if not args else "Too many input arguments.",
+                   "MATLAB:minrhs" if not args else "MATLAB:TooManyInputs")
+    from openmatlab.runtime import frames
+
+    st = frames._STACK.get()
+    if not st or st[-1] is ev:
+        raise _err("inputname can only be called from within a MATLAB function.", "MATLAB:inputname:notInFunction")
+    k = int(np.asarray(args[0].backend_buffer()).reshape(-1)[0])
+    exprs = getattr(st[-1], "_call_arg_exprs", None) or ()
+    if k < 1 or k > max(len(exprs), getattr(ev, "_nargs", (0, 0))[0]):
+        raise _err("Argument number is not valid.", "MATLAB:inputname:argNumberNotValid")
+    e = exprs[k - 1] if k <= len(exprs) else None
+    return (CharValue(e.id if isinstance(e, ast.Name) else ""),)
+
+
+INTRINSICS = {"inputname": _inputname, "evalin": _evalin, "assignin": _assignin, "doc": _doc, "lookfor": _lookfor, "what": _what}
 STATEMENT_ZERO = {"evalin", "assignin", "doc", "lookfor", "what"}

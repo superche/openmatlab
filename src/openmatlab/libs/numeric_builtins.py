@@ -925,6 +925,8 @@ def _cellfun(
         )
     if not isinstance(cell, CellValue):
         raise BuiltinError("cellfun: expected cell array as second argument")
+    if (len(args) > 2 and isinstance(args[2], CellValue)) or nargout > 1:
+        return _cellfun_multi(fh, args, nargout)  # N cell inputs / N outputs (#569)
     uniform = True
     i = 2
     while i < len(args):
@@ -968,6 +970,35 @@ def _cellfun(
     return (CellValue(rows=tuple(grid)),)
 
 
+
+
+def _cellfun_multi(fh, args, nargout):
+    """cellfun(f, C1, C2, ..., 'UniformOutput', tf) with any number of outputs (MATLAB)."""
+    from openmatlab.libs import struct_builtins as _sb
+    from openmatlab.runtime.cell_value import CellValue
+
+    k, cells = 1, []
+    while k < len(args) and isinstance(args[k], CellValue):
+        cells.append(args[k])
+        k += 1
+    uniform, handler = _sb._uniform_opt("cellfun", list(args[k:]))
+    objs = [c.to_obj() for c in cells]
+    shape = objs[0].shape
+    for n, o in enumerate(objs[1:], start=3):
+        if o.shape != shape:
+            raise BuiltinError("cellfun: All of the input arguments must be of the same size and shape.\n"
+                               f"Previous inputs had size {shape[0]}x{shape[1]}; input #{n} has size "
+                               f"{o.shape[0]}x{o.shape[1]}.")
+    nout = max(1, nargout)
+    flat = [o.reshape(-1, order="F") for o in objs]
+    results = []
+    for i in range(int(np.prod(shape))):
+        r = fh.call([f[i] for f in flat], nargout=nout)
+        if len(r) < nout:
+            raise BuiltinError("cellfun: function returned too few outputs")
+        results.append(list(r))
+    del handler
+    return _sb._collect("cellfun", results, shape, uniform, nout)
 
 
 def _logical(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
@@ -1262,3 +1293,6 @@ from openmatlab.libs import time_builtins as _time_builtins  # noqa: E402
 _time_builtins.register(BUILTINS)
 _classdef_builtins_mod = __import__("openmatlab.libs.classdef_builtins", fromlist=["register_late"])
 _classdef_builtins_mod.register_late(BUILTINS)
+
+_inputparser_mod = __import__("openmatlab.libs.inputparser", fromlist=["register"])
+_inputparser_mod.register(BUILTINS)

@@ -475,8 +475,28 @@ def lookup(resolver, name: str) -> Optional[ClassInfo]:
     return fn.info if isinstance(fn, ClassConstructor) else None
 
 
+def dispatchable(v) -> bool:
+    return is_instance(v) or hasattr(v, "call_method")
+
+
+class _BuiltinObjMethod:
+    """A Python-implemented object's method (inputParser ...) in call form f(obj, ...)."""
+
+    static = False
+
+    def __init__(self, obj, name):
+        self.obj, self.name = obj, name
+
+    def __call__(self, args, *, nargout=1, prebind=None):
+        rest = list(args)
+        rest.remove(self.obj) if any(a is self.obj for a in rest) else None
+        return tuple(self.obj.call_method(self.name, rest, nargout))
+
+
 def find_method_for_args(name: str, args: Sequence[Any]) -> Optional[MethodInfo]:
     for a in args:
+        if hasattr(a, "call_method") and not is_instance(a) and a.has_method(name):
+            return _BuiltinObjMethod(a, name)
         if is_instance(a):
             m = a.info.find_method(name)
             if m is not None and not m.static:
