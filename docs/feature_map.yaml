@@ -306,6 +306,14 @@ features:
     notes: "repmat/meshgrid/ndgrid/cell2mat/num2cell, set engine numeric/char/cellstr with stable/rows/last, sortrows, [~,i] placeholders"
     tests: [tests/unit/test_arrays_sets.py, tests/bdd/test_arrays_sets_bdd.py]
 
+  - id: libs.strfun
+    layer: libs
+    name: core string functions
+    status: done
+    depends_on: [libs.core_math]
+    notes: "strsplit/strjoin/strfind/strcat/strvcat/str2num, mat2str/int2str, base conversions, blanks/deblank, flip on char/cell"
+    tests: [tests/unit/test_strfun.py, tests/bdd/test_strfun_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
