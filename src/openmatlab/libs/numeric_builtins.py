@@ -1080,10 +1080,13 @@ def _eps(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     _arity("eps", args, 0, 1)
     if args and isinstance(args[0], Array) and not hasattr(args[0], "text"):
         b = np.asarray(args[0].backend_buffer())
-        if b.dtype in (np.float32, np.complex64):
-            return (NDArrayValue(np.spacing(np.abs(b).astype(np.float32)).reshape(b.shape or (1, 1))),)
-        # eps(x) relative — MVP: same as eps for any double x
-        return (_wrap(np.finfo(np.float64).eps),)
+        if np.issubdtype(b.dtype, np.integer):
+            raise BuiltinError("eps: input must be floating point (double or single)")
+        dt = np.float32 if b.dtype in (np.float32, np.complex64) else np.float64
+        # eps(x): spacing at |x| (eps(1) = 2^-52, eps(0) = 2^-1074, eps(Inf) = NaN) (#480)
+        b = b.reshape(1, 1) if b.ndim == 0 else b
+        with np.errstate(invalid="ignore"):
+            return (NDArrayValue(np.spacing(np.abs(b).astype(dt))),)
     dt = _float_class("eps", args)
     return (NDArrayValue(np.array([[np.finfo(dt).eps]], dtype=dt)),)
 
