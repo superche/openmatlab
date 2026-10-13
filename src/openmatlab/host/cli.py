@@ -156,6 +156,9 @@ def _eval_code(source: str) -> int:
     except (LexerError, ParseError, EvalError, ImportError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    except Exception as exc:  # never a Python traceback for user code (M7 exit 3)
+        print(f"error: internal error ({type(exc).__name__}): {exc}", file=sys.stderr)
+        return 1
 
 
 def _run_repl() -> int:
@@ -184,6 +187,8 @@ def _run_repl() -> int:
             repl.run_line(line)
         except (LexerError, ParseError, EvalError) as exc:
             print(f"error: {exc}", file=sys.stderr)
+        except Exception as exc:  # keep the session alive; no traceback (M7 exit 3)
+            print(f"error: internal error ({type(exc).__name__}): {exc}", file=sys.stderr)
     return 0
 
 

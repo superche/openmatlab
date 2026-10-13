@@ -600,8 +600,8 @@ features:
     name: Load .m functions from path
     status: done
     depends_on: [libs.toolbox_path, lang.function_def, runtime.function_resolver]
-    notes: "function+script .m; eval_script + language run() [done ITER-024; #35/#36]"
-    tests: [tests/unit/test_mfile_functions.py]
+    notes: "function+script .m; eval_script + language run() [done ITER-024; #35/#36]; #529 scripts with trailing local functions (callable, handles), run()/bare script show no ans, malformed files raise MATLAB-style errors"
+    tests: [tests/unit/test_mfile_functions.py, tests/unit/test_script_local_functions.py]
 
   # --- qa ---
 
