@@ -41,6 +41,9 @@ def _out(x) -> NDArrayValue:
 
 def solve(kind: str, a: Value, b: Value) -> NDArrayValue:
     """Shared by the operators and the mldivide/mrdivide builtins."""
+    nat = _sparse_native_solve(kind, a, b)  # compressed storage first (#522)
+    if nat is not None:
+        return nat
     for v in (a, b):
         if isinstance(v, Array) and np.issubdtype(np.asarray(v.backend_buffer()).dtype, np.integer) \
                 and v.numel() != 1:
@@ -59,6 +62,25 @@ def solve(kind: str, a: Value, b: Value) -> NDArrayValue:
         buf = np.asarray(out.backend_buffer())
         out = NDArrayValue(buf.astype(np.complex64 if np.iscomplexobj(buf) else np.float32))
     return out
+
+
+def _sparse_native_solve(kind, a, b):
+    """S\\b and b/S on compressed storage (#522); None -> dense solver."""
+    from openmatlab.numerics import sparse_solve as ss
+    from openmatlab.numerics.sparse import is_sparse
+
+    S, rhs = (a, b) if kind == "mldivide" else (b, a)
+    if not is_sparse(S) or is_sparse(rhs) or type(rhs) is not NDArrayValue:
+        return None
+    fb = np.asarray(rhs.backend_buffer())
+    if fb.dtype not in (np.float64, np.complex128, np.bool_) or fb.ndim != 2 or S.numel() == 1:
+        return None
+    if kind == "mldivide":
+        x = ss.solve(S.store, fb)
+    else:  # b/S = (S.' \\ b.').'
+        x = ss.solve(S.store.transpose(), fb.T.copy()) if fb.shape[1] == S.store.m else None
+        x = None if x is None else x.T.copy()
+    return None if x is None else _out(x)
 
 
 def _mldivide(args, *, nargout=1):

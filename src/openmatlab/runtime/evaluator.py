@@ -912,6 +912,8 @@ class Evaluator:
                     out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
                 return _codes_char(out)
             target_a = self._require_array(target, "index")
+            if getattr(target_a, "issparse", False) and len(arg_exprs) == 1 and self._is_bare_colon(arg_exprs[0]):
+                return type(target_a)(target_a.store.reshape(target_a.numel(), 1))  # S(:) without 1:numel (#523)
             idxs = self._eval_subscripts(target_a, arg_exprs, label="index")
             out = self.numerics.index(target_a, idxs)
             if len(arg_exprs) == 1 and self._is_bare_colon(arg_exprs[0]):
@@ -1557,6 +1559,12 @@ class Evaluator:
     def _eval_relational(self, op: str, left: Array, right: Array) -> Array:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
+        from openmatlab.numerics import sparse as _sp
+
+        if _sp.is_sparse(left) or _sp.is_sparse(right):
+            nat = _sp.relational_native(op, left, right)  # compressed (#523)
+            if nat is not None:
+                return nat
 
         a = np.asarray(left.backend_buffer())
         b = np.asarray(right.backend_buffer())
@@ -1673,8 +1681,7 @@ class Evaluator:
         elif getattr(value, "issparse", False):  # columns stay sparse (#488)
             from openmatlab.numerics import sparse as _sp
 
-            raw = np.asarray(value.backend_buffer())
-            items = [_sp.to_sparse(raw[:, [k]]) for k in range(raw.shape[1])]
+            items = _sp.columns(value)  # straight from the store (#523)
         else:
             raw = np.asarray(self._require_array(value, "for").backend_buffer())
             keep = np.issubdtype(raw.dtype, np.integer) or np.iscomplexobj(raw) or raw.dtype == np.float32

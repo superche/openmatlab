@@ -35,7 +35,7 @@ Covers #515 (container, construction, queries), #516 (kernels) and #517
 | queries (#515) | `nnz`, `nzmax`, `nonzeros`, `find` (1–3 outputs), `size`/`numel`/`isempty`, `full`, `issparse`, `class`, triplet display |
 | kernels (#516) | `S*X`, `X*S` (full results), `S*S` (expand and coalesce), `S±S`, `S.*S`, `S.*X`, `X.*S`, `S./X`, `k*S`, `S*k`, `-S`, `S'`, `S.'`, `S.^p` (p>0), `abs sqrt sin tan sinh tanh asin atan asinh atanh floor ceil round fix real imag conj double logical`, `sum(S[,dim])`, `max/min(S)`, `max/min(S,[],dim)` |
 | indexing (#517) | `S(i,j)` (with repeats), `S(k)`, `S(mask)`, `S(:)` (now sparse, as in MATLAB), `S(i,j)=v`, `S(k)=v`, growth, `S(i,:)=[]`, `S(:,j)=[]`, `S(k)=[]`, `[S F; F S]` |
-| dense fallback | relational ops, `S\b`, `S^p`, `mean`, `cumsum`, `reshape`, `circshift`, `for` over columns, class-changing assignment (logical ↔ double) |
+| dense fallback | relational ops whose result is mostly true (`S == 0`, `S <= 1`, `~S`), singular or ill-conditioned `S\b` (the dense path issues the MATLAB warnings), class-changing assignment (logical ↔ double) |
 
 ## Adversarial review (done before PR)
 | Probe | Finding |
@@ -51,3 +51,21 @@ Covers #515 (container, construction, queries), #516 (kernels) and #517
 | `[S; S]` with 1e5 rows | native concat ✓ |
 | `S\b` | densifies (allowed by #517); a native sparse direct solve is a residual |
 | linear `S(:)` on a 1e5×1e5 matrix | the evaluator expands `:` to `1:numel` (1e10 indices) before indexing; residual |
+
+## Follow-ups #522 and #523 (native solve, remaining paths)
+- **`S\b` and `b/S` (#522)** are handled in `numerics/sparse_solve.py`, reached from `linalg_builtins.solve` when `S` is sparse and `b` is full. The cheapest applicable method wins:
+  1. diagonal;
+  2. lower or upper triangular, by column substitution;
+  3. banded, by LU with partial pivoting in a sliding (kl+1)×(2kl+ku+1) window, at O(n·kl·(kl+ku)) work;
+  4. general patterns: reverse Cuthill–McKee reordering first, then the banded solver, provided the permuted bandwidth fits a work budget (4e8).
+  - A zero pivot, or a min/max pivot ratio below eps, returns to the dense solver so that MATLAB's singular and RCOND warnings stay exact. So does `S\S`. The result is full, as in MATLAB.
+- **Remaining paths (#523):**
+  - `S(:)` is reshaped straight from the store; `:` is no longer expanded to `1:numel`.
+  - Relational ops `S op k`, `k op S` and `S op S` stay native whenever `op(0,0)` is false.
+  - Native builtins: `mean`, `cumsum` (per-column fill-in), `reshape`, `flip`/`flipud`/`fliplr`, `circshift`, `permute([1 2]|[2 1])`.
+  - `S^p` for integer p ≥ 1 uses repeated squaring.
+  - `for c = S` slices the columns from the store.
+- **Review:**
+  - `E == 2*E` on a 1e5×1e5 matrix is mostly true. MATLAB stores that as about 1e10 nonzeros, which cannot fit in bounded memory, so it takes the dense path.
+  - `cumsum(speye(n))` really has n(n+1)/2 nonzeros. Its cost is inherent, not a densify.
+  - A large singular `S\b` densifies (residual).

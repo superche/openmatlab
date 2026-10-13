@@ -1035,3 +1035,12 @@ test_cases:
     impl: tests/bdd/test_sparse_csc_bdd.py
     status: active
     env: unit
+
+  - id: tc.sparse_solve
+    kind: unit
+    title: native sparse solve and remaining compressed paths (#522, #523)
+    features: [numerics.sparse_csc]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_sparse_solve.py
+    status: active
+    env: unit

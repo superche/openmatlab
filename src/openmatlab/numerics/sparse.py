@@ -202,9 +202,13 @@ def _elem(a, b, op):
 
 
 def _power(a, b, elementwise):
-    if not elementwise or not is_sparse(a) or is_sparse(b):
+    if not is_sparse(a) or is_sparse(b):
         return None
     p = _plain(b)
+    if not elementwise:  # S^p (#523)
+        if p is None or p.size != 1 or p.dtype == np.complex128 or a.store.shape == (1, 1):
+            return None
+        return matrix_power(a, float(p.reshape(-1)[0]))
     if p is None or p.size != 1 or p.dtype == np.complex128:
         return None
     p = float(p.reshape(-1)[0])
@@ -433,3 +437,75 @@ def native_op(name, a, args, kw):
     except (TypeError, AttributeError):
         return None
     return None
+
+
+# --- #523: relational ops, matrix power, column iteration ------------------------
+
+_REL = {
+    "<": np.less, "<=": np.less_equal, ">": np.greater, ">=": np.greater_equal,
+    "==": np.equal, "~=": np.not_equal,
+}
+
+
+def relational_native(op, left, right):
+    """Logical sparse result of S op k / k op S / S op S when op(0, 0) is false."""
+    from openmatlab.numerics.sparse_store import Store
+
+    fn = _REL.get(op)
+    if fn is None:
+        return None
+    sl, sr = is_sparse(left), is_sparse(right)
+
+    def prep(x):
+        x = x.astype(np.complex128 if np.iscomplexobj(x) else np.float64)
+        return x if op in ("==", "~=") else np.real(x)
+
+    if sl and sr:
+        a, b = left.store, right.store
+        if a.shape != b.shape or a.shape == (1, 1) or fn(0.0, 0.0):
+            return None
+        keys = np.union1d(a.keys, b.keys)
+        va = np.zeros(keys.size, dtype=np.result_type(a.data, np.float64))
+        vb = np.zeros(keys.size, dtype=np.result_type(b.data, np.float64))
+        va[np.searchsorted(keys, a.keys)] = a.data
+        vb[np.searchsorted(keys, b.keys)] = b.data
+        hit = fn(prep(va), prep(vb))
+        m = a.m
+        c, r = np.divmod(keys[hit], m) if m else (keys[hit], keys[hit])
+        return SparseValue(Store(a.m, a.n, r, c, np.ones(r.size, bool), canonical=True, dtype=np.bool_))
+    s, d = (left, right) if sl else (right, left)
+    k = _plain(d)
+    if k is None or k.size != 1 or s.store.shape == (1, 1):
+        return None
+    k = prep(k.reshape(-1))[0]
+    zero = fn(0.0, k) if sl else fn(k, 0.0)
+    if zero or (isinstance(k, float) and np.isnan(k)):
+        return None if zero else SparseValue(Store.zeros(*s.store.shape, dtype=np.bool_))
+    st = s.store
+    vals = prep(st.data)
+    hit = fn(vals, k) if sl else fn(k, vals)
+    return SparseValue(Store(st.m, st.n, st.rows[hit], st.cols[hit], np.ones(int(hit.sum()), bool),
+                             canonical=True, dtype=np.bool_))
+
+
+def matrix_power(a, p):
+    """S^p for integer p >= 1 by repeated squaring on the store."""
+    st = a.store
+    if st.m != st.n or p < 1 or p != int(p):
+        return None
+    p = int(p)
+    result, base = None, st
+    while p:
+        if p & 1:
+            result = base if result is None else result.matmul(base)
+        p >>= 1
+        if p:
+            base = base.matmul(base)
+    return SparseValue(result)
+
+
+def columns(v):
+    """Sparse columns of S for ``for c = S`` without densifying."""
+    st = v.store
+    rows = np.arange(st.m)
+    return [SparseValue(st.submatrix(rows, [k])) for k in range(st.n)]
