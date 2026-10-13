@@ -354,6 +354,10 @@ class Evaluator:
         except KeyError as exc:
             raise EvalError(f"Undefined variable: {name}") from exc
         rhs_val = self.eval_expr(stmt.value)
+        if getattr(rhs_val, "is_missing_value", False):  # x(i) = missing (#504)
+            from openmatlab.runtime import missing_value as _mv
+
+            rhs_val = _mv.as_string() if getattr(arr, "is_string", False) else _mv.as_nan()
         if getattr(arr, "is_struct", False) or (
             getattr(rhs_val, "is_struct", False) and isinstance(arr, Array) and arr.numel() == 0
         ):  # s(i) = t / s(i) = [] (Epic #506)
@@ -1238,6 +1242,13 @@ class Evaluator:
 
         rows = [self._matrix_row_values(row) for row in expr.rows]
         flat = [v for r in rows for v in r]
+        if any(getattr(v, "is_missing_value", False) for v in flat):  # [1 missing], ["a" missing] (#504)
+            from openmatlab.runtime import missing_value as _mv
+
+            if not any(isinstance(v, CellValue) for v in flat):
+                stringy = any(getattr(v, "is_string", False) for v in flat)
+                rows = [_mv.resolve(r, stringy=stringy) for r in rows]
+                flat = [v for r in rows for v in r]
         if any(getattr(v, "is_struct", False) for v in flat):  # (#506)
             from openmatlab.runtime import struct_eval as _se
 
