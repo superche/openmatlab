@@ -381,4 +381,4 @@ COMMAND_ONLY = {"which": _which_cmd}
 # graphics calls as statements: no display, no ans (Epic #537)
 STATEMENT_ZERO |= {"figure", "close", "clf", "cla", "hold", "subplot", "plot", "bar", "scatter", "histogram",
                    "title", "xlabel", "ylabel", "legend", "grid", "xlim", "ylim", "axis", "text", "set",
-                   "saveas", "delete"}
+                   "saveas", "delete", "display", "rmpath", "path", "print"}

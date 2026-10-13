@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-Next work comes from the top unmet M7 criterion (p0 before p1) per `docs/milestones/M7-core-language-io.md`.
+All M7 criteria (C01–C10) are met; M7 closes after user acceptance of its epics (see the close-readiness note in `docs/milestones/M7-core-language-io.md`).
 
 | Item | URL / command |
 |------|----------------|

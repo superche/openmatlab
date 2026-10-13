@@ -266,3 +266,7 @@ INTRINSICS.update(_fb.INTRINSICS)
 from openmatlab.libs import graphics_builtins as _gb  # noqa: E402
 
 INTRINSICS.update(_gb.INTRINSICS)
+
+from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
+
+INTRINSICS.update(_gl.INTRINSICS)

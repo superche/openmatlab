@@ -45,3 +45,12 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 M7 opened 2026-10-13. #529 (local-function crash) fixed in PR #564.
 
 **10 / 10** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531), C03 (Epic #532), C04 (Epic #533), C05 (Epic #534), C06 (Epic #535), C07 (Epic #536), C08 (Epic #537), C09 (Epic #538), C10 (Epic #539). Next: M7 close-readiness review.
+
+## Close-readiness review (2026-10-13)
+
+1. **Conformance.** All 10 criteria are `met`, and there are 0 M7 xfails on `main`.
+2. **Open p0 issues.** Epics #531–#537 are open only for user acceptance (their packages are complete). All p0 child issues are closed, and #606 (builtin argument leak) is fixed. The leftovers from GAP p0 rows (`evalin`, `doc`/`lookfor`/`what`) are filed as #608 at p1, pending the user's ruling.
+3. **No Python traceback.** A sweep of all GAP-ANALYSIS probes plus every builtin and intrinsic called with five malformed argument shapes showed 0 leaks after #606.
+
+The GAP-ANALYSIS M7 rows, README and READY were updated in the same PR as this note.
+
