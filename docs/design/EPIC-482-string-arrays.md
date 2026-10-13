@@ -47,7 +47,7 @@ a 1x2 string array. One existing test asserted that rejection, and it was update
 | `["a" "b"] * 2`, `- 1` | operator error, same as scalars ✓ |
 | `t(3)="c"; upper(t)`, `contains(t,…)`, `strlength(t)` | missing propagates / false / NaN ✓ |
 | `switch "b"`, `which("zeros")` | still work (scalar stays StringValue) ✓ |
-| `{["a" "b"]}` display | `[1x2 string]` summary ✓ |
+| `{["a" "b"]}` display | `[1×2 string]` summary ✓ |
 | `s(1:2)` with a single hit | collapses to a `StringValue` scalar ✓ |
 
 ## Non-goals → residual issue #483

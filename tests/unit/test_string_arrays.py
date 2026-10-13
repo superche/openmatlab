@@ -115,10 +115,10 @@ def test_transpose_char_cellstr_strlength_isequal_for():
 
 def test_display():
     ws = _ws('s = ["a" "bcd"; "ef" "g"]; t = "a"; t(3) = "c"; e = strings(0,3); c = {["a" "b"]};')
-    assert _format_value(ws.get("s")) == '  2x2 string array\n\n    "a"     "bcd"\n    "ef"    "g"'
-    assert _format_value(ws.get("t")) == '  1x3 string array\n\n    "a"    <missing>    "c"'
-    assert _format_value(ws.get("e")) == "  0x3 empty string array"
-    assert _format_value(ws.get("c")).splitlines()[1] == "  (1,1) = [1x2 string]"
+    assert _format_value(ws.get("s")) == '  2×2 string array\n\n    "a"     "bcd"\n    "ef"    "g"'
+    assert _format_value(ws.get("t")) == '  1×3 string array\n\n    "a"    <missing>    "c"'
+    assert _format_value(ws.get("e")) == "  0×3 empty string array"
+    assert _format_value(ws.get("c")).splitlines()[1] == "  (1,1) = [1×2 string]"
 
 
 # ----- #460 methods -----
