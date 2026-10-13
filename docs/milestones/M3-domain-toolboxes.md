@@ -41,7 +41,7 @@ M3 is **done** only when **all** of these hold on `main`:
 | T01 | FFT family: `fft`/`ifft` with n and dim, `fft2`/`ifft2`, `fftshift`/`ifftshift`, `nextpow2` | m3_t01_fft | p1 | core | #625 | met (Epic #625; residual #630) |
 | T02 | `spline` (not-a-knot and clamped), `pchip`, `ppval`, `interp1` spline/pchip/extrap, `interp2`, `polyder`/`polyint` forms | m3_t02_poly_interp | p1 | core | #626 | met (Epic #626; residual #649) |
 | T03 | `ode45`/`ode23` (tspan, odeset, systems), `integral2`, `quad`, `integral` options, `fminbnd`, `optimset` with `fzero`/`fminsearch` | m3_t03_calculus_ode_opt | p1 | core | #627 (#581) | met (Epic #627; residual #657) |
-| T04 | `quantile`/`prctile`, `movmean`/`movsum`/`movmedian`, `cummax`/`cummin`, `mode`, `var`/`std` weights, `histc`, `bounds` | m3_t04_stats | p1 | core | #628 (#581) | pending |
+| T04 | `quantile`/`prctile`, `movmean`/`movsum`/`movmedian`, `cummax`/`cummin`, `mode`, `var`/`std` weights, `histc`, `bounds` | m3_t04_stats | p1 | core | #628 (#581) | met (Epic #628; residual #661) |
 | T05 | `jsonencode`/`jsondecode`, `csvread` offsets, `dlmwrite` delimiter/precision/append, `dlmread` | m3_t05_data_io | p1 | core | #629 | pending |
 | T06 | `hann`, `kaiser`, `butter`, `freqz`, `filtfilt`, resolved from `community.signal` | m3_t06_signal_plugin | p2 | plugin | #630 | pending |
 | T07 | Sparse results stay sparse (comparisons, `~`, arithmetic, indexing, `sum`, `kron`); sparse solves at n=2000 | m3_t07_sparse | p2 | core | #631 (#527) | pending |
@@ -62,4 +62,4 @@ M3 is **done** only when **all** of these hold on `main`:
 
 M3 criteria were set on 2026-10-13.
 
-**3 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627). Next: M3-E4 descriptive statistics (#628)
+**4 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627), T04 (Epic #628). Next: M3-E5 JSON and delimited numeric I/O (#629)

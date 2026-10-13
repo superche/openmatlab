@@ -402,6 +402,14 @@ features:
     notes: "MATLAB error control and Refine output; iterated Gauss-Kronrod; Brent fminbnd; M3-E3"
     tests: [tests/unit/test_ode_quad_opt.py, tests/bdd/test_ode_quad_opt_bdd.py]
 
+  - id: numerics.stats_m3
+    layer: numerics
+    name: quantile/prctile, movmean/movsum/movmedian (and movmax/movmin/movprod/movvar/movstd), histc
+    status: done
+    depends_on: []
+    notes: "MATLAB exact quantile method; shrink/discard/fill endpoints, omitnan; histc bins; M3-E4 (residual 661)"
+    tests: [tests/unit/test_stats_m3.py, tests/bdd/test_stats_m3_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
