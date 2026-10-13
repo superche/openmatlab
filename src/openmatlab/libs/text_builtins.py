@@ -28,13 +28,17 @@ def _cellcol(items):
 def _missing(args, *, nargout=1):
     if args:
         raise _err("missing: takes no arguments")
-    return (sa.StringArray(np.array([[None]], dtype=object)),)  # behaves as <missing> string (MVP)
+    from openmatlab.runtime.missing_value import MissingValue
+
+    return (MissingValue(),)  # class 'missing'; converts by context (#504)
 
 
 def _ismissing(args, *, nargout=1):
     if len(args) != 1:
         raise _err("ismissing: expected 1 argument")
     v = args[0]
+    if getattr(v, "is_missing_value", False):
+        return (NDArrayValue(np.array([[True]])),)
     if sa.is_string(v):
         g = sa.to_grid(v)
         return (NDArrayValue(np.array([[x is None for x in row] for row in g], dtype=bool).reshape(g.shape)),)

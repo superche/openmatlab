@@ -206,6 +206,8 @@ def format_struct(v) -> str:
 def _format_value(value: object) -> str:
     if getattr(value, "is_struct", False):  # (Epic #506)
         return format_struct(value)
+    if getattr(value, "is_missing_value", False):  # (#504)
+        return "  missing\n\n    <missing>"
     try:
         from openmatlab.runtime.cell_value import CellValue
 

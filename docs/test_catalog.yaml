@@ -972,3 +972,12 @@ test_cases:
     impl: tests/bdd/test_structs_bdd.py
     status: active
     env: unit
+
+  - id: tc.missing_class
+    kind: unit
+    title: missing class converts by context (#504)
+    features: [libs.string_methods]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_missing_class.py
+    status: active
+    env: unit

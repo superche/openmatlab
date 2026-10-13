@@ -110,6 +110,10 @@ def _bool_opt(name: str, args, key: str, default: bool) -> bool:
 # ----- construction / conversion -----
 
 def _string(args, *, nargout=1):
+    if len(args) == 1 and getattr(args[0], "is_missing_value", False):  # string(missing) (#504)
+        from openmatlab.runtime.missing_value import as_string
+
+        return (as_string(),)
     if len(args) != 1:
         raise _err("string: expected 1 argument")
     g = sa.to_grid(args[0], cells=True)

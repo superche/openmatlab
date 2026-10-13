@@ -204,6 +204,8 @@ def _double(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
 
     _arity("double", args, 1, 1)
     v = args[0]
+    if getattr(v, "is_missing_value", False):  # double(missing) is NaN (#504)
+        return (NDArrayValue(np.array([[np.nan]])),)
     if isinstance(v, CharValue):
         r, c = v.shape
         out = np.array([[float(ord(ch)) for ch in row] for row in v.rows]).reshape(r, c)
