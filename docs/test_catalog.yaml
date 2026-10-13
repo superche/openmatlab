@@ -954,3 +954,21 @@ test_cases:
     impl: tests/unit/test_sparse_residuals.py
     status: active
     env: unit
+
+  - id: tc.structs
+    kind: unit
+    title: structs and struct arrays (Epic #506)
+    features: [runtime.structs]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_structs.py
+    status: active
+    env: unit
+
+  - id: tc.structs_bdd
+    kind: bdd
+    title: struct Gherkin scenarios (Epic #506)
+    features: [runtime.structs]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_structs_bdd.py
+    status: active
+    env: unit

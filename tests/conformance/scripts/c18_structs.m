@@ -1,0 +1,26 @@
+s.name = 'pt';
+s.xy = [1 2];
+s.xy(end+1) = 3;
+s.inner.depth = 2;
+f = 'dyn';
+s.(f) = 7;
+a = s.xy;
+d = s.inner.depth;
+y = s.dyn;
+t = struct('v', {10, 20, 30});
+t(5).v = 50;
+n = size(t);
+vs = [t.v];
+t(2) = [];
+m = numel(t);
+k = isfield(s, {'xy', 'nope'});
+r = numel(fieldnames(rmfield(s, 'dyn')));
+o = orderfields(struct('b', 1, 'a', 2));
+of = strcmp(fieldnames(o), {'a'; 'b'})';
+g = getfield(setfield(struct(), 'p', 'q', 4), 'p', 'q');
+acc = 0;
+for e = struct('w', {1, 2, 3})
+  acc = acc + e.w;
+end
+nm = regexp('x12', '(?<l>[a-z])(?<n>\d+)', 'names');
+ok = strcmp(nm.n, '12');

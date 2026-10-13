@@ -35,6 +35,7 @@ class TokenType(Enum):
     HAT = auto()  # ^
     TRANSPOSE = auto()  # '  (array transpose — context-sensitive)
     CTC_TRANSPOSE = auto()  # .'
+    DOT = auto()  # s.field / s.(expr) (Epic #506)
     LBRACKET = auto()  # [
     RBRACKET = auto()  # ]
     LBRACE = auto()  # {  (cell — later)

@@ -308,7 +308,7 @@ def _regexp(name: str, flags: int):
         pieces.append(text[last:])
         outs["split"] = (sa.make(np.array([pieces], dtype=object)) if k == "string"
                          else _cellcol([CharValue(p) for p in pieces]))
-        outs["names"] = _names(ms[:1] if ms else [], k)
+        outs["names"] = _names(ms[:1] if once else ms, rx)
         order = opts or ["start", "end", "tokenextents", "match", "tokens", "names", "split"]
         res = []
         for o in order[: max(1, nargout)]:
@@ -325,16 +325,17 @@ def _regexp(name: str, flags: int):
     return _fn
 
 
-def _names(ms, kind):
-    from openmatlab.runtime.cell_value import CellValue
+def _names(ms, rx):
+    """regexp 'names': 1xN struct array, one element per match, fields = named tokens (#504).
+    Without named tokens it is a 1x1 struct with no fields; with no match, 0x0 with the fields."""
     from openmatlab.runtime.char_value import CharValue
+    from openmatlab.runtime.struct_value import StructValue
 
-    # MVP: names as a 2xN cell {name; value} (no struct type yet)
-    if not ms or not ms[0].re.groupindex:
-        return CellValue(rows=())
-    gi = ms[0].groupdict()
-    keys = list(gi)
-    return CellValue(rows=(tuple(CharValue(k) for k in keys), tuple(CharValue(gi[k] or "") for k in keys)))
+    keys = sorted(rx.groupindex, key=rx.groupindex.get)
+    if not keys:
+        return StructValue.scalar()
+    elems = [{k: CharValue(m.group(k) or "") for k in keys} for m in ms]
+    return StructValue.build((1, len(elems)) if elems else (0, 0), keys, elems)
 
 
 def _regexprep(name: str, flags: int):

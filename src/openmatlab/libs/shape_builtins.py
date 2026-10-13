@@ -104,6 +104,12 @@ def _circshift(args, *, nargout=1):
 def _equal(a: Value, b: Value) -> bool:
     from openmatlab.runtime.cell_value import CellValue
 
+    if getattr(a, "is_struct", False) or getattr(b, "is_struct", False):  # (#506)
+        if not (getattr(a, "is_struct", False) and getattr(b, "is_struct", False)):
+            return False
+        if a.shape != b.shape or set(a.fields) != set(b.fields):
+            return False
+        return all(_equal(x[f], y[f]) for x, y in zip(a.elems, b.elems) for f in a.fields)
     if isinstance(a, CellValue) or isinstance(b, CellValue):
         if not (isinstance(a, CellValue) and isinstance(b, CellValue)):
             return False

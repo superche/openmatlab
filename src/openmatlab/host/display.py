@@ -126,6 +126,8 @@ def _cell_int_summary(v: object):
     from openmatlab.numerics.intclass import class_name
     from openmatlab.runtime.value import Array
 
+    if getattr(v, "is_struct", False):
+        return "[" + "x".join(str(d) for d in v.shape) + " struct]"  # (#506)
     if hasattr(v, "data") and getattr(v, "is_string", False) and v.numel() != 1:
         return "[" + "x".join(str(d) for d in v.shape) + " string]"  # (#459)
     if not isinstance(v, Array):
@@ -138,7 +140,72 @@ def _cell_int_summary(v: object):
     return "[" + "x".join(str(d) for d in shape) + f" {cls}]"
 
 
+_X = "\u00d7"  # MATLAB size separator in struct displays
+
+
+def _dims(shape) -> str:
+    return _X.join(str(int(d)) for d in shape)
+
+
+def _field_summary(v: object) -> str:
+    """One-line value shown after ``name:`` in a struct display (MATLAB rules)."""
+    import numpy as np
+
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+    from openmatlab.runtime.value import Array
+
+    if getattr(v, "is_struct", False):
+        return f"[{_dims(v.shape)} struct]"
+    if isinstance(v, CellValue):
+        if v.numel() == 0 and v.shape == (0, 0):
+            return "{}"
+        return "{" + _dims(v.full_shape) + " cell}"
+    if isinstance(v, FunctionHandleValue):
+        return _format_value(v)
+    if getattr(v, "is_string", False):
+        if v.numel() == 1:
+            g = v.data.flat[0] if hasattr(v, "data") else v.text
+            return "<missing>" if g is None else f'"{g}"'
+        return f"[{_dims(v.shape)} string]"
+    if isinstance(v, CharValue):
+        r, c = v.shape
+        if r == 1 or (r == 0 and c == 0):
+            return "'" + (v.text if r else "") + "'"
+        return f"[{_dims(v.shape)} char]"
+    if isinstance(v, Array):
+        a = np.asarray(v.backend_buffer())
+        cls = v.matlab_class()
+        shape = a.shape if a.ndim >= 2 else (1,) * (2 - a.ndim) + a.shape
+        if a.size == 0:
+            return "[]" if shape == (0, 0) and cls == "double" else f"[{_dims(shape)} {cls}]"
+        if getattr(v, "issparse", False) or len(shape) > 2 or (shape[0] != 1):
+            pre = "sparse " if getattr(v, "issparse", False) else ""
+            return f"[{_dims(shape)} {pre}{cls}]"
+        txt = " ".join(format_array(a.reshape(shape)).split())
+        return txt if a.size == 1 else f"[{txt}]"
+    return _format_value(v)
+
+
+def format_struct(v) -> str:
+    """MATLAB struct display: scalar shows ``name: value`` lines; arrays list field names."""
+    if v.numel() == 1:
+        if not v.fields:
+            return "  struct with no fields."
+        w = max(len(f) for f in v.fields)
+        lines = ["  struct with fields:", ""]
+        lines += [f"    {f.rjust(w)}: {_field_summary(v.elems[0][f])}" for f in v.fields]
+        return "\n".join(lines)
+    head = f"  {_dims(v.shape)} " + ("empty struct array" if v.numel() == 0 else "struct array")
+    if not v.fields:
+        return head + " with no fields."
+    return "\n".join([head + " with fields:", ""] + [f"    {f}" for f in v.fields])
+
+
 def _format_value(value: object) -> str:
+    if getattr(value, "is_struct", False):  # (Epic #506)
+        return format_struct(value)
     try:
         from openmatlab.runtime.cell_value import CellValue
 

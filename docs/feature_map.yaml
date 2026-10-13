@@ -373,6 +373,15 @@ features:
     notes: "Epic #496 (M2 C17 met): A\\b and B/A per MATLAB docs; square LU with partial pivoting, singular and RCOND warnings; non-square basic least squares via column-pivoted QR with rank-deficient warning; .\\ elementwise; inv/det/rank/pinv; warning/lastwarn channel"
     tests: [tests/unit/test_linear_solve.py, tests/bdd/test_linear_solve_bdd.py]
 
+  - id: runtime.structs
+    layer: runtime
+    name: "structs and struct arrays"
+    status: done
+    spec: docs/design/EPIC-506-structs.md
+    depends_on: [runtime.cell_value]
+    notes: "Epic #506 (M2 C18 met): StructValue; s.f, nested and dynamic s.(name) fields; chained assignment through fields, parens and braces; struct arrays s(i).f with growth, deletion, concat, transpose, for-loops; struct() with cell args; fieldnames/isfield/rmfield/setfield/getfield/isstruct/orderfields; cs-lists in [], {} and call args; MATLAB struct display; regexp names returns a struct (#504)"
+    tests: [tests/unit/test_structs.py, tests/bdd/test_structs_bdd.py]
+
   - id: libs.string_methods
     layer: libs
     name: "text methods for string/char/cellstr"

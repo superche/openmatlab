@@ -94,7 +94,9 @@ def test_regexp_outputs():
     assert _g(_r('regexp("a1b22", "\\d+", "match")')) == [["1", "22"]]
     assert _r("regexpi('ABC', 'b', 'match', 'once')").text == "B"
     names = _r(r"regexp('k=v', '(?<key>\w)=(?<val>\w)', 'names')")
-    assert [x.text for x in names.rows[0]] == ["key", "val"] and [x.text for x in names.rows[1]] == ["k", "v"]
+    # #504: 'names' is now a struct (was a 2xN {name; value} cell before structs existed)
+    assert names.matlab_class() == "struct" and names.fields == ("key", "val")
+    assert names.get("key").text == "k" and names.get("val").text == "v"
     with pytest.raises(EvalError, match="invalid expression"):
         _r("regexp('a', '(')")
 

@@ -221,6 +221,17 @@ def _iter_tokens(source: str) -> Iterator[Token]:
             last_sig = tok.type
             continue
 
+        # Field access: s.name / s.(expr) right after a value (Epic #506)
+        if ch == "." and (peek(1).isalpha() or peek(1) in "_(") and last_sig in (
+            TokenType.IDENT, TokenType.RPAREN, TokenType.RBRACE,
+        ) and (i == 0 or source[i - 1] not in " \t"):
+            tok = Token(TokenType.DOT, ".", start_line, start_col)
+            yield tok
+            last_sig = tok.type
+            i += 1
+            col += 1
+            continue
+
         if ch.isalpha() or ch == "_":
             start = i
             i += 1
