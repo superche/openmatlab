@@ -238,7 +238,8 @@ def format_struct(v) -> str:
         if not v.fields:
             return "  struct with no fields."
         w = max(len(f) for f in v.fields)
-        lines = ["  struct with fields:", ""]
+        head = "  MException with properties:" if getattr(v, "is_mexception", False) else "  struct with fields:"
+        lines = [head, ""]
         lines += [f"    {f.rjust(w)}: {_field_summary(v.elems[0][f])}" for f in v.fields]
         return "\n".join(lines)
     head = f"  {_dims(v.shape)} " + ("empty struct array" if v.numel() == 0 else "struct array")

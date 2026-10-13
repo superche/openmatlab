@@ -68,3 +68,5 @@ class TokenType(Enum):
     KW_SWITCH = auto()
     KW_CASE = auto()
     KW_OTHERWISE = auto()
+    KW_TRY = auto()
+    KW_CATCH = auto()
