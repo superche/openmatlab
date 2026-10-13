@@ -1,0 +1,158 @@
+# MATLAB core use-case gap analysis
+
+**Captured:** 2026-10-13 (Asia/Shanghai) on `main` after #526.
+**Method:** every status below was checked on the real CLI; nothing comes from memory.
+- **Per-function existence:** `openmatlab -e "NAME()"`. A missing function prints `Undefined function or variable: NAME`; a present one fails on its arguments or runs.
+- **Behaviour probes:** the commands quoted in the Evidence column.
+- **Script, function-file and classdef probes:** small `.m` files reached through `addpath`. They are reproduced in the appendix.
+
+Categories follow the public MATLAB documentation tree: Language Fundamentals, Mathematics, Graphics, Data Import and Analysis, Programming Scripts and Functions, App Building / Desktop.
+Priority reflects impact on a typical user:
+- **p0:** common scripts break without it.
+- **p1:** common in engineering and science work.
+- **p2:** specialised.
+
+## Summary
+
+- **Strong:** array core, indexing, cells, structs, N-D arrays, complex numbers, integer classes, strings/regexp, sparse matrices and linear solve (the M2 C01–C19 criteria).
+- **Missing at p0 level:** whole areas that ordinary MATLAB scripts use:
+  - error handling (`try/catch`, `error`);
+  - variadic functions (`nargin`, `varargin`);
+  - local functions in scripts. This path **crashes with a Python traceback**.
+  - command syntax (`hold on`, `format long`, `clear x`);
+  - formatted and file I/O (`fprintf`, `fopen`, `save`/`load`);
+  - random numbers;
+  - `diff`, `repmat`, `meshgrid`, sets, `tic`/`toc`;
+  - the plot-decoration calls (`figure`, `hold`, `title`, `xlabel`, `legend`, `subplot`).
+- **Missing altogether:** domain numerics (polynomials, interpolation, integration, ODE, optimisation, FFT, statistics), tables/datetime and classdef.
+
+## Gap table
+
+| Area | Item | Status | Evidence (`openmatlab -e ...`) | Priority | Candidate epic / milestone |
+|------|------|--------|-------------------------------|----------|----------------------------|
+| Language fundamentals | Array constructors / shape (`zeros ones eye linspace magic reshape size numel cat`) | **present** | `openmatlab -e "zeros(2), ones(1,2), eye(2)"`, `"reshape(1:4,2,2)"`, `"magic(3)"` → correct | — | — |
+| Language fundamentals | `repmat kron horzcat vertcat colon logspace meshgrid ndgrid` | **missing** | missing: `repmat` `kron` `horzcat` `vertcat` `colon` `logspace` `meshgrid` `ndgrid` | p0 | E-CORE-ARRAYS |
+| Language fundamentals | Cell conversions `cell2mat num2cell iscellstr` | **missing** | missing: `cell2mat` `num2cell` `iscellstr` | p0 | E-CORE-ARRAYS |
+| Language fundamentals | Type queries `class isa isnumeric ischar islogical isstruct iscell isfield isequal` | **present** | `"isnumeric(1), ischar('a'), islogical(true)"` → 1 1 1 | — | — |
+| Language fundamentals | `mat2str int2str dec2bin bin2dec hex2dec dec2hex blanks deblank` | **missing** | missing: `mat2str` `int2str` `dec2bin` `bin2dec` `hex2dec` `dec2hex` `blanks` `deblank` | p1 | E-CORE-STRINGS |
+| Language fundamentals | Command syntax (`hold on`, `format long`, `clear x`, `close all`, `which sin`) | **missing** | `"hold on"` → `Undefined variable: hold`; `"which sin"` → `Undefined variable: which` (but `which('sin')` works) | p0 | E-COMMAND-SYNTAX |
+| Mathematics | Elementary `abs sqrt exp log log10 sin cos tan floor ceil round mod max min sum prod cumsum` | **present** | `"abs(-1), sqrt(4), sum([1 2])"` → 1 2 3 | — | — |
+| Mathematics | `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial` | **missing** | missing: `rem` `sign` `hypot` `log2` `diff` `cumprod` `gcd` `lcm` `primes` `factor` `isprime` `nchoosek` `factorial`; `"fix(-1.5)"` → undefined | p0 | E-CORE-MATH |
+| Mathematics | `round(x, n)` digits form | **partial** | `"round(pi,2)"` → `round: expected 1..1 arguments, got 2` | p1 | E-CORE-MATH |
+| Mathematics | Linear solve / `inv det rank pinv norm expm` (M2 C17) | **present** | `"A=[2 1;1 3]; x=A\\[3;5]"` → 0.8 1.4 | — | — |
+| Mathematics | Decompositions `eig svd lu qr chol null orth trace cross dot` | **missing** | missing: `eig` `svd` `lu` `qr` `chol` `null` `orth` `trace` `cross` `dot` | p1 | E-LINALG-DECOMP |
+| Mathematics | Sparse (M2 C16/C19, #522/#523) | **present** | `"S=sparse(1e5,1e5); E=speye(1e5); nnz(E)"` → 100000 | — | — |
+| Polynomials | `polyfit polyval roots poly conv deconv polyder polyint` | **missing** | missing: `polyfit` `polyval` `roots` `poly` `conv` `deconv` `polyder` `polyint` | p1 | M3-POLY-INTERP |
+| Interpolation | `interp1 interp2 spline pchip` | **missing** | missing: `interp1` `interp2` `spline` `pchip` | p1 | M3-POLY-INTERP |
+| Integration | `trapz cumtrapz integral integral2 quad` | **missing** | missing: `trapz` `cumtrapz` `integral` `integral2` `quad` | p1 | M3-CALCULUS-ODE-OPT |
+| ODE | `ode45 ode23` | **missing** | missing: `ode45` `ode23` | p1 | M3-CALCULUS-ODE-OPT |
+| Optimization | `fzero fminsearch fminbnd` | **missing** | missing: `fzero` `fminsearch` `fminbnd` | p1 | M3-CALCULUS-ODE-OPT |
+| FFT / filtering | `fft ifft fft2 filter filtfilt` | **missing** | missing: `fft` `ifft` `fft2` `filter` `filtfilt` | p1 | M3-SIGNAL |
+| Statistics | `mean max min` present; `median mode std var` | **missing** | missing: `median` `mode` `std` `var`; `"mean([1 2])"` works | p0 | E-CORE-MATH |
+| Statistics | `histcounts quantile prctile corrcoef cov movmean cummax cummin` | **missing** | missing: `histcounts` `quantile` `prctile` `corrcoef` `cov` `movmean` `cummax` `cummin` | p1 | M3-STATS |
+| Random numbers | `rand randn randi rng randperm` | **missing** | missing: `rand` `randn` `randi` `rng` `randperm` | p0 | E-CORE-MATH |
+| Sets | `union intersect setdiff setxor ismember sortrows` | **missing** | missing: `union` `intersect` `setdiff` `setxor` `ismember` `sortrows` | p0 | E-CORE-ARRAYS |
+| Sets | `unique` numeric (M2 C09) | **partial** | present: `unique` `issorted`; `"unique({'b','a','b'})"` → `unique: expected numeric Array argument` (no cellstr/string) | p0 | E-CORE-ARRAYS |
+| Strings / regexp | `regexp regexpi regexprep strtrim strcmp strcmpi strncmp strrep upper lower split join contains startsWith extractAfter compose sprintf num2str str2double` | **present** | `"regexprep('abc','b','X')"` → aXc; `"sprintf('%d,%s',3,'a')"` → 3,a | — | — |
+| Strings / regexp | `strsplit strjoin strfind strcat strvcat str2num` | **missing** | missing: `strsplit` `strjoin` `strfind` `strcat` `strvcat` `str2num` | p0 | E-CORE-STRINGS |
+| Cells / functional | `cellfun arrayfun structfun` incl. `'UniformOutput'` | **present** | `"cellfun(@(x) x*2, {1,2}, 'UniformOutput', false)"` → {2,4} | — | — |
+| Cells / functional | `containers.Map` | **missing** | missing: `containers`; `"m=containers.Map(); m('a')=1"` → `Undefined variable: containers` | p1 | E-DATA-TYPES |
+| Structs | structs / struct arrays (M2 C18) | **present** | `"s=struct('a',{1,2}); numel(s)"` → 2 | — | — |
+| Tables etc. | `table timetable categorical` | **missing** | missing: `table` `timetable` `categorical` | p2 | E-DATA-TYPES (new milestone) |
+| Date / time | `datetime duration seconds datenum datestr clock now` | **missing** | missing: `datetime` `duration` `seconds` `datenum` `datestr` `clock` `now` | p1 | E-DATA-TYPES |
+| Performance tooling | `tic toc pause cputime` | **missing** | missing: `tic` `toc` `pause` `cputime` | p0 | E-CORE-MATH |
+| Errors / exceptions | `try/catch` | **missing** | `"try, error('boom'); catch e, disp(e.message); end"` → `Unexpected token KW_END` | p0 | E-ERRORS |
+| Errors / exceptions | `error MException throw rethrow assert lasterr`; `warning lastwarn` | **partial** | missing: `error` `MException` `throw` `rethrow` `assert` `lasterr`; present: `warning` `lastwarn`; `"warning('a:b','careful')"` → `Warning: careful`; `error` undefined | p0 | E-ERRORS |
+| Scripts & functions | Function files (fixed arity) | **present** | `"addpath(...); r = f(x)"` resolves `.m` functions (lang.mfile BDD) | — | — |
+| Scripts & functions | `varargin varargout nargin nargout narginchk nargoutchk` | **missing** | missing: `nargin` `nargout` `narginchk` `nargoutchk` `varargin`; `run_v` (calls `function varargout = vfun(varargin)`) → `vfun: expected 1 args, got 3`; `"f=@(varargin) numel(varargin); f(1,2,3)"` → `Too many input arguments.` | p0 | E-FUNCTIONS |
+| Scripts & functions | Local functions in script files | **missing** | `"addpath('/tmp/gap'); localfn"` (script with a trailing `function`) → **Python traceback** (crash, not an error message) | p0 | E-FUNCTIONS |
+| Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **missing** | missing: `eval` `evalin` `feval` `str2func` `func2str` `exist` `isvarname` | p0 | E-FUNCTIONS |
+| Scripts & functions | `global persistent` | **missing** | missing: `global` `persistent`; `"global G; G=1"` → `Undefined variable: global` | p0 | E-FUNCTIONS |
+| Scripts & functions | `inputParser validateattributes` | **missing** | missing: `inputParser` `validateattributes` | p1 | E-FUNCTIONS |
+| OOP | `classdef` (properties, methods, constructors) | **missing** | `run_c` (uses `classdef Pt`) → `Unexpected token KW_END at line 4` | p1 | new milestone: Object system |
+| File I/O | `disp` / `sprintf` present; `fprintf display` | **missing** | missing: `fprintf` `display`; `"disp('hello')"` → hello; `fprintf` undefined | p0 | E-FILE-IO |
+| File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **missing** | missing: `fopen` `fclose` `fgetl` `fgets` `fread` `fwrite` `fscanf` `textscan` `fileread` `dir` | p0 | E-FILE-IO |
+| File I/O | `save load` (.mat) | **missing** | missing: `save` `load` | p0 | E-FILE-IO |
+| Data import/export | `readmatrix writematrix csvread csvwrite dlmread dlmwrite readtable writetable jsonencode jsondecode` | **missing** | missing: `readmatrix` `writematrix` `csvread` `csvwrite` `dlmread` `dlmwrite` `readtable` `writetable` `jsonencode` `jsondecode` | p1 | M3-DATA-IO |
+| File I/O | `input keyboard` | **missing** | missing: `input` `keyboard` | p2 | E-FILE-IO |
+| Graphics | `plot` (2-D line, figures region in Workbench) | **partial** | present: `plot`; `"plot(1:3,[1 4 9])"` runs; `"plot(1:3); title('x')"` → `title` undefined | p0 | E-GRAPHICS-CORE |
+| Graphics | `figure hold subplot title xlabel ylabel legend grid axis xlim ylim gca gcf set get close saveas print` | **missing** | missing: `figure` `hold` `subplot` `title` `xlabel` `ylabel` `legend` `grid` `axis` `xlim` `ylim` `gca` `gcf` `set` `get` `close` `saveas` `print` | p0 | E-GRAPHICS-CORE |
+| Graphics | `bar scatter histogram pie area stairs stem errorbar semilogx semilogy loglog` | **missing** | missing: `bar` `scatter` `histogram` `pie` `area` `stairs` `stem` `errorbar` `semilogx` `semilogy` `loglog` | p1 | E-GRAPHICS-CORE |
+| Graphics | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | **missing** | missing: `surf` `mesh` `contour` `plot3` `imagesc` `colorbar` `colormap` `text` `line` `patch` `fill` | p2 | M3-SCI-GRAPHICS |
+| App / Workbench | Command window, editor (tabs), workspace browser, current folder, figures (M6) | **partial** | `openmatlab workbench --help`; feature_map `host.workbench.*` all `partial`; editor note "no LSP/debugger" | — | — |
+| App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **missing** | missing: `help` `doc` `lookfor` `what` `who` `whos` `clc` `clear` `format` `pwd` `cd` `ls` `rmpath` `path`; `addpath`, `run`, `which('f')` present | p0 | E-COMMAND-SYNTAX |
+| App / Workbench | Debugger (breakpoints, dbstop/dbstep), variable editor, help browser | **missing** | feature_map: no `debugger`/`variable_editor` feature id; `host.workbench.editor` notes "no LSP/debugger" | p2 | M6 follow-up (Workbench) |
+| Octave extensions | `x++`, `do ... until` | **missing** | `"x = 3; x++"` → `Unexpected token EOF` | p2 | non-goal (MATLAB first) |
+
+## Proposed grouping
+
+**New milestone M7 — MATLAB core language and I/O completeness.** These are core MATLAB, not toolboxes; p0 first:
+
+| Epic | Scope | Priority |
+|------|-------|----------|
+| E-ERRORS | `try/catch`, `error` (id + format), `MException`, `throw`/`rethrow`, `assert`, `lasterr`, `err.stack` | p0 |
+| E-FUNCTIONS | `nargin`/`nargout`/`varargin`/`varargout`, `narginchk`, local functions in scripts (fixes the crash), nested `end`-terminated functions, `global`/`persistent`, `eval`/`feval`/`str2func`/`func2str`/`exist`; then `inputParser`/`validateattributes` (p1) | p0 |
+| E-COMMAND-SYNTAX | command syntax `cmd arg`; `clear clc who whos format help doc pwd cd ls dir path rmpath which` | p0 |
+| E-FILE-IO | `fprintf` (console and fid), `fopen`/`fclose`/`fgetl`/`fgets`/`fread`/`fwrite`/`fscanf`/`textscan`, `fileread`, `save`/`load` (.mat v5 subset), `input` (p2) | p0 |
+| E-CORE-MATH | `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial`, `round(x,n)`, `median mode std var`, `rand randn randi rng randperm`, `tic toc pause` | p0 |
+| E-CORE-ARRAYS | `repmat kron horzcat vertcat logspace meshgrid ndgrid cell2mat num2cell iscellstr`, sets `union intersect setdiff setxor ismember sortrows`, `unique` on cellstr/string | p0 |
+| E-CORE-STRINGS | `strsplit strjoin strfind strcat strvcat str2num`; then `mat2str int2str dec2bin bin2dec hex2dec dec2hex blanks deblank` (p1) | p0/p1 |
+| E-GRAPHICS-CORE | `figure hold subplot title xlabel ylabel legend grid axis xlim ylim gca gcf set get close saveas print`; then `bar scatter histogram pie area stairs stem errorbar semilog*/loglog` (p1) | p0/p1 |
+| E-LINALG-DECOMP | `eig svd lu qr chol null orth trace cross dot` | p1 |
+| E-DATA-TYPES | `containers.Map`, `datetime`/`duration`/`datenum`/`datestr`; then `table`/`timetable`/`categorical` (p2, possibly its own milestone) | p1/p2 |
+
+**M3 — Domain toolboxes** (milestone/3, currently empty): domain libraries delivered as clean-room code. They ship either as `libs/` modules or as community plugins on the M4 contract, and each is gated like M5 by reference-vector conformance scripts:
+
+| Epic | Scope | Priority |
+|------|-------|----------|
+| M3-POLY-INTERP | `polyfit polyval roots poly conv deconv polyder polyint interp1 interp2 spline pchip` | p1 |
+| M3-CALCULUS-ODE-OPT | `trapz cumtrapz integral integral2 quad ode45 ode23 fzero fminsearch fminbnd` | p1 |
+| M3-SIGNAL | `fft ifft fft2 filter filtfilt`; grow `community.signal` beyond `hamming`/`rectwin`/`blackman` (`hann kaiser`, `freqz`) | p1 |
+| M3-STATS | `histcounts quantile prctile corrcoef cov movmean cummax cummin` | p1 |
+| M3-DATA-IO | `readmatrix writematrix csvread csvwrite dlmread dlmwrite jsonencode jsondecode`; `readtable`/`writetable` after tables | p1 |
+| M3-SCI-GRAPHICS | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | p2 |
+
+**New milestone — Object system:** `classdef` (value and handle classes, properties, methods, events), p1.
+
+**M6 follow-up — Workbench:** debugger, variable editor, help browser (p2).
+
+## Appendix — probe files
+
+```matlab
+% /tmp/gap/localfn.m  (script with a local function)
+r = helper(3);
+disp(r)
+function y = helper(x)
+  y = x * 2;
+end
+% /tmp/gap/fdir/vfun.m
+function varargout = vfun(varargin)
+  varargout{1} = nargin;
+  varargout{2} = numel(varargin);
+end
+% /tmp/gap/fdir/run_v.m
+[a, b] = vfun(1, 2, 3);
+disp([a b])
+% /tmp/gap/fdir/Pt.m
+classdef Pt
+  properties
+    x = 0
+  end
+  methods
+    function obj = Pt(v)
+      obj.x = v;
+    end
+    function r = dbl(obj)
+      r = obj.x * 2;
+    end
+  end
+end
+% /tmp/gap/fdir/run_c.m
+p = Pt(3);
+disp(dbl(p))
+```
+
+Per-function existence results (`openmatlab -e "NAME()"`, 279 names):
+
+- present (64): addpath arrayfun bitand bitshift cat cell cellfun char class compose contains det disp double exp expm extractAfter fieldnames fliplr inv isa iscell isequal isfield issorted isstruct join lastwarn linspace log log10 lower max mean min mod norm num2str pinv plot prod rank regexp regexpi regexprep round run sort split sprintf startsWith str2double strcmp strcmpi string strncmp strrep strtrim struct structfun unique upper warning which
+- missing (215): MException area assert axis bar bin2dec blanks categorical cd cell2mat chol clc clear clock close colon colorbar colormap containers contour conv corrcoef cov cputime cross csvread csvwrite cummax cummin cumprod cumtrapz datenum datestr datetime deblank dec2bin dec2hex deconv diff dir display dlmread dlmwrite doc dot duration eig error errorbar eval evalin exist factor factorial fclose feval fft fft2 fgetl fgets figure fileread fill filter filtfilt fminbnd fminsearch fopen format fprintf fread fscanf func2str fwrite fzero gca gcd gcf get global grid help hex2dec histcounts histogram hold horzcat hypot ifft imagesc input inputParser int2str integral integral2 interp1 interp2 intersect iscellstr ismember isprime isvarname jsondecode jsonencode keyboard kron lasterr lcm legend line load log2 loglog logspace lookfor ls lu mat2str median mesh meshgrid mode movmean nargin narginchk nargout nargoutchk nchoosek ndgrid now null num2cell ode23 ode45 orth patch path pause pchip persistent pie plot3 poly polyder polyfit polyint polyval prctile primes print pwd qr quad quantile rand randi randn randperm readmatrix readtable rem repmat rethrow rmpath rng roots save saveas scatter seconds semilogx semilogy set setdiff setxor sign sortrows spline stairs std stem str2func str2num strcat strfind strjoin strsplit strvcat subplot surf svd table text textscan throw tic timetable title toc trace trapz union validateattributes var varargin vertcat what who whos writematrix writetable xlabel xlim ylabel ylim

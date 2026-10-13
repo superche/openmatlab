@@ -809,9 +809,9 @@ features:
   - id: qa.conformance_suite
     layer: qa
     name: Conformance / golden suite
-    status: stub
+    status: partial
     tests: [tests/conformance/]
-    notes: "Placeholders only; future public-docs / optional Octave"
+    notes: "M2 C01-C19 (m2_manifest.py) and domain D01-D04 (domain_manifest.py) scripts with expected JSON from public MATLAB docs; strict xfail for pending; runs in CI via the unit marker. Not yet: Octave cross-check, M3 domain scripts"
 
   - id: qa.interactive_suite
     layer: qa
