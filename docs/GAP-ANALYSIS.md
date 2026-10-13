@@ -14,6 +14,8 @@ Priority reflects impact on a typical user:
 
 ## Summary
 
+> **M7 update (2026-10-13):** every M7 conformance criterion (C01–C10) is met, and each M7-tagged row below now says what was delivered and what remains, with an issue for the remainder. The original findings are kept underneath as the historical baseline. A probe sweep after M7 found no Python exceptions reaching the user (fixed in #606). The rows tagged M3 and new-milestone still reflect the original capture, except that some numerics (polyfit/polyval/roots/conv/deconv, interp1, trapz/cumtrapz/integral, fzero/fminsearch, filter, histcounts/cov/corrcoef, readmatrix/writematrix and friends) shipped early with Epic #534 and #533.
+
 - **Strong:** array core, indexing, cells, structs, N-D arrays, complex numbers, integer classes, strings/regexp, sparse matrices and linear solve (the M2 C01–C19 criteria).
 - **Missing at p0 level:** whole areas that ordinary MATLAB scripts use:
   - error handling (`try/catch`, `error`);
@@ -31,16 +33,16 @@ Priority reflects impact on a typical user:
 | Area | Item | Status | Evidence (`openmatlab -e ...`) | Priority | Candidate epic / milestone |
 |------|------|--------|-------------------------------|----------|----------------------------|
 | Language fundamentals | Array constructors / shape (`zeros ones eye linspace magic reshape size numel cat`) | **present** | `openmatlab -e "zeros(2), ones(1,2), eye(2)"`, `"reshape(1:4,2,2)"`, `"magic(3)"` → correct | — | — |
-| Language fundamentals | `repmat kron horzcat vertcat colon logspace meshgrid ndgrid` | **missing** | missing: `repmat` `kron` `horzcat` `vertcat` `colon` `logspace` `meshgrid` `ndgrid` | p0 | E-CORE-ARRAYS |
-| Language fundamentals | Cell conversions `cell2mat num2cell iscellstr` | **missing** | missing: `cell2mat` `num2cell` `iscellstr` | p0 | E-CORE-ARRAYS |
+| Language fundamentals | `repmat kron horzcat vertcat colon logspace meshgrid ndgrid` | **present** | delivered in M7 (Epic #535); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-ARRAYS |
+| Language fundamentals | Cell conversions `cell2mat num2cell iscellstr` | **present** | delivered in M7 (Epic #535); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-ARRAYS |
 | Language fundamentals | Type queries `class isa isnumeric ischar islogical isstruct iscell isfield isequal` | **present** | `"isnumeric(1), ischar('a'), islogical(true)"` → 1 1 1 | — | — |
-| Language fundamentals | `mat2str int2str dec2bin bin2dec hex2dec dec2hex blanks deblank` | **missing** | missing: `mat2str` `int2str` `dec2bin` `bin2dec` `hex2dec` `dec2hex` `blanks` `deblank` | p1 | E-CORE-STRINGS |
-| Language fundamentals | Command syntax (`hold on`, `format long`, `clear x`, `close all`, `which sin`) | **missing** | `"hold on"` → `Undefined variable: hold`; `"which sin"` → `Undefined variable: which` (but `which('sin')` works) | p0 | E-COMMAND-SYNTAX |
+| Language fundamentals | `mat2str int2str dec2bin bin2dec hex2dec dec2hex blanks deblank` | **present** | delivered in M7 (Epic #536); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-STRINGS |
+| Language fundamentals | Command syntax (`hold on`, `format long`, `clear x`, `close all`, `which sin`) | **present** | delivered in M7 (Epic #532); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-COMMAND-SYNTAX |
 | Mathematics | Elementary `abs sqrt exp log log10 sin cos tan floor ceil round mod max min sum prod cumsum` | **present** | `"abs(-1), sqrt(4), sum([1 2])"` → 1 2 3 | — | — |
-| Mathematics | `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial` | **missing** | missing: `rem` `sign` `hypot` `log2` `diff` `cumprod` `gcd` `lcm` `primes` `factor` `isprime` `nchoosek` `factorial`; `"fix(-1.5)"` → undefined | p0 | E-CORE-MATH |
-| Mathematics | `round(x, n)` digits form | **partial** | `"round(pi,2)"` → `round: expected 1..1 arguments, got 2` | p1 | E-CORE-MATH |
+| Mathematics | `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
+| Mathematics | `round(x, n)` digits form | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Mathematics | Linear solve / `inv det rank pinv norm expm` (M2 C17) | **present** | `"A=[2 1;1 3]; x=A\\[3;5]"` → 0.8 1.4 | — | — |
-| Mathematics | Decompositions `eig svd lu qr chol null orth trace cross dot` | **missing** | missing: `eig` `svd` `lu` `qr` `chol` `null` `orth` `trace` `cross` `dot` | p1 | E-LINALG-DECOMP |
+| Mathematics | Decompositions `eig svd lu qr chol null orth trace cross dot` | **present** | delivered in M7 (Epic #538); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-LINALG-DECOMP |
 | Mathematics | Sparse (M2 C16/C19, #522/#523) | **present** | `"S=sparse(1e5,1e5); E=speye(1e5); nnz(E)"` → 100000 | — | — |
 | Polynomials | `polyfit polyval roots poly conv deconv polyder polyint` | **missing** | missing: `polyfit` `polyval` `roots` `poly` `conv` `deconv` `polyder` `polyint` | p1 | M3-POLY-INTERP |
 | Interpolation | `interp1 interp2 spline pchip` | **missing** | missing: `interp1` `interp2` `spline` `pchip` | p1 | M3-POLY-INTERP |
@@ -48,39 +50,39 @@ Priority reflects impact on a typical user:
 | ODE | `ode45 ode23` | **missing** | missing: `ode45` `ode23` | p1 | M3-CALCULUS-ODE-OPT |
 | Optimization | `fzero fminsearch fminbnd` | **missing** | missing: `fzero` `fminsearch` `fminbnd` | p1 | M3-CALCULUS-ODE-OPT |
 | FFT / filtering | `fft ifft fft2 filter filtfilt` | **missing** | missing: `fft` `ifft` `fft2` `filter` `filtfilt` | p1 | M3-SIGNAL |
-| Statistics | `mean max min` present; `median mode std var` | **missing** | missing: `median` `mode` `std` `var`; `"mean([1 2])"` works | p0 | E-CORE-MATH |
+| Statistics | `mean max min` present; `median mode std var` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Statistics | `histcounts quantile prctile corrcoef cov movmean cummax cummin` | **missing** | missing: `histcounts` `quantile` `prctile` `corrcoef` `cov` `movmean` `cummax` `cummin` | p1 | M3-STATS |
-| Random numbers | `rand randn randi rng randperm` | **missing** | missing: `rand` `randn` `randi` `rng` `randperm` | p0 | E-CORE-MATH |
-| Sets | `union intersect setdiff setxor ismember sortrows` | **missing** | missing: `union` `intersect` `setdiff` `setxor` `ismember` `sortrows` | p0 | E-CORE-ARRAYS |
-| Sets | `unique` numeric (M2 C09) | **partial** | present: `unique` `issorted`; `"unique({'b','a','b'})"` → `unique: expected numeric Array argument` (no cellstr/string) | p0 | E-CORE-ARRAYS |
+| Random numbers | `rand randn randi rng randperm` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
+| Sets | `union intersect setdiff setxor ismember sortrows` | **present** | delivered in M7 (Epic #535); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-ARRAYS |
+| Sets | `unique` numeric (M2 C09) | **present** | delivered in M7 (Epic #535); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-ARRAYS |
 | Strings / regexp | `regexp regexpi regexprep strtrim strcmp strcmpi strncmp strrep upper lower split join contains startsWith extractAfter compose sprintf num2str str2double` | **present** | `"regexprep('abc','b','X')"` → aXc; `"sprintf('%d,%s',3,'a')"` → 3,a | — | — |
-| Strings / regexp | `strsplit strjoin strfind strcat strvcat str2num` | **missing** | missing: `strsplit` `strjoin` `strfind` `strcat` `strvcat` `str2num` | p0 | E-CORE-STRINGS |
+| Strings / regexp | `strsplit strjoin strfind strcat strvcat str2num` | **present** | delivered in M7 (Epic #536); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-STRINGS |
 | Cells / functional | `cellfun arrayfun structfun` incl. `'UniformOutput'` | **present** | `"cellfun(@(x) x*2, {1,2}, 'UniformOutput', false)"` → {2,4} | — | — |
-| Cells / functional | `containers.Map` | **missing** | missing: `containers`; `"m=containers.Map(); m('a')=1"` → `Undefined variable: containers` | p1 | E-DATA-TYPES |
+| Cells / functional | `containers.Map` | **present** | delivered in M7 (Epic #539); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-DATA-TYPES |
 | Structs | structs / struct arrays (M2 C18) | **present** | `"s=struct('a',{1,2}); numel(s)"` → 2 | — | — |
 | Tables etc. | `table timetable categorical` | **missing** | missing: `table` `timetable` `categorical` | p2 | E-DATA-TYPES (new milestone) |
-| Date / time | `datetime duration seconds datenum datestr clock now` | **missing** | missing: `datetime` `duration` `seconds` `datenum` `datestr` `clock` `now` | p1 | E-DATA-TYPES |
-| Performance tooling | `tic toc pause cputime` | **missing** | missing: `tic` `toc` `pause` `cputime` | p0 | E-CORE-MATH |
-| Errors / exceptions | `try/catch` | **missing** | `"try, error('boom'); catch e, disp(e.message); end"` → `Unexpected token KW_END` | p0 | E-ERRORS |
-| Errors / exceptions | `error MException throw rethrow assert lasterr`; `warning lastwarn` | **partial** | missing: `error` `MException` `throw` `rethrow` `assert` `lasterr`; present: `warning` `lastwarn`; `"warning('a:b','careful')"` → `Warning: careful`; `error` undefined | p0 | E-ERRORS |
+| Date / time | `datetime duration seconds datenum datestr clock now` | **present** | delivered in M7 (Epic #539); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-DATA-TYPES |
+| Performance tooling | `tic toc pause cputime` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
+| Errors / exceptions | `try/catch` | **present** | delivered in M7 (Epic #530); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-ERRORS |
+| Errors / exceptions | `error MException throw rethrow assert lasterr`; `warning lastwarn` | **present** | delivered in M7 (Epic #530); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-ERRORS |
 | Scripts & functions | Function files (fixed arity) | **present** | `"addpath(...); r = f(x)"` resolves `.m` functions (lang.mfile BDD) | — | — |
-| Scripts & functions | `varargin varargout nargin nargout narginchk nargoutchk` | **missing** | missing: `nargin` `nargout` `narginchk` `nargoutchk` `varargin`; `run_v` (calls `function varargout = vfun(varargin)`) → `vfun: expected 1 args, got 3`; `"f=@(varargin) numel(varargin); f(1,2,3)"` → `Too many input arguments.` | p0 | E-FUNCTIONS |
-| Scripts & functions | Local functions in script files | **missing** | `"addpath('/tmp/gap'); localfn"` (script with a trailing `function`) → **Python traceback** (crash, not an error message) | p0 | E-FUNCTIONS |
-| Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **missing** | missing: `eval` `evalin` `feval` `str2func` `func2str` `exist` `isvarname` | p0 | E-FUNCTIONS |
-| Scripts & functions | `global persistent` | **missing** | missing: `global` `persistent`; `"global G; G=1"` → `Undefined variable: global` | p0 | E-FUNCTIONS |
-| Scripts & functions | `inputParser validateattributes` | **missing** | missing: `inputParser` `validateattributes` | p1 | E-FUNCTIONS |
+| Scripts & functions | `varargin varargout nargin nargout narginchk nargoutchk` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
+| Scripts & functions | Local functions in script files | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
+| Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **partial** | delivered in M7 (Epic #531); still missing: `evalin` → #608 (verified 2026-10-13) | p1 | E-FUNCTIONS |
+| Scripts & functions | `global persistent` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
+| Scripts & functions | `inputParser validateattributes` | **partial** | delivered in M7 (Epic #531); still missing: `inputParser` `validateattributes` → #569 (verified 2026-10-13) | p1 | E-FUNCTIONS |
 | OOP | `classdef` (properties, methods, constructors) | **missing** | `run_c` (uses `classdef Pt`) → `Unexpected token KW_END at line 4` | p1 | new milestone: Object system |
-| File I/O | `disp` / `sprintf` present; `fprintf display` | **missing** | missing: `fprintf` `display`; `"disp('hello')"` → hello; `fprintf` undefined | p0 | E-FILE-IO |
-| File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **missing** | missing: `fopen` `fclose` `fgetl` `fgets` `fread` `fwrite` `fscanf` `textscan` `fileread` `dir` | p0 | E-FILE-IO |
-| File I/O | `save load` (.mat) | **missing** | missing: `save` `load` | p0 | E-FILE-IO |
+| File I/O | `disp` / `sprintf` present; `fprintf display` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
+| File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
+| File I/O | `save load` (.mat) | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | Data import/export | `readmatrix writematrix csvread csvwrite dlmread dlmwrite readtable writetable jsonencode jsondecode` | **missing** | missing: `readmatrix` `writematrix` `csvread` `csvwrite` `dlmread` `dlmwrite` `readtable` `writetable` `jsonencode` `jsondecode` | p1 | M3-DATA-IO |
-| File I/O | `input keyboard` | **missing** | missing: `input` `keyboard` | p2 | E-FILE-IO |
-| Graphics | `plot` (2-D line, figures region in Workbench) | **partial** | present: `plot`; `"plot(1:3,[1 4 9])"` runs; `"plot(1:3); title('x')"` → `title` undefined | p0 | E-GRAPHICS-CORE |
-| Graphics | `figure hold subplot title xlabel ylabel legend grid axis xlim ylim gca gcf set get close saveas print` | **missing** | missing: `figure` `hold` `subplot` `title` `xlabel` `ylabel` `legend` `grid` `axis` `xlim` `ylim` `gca` `gcf` `set` `get` `close` `saveas` `print` | p0 | E-GRAPHICS-CORE |
-| Graphics | `bar scatter histogram pie area stairs stem errorbar semilogx semilogy loglog` | **missing** | missing: `bar` `scatter` `histogram` `pie` `area` `stairs` `stem` `errorbar` `semilogx` `semilogy` `loglog` | p1 | E-GRAPHICS-CORE |
+| File I/O | `input keyboard` | **partial** | delivered in M7 (Epic #533); still missing: `input` `keyboard` → #577 (verified 2026-10-13) | p2 | E-FILE-IO |
+| Graphics | `plot` (2-D line, figures region in Workbench) | **present** | delivered in M7 (Epic #537); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-GRAPHICS-CORE |
+| Graphics | `figure hold subplot title xlabel ylabel legend grid axis xlim ylim gca gcf set get close saveas print` | **present** | delivered in M7 (Epic #537); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-GRAPHICS-CORE |
+| Graphics | `bar scatter histogram pie area stairs stem errorbar semilogx semilogy loglog` | **partial** | delivered in M7 (Epic #537); still missing: `pie` `area` `stairs` `stem` `errorbar` `semilogx` `semilogy` `loglog` → #593 (verified 2026-10-13) | p1 | E-GRAPHICS-CORE |
 | Graphics | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | **missing** | missing: `surf` `mesh` `contour` `plot3` `imagesc` `colorbar` `colormap` `text` `line` `patch` `fill` | p2 | M3-SCI-GRAPHICS |
 | App / Workbench | Command window, editor (tabs), workspace browser, current folder, figures (M6) | **partial** | `openmatlab workbench --help`; feature_map `host.workbench.*` all `partial`; editor note "no LSP/debugger" | — | — |
-| App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **missing** | missing: `help` `doc` `lookfor` `what` `who` `whos` `clc` `clear` `format` `pwd` `cd` `ls` `rmpath` `path`; `addpath`, `run`, `which('f')` present | p0 | E-COMMAND-SYNTAX |
+| App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **partial** | delivered in M7 (Epic #532); still missing: `doc` `lookfor` `what` → #608 (verified 2026-10-13) | p1 | E-COMMAND-SYNTAX |
 | App / Workbench | Debugger (breakpoints, dbstop/dbstep), variable editor, help browser | **missing** | feature_map: no `debugger`/`variable_editor` feature id; `host.workbench.editor` notes "no LSP/debugger" | p2 | M6 follow-up (Workbench) |
 | Octave extensions | `x++`, `do ... until` | **missing** | `"x = 3; x++"` → `Unexpected token EOF` | p2 | non-goal (MATLAB first) |
 
