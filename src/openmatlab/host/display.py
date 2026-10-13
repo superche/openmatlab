@@ -176,6 +176,8 @@ def _field_summary(v: object) -> str:
     from openmatlab.runtime.function_handle import FunctionHandleValue
     from openmatlab.runtime.value import Array
 
+    if getattr(v, "is_object", False):  # (Epic #539)
+        return f"[{_dims(v.shape)} {v.matlab_class()}]"
     if getattr(v, "is_struct", False):
         return f"[{_dims(v.shape)} struct]"
     if isinstance(v, CellValue):
@@ -249,6 +251,8 @@ def format_struct(v) -> str:
 
 
 def _format_value(value: object) -> str:
+    if getattr(value, "is_object", False):  # containers.Map / datetime / duration (Epic #539)
+        return value.display_text()
     if getattr(value, "is_struct", False):  # (Epic #506)
         return format_struct(value)
     if getattr(value, "is_missing_value", False):  # (#504)

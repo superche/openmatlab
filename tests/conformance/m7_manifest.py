@@ -18,5 +18,5 @@ CRITERIA = {
     "C07": ("m7_c07_strings", "p0", [536, 555, 556], "met"),
     "C08": ("m7_c08_graphics_core", "p0", [537, 557, 558, 559], "met"),
     "C09": ("m7_c09_linalg_decomp", "p1", [538, 560], "met"),
-    "C10": ("m7_c10_map_datetime", "p1", [539, 561, 562], "pending"),
+    "C10": ("m7_c10_map_datetime", "p1", [539, 561, 562], "met"),
 }

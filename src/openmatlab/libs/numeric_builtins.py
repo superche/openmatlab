@@ -1256,3 +1256,7 @@ def register_numeric_builtins(resolver) -> None:
     resolver.register_builtin("cellfun", cellfun)
 
 _strfun_builtins.register_late(BUILTINS)
+
+from openmatlab.libs import time_builtins as _time_builtins  # noqa: E402
+
+_time_builtins.register(BUILTINS)

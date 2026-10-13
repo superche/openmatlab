@@ -330,6 +330,14 @@ features:
     notes: "eig/svd/lu/qr/chol/null/orth/trace/cross/dot/sqrtm, NumPy-only, MATLAB shapes and error IDs"
     tests: [tests/unit/test_decomp.py, tests/bdd/test_decomp_bdd.py]
 
+  - id: libs.map_datetime
+    layer: libs
+    name: containers.Map and date/time basics
+    status: done
+    depends_on: [libs.core_math]
+    notes: "object protocol; containers.Map handle; datetime/duration arithmetic; datenum/datestr/weekday/clock"
+    tests: [tests/unit/test_map_datetime.py, tests/bdd/test_map_datetime_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
