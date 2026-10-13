@@ -1270,6 +1270,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.classdef_handle
+    kind: unit
+    title: classdef handle classes and inheritance (Epic #619)
+    features: [lang.classdef_handle]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_classdef_handle.py
+    status: active
+    env: unit
+
+  - id: tc.classdef_handle_bdd
+    kind: bdd
+    title: classdef handle classes and inheritance Gherkin scenarios (Epic #619)
+    features: [lang.classdef_handle]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_classdef_handle_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

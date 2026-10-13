@@ -1160,13 +1160,32 @@ class Evaluator:
                 with _frames.calling(self):
                     return list(m(args, nargout=nargout))
         if key in _fi.INTRINSICS:  # need the caller's frame (#531)
-            return _fi.INTRINSICS[key](self, args if args is not None else self._eval_call_args(arg_exprs), nargout)
+            if args is None:
+                args = self._eval_call_args(arg_exprs)
+                m = _cd.find_method_for_args(n, args)  # class loaded while evaluating the arguments
+                if m is not None:
+                    with _frames.calling(self):
+                        return list(m(args, nargout=nargout))
+            return _fi.INTRINSICS[key](self, args, nargout)
         try:
             fn = self.functions.resolve(n)
         except LookupError as exc:
+            if args is None and arg_exprs:  # maybe a method of a class the arguments load (M8)
+                try:
+                    args = self._eval_call_args(arg_exprs)
+                except EvalError:
+                    raise EvalError(str(exc)) from exc
+                m = _cd.find_method_for_args(n, args)
+                if m is not None:
+                    with _frames.calling(self):
+                        return list(m(args, nargout=nargout))
             raise EvalError(str(exc)) from exc
         if args is None:
             args = self._eval_call_args(arg_exprs)
+            m = _cd.find_method_for_args(n, args) if any(_cd.is_instance(a) for a in args) else None
+            if m is not None:
+                with _frames.calling(self):
+                    return list(m(args, nargout=nargout))
 
         try:
             with _frames.calling(self):  # callee sees this frame as its caller (evalin/assignin)

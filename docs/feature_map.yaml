@@ -354,6 +354,14 @@ features:
     notes: "classdef parser; value classes (copy on write); constructors with implicit super; method dispatch by argument; property attributes"
     tests: [tests/unit/test_classdef_core.py, tests/bdd/test_classdef_core_bdd.py]
 
+  - id: lang.classdef_handle
+    layer: lang
+    name: classdef handle classes and inheritance
+    status: done
+    depends_on: [lang.classdef_core]
+    notes: "handle identity semantics; isvalid/delete; MRO dispatch; obj@Super and meth@Super; implicit super constructors"
+    tests: [tests/unit/test_classdef_handle.py, tests/bdd/test_classdef_handle_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

@@ -64,6 +64,73 @@ def _wrap_isa(orig):
     return f
 
 
+def _wrap_isvalid(orig):
+    def f(args, *, nargout=1):
+        if len(args) == 1 and cd.is_instance(args[0]):
+            if not args[0].info.is_handle:
+                raise _err(f"Undefined function 'isvalid' for input arguments of type '{args[0].info.name}'.",
+                           "MATLAB:UndefinedFunction")
+            return (_b(args[0].alive),)
+        if orig is None:
+            raise _err("isvalid: expected a handle object.", "MATLAB:UndefinedFunction")
+        return orig(args, nargout=nargout)
+
+    return f
+
+
+def _wrap_delete(orig):
+    def f(args, *, nargout=1):
+        if args and all(cd.is_instance(a) for a in args):
+            for a in args:
+                if not a.info.is_handle:
+                    raise _err(f"Undefined function 'delete' for input arguments of type '{a.info.name}'.",
+                               "MATLAB:UndefinedFunction")
+                if a.alive:
+                    m = a.info.find_method("delete")
+                    if m is not None:  # user destructor (O-E7 extends this)
+                        m([a], nargout=0)
+                    a.alive = False
+            return ()
+        return orig(args, nargout=nargout)
+
+    return f
+
+
+def _superclasses_names(info):
+    out = []
+    for s in info.supers:
+        out.append(s.name)
+        out.extend(n for n in _superclasses_names(s) if n not in out)
+    for b in info.builtin_bases:
+        if b not in out:
+            out.append(b)
+    if info.is_handle and "handle" not in out:
+        out.append("handle")
+    return out
+
+
+def _superclasses(ev_resolver):
+    def f(args, *, nargout=1):
+        from openmatlab.runtime.cell_value import CellValue
+        from openmatlab.runtime.char_value import CharValue
+
+        if len(args) != 1:
+            raise _err("Not enough input arguments." if not args else "Too many input arguments.",
+                       "MATLAB:minrhs" if not args else "MATLAB:TooManyInputs")
+        a = args[0]
+        info = a.info if cd.is_instance(a) else None
+        if info is None and isinstance(a, CharValue):
+            info = cd.lookup(ev_resolver(), a.text)
+        if info is None:
+            return (CellValue(rows=()),)
+        names = _superclasses_names(info)
+        if not names:
+            return (CellValue(rows=()),)
+        return (CellValue(rows=tuple((CharValue(n),) for n in names)),)
+
+    return f
+
+
 def metaclass_for(ev, name: str):
     raise _err(f"metaclass for '{name}' is not available yet.", "MATLAB:class:metaclassUnavailable")
 
@@ -73,3 +140,14 @@ def register_late(builtins: Dict[str, Callable]) -> None:
         builtins["isequal"] = _wrap_isequal(builtins["isequal"])
     if "isa" in builtins:
         builtins["isa"] = _wrap_isa(builtins["isa"])
+    builtins["isvalid"] = _wrap_isvalid(builtins.get("isvalid"))
+    if "delete" in builtins:
+        builtins["delete"] = _wrap_delete(builtins["delete"])
+    builtins["superclasses"] = _superclasses(_current_resolver)
+
+
+def _current_resolver():
+    from openmatlab.runtime import frames as _frames
+
+    ev = _frames.caller(None) if hasattr(_frames, "caller") else None
+    return getattr(ev, "functions", None)
