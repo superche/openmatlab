@@ -792,7 +792,8 @@ def _saveas(ev, args, nargout):
 
 
 def _delete(ev, args, nargout):
-    if not args or _is_text(args[0]) or _is_cell(args[0]):  # delete(filename): file builtin
+    if not args or _is_text(args[0]) or _is_cell(args[0]) or getattr(args[0], "is_class_instance", False):
+        # delete(filename): file builtin; delete(obj): handle-object delete (M8)
         fn = ev.functions.resolve("delete")
         out = tuple(fn(list(args), nargout=nargout))
         return out if nargout else ()

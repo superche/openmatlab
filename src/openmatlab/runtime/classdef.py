@@ -401,6 +401,12 @@ class ClassInstance:
                    "MATLAB:class:IndexedAssign")
 
     def binop(self, op, other, reflected):
+        if self.info.is_handle and op in ("==", "~=") and (is_instance(other) or True):
+            same = other is self  # handle equality is identity (MATLAB handle.eq/ne)
+            if not is_instance(other) or not other.info.is_handle:
+                raise _err(f"Operator '{op}' is not supported for operands of type '{self.info.name}' and "
+                           f"'{getattr(other, 'matlab_class', lambda: '?')()}'.", "MATLAB:UndefinedFunction")
+            return _bool(same if op == "==" else not same)
         return NotImplemented
 
     def display_text(self) -> str:

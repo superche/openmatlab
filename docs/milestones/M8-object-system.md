@@ -34,8 +34,8 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | # | Criterion | Script | Priority | Epic | Status |
 |---|-----------|--------|----------|------|--------|
 | O01 | Value classes: properties with defaults, constructor with `nargin`, methods called as `f(obj)` and `obj.f()`, multiple outputs, copy-on-assign, unknown property errors, `isequal`/`class`/`isa`/`isobject` | m8_o01_value_class | p0 | #618 | met (Epic #618; residual #620) |
-| O02 | Handle classes: reference semantics through copies and function calls, `==`/`~=` identity, `isvalid`/`delete`, error on a deleted handle | m8_o02_handle_class | p0 | #619 | pending |
-| O03 | Inheritance: multilevel, `obj@Super(...)`, `method@Super(obj)`, dynamic dispatch from base methods, `superclasses`, handle subclasses | m8_o03_inheritance | p0 | #619 | pending |
+| O02 | Handle classes: reference semantics through copies and function calls, `==`/`~=` identity, `isvalid`/`delete`, error on a deleted handle | m8_o02_handle_class | p0 | #619 | met (Epic #619; residual #636) |
+| O03 | Inheritance: multilevel, `obj@Super(...)`, `method@Super(obj)`, dynamic dispatch from base methods, `superclasses`, handle subclasses | m8_o03_inheritance | p0 | #619 | met (Epic #619; residual #636) |
 | O04 | Property attributes: `Constant`, `Dependent` with `get.`/`set.` methods, `SetAccess`/`Access = private`, a validating setter, a setter not re-entered while it sets its own property | m8_o04_property_attributes | p1 | #620 | met (delivered with Epic #618; validation residual #620) |
 | O05 | `Static` methods, `+package` functions and classes, `import pkg.*` | m8_o05_static_packages | p1 | #622 | pending |
 | O06 | Operator overloading (either operand an object), `horzcat`, conversion (`double`/`char`), overloaded builtins | m8_o06_operator_overloading | p1 | #621 | pending |
@@ -67,4 +67,4 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 M8 opened 2026-10-13.
 
-**2 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model). Next: O-E2 (#619).
+**4 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619). Next: O-E3 (#620) and M3-E1 (#625).
