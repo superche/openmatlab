@@ -48,7 +48,7 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 1. **O-E1 #618 (p0):** class model, parsing and loading, value classes. Covers O01.
 2. **O-E2 #619 (p0):** handle classes and inheritance. Covers O02 and O03.
-3. **O-E3 #620 (p1):** property attributes. Covers O04. Interleaved with M3 E1–E5.
+3. **O-E3 #620 (p1):** property attributes. Covers O04, which was already met through O-E1. O-E3 adds property validation (`(dims) Class {validators}`), the `mustBe*` validators, Abstract classes, immutable and Hidden ([design](../design/EPIC-620-property-validation.md); residual #645). Interleaved with M3 E1–E5.
 4. **O-E4 #621 (p1):** operators, indexing overloads and display. Covers O06, O07 and the display half of O10. Interleaved with M3 E1–E5.
 5. **O-E5 #622 (p1):** packages, static methods, enumerations and introspection. Covers O05, O08 and O09.
 6. **O-E6 #623 (p1):** built-in objects on the class model. Covers the dot-notation half of O10.
@@ -67,4 +67,4 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 M8 opened 2026-10-13.
 
-**4 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619). Next: O-E3 (#620) and M3-E1 (#625).
+**4 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619). Next: O-E4 operators/indexing/display (#621), interleaved with M3-E2..E5.

@@ -25,6 +25,57 @@ class PropDecl:
     name: str
     default: Optional[Expr]
     attrs: Dict[str, object]
+    dims: Optional[Tuple[Optional[int], ...]] = None  # (1,:) -> (1, None)
+    cls: Optional[str] = None
+    validators: Tuple[Expr, ...] = ()
+
+
+def _strip_comment(line: str) -> str:
+    out, q, prev = [], False, ""
+    for ch in line:
+        if ch == "'" and (q or not (prev.isalnum() or prev in ")]}.'_")):
+            q = not q
+        elif ch == "%" and not q:
+            break
+        out.append(ch)
+        prev = ch
+    return "".join(out).rstrip().rstrip(";").rstrip()
+
+
+def _spec(toks, line=0):
+    """Parse a property validation spec ``(dims) Class {validators}`` from tokens."""
+    from openmatlab.lang.lexer import Token
+
+    dims, cls, vals, i = None, None, (), 0
+    toks = [t for t in toks if t.type != TokenType.NEWLINE]
+    if i < len(toks) and toks[i].type == TokenType.LPAREN:
+        dims, i = [], i + 1
+        while i < len(toks) and toks[i].type != TokenType.RPAREN:
+            t = toks[i]
+            if t.type == TokenType.NUMBER:
+                dims.append(int(float(t.value)))
+            elif t.type == TokenType.COLON:
+                dims.append(None)
+            elif t.type != TokenType.COMMA:
+                raise ParseError("Invalid size in property validation", t.line, t.column)
+            i += 1
+        dims, i = tuple(dims), i + 1
+    if i < len(toks) and toks[i].type == TokenType.IDENT:
+        parts = [toks[i].value]
+        i += 1
+        while i + 1 < len(toks) and toks[i].type == TokenType.DOT and toks[i + 1].type == TokenType.IDENT:
+            parts.append(toks[i + 1].value)
+            i += 2
+        cls = ".".join(parts)
+    if i < len(toks) and toks[i].type == TokenType.LBRACE:
+        sub = toks[i:] + [Token(TokenType.EOF, "", toks[-1].line, toks[-1].column + 1)]
+        cell = Parser(sub).parse_expression()
+        vals = tuple(e for row in getattr(cell, "rows", ()) for e in row)
+        i = len(toks)
+    if i < len(toks):
+        t = toks[i]
+        raise ParseError(f"Invalid property validation syntax near {t.value!r}", t.line, t.column)
+    return dims, cls, vals
 
 
 @dataclass
@@ -48,6 +99,7 @@ class ClassDefNode:
     methods: List[MethodDecl] = field(default_factory=list)
     events: List[Tuple[str, Dict[str, object]]] = field(default_factory=list)
     enums: List[EnumDecl] = field(default_factory=list)
+    abstract_methods: List[str] = field(default_factory=list)
 
 
 def is_classdef_source(text: str) -> bool:
@@ -218,16 +270,26 @@ class ClassParser(Parser):
             if t.type == TokenType.COMMAND:  # "x double" style line
                 word, _args, raw = json.loads(t.value)
                 self.advance()
+                # the command lexer stops at ',' / ';': re-read the whole source line
+                line = self.source.splitlines()[t.line - 1][t.column - 1:]
+                raw = _strip_comment(line)
+                while self.current().type not in (TokenType.NEWLINE, TokenType.EOF):
+                    self.advance()
                 default = None
+                spec = raw.split("=", 1)[0].strip()
+                if spec.startswith(word):
+                    spec = spec[len(word):]
                 if "=" in raw:
                     default = Parser(tokenize(raw.split("=", 1)[1], commands=False)).parse_expression()
-                node.props.append(PropDecl(word, default, dict(attrs)))
+                toks = [x for x in tokenize(spec, commands=False) if x.type != TokenType.EOF]
+                node.props.append(PropDecl(word, default, dict(attrs), *_spec(toks)))
                 continue
             if t.type != TokenType.IDENT:
                 raise ParseError("Expected a property name", t.line, t.column)
             name = self.advance().value
             default = None
             depth = 0
+            spec_toks = []
             while True:
                 c = self.current()
                 if depth == 0 and c.type == TokenType.ASSIGN:
@@ -241,8 +303,8 @@ class ClassParser(Parser):
                     depth += 1
                 elif c.type in (TokenType.RPAREN, TokenType.RBRACE, TokenType.RBRACKET):
                     depth -= 1
-                self.advance()  # size / class / validator spec: accepted, not enforced
-            node.props.append(PropDecl(name, default, dict(attrs)))
+                spec_toks.append(self.advance())  # size / class / validator spec
+            node.props.append(PropDecl(name, default, dict(attrs), *_spec(spec_toks)))
 
     def _block_methods(self, node: ClassDefNode, attrs) -> None:
         while True:
@@ -256,7 +318,33 @@ class ClassParser(Parser):
                 continue
             if t.type == TokenType.EOF:
                 raise ParseError("Expected end to close methods", t.line, t.column)
-            self._skip_line()  # signature only (abstract or defined in a separate file)
+            if attrs.get("abstract"):
+                node.abstract_methods.append(self._signature_name())
+                continue
+            self._skip_line()  # signature only (defined in a separate file)
+
+    def _signature_name(self) -> str:
+        """Name from an abstract signature line ``[a, b] = name(args)`` / ``name(args)``."""
+        toks = []
+        while self.current().type not in (TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.EOF, TokenType.KW_END):
+            toks.append(self.advance())
+        if toks and toks[0].type == TokenType.COMMAND:
+            word, _a, raw = json.loads(toks[0].value)
+            toks = [t for t in tokenize(raw, commands=False) if t.type != TokenType.EOF]
+        depth, after = 0, 0
+        for i, t in enumerate(toks):
+            if t.type in (TokenType.LPAREN, TokenType.LBRACKET):
+                depth += 1
+            elif t.type in (TokenType.RPAREN, TokenType.RBRACKET):
+                depth -= 1
+            elif depth == 0 and t.type == TokenType.ASSIGN:
+                after = i + 1
+                break
+        for t in toks[after:]:
+            if t.type == TokenType.IDENT:
+                return t.value
+        t = toks[0] if toks else self.current()
+        raise ParseError("Expected an abstract method signature", t.line, t.column)
 
     def _block_events(self, node: ClassDefNode, attrs) -> None:
         while True:
