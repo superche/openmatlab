@@ -31,7 +31,7 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 | C05 | Core math: `fix rem sign hypot log2 diff cumprod gcd lcm primes factor isprime nchoosek factorial round(x,n)`, `median mode std var`, `rand randn randi rng randperm`, `tic toc pause` | m7_c05_core_math | p0 | #534 | #550 #551 #552 | met (Epic #534; residual #581) |
 | C06 | Core arrays & sets: `repmat kron horzcat vertcat logspace meshgrid ndgrid cell2mat num2cell iscellstr`, `union intersect setdiff setxor ismember sortrows`, cellstr `unique`/sets, `'stable'` | m7_c06_arrays_sets | p0 | #535 | #553 #554 | met (Epic #535; residual #585) |
 | C07 | Core strings: `strsplit strjoin strfind strcat strvcat str2num mat2str int2str dec2bin bin2dec hex2dec dec2hex blanks deblank` | m7_c07_strings | p0 | #536 | #555 (#556 p1) | met (Epic #536; residual #589) |
-| C08 | Graphics core: figure/axes/line handles with `get`/`set`, `hold`, `subplot`, `title`/`xlabel`/`ylabel`/`legend`/`grid`/`axis`/`xlim`/`ylim`, `gca`/`gcf`, `close`, `saveas`, `bar`/`scatter`/`histogram` | m7_c08_graphics_core | p0 | #537 | #557 #558 (#559 p1) | pending |
+| C08 | Graphics core: figure/axes/line handles with `get`/`set`, `hold`, `subplot`, `title`/`xlabel`/`ylabel`/`legend`/`grid`/`axis`/`xlim`/`ylim`, `gca`/`gcf`, `close`, `saveas`, `bar`/`scatter`/`histogram` | m7_c08_graphics_core | p0 | #537 | #557 #558 (#559 p1) | met (Epic #537; residual #593) |
 | C09 | Dense decompositions: `eig svd lu qr chol null orth trace cross dot`, `MATLAB:posdef` | m7_c09_linalg_decomp | p1 | #538 | #560 | pending |
 | C10 | `containers.Map` (handle semantics, KeyType) and date/time basics (`datetime`, `days`/`seconds`/`minutes`, `datenum`/`datestr`, `clock`, `weekday`) | m7_c10_map_datetime | p1 | #539 | #561 #562 | pending |
 
@@ -44,4 +44,4 @@ manifest marks it `met`, which happens in the same PR that makes it pass.
 
 M7 opened 2026-10-13. #529 (local-function crash) fixed in PR #564.
 
-**7 / 10** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531), C03 (Epic #532), C04 (Epic #533), C05 (Epic #534), C06 (Epic #535), C07 (Epic #536). Next: Epic #537 (C08 graphics core).
+**8 / 10** criteria met: C01 (Epic #530, errors & exceptions), C02 (Epic #531), C03 (Epic #532), C04 (Epic #533), C05 (Epic #534), C06 (Epic #535), C07 (Epic #536), C08 (Epic #537). Next: Epic #538 (C09 linalg decompositions).

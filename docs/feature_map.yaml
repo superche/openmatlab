@@ -314,6 +314,14 @@ features:
     notes: "strsplit/strjoin/strfind/strcat/strvcat/str2num, mat2str/int2str, base conversions, blanks/deblank, flip on char/cell"
     tests: [tests/unit/test_strfun.py, tests/bdd/test_strfun_bdd.py]
 
+  - id: libs.handle_graphics
+    layer: libs
+    name: handle graphics core
+    status: done
+    depends_on: [libs.core_math]
+    notes: "figure/axes/line model with get/set, hold, subplot, decorations, limits, bar/scatter/histogram, saveas"
+    tests: [tests/unit/test_handle_graphics.py, tests/bdd/test_handle_graphics_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
