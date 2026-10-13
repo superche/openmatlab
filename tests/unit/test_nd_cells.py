@@ -44,7 +44,7 @@ def test_cell_nd_paren_page_and_fold():
 def test_cell_nd_display_labels():
     ws = _ws("c = cell(1,1,2); c{1,1,2} = 3;")
     assert _format_value(ws.get("c")).splitlines() == [
-        "{1x1x2 cell}", "  (1,1,1) = [](0x0)", "  (1,1,2) = 3"]
+        "{1×1×2 cell}", "  (1,1,1) = [](0x0)", "  (1,1,2) = 3"]
 
 
 def test_cell_nd_errors():

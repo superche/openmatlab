@@ -69,7 +69,7 @@ def test_values_unchanged_by_sparsity():
 def test_display():
     ws = _ws("S = sparse([1 0; 0 2.5]); Z = sparse(2, 3); L = sparse([true false true]); B = sparse([0 1 1e6]);")
     assert _format_value(ws.get("S")) == "   (1,1)    1.0000\n   (2,2)    2.5000"
-    assert _format_value(ws.get("Z")) == "   All zero sparse: 2x3"
+    assert _format_value(ws.get("Z")) == "   All zero sparse: 2×3"
     assert _format_value(ws.get("L")) == "   (1,1)    1\n   (1,3)    1"
     assert _format_value(ws.get("B")) == "   (1,2)          1\n   (1,3)    1000000"
 

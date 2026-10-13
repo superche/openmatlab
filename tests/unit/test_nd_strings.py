@@ -59,4 +59,4 @@ def test_nd_display_pages():
     buf = io.StringIO()
     ConsoleDisplay(stream=buf).show(s.workspace.get("t"), name="t")
     out = buf.getvalue()
-    assert "1x2x2 string array" in out and 't(:,:,1) =\n\n    "a"    "c"' in out and 't(:,:,2) =\n\n    "b"    "d"' in out
+    assert "1×2×2 string array" in out and 't(:,:,1) =\n\n    "a"    "c"' in out and 't(:,:,2) =\n\n    "b"    "d"' in out

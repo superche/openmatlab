@@ -104,7 +104,7 @@ def format_sparse(buf) -> str:
     r, c = a.shape
     cols, rows = np.nonzero(a.T)  # column-major order
     if rows.size == 0:
-        return f"   All zero sparse: {r}x{c}"
+        return f"   All zero sparse: {r}\u00d7{c}"
     vals = a[rows, cols]
     text = format_array(vals.reshape(-1, 1) if vals.dtype != np.bool_ else vals.reshape(-1, 1).astype(np.uint8))
     lines = text.split("\n")
@@ -122,16 +122,16 @@ def format_string_array(g) -> str:
     """MATLAB string-array display (#459): size header, then left-aligned quoted
     columns with a 4-space indent/gutter; <missing> unquoted."""
     if g.ndim > 2:  # header only; ConsoleDisplay.show prints the pages (#503)
-        return "  " + "x".join(str(d) for d in g.shape) + (" empty" if g.size == 0 else "") + " string array"
+        return "  " + "\u00d7".join(str(d) for d in g.shape) + (" empty" if g.size == 0 else "") + " string array"
     r, c = g.shape
     if g.size == 1:
         return "<missing>" if g.flat[0] is None else f'"{g.flat[0]}"'
     if g.size == 0:
-        return f"  {r}x{c} empty string array"
+        return f"  {r}\u00d7{c} empty string array"
     cells = [["<missing>" if x is None else f'"{x}"' for x in row] for row in g]
     widths = [max(len(cells[i][j]) for i in range(r)) for j in range(c)]
     lines = ["    " + "    ".join(cells[i][j].ljust(widths[j]) for j in range(c)).rstrip() for i in range(r)]
-    return f"  {r}x{c} string array\n\n" + "\n".join(lines)
+    return f"  {r}\u00d7{c} string array\n\n" + "\n".join(lines)
 
 
 def _cell_int_summary(v: object):
@@ -142,9 +142,9 @@ def _cell_int_summary(v: object):
     from openmatlab.runtime.value import Array
 
     if getattr(v, "is_struct", False):
-        return "[" + "x".join(str(d) for d in v.shape) + " struct]"  # (#506)
+        return "[" + "\u00d7".join(str(d) for d in v.shape) + " struct]"  # (#506)
     if hasattr(v, "data") and getattr(v, "is_string", False) and v.numel() != 1:
-        return "[" + "x".join(str(d) for d in v.shape) + " string]"  # (#459)
+        return "[" + "\u00d7".join(str(d) for d in v.shape) + " string]"  # (#459)
     if not isinstance(v, Array):
         return None
     a = np.asarray(v.backend_buffer())
@@ -152,7 +152,7 @@ def _cell_int_summary(v: object):
     if cls is None or a.size == 1:
         return None
     shape = a.shape if a.ndim >= 2 else (1,) * (2 - a.ndim) + a.shape
-    return "[" + "x".join(str(d) for d in shape) + f" {cls}]"
+    return "[" + "\u00d7".join(str(d) for d in shape) + f" {cls}]"
 
 
 _X = "\u00d7"  # MATLAB size separator in struct displays
@@ -255,7 +255,7 @@ def _format_value(value: object) -> str:
             if r == 0 and c == 0:
                 return "{}  (empty cell)"
             full = value.full_shape
-            lines = ["{" + "x".join(str(d) for d in full) + " cell}"]
+            lines = ["{" + "\u00d7".join(str(d) for d in full) + " cell}"]
             n = full[1]
             for i in range(r):
                 for j in range(c):
@@ -333,7 +333,7 @@ def format_array(buf: object, terminal_width: int = 80) -> str:
         from openmatlab.numerics.intclass import class_name
 
         cls = class_name(a.dtype) if np.issubdtype(a.dtype, np.integer) else "double"
-        return "[" + "x".join(str(d) for d in a.shape) + f" {cls}]"
+        return "[" + "\u00d7".join(str(d) for d in a.shape) + f" {cls}]"
     if a.size == 0:
         return "[](" + "x".join(str(d) for d in a.shape) + ")"
     if np.iscomplexobj(a):

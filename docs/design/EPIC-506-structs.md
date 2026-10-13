@@ -41,7 +41,7 @@ s =
 Arrays print `1×2 struct array with fields:` followed by the names, and an
 empty array prints `0×0 empty struct array with fields:`. A struct with no
 fields prints `struct with no fields.`, and a struct inside a cell prints as
-`[1x1 struct]`.
+`[1×1 struct]` (MATLAB × separator since #508).
 
 ## Adversarial review (done before PR)
 | Probe | Finding |

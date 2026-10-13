@@ -55,5 +55,5 @@ def test_cell_display():
     s = Session.create_default()
     ReplSession(s).run_line("c = {1, 'a'};")
     text = _format_value(s.workspace.get("c"))
-    assert "1x2 cell" in text
+    assert "1×2 cell" in text
     assert "(1,2)" in text
