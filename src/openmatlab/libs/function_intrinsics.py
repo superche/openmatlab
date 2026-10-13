@@ -258,3 +258,7 @@ INTRINSICS: Dict[str, Callable] = {
 from openmatlab.libs import workspace_commands as _wc  # noqa: E402
 
 INTRINSICS.update(_wc.INTRINSICS)
+
+from openmatlab.libs import file_builtins as _fb  # noqa: E402
+
+INTRINSICS.update(_fb.INTRINSICS)

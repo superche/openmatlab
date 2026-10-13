@@ -282,6 +282,14 @@ features:
     notes: "Epic #532: name arg ... command syntax (lexer COMMAND token at statement start; MATLAB operator-spacing rule; a variable name re-reads as an expression); clear (names, wildcards, -regexp, all, global), clearvars -except, who/whos (values and listings), format short/long, clc, help (m-file H1 block), pwd/cd/dir/ls, evalc, which command form, isvarname/iskeyword. Residual 573"
     tests: [tests/unit/test_command_syntax.py, tests/bdd/test_command_syntax_bdd.py]
 
+  - id: libs.file_io
+    layer: libs
+    name: fprintf, file I/O, save/load (MAT v5), text tables
+    status: done
+    depends_on: [runtime.evaluator, runtime.structs]
+    notes: "Epic #533: fopen/fclose/fprintf (fid, console, statement prints with no ans), fgetl/fgets/feof/ftell/fseek/frewind, fscanf/sscanf (cyclic MATLAB scanner, size arg), fread/fwrite precisions, fileread/delete/tempname/tempdir/fileparts/fullfile/isfile/isfolder/mkdir/rmdir; save/load MAT Level 5 (numeric/int/single/complex/logical/char/cell/struct/sparse; zlib compressed read; -append/-struct/wildcards/-ascii; load to struct, ASCII numeric files); readmatrix/writematrix/dlmread/dlmwrite/csvread/csvwrite/textscan. Residual 577"
+    tests: [tests/unit/test_file_io.py, tests/bdd/test_file_io_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
