@@ -72,9 +72,9 @@ Expected JSON may carry `"<var>:size": [r, c]` keys for direct shape asserts
 ## Residual priority (open Issues on M2)
 
 - **p0** (blocks exit): *(none open — exit criterion 3 satisfied)*
-- **p1** (post-exit breadth): #184 — the only open p1 (snapshot 2026-10-12; earlier p1 lists were cleared by Epics #24–#32).
-- **p2** (nice-to-have / non-goals): #130 #140 #141 #151 #152 #153 #164 #174 #197 #198 #208 #219 #239 #248 #270 #280 #281 #291 #292 #302 #311 #312 #336
-  *(snapshot 2026-10-12; live list: `gh issue list --milestone "Octave-breadth language & numerics"`)*
+- **p1**: *(none open)*
+- **p2**: #527 (sparse mostly-true results / large singular `S\b`)
+  *(snapshot 2026-10-13; live list: `gh issue list --milestone "Octave-breadth language & numerics"`. The issues listed in earlier snapshots are all closed. Core-language gaps outside the C01–C19 criteria are inventoried in [`docs/GAP-ANALYSIS.md`](../GAP-ANALYSIS.md).)*
 
 ## M2 close readiness (Epic #23)
 
