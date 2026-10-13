@@ -125,6 +125,13 @@ def _string(args, *, nargout=1):
 def _strings(args, *, nargout=1):
     from openmatlab.libs.numeric_builtins import _shape2
 
+    if len(args) > 2 or (len(args) == 1 and np.asarray(args[0].backend_buffer()).size > 2):  # N-D (#503)
+        dims = [int(x) for a in args for x in np.asarray(a.backend_buffer()).reshape(-1)]
+        if any(d < 0 for d in dims):
+            raise _err("strings: size arguments must be non-negative integers")
+        g = np.empty(tuple(dims), dtype=object)
+        g[...] = ""
+        return (sa.make(g),)
     m, n = _shape2("strings", args) if args else (1, 1)
     g = np.empty((m, n), dtype=object)
     g[...] = ""
@@ -135,7 +142,7 @@ def _strlength(args, *, nargout=1):
     if len(args) != 1:
         raise _err("strlength: expected 1 argument")
     _, g = _text_in("strlength", args[0])
-    out = np.array([[np.nan if x is None else float(len(x)) for x in row] for row in g]).reshape(g.shape)
+    out = np.array([np.nan if x is None else float(len(x)) for x in g.reshape(-1)]).reshape(g.shape)
     return (NDArrayValue(out),)
 
 

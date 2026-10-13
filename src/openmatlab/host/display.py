@@ -51,6 +51,19 @@ class ConsoleDisplay:
 
     def show(self, value: object, *, name: Optional[str] = None) -> None:
         label = name if name is not None else "ans"
+        g = getattr(value, "data", None) if getattr(value, "is_string", False) else None
+        if g is not None and g.ndim > 2 and g.size:  # N-D string array, page by page (#503)
+            self.stream.write(f"{label} =\n\n{format_string_array(g)}\n\n")
+            folded = g.reshape(g.shape[0], g.shape[1], -1, order="F")
+            for k in range(folded.shape[2]):
+                sub, p = [], k
+                for d in g.shape[2:]:
+                    sub.append(str(p % d + 1))
+                    p //= d
+                body = format_string_array(folded[:, :, k]).split("\n\n", 1)[-1]
+                self.stream.write(f"{label}(:,:,{','.join(sub)}) =\n\n{body}\n\n")
+            self.stream.flush()
+            return
         pages = _nd_pages(value)
         if pages is not None:
             # MATLAB shows N-D arrays page by page: A(:,:,k) = ... (#74)
@@ -108,6 +121,8 @@ def format_sparse(buf) -> str:
 def format_string_array(g) -> str:
     """MATLAB string-array display (#459): size header, then left-aligned quoted
     columns with a 4-space indent/gutter; <missing> unquoted."""
+    if g.ndim > 2:  # header only; ConsoleDisplay.show prints the pages (#503)
+        return "  " + "x".join(str(d) for d in g.shape) + (" empty" if g.size == 0 else "") + " string array"
     r, c = g.shape
     if g.size == 1:
         return "<missing>" if g.flat[0] is None else f'"{g.flat[0]}"'

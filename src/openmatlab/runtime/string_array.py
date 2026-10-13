@@ -14,7 +14,7 @@ import numpy as np
 
 
 class StringArray:
-    """Non-scalar (or missing) MATLAB string array; class ``string``."""
+    """Non-scalar (or missing) MATLAB string array; class ``string``. The grid may be N-D (#503)."""
 
     __slots__ = ("data",)
     is_string = True
@@ -22,8 +22,10 @@ class StringArray:
     def __init__(self, data) -> None:
         a = np.empty(np.shape(data), dtype=object)
         a[...] = data
-        if a.ndim != 2:
-            a = a.reshape(1, -1) if a.ndim < 2 else a
+        if a.ndim < 2:
+            a = a.reshape(1, -1)
+        while a.ndim > 2 and a.shape[-1] == 1:  # trailing singleton dims drop (MATLAB)
+            a = a.reshape(a.shape[:-1])
         object.__setattr__(self, "data", a)
 
     def __setattr__(self, name, value):
@@ -133,7 +135,7 @@ def make(grid: np.ndarray):
     g = np.asarray(grid, dtype=object)
     if g.size == 1 and g.ndim <= 2 and g.reshape(-1)[0] is not None:
         return StringValue(g.reshape(-1)[0])
-    return StringArray(g.reshape(g.shape if g.ndim == 2 else (1, -1)))
+    return StringArray(g.reshape(g.shape if g.ndim >= 2 else (1, -1)))  # N-D kept (#503)
 
 
 def is_string(v) -> bool:

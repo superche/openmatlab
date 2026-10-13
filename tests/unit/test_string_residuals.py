@@ -52,8 +52,8 @@ def test_split_string_column():
     assert _g(_r('split(["a b"; "c d"])')) == [["a", "b"], ["c", "d"]]
     with pytest.raises(EvalError, match="different number of delimiters"):
         _r('split(["a b"; "c"])')
-    with pytest.raises(EvalError, match="column vector"):
-        _r('split(["a b" "c d"])')
+    # #503: a 1xN row now splits to 1xNxk (it used to raise the old "column vector" limitation)
+    assert _r('split(["a b" "c d"])').shape == (1, 2, 2)
 
 
 @pytest.mark.parametrize("code,want", [

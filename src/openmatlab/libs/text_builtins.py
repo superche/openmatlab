@@ -41,7 +41,7 @@ def _ismissing(args, *, nargout=1):
         return (NDArrayValue(np.array([[True]])),)
     if sa.is_string(v):
         g = sa.to_grid(v)
-        return (NDArrayValue(np.array([[x is None for x in row] for row in g], dtype=bool).reshape(g.shape)),)
+        return (NDArrayValue(np.array([x is None for x in g.reshape(-1)], dtype=bool).reshape(g.shape)),)
     if isinstance(v, Array):
         b = np.asarray(v.backend_buffer())
         if b.dtype == np.bool_ or np.issubdtype(b.dtype, np.integer):
@@ -108,17 +108,28 @@ def _split_wrap(old):
         if not args or not isinstance(args[0], sa.StringArray) or args[0].numel() == 1:
             return old(args, nargout=nargout)
         g = args[0].data
-        if g.shape[1] != 1:
-            raise _err("split: string-array input must be a column vector (N-by-1); "
-                       "row inputs would produce an N-D result")
-        rows = []
-        for x in g[:, 0]:
+        if g.ndim > 2:
+            raise _err("split: N-D string-array input is not supported")
+        flat = g.reshape(-1, order="F")
+        parts = []
+        for x in flat:
             part = old((sa.make(np.array([[x]], dtype=object)), *args[1:]), nargout=1)[0]
-            rows.append(list(sa.to_grid(part).reshape(-1)))
-        if len({len(r) for r in rows}) > 1:
-            raise _err("split: Element 2 of the text contains a different number of delimiters than element 1."
-                       if len(rows) > 1 else "split: inconsistent delimiters")
-        return (sa.make(np.array(rows, dtype=object)),)
+            parts.append(list(sa.to_grid(part).reshape(-1)))
+        counts = [len(r) for r in parts]
+        if len(set(counts)) > 1:
+            bad = next(i for i, c in enumerate(counts) if c != counts[0]) + 1
+            raise _err(f"split: Element {bad} of the text contains a different number of delimiters than element 1.")
+        k = counts[0]
+        # MATLAB splits along the first trailing singleton dimension: Nx1 -> NxK, 1xN / MxN -> MxNxK (#503)
+        if g.shape[1] == 1:
+            out = np.array(parts, dtype=object).reshape(g.shape[0], k)
+        else:
+            out = np.empty(g.shape + (k,), dtype=object)
+            for idx, r in enumerate(parts):
+                i, j = idx % g.shape[0], idx // g.shape[0]
+                for t in range(k):
+                    out[i, j, t] = r[t]
+        return (sa.make(out),)
 
     return _fn
 
@@ -572,7 +583,7 @@ def _str2double(args, *, nargout=1):
         except ValueError:
             return np.nan
 
-    out = np.array([[conv(x) for x in row] for row in g], dtype=float).reshape(g.shape)
+    out = np.array([conv(x) for x in g.reshape(-1)], dtype=float).reshape(g.shape)
     return (NDArrayValue(out),)
 
 
