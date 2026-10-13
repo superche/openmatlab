@@ -377,3 +377,8 @@ INTRINSICS = {
 # statement forms that print instead of binding ans (MATLAB)
 STATEMENT_ZERO = {"clear", "clearvars", "who", "whos", "format", "clc", "help", "cd", "dir", "ls", "eval", "save", "load", "fprintf"}
 COMMAND_ONLY = {"which": _which_cmd}
+
+# graphics calls as statements: no display, no ans (Epic #537)
+STATEMENT_ZERO |= {"figure", "close", "clf", "cla", "hold", "subplot", "plot", "bar", "scatter", "histogram",
+                   "title", "xlabel", "ylabel", "legend", "grid", "xlim", "ylim", "axis", "text", "set",
+                   "saveas", "delete"}

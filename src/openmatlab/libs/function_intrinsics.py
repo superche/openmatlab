@@ -262,3 +262,7 @@ INTRINSICS.update(_wc.INTRINSICS)
 from openmatlab.libs import file_builtins as _fb  # noqa: E402
 
 INTRINSICS.update(_fb.INTRINSICS)
+
+from openmatlab.libs import graphics_builtins as _gb  # noqa: E402
+
+INTRINSICS.update(_gb.INTRINSICS)
