@@ -394,6 +394,14 @@ features:
     notes: "binary/unary/transpose operator methods, horzcat/vertcat, @Class.static handles, subsref/subsasgn with builtin() fallback, disp/display overloads; O-E4"
     tests: [tests/unit/test_classdef_operators.py, tests/bdd/test_classdef_operators_bdd.py]
 
+  - id: numerics.ode_quad_opt
+    layer: numerics
+    name: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset
+    status: done
+    depends_on: []
+    notes: "MATLAB error control and Refine output; iterated Gauss-Kronrod; Brent fminbnd; M3-E3"
+    tests: [tests/unit/test_ode_quad_opt.py, tests/bdd/test_ode_quad_opt_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
