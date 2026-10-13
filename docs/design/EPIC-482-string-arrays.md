@@ -55,3 +55,13 @@ N-D string arrays, `missing`/`ismissing`, `compose`/`sprintf`, the regexp
 family, `extractBetween`/`insertAfter`/`pad`/`reverse`, `sort`/`unique` on
 string arrays, `split` of non-scalar string arrays, and `num2str`/`str2double`
 on arrays.
+
+## Number-to-text decisions (#505)
+- `num2str` on a non-integer matrix follows MATLAB's rule. Each element is
+  formatted with `%<w>.<d>g`, where `d = clamp(floor(log10(max|x|)) + 5, 5, 16)`
+  (or the given precision) and `w = d + 7`, plus 1 when any element is
+  negative. Blank columns common to all rows are then trimmed. That is why
+  `num2str([pi 2*pi])` is `3.1416      6.2832`.
+- `sprintf` ties: we keep C `printf` semantics, which round half-even on the
+  exact binary value (glibc, as MATLAB does on Linux). `sprintf('%.1f', 2.25)`
+  gives `2.2`. This is pinned by `tests/unit/test_num2str_layout.py`.
