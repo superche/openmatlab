@@ -14,7 +14,7 @@ CRITERIA = {
     "T03": ("m3_t03_calculus_ode_opt", "p1", [627, 581], "met"),
     "T04": ("m3_t04_stats", "p1", [628, 581], "met"),
     "T05": ("m3_t05_data_io", "p1", [629], "met"),
-    "T06": ("m3_t06_signal_plugin", "p2", [630], "pending"),
+    "T06": ("m3_t06_signal_plugin", "p2", [630], "met"),
     "T07": ("m3_t07_sparse", "p2", [631, 527], "pending"),
 }
 

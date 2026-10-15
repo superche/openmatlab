@@ -10,7 +10,7 @@ A **community** domain plugin that contributes:
 
 | Contribution | Detail |
 |--------------|--------|
-| `pathEntries` → `mfiles/` | `hamming.m`, `rectwin.m`, `blackman.m` |
+| `pathEntries` → `mfiles/` | `hamming`, `rectwin`, `blackman`, `hann`, `kaiser`, `butter`, `freqz`, `filtfilt` |
 | Command `community.signal.demo` | Loads path + **calls** `hamming(5)` |
 | Panel `community.signal.panel` | Real tk frame (title + Run button) |
 
