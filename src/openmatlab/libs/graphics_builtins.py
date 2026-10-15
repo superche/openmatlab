@@ -63,13 +63,74 @@ def _arr(v, fn="graphics"):
     return b.reshape(1, 1) if b.ndim == 0 else (b.reshape(1, -1) if b.ndim == 1 else b)
 
 
+class GraphicsHandle(NDArrayValue):
+    """A scalar graphics handle (M8 O-E6).
+
+    It is still the numeric handle id for ``get``/``set``/arithmetic and ``==``,
+    and also supports dot notation on the class model: ``h.Prop`` reads and
+    ``h.Prop = v`` writes through the shared handle model, and ``isvalid`` /
+    ``isobject`` report it as an object.
+    """
+
+    __slots__ = ("_model",)
+    is_graphics_handle = True
+
+    def __init__(self, hid: float, m: "Model") -> None:
+        super().__init__(np.array([[float(hid)]]))
+        self._model = m
+
+    @property
+    def hid(self) -> float:
+        return float(self._data.reshape(-1)[0])
+
+    def _obj(self) -> GObj:
+        if not self._model.is_handle(self.hid):
+            raise _err("Invalid or deleted object.", "MATLAB:class:InvalidHandle")
+        return self._model.get(self.hid)
+
+    @property
+    def alive(self) -> bool:
+        return self._model.is_handle(self.hid)
+
+    def graphics_class(self) -> str:
+        o = self._model.objs.get(self.hid) if hasattr(self._model, "objs") else None
+        return CLASS_NAMES.get(o.type, o.type) if o is not None else "matlab.graphics.GraphicsPlaceholder"
+
+    def get_prop(self, name: str):
+        try:
+            return _get_prop(self._model, self._obj(), name)
+        except GraphicsError as e:
+            raise _err(str(e), e.identifier) from None
+
+    def set_prop(self, name: str, value):
+        o = self._obj()
+        try:
+            _set_prop(self._model, o, name, value)
+            if o.type == "axes":
+                self._model.autoscale(o)
+            f = self._model.figure_of(o)
+            if f is not None:
+                self._model.render(f)
+        except GraphicsError as e:
+            raise _err(str(e), e.identifier) from None
+        return self  # handle semantics: the variable keeps the same handle
+
+
+_CUR = {"model": None}
+
+
 def _h(x) -> NDArrayValue:
-    return NDArrayValue(np.array([[float(x)]]))
+    m = _CUR["model"]
+    if m is None:
+        return NDArrayValue(np.array([[float(x)]]))
+    return GraphicsHandle(x, m)
 
 
 def _hcol(ids) -> NDArrayValue:
     if not ids:
         return NDArrayValue(np.zeros((0, 1)))
+    if len(ids) == 1:
+        return _h(ids[0])  # scalar handle supports h.Prop (O-E6)
     return NDArrayValue(np.array(ids, dtype=float).reshape(-1, 1))
 
 
@@ -816,10 +877,17 @@ def _ishandle(ev, args, nargout):
 
 def _wrap(fn):
     def call(ev, args, nargout):
+        prev = _CUR["model"]
+        try:
+            _CUR["model"] = model(ev)  # scalar handles returned below carry the model (O-E6)
+        except Exception:
+            _CUR["model"] = None
         try:
             return fn(ev, args, nargout)
         except GraphicsError as e:
             raise _err(str(e), e.identifier) from None
+        finally:
+            _CUR["model"] = prev
     return call
 
 

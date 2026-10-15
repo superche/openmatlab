@@ -71,6 +71,8 @@ def _wrap_isvalid(orig):
                 raise _err(f"Undefined function 'isvalid' for input arguments of type '{args[0].info.name}'.",
                            "MATLAB:UndefinedFunction")
             return (_b(args[0].alive),)
+        if len(args) == 1 and getattr(args[0], "is_graphics_handle", False):  # graphics handle (O-E6)
+            return (_b(args[0].alive),)
         if orig is None:
             raise _err("isvalid: expected a handle object.", "MATLAB:UndefinedFunction")
         return orig(args, nargout=nargout)

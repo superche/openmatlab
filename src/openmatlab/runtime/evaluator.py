@@ -1428,7 +1428,7 @@ class Evaluator:
                 v = self.workspace.get(expr.target.id)
             except KeyError:
                 return None
-            return v if getattr(v, "is_object", False) else None
+            return v if (getattr(v, "is_object", False) or getattr(v, "is_graphics_handle", False)) else None
         return None
 
     def _object_field(self, expr):
@@ -1459,6 +1459,8 @@ class Evaluator:
             return outs[0]
         else:
             if expr.name.lower() not in self._OBJECT_METHODS:
+                if arg_exprs and getattr(base, "is_graphics_handle", False):  # ax.XLim(2) (O-E6)
+                    return self._index_with_exprs(base.get_prop(expr.name), arg_exprs)
                 if arg_exprs:
                     raise EvalError(f"Unrecognized method '{expr.name}' for class '{base.matlab_class()}'.", "MATLAB:noSuchMethodOrField")
                 return base.get_prop(expr.name)
