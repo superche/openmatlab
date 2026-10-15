@@ -1423,6 +1423,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.classdef_packages_enums
+    kind: unit
+    title: classdef packages, import, enumerations and introspection (Epic #622)
+    features: [lang.classdef_packages_enums]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_classdef_packages_enums.py
+    status: active
+    env: unit
+
+  - id: tc.classdef_packages_enums_bdd
+    kind: bdd
+    title: classdef packages, import, enumerations and introspection Gherkin scenarios (Epic #622)
+    features: [lang.classdef_packages_enums]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_classdef_packages_enums_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

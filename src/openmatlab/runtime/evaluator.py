@@ -245,7 +245,11 @@ class Evaluator:
                     fn0 = _fi.INTRINSICS[key]
                 elif key in _mb.STATEMENT_ZERO and key in getattr(self.functions, "builtins", {}):
                     _b = self.functions.builtins[key]
-                    fn0 = lambda _ev, a, n, _b=_b: tuple(_b(a, nargout=0))  # noqa: E731
+                    def fn0(_ev, a, n, _b=_b):  # builtins see the caller's resolver (M8 O-E5)
+                        from openmatlab.runtime import frames as _frames
+
+                        with _frames.calling(_ev):
+                            return tuple(_b(a, nargout=0))
                 elif isinstance(stmt, ast.CommandStmt) and key in _wc.COMMAND_ONLY:
                     fn0 = _wc.COMMAND_ONLY[key]
                 if fn0 is not None:  # statement form: prints, no ans (#531/#532)
@@ -1649,6 +1653,10 @@ class Evaluator:
                 return parts[0]
             out = self._overload(name, parts)
             if out is NotImplemented:
+                from openmatlab.runtime import enums as _en
+
+                out = _en.concat(name, parts)
+            if out is NotImplemented:
                 cls = next(p for p in parts if _is_class_obj(p)).matlab_class()
                 raise EvalError(f"Concatenation of '{cls}' objects requires a {name} method "
                                 "(object arrays are not supported yet).", "MATLAB:class:concatenation")
@@ -1973,7 +1981,12 @@ class Evaluator:
 
     def _values_equal(self, a: Value, b: Value) -> bool:
         """Scalar/char equality for switch/case matching."""
+        from openmatlab.runtime import enums as _en
         from openmatlab.runtime.char_value import CharValue
+
+        en = _en.values_equal(a, b)
+        if en is not None:
+            return en
 
         if isinstance(a, CharValue) or isinstance(b, CharValue):
             if not isinstance(a, CharValue) or not isinstance(b, CharValue):
@@ -2000,7 +2013,7 @@ class Evaluator:
         needle = self.eval_expr(stmt.expr)
         if not isinstance(needle, CharValue) and not (
             isinstance(needle, Array) and needle.numel() == 1
-        ):
+        ) and not getattr(needle, "is_enum", False):  # scalar enumeration member (M8 O-E5)
             raise EvalError("SWITCH expression must be a scalar or a character vector.")
         last: Value = self.numerics.from_scalar(0.0)
         for case in stmt.cases:

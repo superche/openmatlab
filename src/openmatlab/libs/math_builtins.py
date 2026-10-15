@@ -1186,4 +1186,4 @@ def register(builtins: Dict[str, Callable]) -> None:
 
 
 # statement forms that print / return nothing (MATLAB): handled by the evaluator
-STATEMENT_ZERO = {"tic", "toc", "rng"}
+STATEMENT_ZERO = {"tic", "toc", "rng", "enumeration", "methods", "properties"}  # last three: M8 O-E5 listings

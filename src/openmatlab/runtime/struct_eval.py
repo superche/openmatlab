@@ -308,9 +308,17 @@ def _struct_element_assign(ev, cur, args, rest, rhs, depth):
 
 # --- list contexts --------------------------------------------------------------
 
+def _class_rooted_ref(ev, expr) -> bool:
+    """True for Cls.Member / pkg.Cls.Member with an unbound root name (M8 O-E5)."""
+    node = expr
+    while isinstance(node, (ast.FieldExpr, ast.IndexExpr, ast.CellIndexExpr)):
+        node = node.target
+    return isinstance(node, ast.Name) and not ev._name_bound(node.id)
+
+
 def expand(ev, expr) -> List:
     """Values of one element in a list context ([...], {...}, call args)."""
-    if isinstance(expr, ast.FieldExpr):
+    if isinstance(expr, ast.FieldExpr) and not _class_rooted_ref(ev, expr):
         v = read_field(ev, expr)
         return list(v.values) if isinstance(v, CsList) else [v]
     v = ev.eval_expr(expr)

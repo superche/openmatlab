@@ -55,6 +55,10 @@ def _clear(ev, args, nargout):
     names = _texts(args, "clear")
     flags = {n.lower() for n in names if n.startswith("-") or n.lower() in ("all", "variables", "functions", "global", "classes", "mex", "import")}
     pats = [n for n in names if n not in flags and n.lower() not in flags]
+    if flags & {"all", "-all", "import"}:  # clear import / clear all drop the import list (O-E5)
+        from openmatlab.runtime.imports import clear_imports
+
+        clear_imports(ev)
     if not names or flags & {"all", "-all", "variables", "-variables", "-v"} and not pats:
         ev.workspace.clear()
         return ()

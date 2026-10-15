@@ -703,4 +703,6 @@ def class_ref_access(ev, info: ClassInfo, name: str, arg_exprs: Optional[list], 
 
 
 def enum_member(info: ClassInfo, name: str):
-    return None
+    from openmatlab.runtime import enums
+
+    return enums.member(info, name)
