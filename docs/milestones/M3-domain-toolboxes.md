@@ -62,4 +62,27 @@ M3 is **done** only when **all** of these hold on `main`:
 
 M3 criteria were set on 2026-10-13.
 
-**7 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627), T04 (Epic #628), T05 (Epic #629), T06 (Epic #630), T07 (Epic #631). Next: M3 exit — propose close-out when residuals are accepted.
+**7 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627), T04 (Epic #628), T05 (Epic #629), T06 (Epic #630), T07 (Epic #631).
+
+
+## Close-out (2026-10-16)
+
+**Status: closed.** Shaw accepted every epic (#625–#631) on 2026-10-16 (Asia/Shanghai), and the GitHub milestone is closed.
+
+- **Criteria:** 7 / 7 met (T01–T07), with 0 xfails on `main`.
+- **Plugin gate:** T06 (`community.signal`) met; no core-to-plugin dependency.
+- **Open p0 issues:** none.
+- **Doc drift:** the drift test passes.
+- **`main` CI:** green.
+
+**Residuals left on closed milestone/3** (p2; not re-homed):
+
+| Issue | Pri | Topic |
+|---|---|---|
+| #581 | p2 | Core math residual (stream parity / options breadth absorbed by M3 epics) |
+| #649 | p2 | M3-E2 residual (vector-valued splines, interp2 cubic/spline, makima, matrix Y) |
+| #657 | p2 | M3-E3 residual (ODE Events/Mass/stiff, deval, Waypoints, Display) |
+| #661 | p2 | M3-E4 residual (movXXX SamplePoints, quantile approximate, mode third out, histc) |
+| #665 | p2 | M3-E5 residual (PrettyPrint, objects in JSON, dlmread ranges) |
+| #681 | p2 | M3-E6 residual (butter bandpass/stop, fir1, window flags, filtfilt edges) |
+| #685 | p2 | M3-E7 residual (huge complement representation; native RCOND for singular S\b) |

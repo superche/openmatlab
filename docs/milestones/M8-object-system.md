@@ -68,3 +68,26 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 M8 opened 2026-10-13.
 
 **10 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621), O05, O08, O09 (Epic #622), O10 (Epics #621 + #623). O-E7 events/listeners, destructors and objects in MAT files (#624, p2, no exit criterion) delivered; residual #677.
+
+
+## Close-out (2026-10-16)
+
+**Status: closed.** Shaw accepted every epic (#618–#624) on 2026-10-16 (Asia/Shanghai), and the GitHub milestone is closed.
+
+- **Criteria:** 10 / 10 met (O01–O10), with 0 xfails on `main`.
+- **Open p0 issues:** none (epics #618/#619 closed after acceptance).
+- **Doc drift:** the drift test passes.
+- **`main` CI:** green.
+
+**Residuals left on closed milestone/8** (p2; not re-homed):
+
+| Issue | Pri | Topic |
+|---|---|---|
+| #593 | p2 | Graphics residual (dot-notation breadth, 3-D, colormap, …) |
+| #602 | p2 | Map/datetime residual (time zones, calendarDuration, NaT, …) |
+| #636 | p2 | Handle/inheritance residual (Copyable, SetGet, MI conflicts, Sealed/Abstract) |
+| #645 | p2 | O-E3 residual (arguments blocks, more mustBe*, user-class conversion) |
+| #653 | p2 | O-E4 residual (InferiorClasses, numel/size + subsref nargout, cell display) |
+| #669 | p2 | O-E5 residual (import validation, enum by name, metaclass fidelity, object arrays) |
+| #673 | p2 | O-E6 residual (graphics class names/display, handle arrays, datetime assignment) |
+| #677 | p2 | O-E7 residual (property events, EventData, destructor on clear, saveobj/loadobj) |

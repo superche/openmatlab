@@ -5,7 +5,7 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; CI live; branch protection on.** Milestones 1/2/4/5/6/7 closed (M7 MATLAB core language & I/O closed 2026-10-13). Open: M3 Domain toolboxes, Object system, Core backlog.
+**READY — public repo; CI live; branch protection on.** Milestones 1/2/3/4/5/6/7/8 closed (M3 Domain toolboxes and M8 Object system closed 2026-10-16; M7 closed 2026-10-13). Open: Core backlog.
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab
 - **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-M7 is closed. All 11 criteria (C01–C11) are met and all epics are accepted; see the close-out in `docs/milestones/M7-core-language-io.md`. Its residuals were re-homed to [Object system](https://github.com/superche/openmatlab/milestone/8), [Core backlog](https://github.com/superche/openmatlab/milestone/9) and Domain toolboxes (M3). Active since the 2026-10-13 approval: [M8 Object system](milestones/M8-object-system.md) (O01–O10) and [M3 Domain toolboxes](milestones/M3-domain-toolboxes.md) (T01–T07), run interleaved.
+M7, M8 and M3 are closed. M7 close-out: `docs/milestones/M7-core-language-io.md`. M8 close-out (10/10, epics #618–#624 accepted 2026-10-16): `docs/milestones/M8-object-system.md`. M3 close-out (7/7, epics #625–#631 accepted 2026-10-16): `docs/milestones/M3-domain-toolboxes.md`. p2 residuals remain on the closed M3/M8 milestones. Open roadmap: [Core backlog](https://github.com/superche/openmatlab/milestone/9).
 
 | Item | URL / command |
 |------|----------------|
