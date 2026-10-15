@@ -806,6 +806,32 @@ def _save(ev, args, nargout):
     return ()
 
 
+def _revive(ev, var, v):
+    """A struct read from an mxOBJECT element becomes an instance of its class again (M8 O-E7).
+
+    Like MATLAB, the constructor is not called: the object starts from its class
+    defaults and gets the saved property values.
+    """
+    from openmatlab.runtime import classdef as cd
+
+    cls = getattr(v, "mat_class", None)
+    if not cls or not getattr(v, "is_struct", False) or v.numel() != 1:
+        return v
+    info = cd.lookup(ev.functions, cls)
+    if info is None:
+        from openmatlab.runtime import warnings as _w
+
+        _w.emit(f"Variable '{var}' originally saved as a {cls} cannot be instantiated as an object and will be "
+                "read in as a struct.", "MATLAB:load:classNotFound")
+        return v
+    obj = info.new_instance()
+    for f in v.fields:
+        p = info.find_prop(f)
+        if p is not None and not (p.constant or p.dependent):
+            obj.props[f] = _revive(ev, f, v.get(f))
+    return obj
+
+
 def _load(ev, args, nargout):
     from openmatlab.libs import mat5
     from openmatlab.runtime.struct_value import StructValue
@@ -835,6 +861,7 @@ def _load(ev, args, nargout):
             data = mat5.read(path)
         except mat5.MatError as exc:
             raise _err(str(exc), "MATLAB:load:unableToRead") from None
+    data = {k: _revive(ev, k, v) for k, v in data.items()}
     if names:
         sel = {}
         for pat in names:

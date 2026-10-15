@@ -71,7 +71,8 @@ def _wrap_isvalid(orig):
                 raise _err(f"Undefined function 'isvalid' for input arguments of type '{args[0].info.name}'.",
                            "MATLAB:UndefinedFunction")
             return (_b(args[0].alive),)
-        if len(args) == 1 and getattr(args[0], "is_graphics_handle", False):  # graphics handle (O-E6)
+        if len(args) == 1 and (getattr(args[0], "is_graphics_handle", False) or getattr(args[0], "is_listener", False)):
+            # graphics handle (O-E6), event.listener (O-E7)
             return (_b(args[0].alive),)
         if orig is None:
             raise _err("isvalid: expected a handle object.", "MATLAB:UndefinedFunction")
@@ -82,6 +83,12 @@ def _wrap_isvalid(orig):
 
 def _wrap_delete(orig):
     def f(args, *, nargout=1):
+        from openmatlab.runtime import events as _ev
+
+        if args and all(isinstance(a, _ev.Listener) for a in args):  # delete(lh) (O-E7)
+            for a in args:
+                a.delete()
+            return ()
         if args and all(cd.is_instance(a) for a in args):
             for a in args:
                 if not a.info.is_handle:
@@ -92,6 +99,7 @@ def _wrap_delete(orig):
                     if m is not None:  # user destructor (O-E7 extends this)
                         m([a], nargout=0)
                     a.alive = False
+                    _ev.drop(a)
             return ()
         return orig(args, nargout=nargout)
 
@@ -430,6 +438,11 @@ def register_late(builtins: Dict[str, Callable]) -> None:
         builtins["fieldnames"] = _wrap_fieldnames(builtins["fieldnames"])
     builtins["enumeration"] = _enumeration
     builtins["isenum"] = _isenum
+    from openmatlab.runtime import events as _events
+
+    builtins["addlistener"] = _events.addlistener
+    builtins["listener"] = _events.listener
+    builtins["notify"] = _events.notify
     builtins["metaclass"] = _metaclass
     for n in ("char", "string", "cellstr", "double", "single", "logical", "int8", "int16", "int32", "int64",
               "uint8", "uint16", "uint32", "uint64"):
