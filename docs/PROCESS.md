@@ -85,7 +85,7 @@ opens or updates an Issue (with labels + milestone) before or as it acts.
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 
-States on 2026-10-13: milestone/1, /2, /4, /5, /6, /7 **closed**; /3 Domain toolboxes, /8 Object system and /9 Core backlog **open**.
+States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Core backlog **open**. M3 Domain toolboxes closed 2026-10-16 at 7/7; M8 Object system closed 2026-10-16 at 10/10.
 
 | Milestone | Intent |
 |-----------|--------|
@@ -95,8 +95,8 @@ States on 2026-10-13: milestone/1, /2, /4, /5, /6, /7 **closed**; /3 Domain tool
 | **Plugin host (VS Code–style)** | Published plugin contract + host for **community** plugins (not MathWorks proprietary). Doc: [`milestones/M-plugins.md`](milestones/M-plugins.md); contract: [`design/PLUGIN-CONTRACT.md`](design/PLUGIN-CONTRACT.md) |
 | **Domain business-conformance** | Reference vectors / tests for plugin domains (`hamming` etc.). Doc: [`milestones/M-domain-conformance.md`](milestones/M-domain-conformance.md); GitHub milestone/5 |
 | **MATLAB-aligned Workbench** | Host product: command window, editor, workspace browser, current folder, figure mgmt via plugin slots. Doc: [`milestones/M-workbench-aligned.md`](milestones/M-workbench-aligned.md); GitHub milestone/6 |
-| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate). Doc: [`milestones/M3-domain-toolboxes.md`](milestones/M3-domain-toolboxes.md); manifest `tests/conformance/m3_manifest.py` |
-| **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8. Doc: [`milestones/M8-object-system.md`](milestones/M8-object-system.md); manifest `tests/conformance/m8_manifest.py` |
+| **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate). Doc: [`milestones/M3-domain-toolboxes.md`](milestones/M3-domain-toolboxes.md); manifest `tests/conformance/m3_manifest.py`. Closed 2026-10-16 at 7/7 |
+| **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8. Doc: [`milestones/M8-object-system.md`](milestones/M8-object-system.md); manifest `tests/conformance/m8_manifest.py`. Closed 2026-10-16 at 10/10 |
 | **Core backlog** | Core-language p1/p2 residuals not tied to an active criterion; promoted into a milestone criterion when prioritized. GitHub milestone/9 |
 
 **Rules**

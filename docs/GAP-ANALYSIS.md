@@ -14,12 +14,14 @@ Priority reflects impact on a typical user:
 
 ## Summary
 
+> **M8 and M3 closed (2026-10-16).** M8 Object system 10/10 (epics #618–#624); M3 Domain toolboxes 7/7 (epics #625–#631). p2 residuals stay on the closed milestones (M8: #593 #602 #636 #645 #653 #669 #673 #677; M3: #581 #649 #657 #661 #665 #681 #685).
+>
 > **M7 closed (2026-10-13), 11/11 criteria (C11 adds `evalin`/`assignin`/`doc`/`lookfor`/`what`).** The residual issues were re-homed:
 > - Core backlog: #565 #569 #573 #577 #585 #589 #598 #611;
 > - Object system: #593 #602;
 > - Domain toolboxes (M3): #581.
 >
-> The Object system milestone now exists for the OOP row.
+> The Object system milestone delivered the OOP row (classdef).
 
 > **M7 update (2026-10-13):** every M7 conformance criterion (C01–C10) is met, and each M7-tagged row below now says what was delivered and what remains, with an issue for the remainder. The original findings are kept underneath as the historical baseline. A probe sweep after M7 found no Python exceptions reaching the user (fixed in #606). The rows tagged M3 and new-milestone still reflect the original capture, except that some numerics (polyfit/polyval/roots/conv/deconv, interp1, trapz/cumtrapz/integral, fzero/fminsearch, filter, histcounts/cov/corrcoef, readmatrix/writematrix and friends) shipped early with Epic #534 and #533.
 
@@ -78,7 +80,7 @@ Priority reflects impact on a typical user:
 | Scripts & functions | `eval evalin feval str2func func2str exist isvarname` | **present** | delivered in M7 (Epic #531; `evalin`/`doc`/`lookfor`/`what` added by Epic #610, C11); verified 2026-10-13 | — | E-FUNCTIONS |
 | Scripts & functions | `global persistent` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
 | Scripts & functions | `inputParser validateattributes` | **present** | delivered in #569 (inputParser, validateattributes, multi-input cellfun, inputname); edge residuals → #640 (verified 2026-10-13) | — | E-FUNCTIONS |
-| OOP | `classdef` (properties, methods, constructors) | **missing** | `run_c` (uses `classdef Pt`) → `Unexpected token KW_END at line 4` | p1 | [Object system](https://github.com/superche/openmatlab/milestone/8) (milestone/8)|
+| OOP | `classdef` (properties, methods, constructors) | **present** | delivered in M8 (Epics #618–#624; O01–O10 met); residuals #636 #645 #653 #669 #673 #677 (verified 2026-10-16) | — | [Object system](https://github.com/superche/openmatlab/milestone/8) (closed) |
 | File I/O | `disp` / `sprintf` present; `fprintf display` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | File I/O | `save load` (.mat) | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
@@ -110,7 +112,7 @@ Priority reflects impact on a typical user:
 | E-LINALG-DECOMP | `eig svd lu qr chol null orth trace cross dot` | p1 |
 | E-DATA-TYPES | `containers.Map`, `datetime`/`duration`/`datenum`/`datestr`; then `table`/`timetable`/`categorical` (p2, possibly its own milestone) | p1/p2 |
 
-**M3 — Domain toolboxes** (milestone/3, currently empty): domain libraries delivered as clean-room code. They ship either as `libs/` modules or as community plugins on the M4 contract, and each is gated like M5 by reference-vector conformance scripts:
+**M3 — Domain toolboxes** (milestone/3, **closed 2026-10-16** at 7/7): domain libraries delivered as clean-room code. They ship either as `libs/` modules or as community plugins on the M4 contract, and each is gated like M5 by reference-vector conformance scripts:
 
 | Epic | Scope | Priority |
 |------|-------|----------|
@@ -121,7 +123,7 @@ Priority reflects impact on a typical user:
 | M3-DATA-IO | `readmatrix writematrix csvread csvwrite dlmread dlmwrite jsonencode jsondecode`; `readtable`/`writetable` after tables | p1 |
 | M3-SCI-GRAPHICS | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | p2 |
 
-**Object system ([milestone/8](https://github.com/superche/openmatlab/milestone/8), created 2026-10-13):** `classdef` (value and handle classes, properties, methods, events), p1.
+**Object system ([milestone/8](https://github.com/superche/openmatlab/milestone/8), **closed 2026-10-16** at 10/10):** `classdef` (value and handle classes, properties, methods, events) delivered; p2 residuals remain on the closed milestone.
 
 **M6 follow-up — Workbench:** debugger, variable editor, help browser (p2).
 
