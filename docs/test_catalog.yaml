@@ -1513,6 +1513,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.functions_640
+    kind: unit
+    title: functions residual exist/clear/inputname/inputParser (#640)
+    features: [lang.functions_residual_640]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_functions_640.py
+    status: active
+    env: unit
+
+  - id: tc.functions_640_bdd
+    kind: bdd
+    title: functions residual #640 Gherkin
+    features: [lang.functions_residual_640]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_functions_640_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

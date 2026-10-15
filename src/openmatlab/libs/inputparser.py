@@ -26,6 +26,18 @@ def _err(msg, ident=""):
     return EvalError(msg, ident)
 
 
+def _iperr(parser, msg, ident):
+    """Include FunctionName in InputParser error messages when set (#640)."""
+    fn = getattr(parser, "function_name", "") or ""
+    if fn:
+        if ident.startswith("MATLAB:InputParser:"):
+            ident = f"MATLAB:{fn}:{ident.split(':', 2)[-1]}"
+        elif ident in ("MATLAB:minrhs", "MATLAB:TooManyInputs"):
+            ident = f"MATLAB:{fn}:{ident.split(':', 1)[-1]}"
+        msg = f"{msg.rstrip('.')} for {fn}."
+    return _err(msg, ident)
+
+
 def _cv(s):
     from openmatlab.runtime.char_value import CharValue
 
@@ -58,7 +70,7 @@ def _cellrow(names):
 
 class InputParserValue:
     is_object = True
-    _METHODS = {"addrequired", "addoptional", "addparameter", "addparamvalue", "parse", "disp", "delete"}
+    _METHODS = {"addrequired", "addoptional", "addparameter", "addparamvalue", "addswitch", "parse", "disp", "delete"}
 
     def __init__(self):
         self.function_name = ""
@@ -69,6 +81,7 @@ class InputParserValue:
         self.required: List[tuple] = []  # (name, validator)
         self.optional: List[tuple] = []  # (name, default, validator)
         self.params: List[tuple] = []    # (name, default, validator)
+        self.switches: List[str] = []  # addSwitch names (#640)
         self.results: Dict[str, object] = {}
         self.unmatched: Dict[str, object] = {}
         self.using_defaults: List[str] = []
@@ -103,7 +116,7 @@ class InputParserValue:
             return _cellrow(self.using_defaults)
         if k == "parameters":
             return _cellrow(sorted([r[0] for r in self.required] + [o[0] for o in self.optional]
-                                   + [p[0] for p in self.params], key=str.lower))
+                                   + [p[0] for p in self.params] + list(self.switches), key=str.lower))
         if k == "functionname":
             return _cv(self.function_name)
         flags = {"casesensitive": "case_sensitive", "keepunmatched": "keep_unmatched",
@@ -159,6 +172,9 @@ class InputParserValue:
                 args = args[:2]
             self._add(name, args, 2, 3)
             self.params.append((self._name(args[0]), args[1], args[2] if len(args) > 2 else None))
+        elif k == "addswitch":
+            self._add("addSwitch", args, 1, 1)
+            self.switches.append(self._name(args[0]))
         elif k == "parse":
             self._parse(list(args))
         elif k == "disp":
@@ -177,7 +193,7 @@ class InputParserValue:
         t = _text(v)
         if t is None or not t.replace("_", "a").isalnum() or not t[:1].isalpha():
             raise _err("Argument name must be a valid MATLAB variable name.", "MATLAB:InputParser:InvalidArgName")
-        existing = [r[0] for r in self.required] + [o[0] for o in self.optional] + [p[0] for p in self.params]
+        existing = [r[0] for r in self.required] + [o[0] for o in self.optional] + [p[0] for p in self.params] + list(self.switches)
         if any(e.lower() == t.lower() for e in existing):
             raise _err(f"An argument named '{t}' already exists in the schema.", "MATLAB:InputParser:ParamAlreadyExists")
         return t
@@ -189,11 +205,11 @@ class InputParserValue:
             outs = validator.call([value], nargout=1)
         except Exception as exc:
             msg = getattr(exc, "message", None) or str(exc)
-            raise _err(f"The value of '{name}' is invalid. {msg}", "MATLAB:InputParser:ArgumentFailedValidation") from None
+            raise _iperr(self, f"The value of '{name}' is invalid. {msg}", "MATLAB:InputParser:ArgumentFailedValidation") from None
         if outs and not _truth(outs[0]):
             fname = getattr(validator, "name", "")
-            raise _err(f"The value of '{name}' is invalid. It must satisfy the function: {fname.lstrip('@')}.",
-                       "MATLAB:InputParser:ArgumentFailedValidation")
+            raise _iperr(self, f"The value of '{name}' is invalid. It must satisfy the function: {fname.lstrip('@')}",
+                         "MATLAB:InputParser:ArgumentFailedValidation")
 
     def _valid_quietly(self, value, validator):
         if validator is None:
@@ -204,8 +220,8 @@ class InputParserValue:
             return False
         return not outs or _truth(outs[0])
 
-    def _match_param(self, text):
-        names = [p[0] for p in self.params]
+    def _match_param(self, text, *, include_switches=True):
+        names = [p[0] for p in self.params] + (list(self.switches) if include_switches else [])
         if self.case_sensitive:
             exact = [n for n in names if n == text]
             pref = [n for n in names if n.startswith(text)]
@@ -217,8 +233,8 @@ class InputParserValue:
         if self.partial_matching and len(pref) == 1:
             return pref[0]
         if self.partial_matching and len(pref) > 1:
-            raise _err(f"'{text}' matches multiple parameter names: {', '.join(pref)}. To avoid ambiguity, "
-                       "specify the complete name of the parameter.", "MATLAB:InputParser:AmbiguousParamName")
+            raise _iperr(self, f"'{text}' matches multiple parameter names: {', '.join(pref)}. To avoid ambiguity, "
+                         "specify the complete name of the parameter", "MATLAB:InputParser:AmbiguousParamName")
         return None
 
     def _parse(self, args):
@@ -226,22 +242,23 @@ class InputParserValue:
         given = set()
         self.unmatched = {}
         if len(args) < len(self.required):
-            raise _err("Not enough input arguments.", "MATLAB:minrhs")
+            raise _iperr(self, "Not enough input arguments", "MATLAB:minrhs")
         k = 0
         for name, val in self.required:
             self._check(name, args[k], val)
             res[name] = args[k]
             given.add(name)
             k += 1
+        param_or_sw = bool(self.params or self.switches)
         for name, default, val in self.optional:
             if k >= len(args):
                 break
             t = _text(args[k])
-            if t is not None and self.params and self._match_param(t) is not None and \
+            if t is not None and param_or_sw and self._match_param(t) is not None and \
                     not (val is not None and self._valid_quietly(args[k], val) and False):
                 break
             if val is not None and not self._valid_quietly(args[k], val):
-                if t is not None and self.params:
+                if t is not None and param_or_sw:
                     break
                 self._check(name, args[k], val)
             res[name] = args[k]
@@ -260,11 +277,17 @@ class InputParserValue:
                 continue
             t = _text(a)
             if t is None:
-                raise _err("Expected a string scalar or character vector for the parameter name.",
-                           "MATLAB:InputParser:ParamMustBeChar")
+                raise _iperr(self, "Expected a string scalar or character vector for the parameter name",
+                             "MATLAB:InputParser:ParamMustBeChar")
+            # addSwitch: flag with no value (#640)
+            sw = self._match_param(t)
+            if sw is not None and sw in self.switches:
+                pairs.append((t, _b(True)))
+                i += 1
+                continue
             if i + 1 >= len(rest):
-                raise _err(f"No value was given for '{t}'. Name-value pair arguments require a name followed "
-                           "by a value.", "MATLAB:InputParser:ParamMissingValue")
+                raise _iperr(self, f"No value was given for '{t}'. Name-value pair arguments require a name followed "
+                             "by a value", "MATLAB:InputParser:ParamMissingValue")
             pairs.append((t, rest[i + 1]))
             i += 2
         for t, v in pairs:
@@ -273,9 +296,13 @@ class InputParserValue:
                 if self.keep_unmatched:
                     self.unmatched[t] = v
                     continue
-                raise _err(f"'{t}' is not a recognized parameter. For a list of valid name-value pair "
-                           "arguments, see the documentation for this function.",
-                           "MATLAB:InputParser:UnmatchedParameter")
+                raise _iperr(self, f"'{t}' is not a recognized parameter. For a list of valid name-value pair "
+                             "arguments, see the documentation for this function",
+                             "MATLAB:InputParser:UnmatchedParameter")
+            if m in self.switches:
+                res[m] = v
+                given.add(m)
+                continue
             val = next(p[2] for p in self.params if p[0] == m)
             self._check(m, v, val)
             res[m] = v
@@ -284,6 +311,10 @@ class InputParserValue:
         for name, default, _v in self.optional + self.params:
             if name not in given:
                 res[name] = default
+                defaults.append(name)
+        for name in self.switches:
+            if name not in given:
+                res[name] = _b(False)
                 defaults.append(name)
         self.results = res
         self.using_defaults = defaults
