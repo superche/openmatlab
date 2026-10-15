@@ -758,6 +758,14 @@ def _dot(args, *, nargout=1):
 
 
 def _kron(args, *, nargout=1):
+    from openmatlab.numerics import sparse as _sp
+
+    if len(args) != 2:
+        raise _err("kron: expected 2 arguments")
+    if _sp.is_sparse(args[0]) or _sp.is_sparse(args[1]):
+        out = _sp.kron(args[0], args[1])
+        if out is not None:
+            return (out,)
     return (_out(np.kron(_f(args[0], "kron"), _f(args[1], "kron"))),)
 
 

@@ -44,7 +44,7 @@ M3 is **done** only when **all** of these hold on `main`:
 | T04 | `quantile`/`prctile`, `movmean`/`movsum`/`movmedian`, `cummax`/`cummin`, `mode`, `var`/`std` weights, `histc`, `bounds` | m3_t04_stats | p1 | core | #628 (#581) | met (Epic #628; residual #661) |
 | T05 | `jsonencode`/`jsondecode`, `csvread` offsets, `dlmwrite` delimiter/precision/append, `dlmread` | m3_t05_data_io | p1 | core | #629 | met (Epic #629; residual #665) |
 | T06 | `hann`, `kaiser`, `butter`, `freqz`, `filtfilt`, resolved from `community.signal` | m3_t06_signal_plugin | p2 | plugin | #630 | met (Epic #630; residual #681) |
-| T07 | Sparse results stay sparse (comparisons, `~`, arithmetic, indexing, `sum`, `kron`); sparse solves at n=2000 | m3_t07_sparse | p2 | core | #631 (#527) | pending |
+| T07 | Sparse results stay sparse (comparisons, `~`, arithmetic, indexing, `sum`, `kron`); sparse solves at n=2000 | m3_t07_sparse | p2 | core | #631 (#527) | met (Epic #631; residual #685) |
 
 ## Epics (approved order: E1–E5 interleaved with M8 O-E3/O-E4, then E6–E7)
 
@@ -62,4 +62,4 @@ M3 is **done** only when **all** of these hold on `main`:
 
 M3 criteria were set on 2026-10-13.
 
-**6 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627), T04 (Epic #628), T05 (Epic #629), T06 (Epic #630). Next: M3-E7 sparse maturity (#631).
+**7 / 7** criteria met: T01 (Epic #625), T02 (Epic #626), T03 (Epic #627), T04 (Epic #628), T05 (Epic #629), T06 (Epic #630), T07 (Epic #631). Next: M3 exit — propose close-out when residuals are accepted.
