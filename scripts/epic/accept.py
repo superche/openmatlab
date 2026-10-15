@@ -31,7 +31,7 @@ doc = f"""# Acceptance evidence: Epic #{c['epic']} ({c['title']})
 **Feature PR:** [#{pr}](https://github.com/superche/openmatlab/pull/{pr}) ({', '.join('#'+str(r[0]) for r in c['trace'])})  
 **Milestone:** [{M['title']}](https://github.com/superche/openmatlab/milestone/{M['num']}) · [`{M['doc']}`](../milestones/{M['doc'].split('/')[-1]})  
 **Design + adversarial review:** [`docs/design/{c['design']}`](../design/{c['design']})  
-**Captured:** 2026-10-13 (Asia/Shanghai) on `{R}`  
+**Captured:** {__import__('datetime').date.today().isoformat()} (Asia/Shanghai) on `{R}`  
 **Rule:** Outputs below come from real local commands. None are invented.
 
 ## Dual tips
