@@ -160,8 +160,8 @@ def _shape_of(v: Value) -> tuple:
         return v.shape
     if isinstance(v, CellValue):
         return tuple(v.full_shape)
-    if getattr(v, "is_string", False) or getattr(v, "is_struct", False):
-        return tuple(v.shape)  # string arrays (#459), struct arrays (#506)
+    if getattr(v, "is_string", False) or getattr(v, "is_struct", False) or getattr(v, "is_enum_array", False):
+        return tuple(v.shape)  # string arrays (#459), struct arrays (#506), enumeration arrays (M8 O-E5)
     if getattr(v, "issparse", False):
         return tuple(v.shape)  # compressed storage: no densify (#515)
     if isinstance(v, Array):

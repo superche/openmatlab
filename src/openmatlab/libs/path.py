@@ -32,12 +32,17 @@ class ToolboxPath:
         base = Path(name).name
         if base.lower().endswith(".m"):
             base = base[:-2]
+        parts = base.split(".")  # pkg.sub.name -> +pkg/+sub/name.m (M8 O-E5)
+        if any(not p for p in parts):
+            return None
+        sub = Path(*["+" + p for p in parts[:-1]]) if len(parts) > 1 else Path()
+        base = parts[-1]
         candidates = (f"{base}.m", f"{base}.M")
         for entry in self.entries:
             if not entry.is_dir():
                 continue
             for cand in candidates:
-                hit = entry / cand
+                hit = entry / sub / cand
                 if hit.is_file():
                     return hit.resolve()
         return None

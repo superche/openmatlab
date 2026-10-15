@@ -256,6 +256,7 @@ INTRINSICS: Dict[str, Callable] = {
     "exist": _exist,
     "str2func": _str2func,
     "func2str": _func2str,
+    "import": lambda ev, a, n: __import__("openmatlab.runtime.imports", fromlist=["x"]).import_intrinsic(ev, a, n),
 }
 
 from openmatlab.libs import workspace_commands as _wc  # noqa: E402
