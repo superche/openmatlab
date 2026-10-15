@@ -171,6 +171,7 @@ def _exist(ev, args, nargout):
     name = _text(args[0], "exist")
     kind = _text(args[1], "exist") if len(args) > 1 else ""
     from pathlib import Path
+    from openmatlab.lang.classdef_parser import is_classdef_source
 
     if kind in ("", "var") and name in ev.workspace:
         return (_num(1),)
@@ -178,6 +179,25 @@ def _exist(ev, args, nargout):
         return (_num(0),)
     if kind in ("", "builtin") and name.lower() in getattr(ev.functions, "builtins", {}):
         return (_num(5),)
+    if kind in ("", "intrinsic") and name.lower() in INTRINSICS:
+        return (_num(5),)
+
+    def _class_file():
+        try:
+            m = ev.functions._find(name)
+        except Exception:
+            m = None
+        if m is not None:
+            try:
+                return is_classdef_source(Path(m).read_text(encoding="utf-8"))
+            except Exception:
+                return False
+        return False
+
+    if kind in ("", "class") and _class_file():
+        return (_num(8),)
+    if kind == "class":
+        return (_num(0),)
     if kind in ("", "file"):
         try:
             if ev.functions._find(name) is not None:
@@ -188,8 +208,6 @@ def _exist(ev, args, nargout):
             return (_num(2),)
     if kind in ("", "dir") and name and Path(name).is_dir():
         return (_num(7),)
-    if kind in ("", "intrinsic") and name.lower() in INTRINSICS:
-        return (_num(5),)
     return (_num(0),)
 
 

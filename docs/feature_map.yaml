@@ -458,6 +458,14 @@ features:
     notes: "~S / S==0 / S<=k stay sparse (COMPLEMENT_BUDGET); kron sparse when either factor is; n=2000 tridiagonal \\ ; T07 (residual #685)"
     tests: [tests/unit/test_sparse_maturity.py, tests/bdd/test_sparse_maturity_bdd.py]
 
+  - id: lang.functions_residual_640
+    layer: lang
+    name: exist class/folder codes, clear/global, inputname edges, inputParser addSwitch (#640)
+    status: done
+    depends_on: [lang.functions_variadic]
+    notes: "exist returns 8 for classdef / 7 for dir; clear all and clearvars -global clear the global store; clear name unbinds only; inputname rejects a 2nd arg; addSwitch; FunctionName in InputParser errors; PartialMatching/StructExpand already enforced"
+    tests: [tests/unit/test_functions_640.py, tests/bdd/test_functions_640_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

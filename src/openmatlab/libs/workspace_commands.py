@@ -59,6 +59,11 @@ def _clear(ev, args, nargout):
         from openmatlab.runtime.imports import clear_imports
 
         clear_imports(ev)
+    if flags & {"all", "-all"}:  # MATLAB: clear all also clears globals (#640)
+        store = ev.functions.global_store()
+        for k in list(store):
+            store.pop(k, None)
+            ev.workspace.clear(k)
     if not names or flags & {"all", "-all", "variables", "-variables", "-v"} and not pats:
         ev.workspace.clear()
         return ()
@@ -82,6 +87,23 @@ def _clear(ev, args, nargout):
 
 def _clearvars(ev, args, nargout):
     names = _texts(args, "clearvars")
+    # clearvars -global [names] clears the global store (#640); without -global,
+    # only the local binding of a global name is removed (MATLAB).
+    if "-global" in names:
+        names = [n for n in names if n != "-global"]
+        store = ev.functions.global_store()
+        if "-except" in names:
+            k = names.index("-except")
+            keep, pats = names[k + 1:], names[:k] or ["*"]
+        else:
+            keep, pats = [], names or ["*"]
+        targets = [k for k in list(store)
+                   if any(fnmatch.fnmatchcase(k, p) for p in pats)
+                   and not any(fnmatch.fnmatchcase(k, p) for p in keep)]
+        for k in targets:
+            store.pop(k, None)
+            ev.workspace.clear(k)
+        return ()
     if "-except" in names:
         k = names.index("-except")
         keep, pats = names[k + 1:], names[:k] or ["*"]

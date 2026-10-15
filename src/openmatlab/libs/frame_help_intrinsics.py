@@ -220,11 +220,15 @@ def _what(ev, args, nargout):
 
 
 def _inputname(ev, args, nargout):
-    """inputname(k): the caller's variable name for argument k, or '' for an expression (#569)."""
+    """inputname(k): the caller's variable name for argument k, or '' for an expression (#569/#640).
+
+    Indexed and field arguments (``v(1)``, ``s.f``) return ''. A second argument
+    is rejected (MATLAB takes one argument only).
+    """
     from openmatlab.lang import ast_nodes as ast
     from openmatlab.runtime.char_value import CharValue
 
-    if len(args) not in (1, 2):
+    if len(args) != 1:
         raise _err("Not enough input arguments." if not args else "Too many input arguments.",
                    "MATLAB:minrhs" if not args else "MATLAB:TooManyInputs")
     from openmatlab.runtime import frames
@@ -237,6 +241,7 @@ def _inputname(ev, args, nargout):
     if k < 1 or k > max(len(exprs), getattr(ev, "_nargs", (0, 0))[0]):
         raise _err("Argument number is not valid.", "MATLAB:inputname:argNumberNotValid")
     e = exprs[k - 1] if k <= len(exprs) else None
+    # Only a bare Name is a "variable name"; IndexExpr / FieldExpr / calls → ''
     return (CharValue(e.id if isinstance(e, ast.Name) else ""),)
 
 
