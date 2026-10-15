@@ -245,7 +245,11 @@ class Evaluator:
                     fn0 = _fi.INTRINSICS[key]
                 elif key in _mb.STATEMENT_ZERO and key in getattr(self.functions, "builtins", {}):
                     _b = self.functions.builtins[key]
-                    fn0 = lambda _ev, a, n, _b=_b: tuple(_b(a, nargout=0))  # noqa: E731
+                    def fn0(_ev, a, n, _b=_b):  # builtins see the caller's resolver (M8 O-E5)
+                        from openmatlab.runtime import frames as _frames
+
+                        with _frames.calling(_ev):
+                            return tuple(_b(a, nargout=0))
                 elif isinstance(stmt, ast.CommandStmt) and key in _wc.COMMAND_ONLY:
                     fn0 = _wc.COMMAND_ONLY[key]
                 if fn0 is not None:  # statement form: prints, no ans (#531/#532)

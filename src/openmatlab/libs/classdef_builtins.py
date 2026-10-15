@@ -218,6 +218,15 @@ def _methods(orig):
     return f
 
 
+def _isenum(args, *, nargout=1):
+    """isenum(A): true for an enumeration member or array (M8 O-E5)."""
+    from openmatlab.runtime import enums
+
+    if len(args) != 1:
+        raise _err("Not enough input arguments." if not args else "Too many input arguments.", "MATLAB:narginchk")
+    return (_b(enums.is_enum(args[0])),)
+
+
 def _ismethod(args, *, nargout=1):
     if len(args) != 2:
         raise _err("Not enough input arguments.", "MATLAB:minrhs")
@@ -418,6 +427,7 @@ def register_late(builtins: Dict[str, Callable]) -> None:
     if "fieldnames" in builtins:
         builtins["fieldnames"] = _wrap_fieldnames(builtins["fieldnames"])
     builtins["enumeration"] = _enumeration
+    builtins["isenum"] = _isenum
     builtins["metaclass"] = _metaclass
     for n in ("char", "string", "cellstr", "double", "single", "logical", "int8", "int16", "int32", "int64",
               "uint8", "uint16", "uint32", "uint64"):

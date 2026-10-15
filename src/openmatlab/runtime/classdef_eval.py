@@ -142,6 +142,8 @@ def _static_chain(ev, names, arg_exprs, nargout):
                 out = [ev._index_with_exprs(v, arg_exprs) if (last and arg_exprs is not None) else v]
             val = out[0] if out else None
         return out
+    if len(names) > 1 and _has_package(ev, names[0]):
+        raise cd._err(f"Unable to resolve the name '{full}'.", "MATLAB:undefinedVarOrClass")
     return None
 
 
