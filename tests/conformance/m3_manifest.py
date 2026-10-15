@@ -15,7 +15,7 @@ CRITERIA = {
     "T04": ("m3_t04_stats", "p1", [628, 581], "met"),
     "T05": ("m3_t05_data_io", "p1", [629], "met"),
     "T06": ("m3_t06_signal_plugin", "p2", [630], "met"),
-    "T07": ("m3_t07_sparse", "p2", [631, 527], "pending"),
+    "T07": ("m3_t07_sparse", "p2", [631, 527], "met"),
 }
 
 PLUGIN_SCRIPTS = {"m3_t06_signal_plugin"}

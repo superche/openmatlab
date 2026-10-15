@@ -18,6 +18,9 @@ from openmatlab.numerics.ndarray_value import NDArrayValue
 from openmatlab.numerics.sparse_store import Store
 
 DENSIFY_COUNT = [0]
+# Max m*n to materialise for mostly-true logical/relational results (~S, S==0, …).
+# Above this, fall back to the dense path (same OOM risk as before for huge cases).
+COMPLEMENT_BUDGET = 10_000_000
 
 
 class SparseValue(NDArrayValue):
@@ -447,6 +450,33 @@ _REL = {
 }
 
 
+def logical_not(v):
+    """~S as a sparse logical: true on every structural zero / false entry of S.
+
+    Returns None when m*n exceeds COMPLEMENT_BUDGET so the caller can densify.
+    """
+    from openmatlab.numerics.sparse_store import Store
+
+    st = v.store
+    m, n = st.m, st.n
+    if m == 0 or n == 0:
+        return SparseValue(Store.zeros(m, n, dtype=np.bool_))
+    if m * n > COMPLEMENT_BUDGET:
+        return None
+    truthy = st.data.astype(bool) if st.dtype == np.bool_ else (st.data != 0)
+    keys_true = st.keys[truthy]
+    all_keys = np.arange(m * n, dtype=np.int64)
+    if keys_true.size:
+        keep = np.ones(m * n, dtype=bool)
+        keep[keys_true] = False
+        keys = all_keys[keep]
+    else:
+        keys = all_keys
+    cols, rows = np.divmod(keys, m) if m else (keys, keys)
+    return SparseValue(Store(m, n, rows, cols, np.ones(keys.size, dtype=bool),
+                             canonical=True, dtype=np.bool_))
+
+
 def relational_native(op, left, right):
     """Logical sparse result of S op k / k op S / S op S when op(0, 0) is false."""
     from openmatlab.numerics.sparse_store import Store
@@ -479,13 +509,72 @@ def relational_native(op, left, right):
         return None
     k = prep(k.reshape(-1))[0]
     zero = fn(0.0, k) if sl else fn(k, 0.0)
-    if zero or (isinstance(k, float) and np.isnan(k)):
-        return None if zero else SparseValue(Store.zeros(*s.store.shape, dtype=np.bool_))
+    if isinstance(k, float) and np.isnan(k):
+        return SparseValue(Store.zeros(*s.store.shape, dtype=np.bool_))
     st = s.store
     vals = prep(st.data)
     hit = fn(vals, k) if sl else fn(k, vals)
-    return SparseValue(Store(st.m, st.n, st.rows[hit], st.cols[hit], np.ones(int(hit.sum()), bool),
+    if not zero:
+        return SparseValue(Store(st.m, st.n, st.rows[hit], st.cols[hit], np.ones(int(hit.sum()), bool),
+                                 canonical=True, dtype=np.bool_))
+    # op(0, k) is true: result is true everywhere except where the stored values fail the test
+    m, n = st.m, st.n
+    if m == 0 or n == 0:
+        return SparseValue(Store.zeros(m, n, dtype=np.bool_))
+    if m * n > COMPLEMENT_BUDGET:
+        return None
+    fail = st.keys[~hit]
+    all_keys = np.arange(m * n, dtype=np.int64)
+    if fail.size:
+        keep = np.ones(m * n, dtype=bool)
+        keep[fail] = False
+        keys = all_keys[keep]
+    else:
+        keys = all_keys
+    cols, rows = np.divmod(keys, m)
+    return SparseValue(Store(m, n, rows, cols, np.ones(keys.size, dtype=bool),
                              canonical=True, dtype=np.bool_))
+
+
+def kron(a, b):
+    """Kronecker product; sparse when either factor is sparse (MATLAB)."""
+    from openmatlab.numerics.sparse_store import Store
+
+    def as_store(v):
+        if is_sparse(v):
+            return v.store
+        buf = _plain(v)
+        if buf is None:
+            return None
+        return Store.from_dense(buf)
+
+    sa, sb = as_store(a), as_store(b)
+    if sa is None or sb is None:
+        return None
+    ma, na = sa.m, sa.n
+    mb, nb = sb.m, sb.n
+    if sa.nnz == 0 or sb.nnz == 0:
+        dt = np.result_type(sa.dtype, sb.dtype)
+        if dt == np.bool_:
+            dt = np.bool_
+        elif np.issubdtype(dt, np.complexfloating):
+            dt = np.complex128
+        else:
+            dt = np.float64
+        return SparseValue(Store.zeros(ma * mb, na * nb, dtype=dt))
+    # For each (i,j,va) in A and (r,c,vb) in B: (i*mb+r, j*nb+c) = va*vb
+    ia = sa.rows; ja = sa.cols; va = sa.data
+    rb = sb.rows; cb = sb.cols; vb = sb.data
+    # Broadcast: repeat each A-nz across all B-nz, and tile B-nz for each A-nz
+    nA, nB = sa.nnz, sb.nnz
+    rows = (ia.repeat(nB) * mb + np.tile(rb, nA)).astype(np.int64)
+    cols = (ja.repeat(nB) * nb + np.tile(cb, nA)).astype(np.int64)
+    vals = va.repeat(nB) * np.tile(vb, nA)
+    # Drop structural zeros from multiplication (e.g. Inf*0 already handled by densify elsewhere)
+    keep = vals != 0
+    if not np.all(keep):
+        rows, cols, vals = rows[keep], cols[keep], vals[keep]
+    return SparseValue(Store(ma * mb, na * nb, rows, cols, vals))
 
 
 def matrix_power(a, p):

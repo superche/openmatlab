@@ -450,6 +450,14 @@ features:
     notes: "plugin mfiles: hann, kaiser, butter (low/high), freqz, filtfilt; which() resolves to community.signal; T06"
     tests: [tests/unit/test_community_signal_m3.py, tests/bdd/test_community_signal_m3_bdd.py]
 
+  - id: numerics.sparse_maturity
+    layer: numerics
+    name: sparse maturity — mostly-true results, kron, large solves (M3-E7)
+    status: done
+    depends_on: [numerics.sparse_csc]
+    notes: "~S / S==0 / S<=k stay sparse (COMPLEMENT_BUDGET); kron sparse when either factor is; n=2000 tridiagonal \\ ; T07 (residual #685)"
+    tests: [tests/unit/test_sparse_maturity.py, tests/bdd/test_sparse_maturity_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

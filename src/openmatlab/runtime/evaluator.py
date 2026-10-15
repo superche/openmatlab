@@ -368,6 +368,12 @@ class Evaluator:
                 z = self.numerics.from_scalar(0.0)
                 return self.numerics.sub(z, v)
             if expr.op == "~":
+                from openmatlab.numerics import sparse as _sp
+
+                if _sp.is_sparse(v):  # ~S stays sparse (M3-E7 / #527)
+                    nat = _sp.logical_not(v)
+                    if nat is not None:
+                        return nat
                 return self._logical(~self._bool_buf(v))
             raise EvalError(f"Unknown unary op: {expr.op}")
         if isinstance(expr, ast.BinOp):
