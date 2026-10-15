@@ -1477,6 +1477,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.community_signal_m3
+    kind: unit
+    title: community.signal hann/kaiser/butter/freqz/filtfilt (Epic #630)
+    features: [plugin.community_signal_m3]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_community_signal_m3.py
+    status: active
+    env: unit
+
+  - id: tc.community_signal_m3_bdd
+    kind: bdd
+    title: community.signal Gherkin scenarios (Epic #630)
+    features: [plugin.community_signal_m3]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_community_signal_m3_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

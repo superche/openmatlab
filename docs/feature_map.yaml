@@ -442,6 +442,14 @@ features:
     notes: "events blocks, addlistener/listener/notify, event.listener Enabled/delete/isvalid, event.EventData Source/EventName, delete() destructor drops listeners, save/load of classdef objects as v5 mxOBJECT; O-E7"
     tests: [tests/unit/test_classdef_events.py, tests/bdd/test_classdef_events_bdd.py]
 
+  - id: plugin.community_signal_m3
+    layer: plugin
+    name: community.signal hann/kaiser/butter/freqz/filtfilt (M3-E6)
+    status: done
+    depends_on: []
+    notes: "plugin mfiles: hann, kaiser, butter (low/high), freqz, filtfilt; which() resolves to community.signal; T06"
+    tests: [tests/unit/test_community_signal_m3.py, tests/bdd/test_community_signal_m3_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
