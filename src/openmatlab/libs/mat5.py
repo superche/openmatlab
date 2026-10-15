@@ -3,7 +3,9 @@
 Follows the public MathWorks "MAT-File Format" spec. Supported:
 - double, single and int8..uint64 (real and complex);
 - logical, char (including multi-row);
-- cell, struct (scalar and arrays), sparse double/logical.
+- cell, struct (scalar and arrays), sparse double/logical;
+- classdef objects, written as mxOBJECT (class name + property struct) and
+  rebuilt by load() when the class is on the path (M8 O-E7).
 
 The reader also accepts miCOMPRESSED (zlib) elements, which MATLAB writes by
 default. The writer emits uncompressed v5 (MATLAB reads both).
@@ -69,6 +71,20 @@ def _matrix_body(v, name: str) -> bytes:
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.char_value import CharValue
 
+    if getattr(v, "is_class_instance", False):  # classdef object -> mxOBJECT (M8 O-E7)
+        if getattr(v, "is_enum", False):
+            raise MatError("save: enumeration members cannot be saved yet")
+        if not v.alive:
+            raise MatError("save: cannot save a deleted handle object")
+        fields = [k for k in v.props if not k.startswith("_")]
+        width = max([len(f) for f in fields] + [0]) + 1
+        body = _header(mxOBJECT, 0, (1, 1), name)
+        body += _element(miINT8, v.info.name.encode("ascii"))
+        body += _element(miINT32, struct.pack("<i", width))
+        body += _element(miINT8, b"".join(f.encode("ascii").ljust(width, b"\0") for f in fields))
+        for f in fields:
+            body += _matrix(v.props[f])
+        return body
     if getattr(v, "is_struct", False):
         if getattr(v, "is_mexception", False):
             raise MatError("save: MException objects cannot be saved")
@@ -197,8 +213,10 @@ def _parse_matrix(data: bytes, endian: str):
         rows = tuple(tuple(items[j * r + i] for j in range(c)) for i in range(r))
         return name, CellValue(rows=rows, nd=tuple(dims) if len(dims) > 2 else ())
     if mx in (mxSTRUCT, mxOBJECT):
+        cls_name = None
         if mx == mxOBJECT:
             t, _cls, pos = _read_elem(data, pos, endian)
+            cls_name = bytes(_cls).split(b"\0", 1)[0].decode("ascii", "replace")
         t, w_b, pos = _read_elem(data, pos, endian)
         width = int(_num(t, w_b, endian)[0])
         t, names_b, pos = _read_elem(data, pos, endian)
@@ -210,7 +228,10 @@ def _parse_matrix(data: bytes, endian: str):
                 t, sub, pos = _read_elem(data, pos, endian)
                 e[f] = _parse_matrix(sub, endian)[1]
             elems.append(e)
-        return name, StructValue(tuple(dims), tuple(fields), tuple(elems))
+        sv = StructValue(tuple(dims), tuple(fields), tuple(elems))
+        if cls_name:
+            object.__setattr__(sv, "mat_class", cls_name)  # (frozen) load() turns it back into an object when the class is on the path
+        return name, sv
     if mx == mxCHAR:
         t, ch_b, pos = _read_elem(data, pos, endian)
         if t == miUTF8:

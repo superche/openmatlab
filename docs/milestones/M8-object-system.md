@@ -67,4 +67,4 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 M8 opened 2026-10-13.
 
-**10 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621), O05, O08, O09 (Epic #622), O10 (Epics #621 + #623). Next: O-E7 events/listeners, destructors, objects in MAT files (#624).
+**10 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621), O05, O08, O09 (Epic #622), O10 (Epics #621 + #623). O-E7 events/listeners, destructors and objects in MAT files (#624, p2, no exit criterion) delivered; residual #677.

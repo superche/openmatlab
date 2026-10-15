@@ -663,6 +663,10 @@ def dot_access(ev, base: ClassInstance, name: str, arg_exprs: Optional[list], na
     if m is not None:
         args = ev._eval_call_args(arg_exprs or [])
         return list(m([base] + list(args), nargout=nargout))
+    if base.info.is_handle and name in ("addlistener", "listener", "notify", "delete", "isvalid"):
+        fn = ev.functions.resolve(name)  # obj.notify('Evt'), obj.addlistener(...) (O-E7)
+        args = ev._eval_call_args(arg_exprs or [])
+        return list(fn([base] + list(args), nargout=nargout))
     raise _err(f"Unrecognized method, property, or field '{name}' for class '{base.info.name}'.",
                "MATLAB:noSuchMethodOrField")
 
