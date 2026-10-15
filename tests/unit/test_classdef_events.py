@@ -43,7 +43,7 @@ def run(tmp_path):
     (tmp_path / "PtM.m").write_text(PT)
     s = Session.create_default()
     r = ReplSession(s)
-    r.run_line(f"addpath('{tmp_path.as_posix()}'); cd('{tmp_path.as_posix()}');")
+    r.run_line(f"addpath('{tmp_path.as_posix()}'); matf = '{(tmp_path / 'objs.mat').as_posix()}';")
 
     def go(code):
         buf = io.StringIO()
@@ -84,7 +84,7 @@ def test_destructor_and_listener_lifetime(run):
 
 
 def test_objects_round_trip_through_mat(run):
-    g = run("p = PtM; p.x = 5; a = Acct; a.bal = 7; save('objs.mat', 'p', 'a'); clear p a; load('objs.mat');"
-            " c = {class(p), class(a)}; v = [p.x p.y a.bal]; s = load('objs.mat'); w = s.p.x;")
+    g = run("p = PtM; p.x = 5; a = Acct; a.bal = 7; save(matf, 'p', 'a'); clear p a; load(matf);"
+            " c = {class(p), class(a)}; v = [p.x p.y a.bal]; s = load(matf); w = s.p.x;")
     assert _n(g("v")) == [[5.0, 2.0, 7.0]] and _n(g("w")) == [[5.0]]
     assert g("p").matlab_class() == "PtM" and g("a").matlab_class() == "Acct"

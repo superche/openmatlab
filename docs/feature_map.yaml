@@ -434,6 +434,14 @@ features:
     notes: "scalar graphics handles carry the handle model: h.Prop read/write, ax.XLim(2), isvalid after close, isobject; datetime .Year/.Month/.Day; O-E6"
     tests: [tests/unit/test_graphics_dot_objects.py, tests/bdd/test_graphics_dot_objects_bdd.py]
 
+  - id: lang.classdef_events
+    layer: lang
+    name: classdef events/listeners, handle destructors, objects in MAT files
+    status: done
+    depends_on: [lang.classdef_core]
+    notes: "events blocks, addlistener/listener/notify, event.listener Enabled/delete/isvalid, event.EventData Source/EventName, delete() destructor drops listeners, save/load of classdef objects as v5 mxOBJECT; O-E7"
+    tests: [tests/unit/test_classdef_events.py, tests/bdd/test_classdef_events_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
