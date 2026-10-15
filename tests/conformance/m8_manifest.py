@@ -19,5 +19,5 @@ CRITERIA = {
     "O07": ("m8_o07_subsref_subsasgn", "p1", [621], "met"),
     "O08": ("m8_o08_enumerations", "p1", [622], "met"),
     "O09": ("m8_o09_introspection", "p1", [622], "met"),
-    "O10": ("m8_o10_display_dot_objects", "p1", [621, 623, 593, 602], "pending"),
+    "O10": ("m8_o10_display_dot_objects", "p1", [621, 623, 593, 602], "met"),
 }

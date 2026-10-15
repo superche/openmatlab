@@ -152,7 +152,8 @@ def _index(ev, value, kind, vals):
 
 
 def _field(value, name):
-    if cd.is_instance(value) or (getattr(value, "is_object", False) and hasattr(value, "get_prop")):
+    if cd.is_instance(value) or ((getattr(value, "is_object", False) or getattr(value, "is_graphics_handle", False))
+                                 and hasattr(value, "get_prop")):
         return value.get_prop(name)
     if getattr(value, "is_struct", False) and value.numel() == 1 and value.has(name):
         return value.get(name)

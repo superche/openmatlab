@@ -134,7 +134,8 @@ def read_field(ev, expr: ast.FieldExpr):
             raise _err("Expected one output from a curly brace or dot indexing expression, but there were "
                        f"{len(base.values)} results.")
         base = base.values[0]
-    if getattr(base, "is_object", False) and hasattr(base, "get_prop"):  # obj.prop, s.obj.prop (M8, #569)
+    if (getattr(base, "is_object", False) or getattr(base, "is_graphics_handle", False)) and hasattr(base, "get_prop"):
+        # obj.prop, s.obj.prop (M8, #569); graphics h.Prop (O-E6)
         return base.get_prop(field_name(ev, expr))
     if not is_struct(base):
         raise _err("Dot indexing is not supported for variables of this type.")

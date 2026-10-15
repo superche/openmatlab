@@ -335,7 +335,8 @@ def _isa(cls):
 
 
 def _isobject(args, *, nargout=1):
-    return (NDArrayValue(np.array([[bool(getattr(args[0], "is_object", False))]])),)
+    v = args[0]
+    return (NDArrayValue(np.array([[bool(getattr(v, "is_object", False) or getattr(v, "is_graphics_handle", False))]])),)
 
 
 def register(builtins: Dict[str, Callable]) -> None:

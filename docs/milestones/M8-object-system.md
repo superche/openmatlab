@@ -42,7 +42,7 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | O07 | `subsref`/`subsasgn` overloads with `builtin()` fallback, multi-level indexing, no recursion inside methods | m8_o07_subsref_subsasgn | p1 | #621 | met (Epic #621; residual #653) |
 | O08 | Enumerations: plain, integer-based (`< int32`), with properties and a constructor; `enumeration()`, `switch`, arrays | m8_o08_enumerations | p1 | #622 | met (Epic #622; residual #669) |
 | O09 | Introspection: `properties`, `methods`, `ismethod`, `isprop`, `fieldnames`, `metaclass`, `?Class`, `which` | m8_o09_introspection | p1 | #622 | met (Epic #622; residual #669) |
-| O10 | Display (default "with properties", `disp` overload) and dot notation on built-in objects (graphics `h.Prop`, `datetime` `.Year`) | m8_o10_display_dot_objects | p1 | #621, #623 (#593, #602) | pending |
+| O10 | Display (default "with properties", `disp` overload) and dot notation on built-in objects (graphics `h.Prop`, `datetime` `.Year`) | m8_o10_display_dot_objects | p1 | #621, #623 (#593, #602) | met (Epics #621, #623; residual #673) |
 
 ## Epics (approved order)
 
@@ -67,4 +67,4 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 
 M8 opened 2026-10-13.
 
-**9 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621), O05, O08, O09 (Epic #622). Next: O-E6 built-in objects on the class model (#623), which completes O10; then O-E7 events/listeners (#624).
+**10 / 10** criteria met: O01 (Epic #618), O04 (Epic #618, from the same class model), O02 (Epic #619), O03 (Epic #619), O06 (Epic #621), O07 (Epic #621), O05, O08, O09 (Epic #622), O10 (Epics #621 + #623). Next: O-E7 events/listeners, destructors, objects in MAT files (#624).
