@@ -18,10 +18,12 @@ def _keep_dt(np, buf):
 def _stays_logical(np, lhs, rhs) -> bool:
     """L(i) = v keeps a non-empty logical L logical when v is logical or real 0/1 (#766)."""
     lhs, rhs = np.asarray(lhs), np.asarray(rhs)
-    if lhs.dtype != np.bool_ or lhs.size == 0:
+    if lhs.dtype != np.bool_:
         return False
     if rhs.dtype == np.bool_:
-        return True
+        return True  # also for an empty logical L (false(1,0); L(end+1) = true)
+    if lhs.size == 0:
+        return False
     return rhs.size > 0 and not np.iscomplexobj(rhs) and bool(np.all((rhs == 0) | (rhs == 1)))
 
 def _fit_mask(np, m, n):
@@ -520,7 +522,8 @@ class NumPyArrayBackend:
                         )
                     drop = k - 1
                 return _delete_linear(flat, drop)
-            if self._is_logical(ind_a):
+            if self._is_logical(ind_a) and _fit_mask(np, np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(
+                    -1, order="F"), flat.size).size == flat.size:
                 m = _fit_mask(np, np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F"), flat.size)
                 if m.size != flat.size:
                     raise NumericsError(
@@ -529,9 +532,12 @@ class NumPyArrayBackend:
                 nsel = int(m.sum())
                 flat[m] = _apply_rhs(nsel)
             else:
-                k = _as_1based_int_vec(
-                    ind_a.backend_buffer(), label="linear index"
-                )
+                if self._is_logical(ind_a):  # longer mask: grow like find(mask) (MATLAB, #766)
+                    k = np.nonzero(np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F"))[0] + 1
+                else:
+                    k = _as_1based_int_vec(
+                        ind_a.backend_buffer(), label="linear index"
+                    )
                 need = int(np.max(k)) if k.size else 0
                 if need > flat.size and data.ndim > 2:
                     raise NumericsError("Attempt to grow array along ambiguous dimension.")
@@ -559,7 +565,11 @@ class NumPyArrayBackend:
         subs = []
         for d, ind in enumerate(indices):
             ind_a = _as_nd(ind)
-            if self._is_logical(ind_a):
+            if self._is_logical(ind_a) and vbuf.size != 0:
+                # assignment grows the array up to the last true element (MATLAB, #766)
+                m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
+                subs.append(np.nonzero(m)[0].astype(np.int64) + 1)
+            elif self._is_logical(ind_a):
                 subs.append(
                     self._dim_indices_0based(ind_a, view_shape[d], label="set_index") + 1
                 )
