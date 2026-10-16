@@ -328,7 +328,14 @@ def _known(o: GObj) -> Dict[str, Any]:
     return chart_builtins.known(o)
 
 
+# hidden backward-compatibility ColorBar properties (R2014b+ merged them into Label / Direction, #771)
+_COMPAT_ALIASES = {"colorbar": {"xlabel": "Label", "ylabel": "Label", "xdir": "Direction", "ydir": "Direction"}}
+
+
 def _canon(o: GObj, name: str) -> str:
+    alias = _COMPAT_ALIASES.get(o.type, {}).get(name.lower())
+    if alias is not None:
+        return alias
     view = _props_view(o)
     for k in view:
         if k.lower() == name.lower():
@@ -840,7 +847,8 @@ def _label(key):
             hh = _arr(args[0]).reshape(-1)
             if hh.size == 1 and m.is_handle(hh[0]) and isinstance(m.get(hh[0]).props.get("Label"), GObj):
                 cbar = m.get(hh[0])  # title(colorbar, ...) / ylabel(colorbar, ...) label the colorbar (#771)
-                t, rest = cbar.props["Label"], list(args[1:])
+                lk = "Title" if key == "Title" and isinstance(cbar.props.get("Title"), GObj) else "Label"
+                t, rest = cbar.props[lk], list(args[1:])
                 a = getattr(cbar, "axes", None) or m.gca()
         a = a or m.gca()
         if not rest:
