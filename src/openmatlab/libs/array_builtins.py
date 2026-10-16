@@ -202,6 +202,12 @@ def _mat2cell(args, *, nargout=1):
         if grid.ndim > 2 or any(t != 1 for t in trailing):
             raise _err("mat2cell: N-D input is not supported", "MATLAB:mat2cell:unsupported")
     m, n = grid.shape
+    if grid.size == 0 and len(args) > 2:  # '' and [] are 0x0 here; accept any empty split (1x0 char, #766)
+        want = (int(np.sum(_arr(args[1], "mat2cell"))), int(np.sum(_arr(args[2], "mat2cell"))))
+        if want[0] * want[1] == 0:
+            grid = grid.reshape(want)
+            m, n = want
+
     def sizes(a, total, dim):
         d = [int(x) for x in _arr(a, "mat2cell").reshape(-1)]
         if any(x < 0 for x in d) or sum(d) != total:

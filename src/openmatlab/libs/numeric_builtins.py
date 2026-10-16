@@ -1293,6 +1293,32 @@ def register_numeric_builtins(resolver) -> None:
 
     resolver.register_builtin("cellfun", cellfun)
 
+    def bsxfun(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        """bsxfun(fun, A, B): fun(A, B) with implicit expansion (#766)."""
+        from openmatlab.runtime.char_value import CharValue
+        from openmatlab.runtime.evaluator import EvalError
+        from openmatlab.runtime.function_handle import FunctionHandleValue
+
+        if len(args) != 3:
+            raise EvalError("Not enough input arguments." if len(args) < 3 else "Too many input arguments.",
+                            "MATLAB:minrhs" if len(args) < 3 else "MATLAB:TooManyInputs")
+        fh = args[0]
+        if isinstance(fh, CharValue):
+            fh = FunctionHandleValue(name=fh.text, fn=resolver.resolve(fh.text))
+        if not isinstance(fh, FunctionHandleValue):
+            raise EvalError("First argument must be a function handle.", "MATLAB:bsxfun:invalidFunctionHandle")
+        a, b = args[1], args[2]
+        sa, sb = tuple(getattr(a, "shape", ())), tuple(getattr(b, "shape", ()))
+        if sa and sb:
+            n = max(len(sa), len(sb))
+            pa, pb = sa + (1,) * (n - len(sa)), sb + (1,) * (n - len(sb))
+            if any(x != y and x != 1 and y != 1 for x, y in zip(pa, pb)):
+                raise EvalError("Non-singleton dimensions of the two input arrays must match each other.",
+                                "MATLAB:bsxfun:arrayDimensionsMustMatch")
+        return list(fh.call([a, b], nargout=max(nargout, 1)))[:1]
+
+    resolver.register_builtin("bsxfun", bsxfun)
+
 _strfun_builtins.register_late(BUILTINS)
 
 from openmatlab.libs import time_builtins as _time_builtins  # noqa: E402

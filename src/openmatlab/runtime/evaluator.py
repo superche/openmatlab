@@ -318,13 +318,17 @@ class Evaluator:
                 return r[0]
         if isinstance(expr, ast.FuncHandleExpr):
             from openmatlab.runtime.function_handle import FunctionHandleValue
+            name = expr.name
             try:
-                fn = self.functions.resolve(expr.name)
+                fn = self.functions.resolve(name)
             except Exception as e:
-                fn = self._dotted_callable(expr.name) if "." in expr.name else None
-                if fn is None:
-                    raise EvalError(f"function handle: undefined function '{expr.name}'") from e
-            return FunctionHandleValue(name=expr.name, fn=fn)
+                fn = self._dotted_callable(name) if "." in name else None
+                if fn is None and not ("." not in name and name.lower() in
+                                       getattr(self.functions, "_om_method_names", ())):
+                    raise EvalError(f"function handle: undefined function '{name}'") from e
+            if "." not in name and getattr(self.functions, "_om_method_names", None):
+                fn = self._dispatching_handle_fn(name, fn)  # @method dispatches on argument class (#766)
+            return FunctionHandleValue(name=name, fn=fn)
         if isinstance(expr, ast.AnonFuncExpr):
             return self._make_anon(expr)
         if isinstance(expr, ast.EndExpr):
@@ -1101,6 +1105,25 @@ class Evaluator:
 
     _tmp_seq = 0
 
+    def _index_with_cs_args(self, target_expr, arg_exprs) -> Value:
+        """x(i, c{:}): cs-lists in subscripts expand into separate subscripts (#766)."""
+        names, new = [], []
+        try:
+            for a in arg_exprs:
+                if not isinstance(a, ast.CellIndexExpr):
+                    new.append(a)
+                    continue
+                for v in self._cs_values(a):
+                    Evaluator._tmp_seq += 1
+                    t = f"__om_cs{Evaluator._tmp_seq}"
+                    self.workspace.set(t, v)
+                    names.append(t)
+                    new.append(ast.Name(t))
+            return self._eval_call_or_index(target_expr, new)
+        finally:
+            for t in names:
+                self.workspace.clear(t)
+
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
         if isinstance(target_expr, (ast.FieldExpr, ast.SuperRef)):  # classdef objects (M8)
             from openmatlab.runtime import classdef_eval as _cde
@@ -1116,6 +1139,8 @@ class Evaluator:
             if out is not None:
                 return out
         results = self._invoke_call(target_expr, arg_exprs, nargout=1)
+        if results is None and any(isinstance(a, ast.CellIndexExpr) for a in arg_exprs):
+            return self._index_with_cs_args(target_expr, arg_exprs)
         if results is None:
             target = self.eval_expr(target_expr)
             if getattr(target, "is_object", False):  # obj(args) (Epic #539)
@@ -1450,6 +1475,24 @@ class Evaluator:
             return None
         m = info.find_method(meth)
         return m if m is not None and m.static else None
+
+    def _dispatching_handle_fn(self, name, fn):
+        from openmatlab.runtime import classdef as _cd, frames as _frames
+
+        ev = self
+
+        def call(args, *, nargout=1, **kw):
+            m = _cd.find_method_for_args(name, list(args)) if any(_is_class_obj(a) for a in args) else None
+            if m is not None:
+                with _frames.calling(ev):
+                    return m(list(args), nargout=nargout)
+            if fn is None:
+                raise EvalError(f"Undefined function '{name}' for input arguments of type "
+                                f"'{args[0].matlab_class() if args else 'double'}'.", "MATLAB:UndefinedFunction")
+            return fn(args, nargout=nargout, **kw)
+
+        call.__wrapped__ = fn
+        return call
 
     def _overload(self, name, args, nargout=1):
         """Call a class method overload ``name(args...)`` if any argument's class defines it (O-E4)."""
