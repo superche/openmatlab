@@ -13,7 +13,7 @@ Use public, real MATLAB code as a measurable CI gate: a reproducible, licence-cl
 
 Approved by Shaw on 2026-10-16. Decisions:
 1. **Licensing.** GPL/GFDL sources (Rosetta Code, GNU Octave) are **downloaded at runtime and run locally only**; the repo stores only manifests (title/URL/revid/sha256) and results, **never the corpus code**. BSD/MIT sources may be vendored with their licence files. MathWorks code, docs, `.p` files and toolbox sources are never used.
-2. **Thresholds** for C05–C08 are calibrated after the first full run and then locked in this document (table below shows the proposal values until then).
+2. **Thresholds** for C05–C08 are calibrated after the first full run and then locked in this document. **Locked 2026-10-16** (Epic #764), see [Threshold calibration](#threshold-calibration).
 3. **Triage:** failure groups auto-file GitHub issues labelled `corpus`, deduplicated by `(category, key)`.
 4. **CI:** the full corpus runs nightly; PRs run a sample.
 
@@ -38,12 +38,25 @@ Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-ch
 | C02 | Runner: subprocess sandbox, timeout, stdin isolation, JSON results; one hang/crash does not affect others; full CI run ≤ 15 min | m12_c02_runner_isolation | p0 | #761 | met (Epic #761; residual #780) |
 | C03 | Deterministic preprocessing (transcript de-prompting, function-file detection, `input` fixtures) with unit tests; pilot noise rate 46 % → ≤ 10 % | m12_c03_preprocess | p0 | #763 | met (Epic #763; residual #789) |
 | C04 | Classifier: ≥ 90 % category accuracy on ≥ 60 hand-labelled failures; `internal-crash` recall 100 % | m12_c04_classifier | p0 | #763 | met (Epic #763; residual #789) |
-| C05 | T0 parse pass rate ≥ 98 % (proposal; locked after first full run) | m12_c05_tier0 | p0 | #766 | pending |
-| C06 | T1 run pass rate ≥ 85 % (proposal; locked after first full run) | m12_c06_tier1 | p0 | #766 | pending |
-| C07 | T2 self-check pass rate ≥ 75 % (proposal; locked after first full run) | m12_c07_tier2 | p1 | #765 | pending |
-| C08 | T3 golden pass rate ≥ 70 % (proposal; locked after first full run); every Octave-sourced golden links MATLAB docs | m12_c08_tier3 | p1 | #765 | pending |
+| C05 | T0 parse pass rate ≥ 95 % (locked 2026-10-16 after the first full run: 87.5 %) | m12_c05_tier0 | p0 | #766 | pending |
+| C06 | T1 run pass rate ≥ 65 % (locked 2026-10-16 after the first full run: 26.1 %) | m12_c06_tier1 | p0 | #766 | pending |
+| C07 | T2 self-check pass rate ≥ 75 % (locked at the proposal value: no T2 oracle existed in the first full run; C-E5 #765 builds it) | m12_c07_tier2 | p1 | #765 | pending |
+| C08 | T3 golden pass rate ≥ 70 % (locked at the proposal value: no T3 oracle existed in the first full run; C-E5 #765 builds it); every Octave-sourced golden links MATLAB docs | m12_c08_tier3 | p1 | #765 | pending |
 | C09 | `internal-crash` = 0 in the full run | m12_c09_no_crash | p0 | #766 | pending |
-| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | pending |
+| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764) |
+
+## Threshold calibration
+
+First full run: `docs/corpus/results.json` (1495 entries, timeout 20 s). [`REPORT.md`](../corpus/REPORT.md) is the dashboard.
+
+| Tier | Proposal | First full run | Locked | Rationale |
+|---|---|---|---|---|
+| T0 | 98 % | 87.5 % (850/971) | **95 %** | The three largest parse groups (unterminated `function` files, NEWLINE and `end` tokens) cover about 93 of the 121 failures. Fixing them reaches about 97 %, which leaves a margin for long-tail syntax. |
+| T1 | 85 % | 26.1 % (184/706) | **65 %** | 293 failures are a single engine gap (class-folder resolution, mostly chebfun) and 51 are `private/` resolution. Rosetta alone is already at 61.3 %. 85 % would need most of chebfun's numerical semantics to match exactly, which is beyond M12. |
+| T2 | 75 % | no oracle yet | **75 %** | Kept: there is nothing to calibrate against until C-E5 (#765) |
+| T3 | 70 % | no oracle yet | **70 %** | Kept: same reason |
+
+The thresholds are read by `openmatlab.qa.corpus.report.threshold()` from the criteria table above. Change them only with Shaw's approval.
 
 ## Epics (approved order, interleaved with M13)
 
@@ -62,4 +75,4 @@ Byte-exact comparison with MATLAB output; making toolbox-dependent scripts pass 
 
 ## Progress snapshot
 
-M12 opened 2026-10-16. **4 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)), C03 and C04 (Epic #763, [design](../design/EPIC-763-preprocess-classifier.md)): residual noise 5.5 % (raw 43.8 %), classifier 92.0 % on 88 labelled failures, crash recall 100 %. Next: C-E4 #764 REPORT dashboard, regression gate and corpus issue filing.
+M12 opened 2026-10-16. **5 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)), C03 and C04 (Epic #763, [design](../design/EPIC-763-preprocess-classifier.md)): residual noise 5.5 % (raw 43.8 %), classifier 92.0 % on 88 labelled failures, crash recall 100 %. C10 (Epic #764, [design](../design/EPIC-764-report-triage.md)): [REPORT](../corpus/REPORT.md) T0 87.5 %, T1 26.1 %; thresholds locked; 39 deduplicated `corpus` issues filed (#793-#831). Next: C-E6 #766 burn-down (p0: C05, C06, C09), interleaved with M13 epics ranked by corpus graphics failures.

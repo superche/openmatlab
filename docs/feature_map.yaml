@@ -610,6 +610,14 @@ features:
     notes: "M12 C04, Epic #763"
     tests: [tests/unit/test_corpus_preprocess_classify.py, tests/bdd/test_corpus_classifier_bdd.py]
 
+  - id: qa.corpus_report
+    layer: qa
+    name: Corpus REPORT dashboard, regression gate, deduplicated corpus issue filing
+    status: done
+    depends_on: [qa.corpus_classifier]
+    notes: "M12 C10, Epic #764; thresholds locked; .github/workflows/corpus.yml (PR sample, nightly full)"
+    tests: [tests/unit/test_corpus_report_triage.py, tests/bdd/test_corpus_report_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
