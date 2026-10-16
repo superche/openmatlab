@@ -126,7 +126,11 @@ for _t in ("arrowshape", "doubleendarrowshape", "lineshape", "textarrowshape", "
     KNOWN_PROPS[_t] = dict(_TEXT, **{"X": [0.3, 0.4], "Y": [0.3, 0.4], "Units": "normalized",
                                      "Position": [0.3, 0.3, 0.1, 0.1], "LineStyle": "-", "LineWidth": 0.5,
                                      "HeadStyle": "vback2", "HeadLength": 10.0, "HeadWidth": 10.0,
-                                     "FaceColor": "none", "FitBoxToText": "off", "Color": [0.0, 0.0, 0.0]})
+                                     "FaceColor": "none", "FitBoxToText": "off", "Color": [0.0, 0.0, 0.0],
+                                     "TextEdgeColor": "none", "TextBackgroundColor": "none", "TextColor": [0.0, 0.0, 0.0],
+                                     "TextLineWidth": 0.5, "TextMargin": 2.0, "TextRotation": 0.0,
+                                     "Head1Style": "vback2", "Head2Style": "vback2", "Head1Length": 10.0,
+                                     "Head2Length": 10.0, "Head1Width": 10.0, "Head2Width": 10.0, "FaceAlpha": 1.0})
 
 
 def known(o: GObj) -> Dict[str, Any]:

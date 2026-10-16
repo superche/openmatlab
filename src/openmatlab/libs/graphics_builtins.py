@@ -147,6 +147,10 @@ class GraphicsHandle(NDArrayValue):
         t = set(self._types())
         if not t:
             return "matlab.graphics.Graphics"
+        objs = getattr(self._model, "objs", {})
+        cls = {objs[i].props.get("_cls") for i in self.ids if i in objs}
+        if len(t) == 1 and len(cls) == 1 and None not in cls:
+            return next(iter(cls))
         if len(t) == 1:
             k = next(iter(t))
             return FULL_CLASS.get(k, "matlab.graphics.GraphicsPlaceholder" if not k else f"matlab.graphics.primitive.{k.title()}")
@@ -400,7 +404,7 @@ def _set_prop(m: Model, o: GObj, name: str, v) -> None:
             raise _err(f"Invalid value for '{k}' property.", "MATLAB:datatypes:InvalidEnumValue")
         o.props[k] = v.text
     elif k in ("Color", "FaceColor", "EdgeColor", "MarkerEdgeColor", "MarkerFaceColor", "XColor", "YColor",
-               "ZColor", "BackgroundColor", "LineColor", "TextColor") or (k == "CData" and o.type in (
+               "ZColor", "BackgroundColor", "LineColor", "TextColor", "TextEdgeColor", "TextBackgroundColor") or (k == "CData" and o.type in (
                    "line", "scatter", "bar", "figure", "axes", "text", "legend")):
         if k == "CData" and o.type == "scatter" and hasattr(v, "backend_buffer") and _arr(v, "set").size != 3:
             o.props[k] = _arr(v, "set").astype(float).tolist()
