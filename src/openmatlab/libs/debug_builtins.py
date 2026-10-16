@@ -344,5 +344,51 @@ def _dbdown(ev, args, nargout):
     return ()
 
 
-INTRINSICS = {"dbstop": _dbstop, "dbclear": _dbclear, "dbstatus": _dbstatus, "dbcont": _dbcont, "dbstep": _dbstep,
+def _keyboard(ev, args, nargout):
+    if args:
+        raise _err("Too many input arguments.", "MATLAB:TooManyInputs")
+    _dbg().keyboard(ev)
+    return ()
+
+
+def _input(ev, args, nargout):
+    """input(prompt) evaluates the reply in the caller's workspace; input(prompt, 's') returns text."""
+    from openmatlab.lang.lexer import LexerError
+    from openmatlab.lang.parser import ParseError, parse
+    from openmatlab.numerics.ndarray_value import NDArrayValue
+    from openmatlab.runtime.char_value import CharValue
+    from openmatlab.runtime.evaluator import EvalError, Evaluator
+
+    if not args or len(args) > 2:
+        raise _err("input requires a prompt: input(prompt) or input(prompt, 's').", "MATLAB:input:WrongNumInputs")
+    def txt(v):
+        if isinstance(v, CharValue) or getattr(v, "is_string", False):
+            from openmatlab.runtime.table_value import text
+
+            return text(v)
+        raise _err("The prompt must be a character vector or string scalar.", "MATLAB:input:InvalidPrompt")
+    prompt = txt(args[0])
+    as_text = len(args) == 2
+    if as_text and txt(args[1]) != "s":
+        raise _err("The second input to input must be 's'.", "MATLAB:input:InvalidOption")
+    d = _dbg()
+    while True:
+        line = d.read_input(prompt)
+        if line is None:
+            raise _err("input: no more input is available.", "MATLAB:input:EndOfInput")
+        if as_text:
+            return (CharValue(line),)
+        if not line.strip():
+            return (NDArrayValue(np.zeros((0, 0))),)
+        try:
+            stmts = parse(line, commands=False)
+            if len(stmts) != 1 or not hasattr(stmts[0], "expr"):
+                raise EvalError("input: enter one expression.")
+            e = Evaluator(workspace=ev.workspace, functions=ev.functions, numerics=ev.numerics, plots=ev.plots)
+            return (e.eval_expr(stmts[0].expr),)
+        except (LexerError, ParseError, EvalError) as exc:
+            d._write(f"Error: {exc}\n")  # MATLAB reports the error and asks again
+
+
+INTRINSICS = {"keyboard": _keyboard, "input": _input, "dbstop": _dbstop, "dbclear": _dbclear, "dbstatus": _dbstatus, "dbcont": _dbcont, "dbstep": _dbstep,
               "dbquit": _dbquit, "dbup": _dbup, "dbdown": _dbdown}

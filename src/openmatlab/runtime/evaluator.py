@@ -111,10 +111,16 @@ class Evaluator:
             # backend errors are user errors (MATLAB message), not crashes
             err = EvalError(str(exc))
             _callstack.attach(err)
+            if _debugger.ON and fr is not None:  # dbstop if error / caught error (M11 D-E3)
+                _debugger.on_error(self, fr, err)
             raise err from exc
         except Exception as exc:
             _callstack.attach(exc)
+            if _debugger.ON and fr is not None and isinstance(exc, EvalError):
+                _debugger.on_error(self, fr, exc)
             raise
+        if _debugger.ON and fr is not None:  # dbstop if naninf (M11 D-E3)
+            _debugger.on_value(self, fr, value)
         if self.display is not None:
             self._display_stmt(stmt, value)
         return value
@@ -2168,12 +2174,15 @@ class Evaluator:
         """try/catch (Epic #530): any MATLAB error in the body runs the handler."""
         from openmatlab.runtime import errors as _er
 
+        tok = _debugger.TRY_DEPTH.set(_debugger.TRY_DEPTH.get() + 1)  # 'caught error' stops (M11 D-E3)
         try:
             for s in stmt.body:
                 self.eval_stmt(s)
         except (_BreakSignal, _ContinueSignal, _ReturnSignal):
             raise
         except Exception as exc:  # every user-visible failure is catchable (MATLAB)
+            _debugger.TRY_DEPTH.reset(tok)
+            tok = None
             if not isinstance(exc, EvalError):
                 stack = getattr(exc, "mstack", None)
                 exc = EvalError(str(exc))
@@ -2184,6 +2193,9 @@ class Evaluator:
                 self.workspace.set(stmt.ident, me)
             for s in stmt.handler:
                 self.eval_stmt(s)
+        finally:
+            if tok is not None:
+                _debugger.TRY_DEPTH.reset(tok)
         return self.numerics.from_scalar(0.0)
 
     def _eval_while(self, stmt: ast.WhileStmt) -> Value:

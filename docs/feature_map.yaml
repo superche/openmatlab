@@ -514,6 +514,14 @@ features:
     notes: "worker-thread DebugController over the D-E2 engine; gutter=dbstop, K>> routing, stack selector rebinding Workspace; D08 (Epic #701). Residual #725: Pause button, conditional bps from gutter"
     tests: [tests/unit/test_workbench_debug.py, tests/bdd/test_workbench_debug_bdd.py]
 
+  - id: runtime.condition_stops
+    layer: runtime
+    name: keyboard, input and condition stops (error / caught error / warning / naninf)
+    status: done
+    depends_on: [runtime.debugger]
+    notes: "keyboard + input via the K>> input source; on_error/on_warning/on_value hooks behind debugger.ON; TRY_DEPTH ContextVar for caught errors; D06/D07 (Epic #700). Residual #729: naninf granularity, base-workspace stops"
+    tests: [tests/unit/test_condition_stops.py, tests/bdd/test_condition_stops_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
