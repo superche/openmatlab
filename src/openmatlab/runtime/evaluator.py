@@ -2482,8 +2482,11 @@ def _inplace_scalar_assign(ws, name, arr, idxs, rhs) -> bool:
     if buf.dtype != _np.float64 or rb.dtype != _np.float64 or rb.size != 1 or ib.size != 1 \
             or ib.dtype != _np.float64 or buf.base is not None or not buf.flags.writeable:
         return False
-    frame = ws._frames[-1]
-    if ws._refs[-1].get(name) is not None or frame.get(name) is not arr:
+    frames, refs = getattr(ws, "_frames", None), getattr(ws, "_refs", None)
+    if not isinstance(frames, list) or not isinstance(refs, list) or not frames or not refs:
+        return False  # nested-function shared workspaces etc. take the copying path
+    frame = frames[-1]
+    if not isinstance(frame, dict) or refs[-1].get(name) is not None or frame.get(name) is not arr:
         return False
     # referrers: frame dict, caller's ``arr`` and ``arr_a``, our parameter, getrefcount's argument
     if _sys.getrefcount(arr) > _INPLACE_ARR_REFS or _sys.getrefcount(buf) > _INPLACE_BUF_REFS:

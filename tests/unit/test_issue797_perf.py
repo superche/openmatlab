@@ -48,3 +48,11 @@ def test_double_keeps_imaginary_part():
     assert complex(_vals(s, "z")[0, 0]) == 1 + 2j
     assert s.workspace.get("z").matlab_class() == "double"
     assert list(_vals(s, "w").reshape(-1)) == [1j, 2]
+
+
+def test_nested_function_shared_workspace_store(tmp_path):
+    (tmp_path / "nest797.m").write_text(
+        "function r = nest797()\nx = zeros(1,3);\ninner();\nr = x;\n"
+        "    function inner()\n        x(2) = 5;\n        y = x; x(3) = 1;\n    end\nend\n")
+    s = _run(f"addpath('{tmp_path}'); r = nest797();")
+    assert list(_vals(s, "r").reshape(-1)) == [0, 5, 1]
