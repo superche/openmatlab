@@ -618,6 +618,14 @@ features:
     notes: "M12 C10, Epic #764; thresholds locked; docs/corpus/ci/corpus.yml (PR sample, nightly full; install pending #833)"
     tests: [tests/unit/test_corpus_report_triage.py, tests/bdd/test_corpus_report_bdd.py]
 
+  - id: qa.corpus_no_crash
+    layer: qa
+    name: Corpus full run has no internal crash (sprintf star width, display in functions)
+    status: done
+    depends_on: [qa.corpus_report]
+    notes: "M12 C09, Epic #766"
+    tests: [tests/unit/test_corpus_crash_fixes.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
