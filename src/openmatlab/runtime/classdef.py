@@ -209,7 +209,8 @@ class ClassInfo:
         defs = []
         for m in node.methods:
             fn = MFileCallable(defn=m.defn, numerics=getattr(resolver, '_numerics', None), plots=getattr(resolver, '_plots', None),
-                               resolver=resolver, source_path=path)
+                               resolver=resolver, source_path=path,
+                               qualname=None if m.attrs.get("_local") else f"{self.short}.{m.defn.name}")
             defs.append((m, fn))
             if m.attrs.get("_local"):
                 local[m.defn.name.lower()] = fn

@@ -115,6 +115,15 @@ class Parser:
         return stmts
 
     def parse_statement(self) -> Stmt:
+        line = self.current().line
+        stmt = self._parse_statement()
+        try:
+            object.__setattr__(stmt, "_line", line)  # source line for the call stack (#698); not part of eq/hash
+        except (AttributeError, TypeError):
+            pass
+        return stmt
+
+    def _parse_statement(self) -> Stmt:
         if self.current().type == TokenType.KW_FUNCTION:
             return self.parse_function_def()
         if self.current().type == TokenType.KW_IF:

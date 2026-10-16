@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from openmatlab.lang import ast_nodes as ast
 from openmatlab.lang.parser import parse
 from openmatlab.numerics.backend import ArrayBackend
+from openmatlab.runtime import callstack as _callstack
 from openmatlab.runtime.functions import FunctionResolver
 from openmatlab.runtime.value import Array, Value
 from openmatlab.runtime.workspace import Workspace
@@ -67,6 +68,7 @@ class Evaluator:
         self._no_output = None
         self._nargs = None  # (nargin, nargout) inside an .m function call (#531)
         self._persist_key = None
+        self._frame = None  # callstack.Frame of the running M-file function/script (#698)
 
     def eval_source(self, source: str) -> Optional[Value]:
         stmts = parse(source)
@@ -93,11 +95,21 @@ class Evaluator:
         from openmatlab.numerics.numpy_backend import NumericsError
 
         self._no_output = None
+        fr = self._frame
+        if fr is not None:
+            fr.line = getattr(stmt, "_line", fr.line)
         try:
             value = self._exec_stmt(stmt)
+        except (_BreakSignal, _ContinueSignal, _ReturnSignal):
+            raise
         except NumericsError as exc:
             # backend errors are user errors (MATLAB message), not crashes
-            raise EvalError(str(exc)) from exc
+            err = EvalError(str(exc))
+            _callstack.attach(err)
+            raise err from exc
+        except Exception as exc:
+            _callstack.attach(exc)
+            raise
         if self.display is not None:
             self._display_stmt(stmt, value)
         return value
@@ -401,6 +413,12 @@ class Evaluator:
                 from openmatlab.runtime import string_array as sa
 
                 return sa.make(sa.to_grid(operand).T)  # (#459)
+            from openmatlab.runtime.cell_value import CellValue
+
+            if isinstance(operand, CellValue):  # cell transpose: c' == c.' (elements unchanged)
+                if operand.nd:
+                    raise EvalError("Transpose on ND array is not defined. Use PERMUTE instead.", "MATLAB:transpose:NDArray")
+                return CellValue(rows=tuple(zip(*operand.rows)))
             return self.numerics.transpose(
                 self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
@@ -2110,7 +2128,9 @@ class Evaluator:
             raise
         except Exception as exc:  # every user-visible failure is catchable (MATLAB)
             if not isinstance(exc, EvalError):
+                stack = getattr(exc, "mstack", None)
                 exc = EvalError(str(exc))
+                exc.mstack = stack
             me = _er.from_eval_error(exc)
             _er.record(str(exc), me.elems[0]["identifier"].text)
             if stmt.ident:

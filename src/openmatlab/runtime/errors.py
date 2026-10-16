@@ -57,14 +57,56 @@ class MExceptionValue(StructValue):
         return "MException"
 
 
-def make_mexception(identifier: str, message: str) -> MExceptionValue:
+def stack_struct(frames, complete: bool = True) -> StructValue:
+    """(file, name, line) tuples -> MATLAB n-by-1 struct with fields file, name, line (#698)."""
+    import numpy as np
+    from pathlib import Path
+
+    from openmatlab.numerics.ndarray_value import NDArrayValue
     from openmatlab.runtime.char_value import CharValue
 
-    stack = StructValue((0, 1), ("file", "name", "line"), ())
-    d = {"identifier": CharValue(identifier), "message": CharValue(message), "stack": stack}
+    elems = tuple(
+        {"file": CharValue(f if complete or not f else Path(f).name), "name": CharValue(n),
+         "line": NDArrayValue(np.array([[float(ln)]]))}
+        for f, n, ln in frames
+    )
+    return StructValue((len(elems), 1), ("file", "name", "line"), elems)
+
+
+def stack_frames(stack) -> tuple:
+    """Inverse of stack_struct: MATLAB stack struct -> (file, name, line) tuples."""
+    out = []
+    for e in getattr(stack, "elems", ()):
+        try:
+            out.append((e["file"].text, e["name"].text, int(float(e["line"].backend_buffer().ravel()[0]))))
+        except (KeyError, AttributeError, IndexError, TypeError, ValueError):
+            continue
+    return tuple(out)
+
+
+def make_mexception(identifier: str, message: str, frames=()) -> MExceptionValue:
+    from openmatlab.runtime.char_value import CharValue
+
+    d = {"identifier": CharValue(identifier), "message": CharValue(message), "stack": stack_struct(frames)}
     return MExceptionValue((1, 1), tuple(d), (d,))
 
 
 def from_eval_error(exc) -> MExceptionValue:
     ident = getattr(exc, "identifier", "") or infer_identifier(str(exc))
-    return make_mexception(ident, str(exc))
+    return make_mexception(ident, str(exc), getattr(exc, "mstack", None) or ())
+
+
+def report(message: str, frames, basic: bool = False) -> str:
+    """getReport / uncaught-error text, hyperlink-free (MATLAB layout)."""
+    if not frames:
+        return message
+    _f, name, line = frames[0]
+    head = f"Error using {name} (line {line})\n{message}"
+    if basic:
+        return head
+    return head + "".join(f"\n\nError in {n} (line {ln})" for _f, n, ln in frames[1:])
+
+
+def error_in_lines(frames) -> str:
+    """Trailer printed after an uncaught error at the prompt: one "Error in" line per frame."""
+    return "\n".join(f"Error in {n} (line {ln})" for _f, n, ln in frames)

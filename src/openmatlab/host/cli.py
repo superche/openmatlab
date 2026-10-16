@@ -143,6 +143,16 @@ def _cmd_test(args: argparse.Namespace) -> int:
     return subprocess.call(cmd)
 
 
+def _print_error(exc) -> None:
+    """Uncaught error: message, then "Error in f (line N)" per M-file frame (MATLAB, #698)."""
+    from openmatlab.runtime.errors import error_in_lines
+
+    print(f"error: {exc}", file=sys.stderr)
+    frames = getattr(exc, "mstack", None)
+    if frames:
+        print(error_in_lines(frames), file=sys.stderr)
+
+
 def _eval_code(source: str) -> int:
     """Evaluate one-liner / snippet with default Session."""
     from openmatlab.host.repl import ReplSession
@@ -154,7 +164,7 @@ def _eval_code(source: str) -> int:
         ReplSession().run_line(source)
         return 0
     except (LexerError, ParseError, EvalError, ImportError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        _print_error(exc)
         return 1
     except Exception as exc:  # never a Python traceback for user code (M7 exit 3)
         print(f"error: internal error ({type(exc).__name__}): {exc}", file=sys.stderr)
@@ -186,7 +196,7 @@ def _run_repl() -> int:
         try:
             repl.run_line(line)
         except (LexerError, ParseError, EvalError) as exc:
-            print(f"error: {exc}", file=sys.stderr)
+            _print_error(exc)
         except Exception as exc:  # keep the session alive; no traceback (M7 exit 3)
             print(f"error: internal error ({type(exc).__name__}): {exc}", file=sys.stderr)
     return 0

@@ -76,6 +76,7 @@ Priority reflects impact on a typical user:
 | Performance tooling | `tic toc pause cputime` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Errors / exceptions | `try/catch` | **present** | delivered in M7 (Epic #530); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-ERRORS |
 | Errors / exceptions | `error MException throw rethrow assert lasterr`; `warning lastwarn` | **present** | delivered in M7 (Epic #530); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-ERRORS |
+| Errors / exceptions | `MException.stack` lines, `getReport`, `dbstack`, `mfilename`, "Error in f (line N)" | **present** | delivered in M11 D-E1 (Epic #698; D01/D02 met, 2026-10-16); residual #705 | — | [M11](https://github.com/superche/openmatlab/milestone/11) |
 | Scripts & functions | Function files (fixed arity) | **present** | `"addpath(...); r = f(x)"` resolves `.m` functions (lang.mfile BDD) | — | — |
 | Scripts & functions | `varargin varargout nargin nargout narginchk nargoutchk` | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
 | Scripts & functions | Local functions in script files | **present** | delivered in M7 (Epic #531); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FUNCTIONS |
