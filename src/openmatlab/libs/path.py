@@ -4,7 +4,34 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Sequence
+import os
+import stat as _stat
+import time
+from typing import Dict, FrozenSet, List, Optional, Sequence, Tuple
+
+_LISTINGS: Dict[str, Tuple[int, FrozenSet[str]]] = {}
+
+
+def _listing(d: str) -> Optional[FrozenSet[str]]:
+    """Names in directory ``d`` (None if not a directory), cached on its mtime (#797);
+    a directory modified in the last 2 s is re-listed every time (coarse mtime clocks):
+    adding, removing or renaming a file changes the directory mtime, so new files are seen."""
+    try:
+        st = os.stat(d)
+    except OSError:
+        return None
+    if not _stat.S_ISDIR(st.st_mode):
+        return None
+    hit = _LISTINGS.get(d)
+    if hit is not None and hit[0] == st.st_mtime_ns:
+        return hit[1]
+    try:
+        names = frozenset(os.listdir(d))
+    except OSError:
+        return None
+    if time.time_ns() - st.st_mtime_ns > 2_000_000_000:  # racy-git rule: never cache a just-touched dir
+        _LISTINGS[d] = (st.st_mtime_ns, names)
+    return names
 
 
 @dataclass
@@ -39,13 +66,22 @@ class ToolboxPath:
         base = parts[-1]
         candidates = (f"{base}.m", f"{base}.M")
         for entry in self.entries:
-            if not entry.is_dir():
+            top = _listing(str(entry))
+            if top is None:
                 continue
+            d = entry / sub if parts[:-1] else entry
+            names = _listing(str(d)) if parts[:-1] else top
+            cls = None
             for cand in candidates:
-                hit = entry / sub / cand
-                if hit.is_file():
-                    return hit.resolve()
-                hit = entry / sub / ("@" + base) / cand  # class folder (#766)
-                if hit.is_file():
-                    return hit.resolve()
+                if names is not None and cand in names:
+                    hit = d / cand
+                    if hit.is_file():
+                        return hit.resolve()
+                if names is not None and ("@" + base) in names:
+                    if cls is None:
+                        cls = _listing(str(d / ("@" + base))) or frozenset()
+                    if cand in cls:
+                        hit = d / ("@" + base) / cand  # class folder (#766)
+                        if hit.is_file():
+                            return hit.resolve()
         return None

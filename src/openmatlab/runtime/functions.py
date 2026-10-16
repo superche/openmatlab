@@ -43,9 +43,27 @@ class ClassFile:
     path: Path
 
 
+_LOADED: Dict[Tuple[str, str], Any] = {}
+
+
 def load_mfile(path: Path) -> FunctionDef | Script:
-    """Load a .m file as a function or a script."""
+    """Load a .m file as a function or a script.
+
+    The (immutable) result is memoised on the file's path and exact text (#797): an edited
+    file is re-parsed, an unchanged one is not."""
     text = path.read_text(encoding="utf-8")
+    key = (os.path.abspath(path), text)
+    hit = _LOADED.get(key)
+    if hit is not None:
+        return hit
+    out = _load_mfile_text(path, text)
+    if len(_LOADED) >= 1024:
+        _LOADED.clear()
+    _LOADED[key] = out
+    return out
+
+
+def _load_mfile_text(path: Path, text: str) -> FunctionDef | Script:
     from openmatlab.lang.classdef_parser import is_classdef_source
 
     if is_classdef_source(text):  # a class file is neither a script nor a function (M8)
@@ -108,6 +126,19 @@ def _names_in(node: Any, out: set) -> set:
             else:
                 _names_in(v, out)
     return out
+
+
+_BODY_NAMES: Dict[int, Tuple[Any, frozenset]] = {}
+
+
+def _body_names(defn: Any) -> frozenset:
+    """``_names_in(defn.body)`` memoised per (immutable) FunctionDef (#797)."""
+    hit = _BODY_NAMES.get(id(defn))
+    if hit is not None and hit[0] is defn:
+        return hit[1]
+    names = frozenset(_names_in(list(defn.body), set()))
+    _BODY_NAMES[id(defn)] = (defn, names)
+    return names
 
 
 class _SharedWorkspace:
@@ -285,9 +316,7 @@ class MFileCallable:
         )
         base_scope = self.scope if self.scope is not None else self.resolver
         local: Dict[str, Any] = {}
-        mine = _names_in(list(self.defn.body), set()) | set(self.defn.inputs) | set(self.defn.outputs)
-        if self.shared:
-            mine |= set(self.shared)
+        mine = None  # computed only when a nested function needs it (#797)
         for stmt in self.defn.body:
             if isinstance(stmt, LocalFunction):
                 local[stmt.defn.name.lower()] = MFileCallable(
@@ -295,7 +324,11 @@ class MFileCallable:
                     resolver=self.resolver, source_path=self.source_path,
                 )
             elif isinstance(stmt, FunctionDef):
-                inner = _names_in(list(stmt.body), set())
+                if mine is None:
+                    mine = _body_names(self.defn) | set(self.defn.inputs) | set(self.defn.outputs)
+                    if self.shared:
+                        mine |= set(self.shared)
+                inner = _body_names(stmt)
                 shared = (inner & mine) - set(stmt.inputs) - set(stmt.outputs)
                 local[stmt.name.lower()] = MFileCallable(
                     defn=stmt, numerics=self.numerics, plots=self.plots,
