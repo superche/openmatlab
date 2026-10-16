@@ -25,6 +25,9 @@ def main(argv) -> int:
         p = path.replace("'", "''")
         try:
             r = ReplSession()
+            fixture = os.environ.get("OPENMATLAB_INPUT")
+            if fixture and os.path.isfile(fixture):
+                r.feed_input(open(fixture, encoding="utf-8").read().splitlines())
             r.run_line("addpath('%s');" % folder.replace("'", "''"))
             if mode == "parse":
                 from openmatlab.lang.parser import parse

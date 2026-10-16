@@ -79,20 +79,28 @@ def _cap(text: str) -> str:
     return text if len(text) <= OUTPUT_CAP else text[:OUTPUT_CAP] + "\n... [output truncated]\n"
 
 
-def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "run", name: Optional[str] = None) -> RunResult:
-    """Run one ``.m`` file in a sandboxed child; never raises for script failures."""
+def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "run", name: Optional[str] = None,
+            input_lines: Optional[List[str]] = None) -> RunResult:
+    """Run one ``.m`` file in a sandboxed child; never raises for script failures.
+
+    ``input_lines`` (M12 C03 fixtures) answer ``input``/``keyboard`` prompts in order.
+    """
     src = Path(path).resolve()
     work = Path(tempfile.mkdtemp(prefix="omcorpus-"))
     try:
         target = work / src.name
         shutil.copyfile(src, target)
         result = work / ".openmatlab-result.json"
+        env = _env(work, result)
+        if input_lines:
+            (work / ".openmatlab-input").write_text("\n".join(input_lines) + "\n", encoding="utf-8")
+            env["OPENMATLAB_INPUT"] = str(work / ".openmatlab-input")
         cmd = [sys.executable, "-m", "openmatlab.qa.corpus._child", str(target), mode, str(src.parent)]
         t0 = time.monotonic()
         fo, fe = work / ".stdout", work / ".stderr"
         with open(fo, "wb") as ho, open(fe, "wb") as he:  # files, not pipes: memory stays bounded
             proc = subprocess.Popen(cmd, cwd=work, stdin=subprocess.DEVNULL, stdout=ho, stderr=he,
-                                    env=_env(work, result), preexec_fn=_limits(timeout))
+                                    env=env, preexec_fn=_limits(timeout))
             try:
                 proc.wait(timeout=timeout)
                 timed_out = False
