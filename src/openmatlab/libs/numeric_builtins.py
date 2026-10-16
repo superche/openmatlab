@@ -1330,3 +1330,6 @@ _table_utils.register(BUILTINS)  # M10 T-E3 (#693)
 from openmatlab.libs import table_join_group as _table_join_group  # noqa: E402
 
 _table_join_group.register(BUILTINS)  # M10 T-E6 (#696)
+from openmatlab.libs import timetable_builtins as _timetable_builtins  # noqa: E402
+
+_timetable_builtins.register(BUILTINS)  # M10 T-E7 (#697)

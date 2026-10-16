@@ -17,5 +17,5 @@ CRITERIA = {
     "T07": ("m10_t07_grouping", "p1", [696], "met"),
     "T08": ("m10_t08_readtable_writetable", "p0", [694, 577], "met"),
     "T09": ("m10_t09_datetime_arrays", "p1", [695, 602, 673], "met"),
-    "T10": ("m10_t10_timetable", "p2", [697], "pending"),
+    "T10": ("m10_t10_timetable", "p2", [697], "met"),
 }
