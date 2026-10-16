@@ -1,0 +1,24 @@
+% M10 T07 - findgroups, splitapply, groupsummary, groupcounts
+g = [1;2;1;2;3]; x = [10;20;30;40;50];
+[G, ID] = findgroups(g);
+r1 = G';
+r2 = ID';
+r3 = splitapply(@sum, x, G)';
+r4 = splitapply(@mean, x, G)';
+T = table(g, x, 'VariableNames', {'g','x'});
+S = groupsummary(T, 'g', 'mean', 'x');
+r5 = S.mean_x';
+r6 = S.GroupCount';
+S2 = groupsummary(T, 'g', {'sum','max'}, 'x');
+r7 = S2.sum_x';
+r8 = S2.max_x';
+C = groupcounts(T, 'g');
+r9 = C.GroupCount';
+r10 = C.Percent';
+T.h = [1;1;2;2;2];
+S3 = groupsummary(T, {'g','h'}, 'sum', 'x');
+r11 = height(S3);
+r12 = S3.sum_x';
+r13 = splitapply(@numel, x, findgroups({'a';'b';'a';'b';'c'}))';
+M = groupsummary(T, 'g', 'min', 'x');
+r14 = M.min_x';

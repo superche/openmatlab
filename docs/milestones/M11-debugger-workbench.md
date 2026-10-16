@@ -1,0 +1,65 @@
+# M11 — Debugger and Workbench
+
+GitHub milestone: https://github.com/superche/openmatlab/milestone/11
+
+**Related:**
+- [MATLAB-aligned Workbench](M-workbench-aligned.md) (closed, W01–W15): the headless `host/workbench.py` model this milestone extends.
+- [M10 Tables and data types](M10-tables.md) runs interleaved; the variable editor (D09) shows tables.
+- [`../GAP-ANALYSIS.md`](../GAP-ANALYSIS.md) ("Debugger … variable editor" row).
+
+## Intent
+
+Make OpenMATLAB debuggable the way MATLAB is: `dbstop`/`dbcont`/`dbstep`/`dbstack`/`keyboard`, error stops, full `MException.stack`/`getReport`, surfaced in the Workbench (editor breakpoints, debug toolbar, frame-aware Workspace, variable editor).
+
+Approved by Shaw on 2026-10-16. Decision: the **variable editor (D09) is in scope**.
+
+## Exit criteria (measurable)
+
+M11 is **done** only when **all** of these hold on `main`:
+
+1. **Conformance.** Every criterion in [`tests/conformance/m11_manifest.py`](../../tests/conformance/m11_manifest.py) is `met`, and `pytest tests/conformance/test_m11_conformance.py` reports **0 xfail**.
+2. **No open `p0` issue** on milestone/11.
+3. **No Python traceback** in a probe sweep over debugger commands and Workbench actions.
+4. **Docs.** No doc drift; CI on `main` is green; each epic has an accepted `docs/acceptance/EPIC-NNN.md`; D10 includes one recorded E2E capture (as in M6).
+
+Language criteria (D01–D07) are `.m` scripts over real function files in a `tempname` folder; a sibling `.queue` file holds the lines typed at the `K>>`/`input` prompt. Workbench criteria (D08–D10) are `.py` scripts driving the headless model. All are strict xfail until met.
+
+## Criteria
+
+| # | Criterion | Script | Priority | Epic | Status |
+|---|-----------|--------|----------|------|--------|
+| D01 | `MException.stack` file/name/line per frame (local functions, class methods), `getReport` basic/extended without hyperlinks, unthrown exception has 0×1 stack; uncaught errors print "Error in f (line N)" | m11_d01_exception_stack_report | p0 | #698 (#565) | pending |
+| D02 | `dbstack` struct and printed form, `dbstack(n)`, `'-completenames'`, `mfilename` | m11_d02_dbstack | p0 | #698 (#611) | pending |
+| D03 | `dbstop in f at N` / `in f` / `if expr`, `dbclear` (line, all), `dbstatus`, pause when a breakpoint is hit | m11_d03_breakpoints | p0 | #699 | pending |
+| D04 | `dbstep`, `dbstep in`, `dbstep out`, `dbcont` with correct lines across loops and local functions; `K>>` prompt; `dbquit` | m11_d04_stepping | p0 | #699 | pending |
+| D05 | Paused-frame evaluation, `dbup`/`dbdown`, `who`/`exist`/`evalin('caller')` respect the active frame, assignments take effect on resume | m11_d05_paused_workspace | p1 | #699 (#611) | pending |
+| D06 | `input`, `input(prompt,'s')`, empty input, `keyboard` + `dbcont` | m11_d06_keyboard_input | p1 | #700 (#577) | pending |
+| D07 | `dbstop if caught error [ID]`, `if error`, `if warning`, `if naninf`; pause at the faulting line with the stack intact | m11_d07_error_stop | p1 | #700 | pending |
+| D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | pending |
+| D09 | Variable editor: open numeric/char/cell/struct/table from Workspace, edit a cell and write back | m11_d09_variable_editor | p1 | #702 | pending |
+| D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture | m11_d10_workbench_workflows | p1 | #703 | pending |
+
+## Epics (approved order, interleaved with M10)
+
+1. **D-E1 #698 (p0):** source positions, `MException.stack`, `getReport`, `dbstack` — D01, D02. **First epic overall.**
+2. **D-E2 #699 (p0):** debug engine; pause-model design doc first — D03, D04, D05.
+3. **D-E4 #701 (p0):** Workbench debug UI — D08.
+4. **D-E3 #700 (p1):** `keyboard`, `input`, condition stops — D06, D07.
+5. **D-E5 #702 (p1):** variable editor — D09 (after T-E1).
+6. **D-E6 #703 (p1):** Workbench workflows — D10.
+
+Absorbed residuals are referenced, not moved: #565 (`MException.stack`/`getReport`), #611 (`dbstack`, evalin/assignin from nested sessions), #577 (`input`/`keyboard`).
+
+## Non-goals
+
+Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser (#611 keeps it), remote or `parfor` debugging, debugging inside Python builtins.
+
+## Risks and design questions
+
+- **Pause model:** recursive tree-walking evaluator; nested REPL vs evaluator thread. Design doc required before D-E2.
+- **Overhead:** per-statement hook must cost ~0 with no breakpoints.
+- **Line fidelity:** continuation lines, `if`/`end` lines, anonymous functions, classdef methods.
+
+## Progress snapshot
+
+M11 opened 2026-10-16. **0 / 10** criteria met.

@@ -1,0 +1,9 @@
+global G_D05; G_D05(end+1) = c;
+dbup
+G_D05(end+1) = a;
+dbdown
+G_D05(end+1) = exist('a', 'var');
+G_D05(end+1) = evalin('caller', 'a');
+w_ = who; G_D05(end+1) = numel(w_);
+c = 100;
+dbcont

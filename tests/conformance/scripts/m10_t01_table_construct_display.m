@@ -1,0 +1,24 @@
+% M10 T01 - table construction, size, Properties, display
+a = [1;2;3]; b = {'x';'y';'z'};
+T = table(a, b);
+t1 = height(T);
+t2 = width(T);
+t3 = size(T);
+t4 = strcmp(T.Properties.VariableNames{2}, 'b');
+T2 = table([1;2], [3;4], 'VariableNames', {'p','q'});
+t5 = strcmp(strjoin(T2.Properties.VariableNames, ','), 'p,q');
+A = array2table(magic(3));
+t6 = strcmp(A.Properties.VariableNames{3}, 'Var3');
+t7 = A.Var2';
+C = cell2table({1,'a';2,'b'}, 'VariableNames', {'n','s'});
+t8 = C.n';
+s.x = [1;2]; s.y = [3;4];
+S = struct2table(s);
+t9 = sum(S.y);
+T3 = table([10;20], 'RowNames', {'r1','r2'});
+t10 = strcmp(T3.Properties.RowNames{2}, 'r2');
+out = evalc('disp(T2)');
+t11 = double(contains(out, 'p') && contains(out, 'q') && contains(out, '4'));
+t12 = isa(T, 'table') + istable(T);
+t13 = isempty(table());
+t14 = strcmp(class(T), 'table');

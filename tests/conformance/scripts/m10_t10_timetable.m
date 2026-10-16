@@ -1,0 +1,22 @@
+% M10 T10 - timetable (p2 stretch)
+t = datetime(2020,1,1) + hours(0:5)';
+x = (1:6)';
+TT = timetable(t, x);
+z1 = height(TT);
+z2 = istimetable(TT);
+S = TT(timerange(datetime(2020,1,1,1,0,0), datetime(2020,1,1,3,0,0)), :);
+z3 = S.x';
+z4 = TT{datetime(2020,1,1,2,0,0), 'x'};
+W = TT(withtol(datetime(2020,1,1,2,10,0), minutes(15)), :);
+z5 = W.x;
+R = retime(TT, 'regular', 'mean', 'TimeStep', hours(2));
+z6 = R.x';
+T = table(t, x);
+TT2 = table2timetable(T);
+z7 = width(TT2);
+L = lag(TT, 1);
+z8 = [isnan(L.x(1)) L.x(2)];
+B = timetable(datetime(2020,1,1) + hours([0;2]), [10;20], 'VariableNames', {'y'});
+Y = synchronize(TT(1:3,:), B, 'union', 'previous');
+z9 = Y.y';
+z10 = width(Y);

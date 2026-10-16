@@ -1,0 +1,26 @@
+% M10 T04 - categorical
+c = categorical({'r','g','r','b'});
+k1 = numel(categories(c));
+k2 = strcmp(strjoin(categories(c)', ','), 'b,g,r');
+k3 = reshape(countcats(c), 1, []);
+k4 = sum(c == 'r');
+c2 = addcats(c, {'y'});
+k5 = numel(categories(c2));
+c3 = removecats(c, 'g');
+k6 = sum(isundefined(c3));
+c4 = mergecats(c, {'g','b'}, 'gb');
+k7 = numel(categories(c4));
+c5 = renamecats(c, 'r', 'red');
+k8 = sum(c5 == 'red');
+o = categorical({'lo','hi','mid'}, {'lo','mid','hi'}, 'Ordinal', true);
+k9 = double(o(2) > o(3));
+k10 = isordinal(o);
+k11 = reshape(double(o), 1, []);
+n = categorical([1 2 1], [1 2], {'one','two'});
+k12 = strcmp(char(n(3)), 'one');
+T = table(c', 'VariableNames', {'col'});
+k13 = sum(T.col == 'r');
+k14 = isundefined(categorical({'a',''}));
+out = evalc('disp(c3)');
+k15 = contains(out, '<undefined>');
+k16 = iscategorical(c);

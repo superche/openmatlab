@@ -1,0 +1,10 @@
+global TR_D04; s_ = dbstack; TR_D04(end+1) = s_(1).line;
+dbstep
+global TR_D04; s_ = dbstack; TR_D04(end+1) = s_(1).line;
+dbstep
+global TR_D04; s_ = dbstack; TR_D04(end+1) = s_(1).line;
+dbstep in
+global TR_D04; s_ = dbstack; TR_D04(end+1) = s_(1).line;
+dbstep out
+global TR_D04; s_ = dbstack; TR_D04(end+1) = s_(1).line;
+dbcont

@@ -1,0 +1,27 @@
+% M10 T09 - datetime/duration arrays for tables
+t = datetime(2020,1,1) + days(0:2)';
+q1 = size(t);
+c = [datetime(2020,1,1); datetime(2021,6,15)];
+q2 = c(2).Month;
+q3 = isnat([datetime(2020,1,1) NaT]);
+d = datetime('15/03/2021', 'InputFormat', 'dd/MM/yyyy');
+q4 = d.Day;
+d.Format = 'yyyy-MM-dd';
+q5 = strcmp(char(d), '2021-03-15');
+s = dateshift(datetime(2021,3,15,10,30,0), 'start', 'month');
+q6 = [s.Day s.Hour];
+e = dateshift(datetime(2021,2,10), 'end', 'month');
+q7 = e.Day;
+b = between(datetime(2020,1,15), datetime(2020,3,20), 'days');
+q8 = split(b, 'days');
+m = datetime(2020,1,31) + calmonths(1);
+q9 = [m.Month m.Day];
+p = datetime(2020,1,1) + caldays(10);
+q10 = p.Day;
+x = datetime(2020,1,1);
+x.Year = 2023;
+q11 = x.Year;
+x.Month = 14;
+q12 = [x.Year x.Month];
+q13 = numel([t; datetime(2022,1,1)]);
+q14 = isdatetime(t);
