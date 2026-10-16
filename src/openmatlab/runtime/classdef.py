@@ -682,6 +682,8 @@ def dot_access(ev, base: ClassInstance, name: str, arg_exprs: Optional[list], na
     m = base.info.find_method(name)
     if m is not None:
         args = ev._eval_call_args(arg_exprs or [])
+        if m.static:  # obj.staticMethod(args) does not pass obj (#766)
+            return list(m(list(args), nargout=nargout))
         return list(m([base] + list(args), nargout=nargout))
     if base.info.is_handle and name in ("addlistener", "listener", "notify", "delete", "isvalid"):
         fn = ev.functions.resolve(name)  # obj.notify('Evt'), obj.addlistener(...) (O-E7)
