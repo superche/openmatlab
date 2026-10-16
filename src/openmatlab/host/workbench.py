@@ -67,6 +67,11 @@ class RegionSpec:
     status: str  # "ready" | "stub"
     notes: str = ""
 
+    @property
+    def name(self) -> str:
+        """Region title as shown in the Desktop (alias used by tooling)."""
+        return self.title
+
 
 @dataclass
 class WorkspaceRow:
@@ -441,6 +446,7 @@ class Workbench:
     layout_preset: str = "default"
     _plugin_host: Any = None
     debug: Any = None  # DebugController (M11 D-E4)
+    variable_editor: Any = None  # VariableEditor (M11 D-E5)
 
     @property
     def editor(self) -> EditorPanel:
@@ -469,6 +475,10 @@ class Workbench:
             plugin_paths=paths,
             debug=debug,
         )
+        from openmatlab.host.variable_editor import VariableEditor
+
+        wb.variable_editor = VariableEditor(workspace_source=wb.workspace_browser._ws,
+                                            functions_source=lambda: cw.session)
         if cwd is not None:  # the Current Folder is on the search path (MATLAB)
             cw.session.path.addpath(wb.current_folder.pwd())
         if activate_plugins and paths:
@@ -498,7 +508,12 @@ class Workbench:
         """Value of a variable in the shown workspace as a Python scalar / nested list (tests, tooling)."""
         import numpy as np
 
-        v = self.workspace_browser._ws().get(name)
+        ws = self.workspace_browser._ws()
+        if name in ws.names():
+            v = ws.get(name)
+        else:  # an expression such as A(2,1), c{1}, s.f, T.x(1), evaluated in the shown workspace (M11 D-E5)
+            ve = self.variable_editor
+            v = ve._with_ev(lambda ev: ve._parse_value(ev, name))
         text = getattr(v, "text", None)
         if isinstance(text, str):
             return text
@@ -554,6 +569,13 @@ class Workbench:
                 "host",
                 "ready",
                 "name/value/size/class (W04/W12)",
+            ),
+            RegionSpec(
+                "variables",
+                "Variables",
+                "host",
+                "ready",
+                "variable editor: numeric/char/cell/struct/table, edit writes back (M11 D-E5)",
             ),
             RegionSpec(
                 "current_folder",
@@ -672,8 +694,14 @@ class Workbench:
         center_split.pack(fill="both", expand=True)
         ed_frame = ttk.Frame(center_split, padding=2)
         cw_frame = ttk.Frame(center_split, padding=2)
+        var_frame = ttk.Frame(center_split, padding=2)  # Variables editor (M11 D-E5)
         center_split.add(ed_frame, weight=3)
+        center_split.add(var_frame, weight=1)
         center_split.add(cw_frame, weight=2)
+        ttk.Label(var_frame, text="Variables", font=("", 10, "bold")).pack(anchor="w")
+        var_nb = ttk.Notebook(var_frame)
+        var_nb.pack(fill="both", expand=True)
+        var_tabs: dict = {}
 
         ttk.Label(ed_frame, text="Editor", font=("", 10, "bold")).pack(anchor="w")
         # Debug toolbar + stack selector (M11 D-E4); F12 or a gutter click toggles a breakpoint
@@ -861,7 +889,38 @@ class Workbench:
                 mark = "[dir] " if e.kind == "dir" else ("[m]   " if e.is_mfile else "      ")
                 cf_list.insert("end", f"{mark}{e.name}")
 
+        def refresh_vars() -> None:
+            names = set(self.workspace_browser.names())
+            for nm in list(var_tabs):
+                if nm not in names:  # cleared, or not in the selected frame
+                    var_nb.forget(var_tabs.pop(nm))
+                    self.variable_editor.close(nm)
+                else:
+                    var_tabs[nm].refresh()
+
+        def open_variable(name: str) -> None:
+            from openmatlab.host.variable_editor import VariableEditError, open_tk
+
+            try:
+                view = self.variable_editor.open(name)
+            except VariableEditError as exc:
+                messagebox.showerror("Variables", str(exc))
+                return
+            if name not in var_tabs:
+                var_tabs[name] = open_tk(var_nb, view, on_written=refresh_ws)
+                var_nb.add(var_tabs[name], text=name)
+            var_nb.select(var_tabs[name])
+
+        def _ws_open(_event=None) -> None:
+            sel = ws_tree.focus()
+            if sel:
+                open_variable(ws_tree.item(sel, "text"))
+
+        ws_tree.bind("<Double-1>", _ws_open)
+        ws_tree.bind("<Return>", _ws_open)
+
         def refresh_ws() -> None:
+            refresh_vars()
             ws_tree.delete(*ws_tree.get_children())
             for row in self.workspace_browser.refresh():
                 ws_tree.insert(
