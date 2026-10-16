@@ -1324,3 +1324,6 @@ _table_io.register(BUILTINS)  # M10 T-E4 (#694)
 from openmatlab.libs import datetime_arrays as _datetime_arrays  # noqa: E402
 
 _datetime_arrays.register(BUILTINS)  # M10 T-E5 (#695)
+from openmatlab.libs import table_utils as _table_utils  # noqa: E402
+
+_table_utils.register(BUILTINS)  # M10 T-E3 (#693)

@@ -10,9 +10,9 @@ from __future__ import annotations
 CRITERIA = {
     "T01": ("m10_t01_table_construct_display", "p0", [691], "met"),
     "T02": ("m10_t02_table_indexing", "p0", [691], "met"),
-    "T03": ("m10_t03_table_conversion_varfun", "p1", [693], "pending"),
+    "T03": ("m10_t03_table_conversion_varfun", "p1", [693], "met"),
     "T04": ("m10_t04_categorical", "p0", [692], "met"),
-    "T05": ("m10_t05_sortrows_sets", "p1", [693, 585], "pending"),
+    "T05": ("m10_t05_sortrows_sets", "p1", [693, 585], "met"),
     "T06": ("m10_t06_joins", "p1", [696], "pending"),
     "T07": ("m10_t07_grouping", "p1", [696], "pending"),
     "T08": ("m10_t08_readtable_writetable", "p0", [694, 577], "met"),

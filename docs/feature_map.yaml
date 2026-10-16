@@ -530,6 +530,14 @@ features:
     notes: "column vectors, concat, NaT, InputFormat/Format, component rollover, calendarDuration (clamped month arithmetic), between/split, dateshift; T09 (Epic #695). Residual #733: dateshift end for time units, ConvertFrom, time zones"
     tests: [tests/unit/test_datetime_arrays.py, tests/bdd/test_datetime_arrays_bdd.py]
 
+  - id: libs.table_utils
+    layer: libs
+    name: "table utilities — conversions, head/tail, varfun/rowfun, variable management, summary, sortrows/unique/ismember on tables"
+    status: done
+    depends_on: [runtime.table_core]
+    notes: "table2array/cell/struct, head/tail, varfun/rowfun, remove/rename/move/addvars, summary, sortrows/issortedrows, unique/ismember on tables, sort/ismember on categorical; T03, T05 (Epic #693). Residual #738: grouping, summary struct, MissingPlacement"
+    tests: [tests/unit/test_table_utils.py, tests/bdd/test_table_utils_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

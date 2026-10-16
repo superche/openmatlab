@@ -1691,10 +1691,13 @@ class Evaluator:
         elements wrap as 1x1 cells). Char rows concatenate as text (numbers
         convert by code).
         """
+        return self.concat_values([self._matrix_row_values(row) for row in expr.rows])
+
+    def concat_values(self, rows) -> Value:
+        """[a b; c d] over already-evaluated values (rows of Values); used by builtins too (M10 T-E3)."""
         from openmatlab.runtime.cell_value import CellValue
         from openmatlab.runtime.char_value import CharValue
 
-        rows = [self._matrix_row_values(row) for row in expr.rows]
         flat = [v for r in rows for v in r]
         if any(_is_class_obj(v) for v in flat):  # horzcat/vertcat overloads (O-E4)
             return self._concat_objects(rows)
