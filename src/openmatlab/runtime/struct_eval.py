@@ -254,6 +254,16 @@ def _assign(ev, cur, steps, rhs, depth):
         valid_field(name)
         child = cur.get(name) if cur.has(name) else None
         return cur.with_field(name, _assign(ev, child, rest, rhs, depth + 1))
+    if kind == "paren" and getattr(cur, "is_class_instance", False):  # obj(1).prop = v on a scalar object (#766)
+        vals = [ev.eval_expr(a) for a in arg]
+        try:
+            ones = all(np.all(np.asarray(v.backend_buffer()).reshape(-1) == 1) and v.numel() >= 1 for v in vals)
+        except Exception:
+            ones = False
+        if not ones:
+            raise _err(f"Indexed assignment is not supported for objects of class '{cur.matlab_class()}' "
+                       "in this release.")
+        return _assign(ev, cur, rest, rhs, depth + 1) if rest else rhs
     if kind == "paren":
         if is_struct(cur) or ((cur is None or _is_empty_double(cur)) and (rest or is_struct(rhs))):
             if not rest:

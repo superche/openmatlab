@@ -38,3 +38,16 @@ def test_keywords_case_sensitive(tmp_path):
 def test_cs_lists_and_empty_subscripts(code, want):
     rc, out = run(code)
     assert rc == 0 and out == want
+
+
+def test_logical_extremum_and_multi_output_handles():
+    rc, out = run("a = max([true false; false false], [], 1); disp(class(a)); h = @max; [m, i] = h([3 9 2]); "
+                  "disp([m i]); g = @(x) max(x); [p, q] = g([5 1 7]); disp([p q]); s.f = @size; [r, c] = s.f(ones(2,3)); disp([r c])")
+    assert rc == 0 and out.split("\n") == ["logical", "   9   2", "   7   3", "   2   3"]
+
+
+def test_scalar_object_paren_field_assign(tmp_path):
+    (tmp_path / "R.m").write_text("classdef R\n  properties\n    L = 1\n  end\n  methods\n    function F = flip(F)\n"
+                                  "      for k = 1:numel(F)\n        F(k).L = -F(k).L;\n      end\n    end\n  end\nend\n")
+    rc, out = run("addpath(pwd); r = flip(R()); disp(r.L); try, r(2).L = 1; catch e, disp(e.message), end", cwd=tmp_path)
+    assert rc == 0 and out.split("\n") == ["-1", "Indexed assignment is not supported for objects of class 'R' in this release."]

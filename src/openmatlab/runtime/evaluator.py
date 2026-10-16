@@ -1056,7 +1056,14 @@ class Evaluator:
             ev = Evaluator(
                 workspace=ws, functions=self.functions, numerics=self.numerics, plots=self.plots
             )
-            return (ev.eval_expr(expr.body),)
+            body = expr.body
+            if nargout > 1 and isinstance(body, (ast.IndexExpr, ast.CallExpr)):  # [a, b] = anon(x) (#766)
+                t, a = (body.target, list(body.indices)) if isinstance(body, ast.IndexExpr) else \
+                    (body.func, list(body.args))
+                outs = ev._invoke_call(t, a, nargout=nargout)
+                if outs is not None:
+                    return tuple(outs)
+            return (ev.eval_expr(body),)
 
         return FunctionHandleValue(name=expr.text, fn=call)
 
@@ -1273,6 +1280,21 @@ class Evaluator:
             and not self._name_bound(target_expr.id)
         ):
             if nargout != 1:
+                from openmatlab.runtime.function_handle import FunctionHandleValue
+
+                if isinstance(target_expr, ast.Name):
+                    h = self.workspace.get(target_expr.id)
+                elif isinstance(target_expr, ast.FieldExpr):  # [a, b] = s.fn(x)
+                    from openmatlab.runtime import struct_eval as _se
+
+                    h = _se.single(_se.read_field(self, target_expr))
+                else:
+                    h = None
+                if isinstance(h, FunctionHandleValue):  # [a, b] = h(x) (#766)
+                    from openmatlab.runtime import frames as _frames
+
+                    with _frames.calling(self):
+                        return list(h.call(self._eval_call_args(arg_exprs), nargout=nargout))
                 raise EvalError("multi-assign RHS must be a function call")
             return None
         n = target_expr.id

@@ -422,6 +422,22 @@ def _isreal(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     return (NDArrayValue(np.array([[real]])),)
 
 
+def _logical_extremum(fn):
+    """max/min of logical inputs return logical (MATLAB); indices stay double (#766)."""
+
+    def _fn(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
+        out = list(fn(args, nargout=nargout))
+        arrs = [a for a in args if isinstance(a, Array)]
+        data = arrs[:2] if len(arrs) >= 2 and not (len(args) >= 2 and isinstance(args[1], Array) and args[1].numel() == 0) else arrs[:1]
+        if out and data and all(np.asarray(a.backend_buffer()).dtype == np.bool_ for a in data):
+            b = np.asarray(out[0].backend_buffer())
+            if b.dtype != np.bool_:
+                out[0] = NDArrayValue(b != 0)
+        return out
+
+    return _fn
+
+
 def _complex_aware_extremum(real_fn, which: str):
     """max/min of complex input compare magnitude, then phase angle (MATLAB)."""
 
@@ -1175,8 +1191,8 @@ BUILTINS: Dict[str, Builtin] = {
     "sum": _make_reduce("sum", np.sum, 0.0),
     "prod": _make_reduce("prod", np.prod, 1.0),
     "mean": _make_reduce("mean", _mean_op, float("nan")),
-    "max": _complex_aware_extremum(_make_extremum("max", which="max"), "max"),
-    "min": _complex_aware_extremum(_make_extremum("min", which="min"), "min"),
+    "max": _logical_extremum(_complex_aware_extremum(_make_extremum("max", which="max"), "max")),
+    "min": _logical_extremum(_complex_aware_extremum(_make_extremum("min", which="min"), "min")),
     "real": lambda args, nargout=1: (_wrap(np.real(_buf("real", _one("real", args)))),),
     "imag": lambda args, nargout=1: (_wrap(np.imag(_buf("imag", _one("imag", args)))),),
     "conj": lambda args, nargout=1: (_wrap(np.conj(_buf("conj", _one("conj", args)))),),
