@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
@@ -409,11 +410,14 @@ class FunctionResolver:
         fr = _cs.top()
         if fr is None or not fr.file:
             return None
-        d = Path(fr.file).parent
-        pdir = d if d.name == "private" else d / "private"
+        pmap = self.__dict__.setdefault("_private_of_file", {})
+        pdir = pmap.get(fr.file)
+        if pdir is None:
+            d = Path(fr.file).parent
+            pdir = pmap[fr.file] = d if d.name == "private" else d / "private"
         cache = self.__dict__.setdefault("_private_dirs", {})
         try:
-            mtime = pdir.stat().st_mtime_ns
+            mtime = os.stat(pdir).st_mtime_ns  # still checked every call: new private files are seen
         except OSError:
             return None
         hit = cache.get(pdir)
