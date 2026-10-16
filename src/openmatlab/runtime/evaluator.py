@@ -548,6 +548,11 @@ class Evaluator:
                 arr = StringArray(np.empty((0, 0), dtype=object))
             else:
                 arr = NDArrayValue(np.zeros((0, 0)))
+        if _is_class_obj(rhs_val) and isinstance(arr, Array) and not getattr(arr, "is_object", False) \
+                and not getattr(arr, "is_struct", False) and arr.numel() == 0:  # x = []; x(k) = obj (#766)
+            from openmatlab.runtime import object_array as _oa
+
+            arr = _oa.empty(rhs_val.info)
         if getattr(arr, "is_object", False):  # m(key) = v; handles mutate in place (Epic #539)
             out = arr.assign(self._object_index_args(arr, stmt.target.indices), rhs_val)
             self.workspace.set(name, out)
@@ -1809,6 +1814,10 @@ class Evaluator:
 
                 out = _en.concat(name, parts)
             if out is NotImplemented:
+                from openmatlab.runtime import object_array as _oa
+
+                out = _oa.concat(name, parts)
+            if out is NotImplemented:
                 cls = next(p for p in parts if _is_class_obj(p)).matlab_class()
                 raise EvalError(f"Concatenation of '{cls}' objects requires a {name} method "
                                 "(object arrays are not supported yet).", "MATLAB:class:concatenation")
@@ -1895,6 +1904,10 @@ class Evaluator:
         nd = max(p.ndim for p in parts)
         parts = [p.reshape(p.shape + (1,) * (nd - p.ndim)) for p in parts]
         keep = [d for d in range(nd) if d != axis]
+        if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1 and any(p.size for p in parts):
+            parts = [p for p in parts if p.size]  # empties of any size are dropped next to data (#766)
+        elif len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:  # only empties: the first one's size wins
+            parts = [p for p in parts if tuple(p.shape[d] for d in keep) == tuple(parts[0].shape[d] for d in keep)]
         if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:
             raise EvalError(self._CONCAT_ERR)
         return np.concatenate(parts, axis=axis)

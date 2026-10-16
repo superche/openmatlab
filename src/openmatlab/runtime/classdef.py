@@ -542,11 +542,14 @@ class ClassInstance:
             return self
         if _is_index_one(args):
             return self
-        raise _err("Index exceeds the number of array elements. Index must not exceed 1.", "MATLAB:index:outOfBounds")
+        from openmatlab.runtime import object_array as _oa
+
+        return _oa.index(self.info, _oa.grid_of(self), args)
 
     def assign(self, args, value):
-        raise _err(f"Indexed assignment is not supported for objects of class '{self.info.name}' in this release.",
-                   "MATLAB:class:IndexedAssign")
+        from openmatlab.runtime import object_array as _oa
+
+        return _oa.assign(self.info, _oa.grid_of(self), args, value)
 
     def binop(self, op, other, reflected):
         if self.info.is_handle and op in ("==", "~=") and (is_instance(other) or True):

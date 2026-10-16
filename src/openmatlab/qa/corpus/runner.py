@@ -124,8 +124,8 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
         so, se = (_cap(f.read_bytes()[: OUTPUT_CAP + 1].decode("utf-8", "replace")) for f in (fo, fe))
         r = RunResult(name=name or src.name, path=str(src), status="pass", stdout=so, stderr=se, elapsed=elapsed,
                       returncode=proc.returncode)
-        if timed_out:
-            r.status, r.kind, r.message = "timeout", "timeout", f"timed out after {timeout:g} s"
+        if timed_out or proc.returncode == -signal.SIGXCPU:  # wall-clock or CPU-time budget exceeded
+            r.status, r.kind, r.message = "timeout", "timeout", (f"timed out after {timeout:g} s" if timed_out else f"CPU budget exceeded ({timeout:g} s)")
             return r
         if flooded:
             r.status, r.kind, r.message = "error", "output-limit", f"output exceeded {FILE_LIMIT // 1024**2} MB"

@@ -136,6 +136,14 @@ def read_field(ev, expr: ast.FieldExpr):
         base = base.values[0]
     if (getattr(base, "is_object", False) or getattr(base, "is_graphics_handle", False)) and hasattr(base, "get_prop"):
         # obj.prop, s.obj.prop (M8, #569); graphics h.Prop (O-E6)
+        from openmatlab.runtime import classdef_subs as _cs
+
+        m = _cs.overloaded(base, "subsref")  # f().prop on a call result still goes through subsref (#766)
+        if m is not None:
+            from openmatlab.runtime import frames
+
+            with frames.calling(ev):
+                return m([base, _cs.make_s([(".", field_name(ev, expr))])], nargout=1)[0]
         return base.get_prop(field_name(ev, expr))
     if not is_struct(base):
         raise _err("Dot indexing is not supported for variables of this type.")
@@ -254,16 +262,18 @@ def _assign(ev, cur, steps, rhs, depth):
         valid_field(name)
         child = cur.get(name) if cur.has(name) else None
         return cur.with_field(name, _assign(ev, child, rest, rhs, depth + 1))
-    if kind == "paren" and getattr(cur, "is_class_instance", False):  # obj(1).prop = v on a scalar object (#766)
-        vals = [ev.eval_expr(a) for a in arg]
+    if kind == "paren" and getattr(cur, "is_class_instance", False):  # obj(k).prop = v, obj(k) = v (#766)
+        args = ev._object_index_args(cur, arg)
+        if not rest:
+            return cur.assign(args, rhs)
         try:
-            ones = all(np.all(np.asarray(v.backend_buffer()).reshape(-1) == 1) and v.numel() >= 1 for v in vals)
-        except Exception:
-            ones = False
-        if not ones:
+            elem = cur.index(args)
+        except Exception:  # growing an object array through obj(k).p = v is not supported yet
             raise _err(f"Indexed assignment is not supported for objects of class '{cur.matlab_class()}' "
-                       "in this release.")
-        return _assign(ev, cur, rest, rhs, depth + 1) if rest else rhs
+                       "in this release.") from None
+        if elem.numel() != 1:
+            raise _err("Scalar object required for this assignment.")
+        return cur.assign(args, _assign(ev, elem, rest, rhs, depth + 1))
     if kind == "paren":
         if is_struct(cur) or ((cur is None or _is_empty_double(cur)) and (rest or is_struct(rhs))):
             if not rest:
