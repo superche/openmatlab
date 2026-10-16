@@ -412,6 +412,8 @@ class Evaluator:
                 from openmatlab.runtime import struct_eval as _se
 
                 return _se.transpose(operand)
+            if hasattr(operand, "transpose_value"):  # categorical (M10 T-E2)
+                return operand.transpose_value()
             if isinstance(operand, CharValue) and not getattr(operand, "is_string", False):
                 return _codes_char(self.numerics.transpose(_char_codes(operand)))
             if getattr(operand, "is_string", False):
@@ -538,7 +540,7 @@ class Evaluator:
             else:
                 arr = NDArrayValue(np.zeros((0, 0)))
         if getattr(arr, "is_object", False):  # m(key) = v; handles mutate in place (Epic #539)
-            out = arr.assign([self.eval_expr(a) for a in stmt.target.indices], rhs_val)
+            out = arr.assign(self._object_index_args(arr, stmt.target.indices), rhs_val)
             self.workspace.set(name, out)
             return out
         if getattr(rhs_val, "is_missing_value", False):  # x(i) = missing (#504)
@@ -1055,6 +1057,35 @@ class Evaluator:
     def _is_bare_colon(expr: ast.Expr) -> bool:
         return isinstance(expr, ast.ColonExpr) and expr.start is None and expr.stop is None
 
+    def _object_index_args(self, obj, arg_exprs) -> list:
+        """obj(args): a bare ':' becomes the text ':'; 'end' resolves against the object's size (array-like only)."""
+        import math
+
+        from openmatlab.runtime.char_value import CharValue
+
+        shape = tuple(obj.shape) if hasattr(obj, "shape") and hasattr(obj, "numel") else None
+        out = []
+        n = len(arg_exprs)
+        for k, a in enumerate(arg_exprs):
+            if self._is_bare_colon(a):
+                out.append(CharValue(":"))
+                continue
+            if shape is None or getattr(obj, "is_handle", False) or obj.matlab_class() == "containers.Map":
+                out.append(self.eval_expr(a))
+                continue
+            if n == 1:
+                end = int(math.prod(shape))
+            elif k < n - 1:
+                end = shape[k] if k < len(shape) else 1
+            else:
+                end = int(math.prod(shape[k:])) if k < len(shape) else 1
+            self._end_stack.append(float(end))
+            try:
+                out.append(self.eval_expr(a))
+            finally:
+                self._end_stack.pop()
+        return out
+
     def _index_with_exprs(self, value, arg_exprs) -> Value:
         """value(arg_exprs...) for an already computed value (end and : resolve against it)."""
         Evaluator._tmp_seq += 1
@@ -1085,7 +1116,7 @@ class Evaluator:
         if results is None:
             target = self.eval_expr(target_expr)
             if getattr(target, "is_object", False):  # obj(args) (Epic #539)
-                return target.index([self.eval_expr(a) for a in arg_exprs])
+                return target.index(self._object_index_args(target, arg_exprs))
             from openmatlab.runtime.cell_value import CellValue
             from openmatlab.runtime.function_handle import FunctionHandleValue
 
@@ -1665,6 +1696,10 @@ class Evaluator:
             from openmatlab.runtime import table_subs as _ts
 
             return _ts.concat(self, rows)
+        if any(getattr(v, "is_categorical", False) for v in flat):  # (M10 T-E2)
+            from openmatlab.runtime import categorical_value as _cat
+
+            return _cat.concat(rows)
         if any(getattr(v, "is_missing_value", False) for v in flat):  # [1 missing], ["a" missing] (#504)
             from openmatlab.runtime import missing_value as _mv
 

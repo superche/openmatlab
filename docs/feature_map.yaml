@@ -490,6 +490,14 @@ features:
     notes: "nested re-entrant K>> REPL; per-statement hook guarded by a module flag; D03/D04/D05 (Epic #699). Residual #713: end-line stops, anonymous-function breakpoints, dbstop(struct)"
     tests: [tests/unit/test_debugger.py, tests/bdd/test_debugger_bdd.py]
 
+  - id: runtime.categorical
+    layer: runtime
+    name: categorical type and methods; categorical table variables
+    status: done
+    depends_on: [runtime.table_core]
+    notes: "code array + ordered categories, Ordinal/Protected; T04 (Epic #692). Residual #717: N-D, scalar display header, protected concat"
+    tests: [tests/unit/test_categorical.py, tests/bdd/test_categorical_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
