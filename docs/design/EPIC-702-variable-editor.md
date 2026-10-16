@@ -10,3 +10,14 @@ Milestone: [M11 Debugger and Workbench](../milestones/M11-debugger-workbench.md)
 - **Write-back.** `set_cell(r, c, text)` evaluates `text` as a single MATLAB expression in the shown workspace and assigns with MATLAB semantics: `A(r,c) = v` (grows with zero fill, as indexed assignment does), `C{r,c} = v`, `s.(field) = v`, `T{r,c} = v`. A typed single character in a char variable is that character. Edits do not enter the Command History.
 - **Errors.** A bad edit raises `VariableEditError` with MATLAB-style text and leaves the variable unchanged; the tk tab shows the message in its status line. No Python traceback reaches the user.
 - **tk chrome.** A Variables notebook sits between the Editor and the Command Window; double-click or Enter on a Workspace row opens a tab, double-click a cell to edit, Enter commits, Escape cancels. Tabs close when their variable leaves the shown workspace.
+
+## Adversarial review
+
+| Probe | Finding | Resolution |
+|---|---|---|
+| Typing `q` into a char cell | evaluated as the variable `q` → "Undefined variable" | a single typed character is taken literally |
+| `{1}` into a numeric cell | internal "array assign: expected Array" text | mapped to a MATLAB-style conversion message |
+| Unexpected Python exception during an edit | could surface a traceback in the tk tab | wrapped as `VariableEditError` |
+| `1+`, `x = 3`, empty text, undefined names, row 0 | rejected, variable unchanged | covered by `test_bad_edit_unchanged` / `test_bad_position_and_missing` |
+| Out-of-range numeric/cell edit | grows with zero fill (MATLAB indexed assignment) | kept; `test_numeric_read_edit_grow` |
+| Struct arrays, objects, Field column edits | not editable | rejected with a message; residual #747 |
