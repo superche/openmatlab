@@ -162,6 +162,25 @@ class EditorPanel:
     path: Optional[Path] = None
     text: str = ""
     dirty: bool = False
+    session: Any = field(default=None, repr=False, compare=False)  # set by EditorDocuments (D-E4)
+
+    def toggle_breakpoint(self, line: int) -> None:
+        """Gutter click at ``line``: dbstop / dbclear on the saved file (M11 D-E4)."""
+        from openmatlab.host import debug_ui
+
+        if self.path is None or self.session is None:
+            raise ValueError("Editor.toggle_breakpoint: save the document to a file first")
+        debug_ui.toggle_breakpoint(self.session, self.path, line)
+
+    def breakpoints(self):
+        """Gutter breakpoint lines (shared with dbstatus): 1×N row vector, 0×0 when none."""
+        import numpy as np
+
+        from openmatlab.host import debug_ui
+
+        if self.path is None or self.session is None:
+            return np.zeros((0, 0), dtype=int)
+        return debug_ui.breakpoints(self.session, self.path)
 
     def open_file(self, path: Path | str) -> str:
         p = Path(path).expanduser().resolve()
@@ -207,11 +226,20 @@ class EditorDocuments:
 
     panels: List[EditorPanel] = field(default_factory=lambda: [EditorPanel()])
     active_index: int = 0
+    session: Any = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        for ed in self.panels:
+            self._bind(ed)
+
+    def _bind(self, ed: EditorPanel) -> EditorPanel:
+        ed.session = self.session
+        return ed
 
     @property
     def active(self) -> EditorPanel:
         if not self.panels:
-            self.panels.append(EditorPanel())
+            self.panels.append(self._bind(EditorPanel()))
             self.active_index = 0
         if self.active_index < 0 or self.active_index >= len(self.panels):
             self.active_index = 0
@@ -221,7 +249,7 @@ class EditorDocuments:
         return [p.tab_title for p in self.panels]
 
     def new_script(self) -> EditorPanel:
-        ed = EditorPanel()
+        ed = self._bind(EditorPanel())
         if (
             len(self.panels) == 1
             and self.panels[0].path is None
@@ -241,7 +269,7 @@ class EditorDocuments:
             if ed.path is not None and ed.path == p:
                 self.active_index = i
                 return ed
-        ed = EditorPanel()
+        ed = self._bind(EditorPanel())
         ed.open_file(p)
         if (
             len(self.panels) == 1
@@ -264,7 +292,7 @@ class EditorDocuments:
 
     def close_active(self) -> None:
         if len(self.panels) <= 1:
-            self.panels = [EditorPanel()]
+            self.panels = [self._bind(EditorPanel())]
             self.active_index = 0
             return
         del self.panels[self.active_index]
@@ -277,11 +305,19 @@ class WorkspaceBrowser:
     """Workspace browser — name/size/class + refresh (W04)."""
 
     session: Session
+    source: Any = field(default=None, repr=False, compare=False)  # () -> workspace (debug stack selector)
+
+    def _ws(self):
+        return self.source() if self.source is not None else self.session.workspace
+
+    def names(self) -> List[str]:
+        return sorted(n for n in self._ws().names() if n != "ans")
 
     def rows(self) -> List[WorkspaceRow]:
         out: List[WorkspaceRow] = []
-        for name in sorted(n for n in self.session.workspace.names() if n != "ans"):
-            val = self.session.workspace.get(name)
+        ws = self._ws()
+        for name in sorted(n for n in ws.names() if n != "ans"):
+            val = ws.get(name)
             out.append(
                 WorkspaceRow(
                     name=name,
@@ -404,6 +440,7 @@ class Workbench:
     plugin_paths: List[Path] = field(default_factory=list)
     layout_preset: str = "default"
     _plugin_host: Any = None
+    debug: Any = None  # DebugController (M11 D-E4)
 
     @property
     def editor(self) -> EditorPanel:
@@ -420,21 +457,59 @@ class Workbench:
     ) -> "Workbench":
         cw = CommandWindow.create()
         paths = [Path(p) for p in (plugin_paths or [])]
+        from openmatlab.host.debug_ui import DebugController
+
+        debug = DebugController(cw)
         wb = cls(
             command_window=cw,
-            documents=EditorDocuments(),
-            workspace_browser=WorkspaceBrowser(session=cw.session),
+            documents=EditorDocuments(session=cw.session),
+            workspace_browser=WorkspaceBrowser(session=cw.session, source=debug.active_workspace),
             current_folder=CurrentFolderBrowser.create(cwd=cwd),
             figures=FigureManager(session=cw.session),
             plugin_paths=paths,
+            debug=debug,
         )
+        if cwd is not None:  # the Current Folder is on the search path (MATLAB)
+            cw.session.path.addpath(wb.current_folder.pwd())
         if activate_plugins and paths:
             wb._ensure_plugins(activate=True)
         return wb
 
     def eval(self, source: str) -> str:
-        """Command Window eval; workspace browser reflects side effects."""
+        """Command Window eval; workspace browser reflects side effects.
+
+        While the debugger is paused the line goes to the ``K>>`` prompt instead.
+        """
+        if self.debug is not None and self.debug.is_paused():
+            cw = self.command_window
+            before = cw._stream.tell()
+            cw._history.append(source.strip())
+            self.debug.send(source)
+            cw._stream.seek(before)
+            return cw._stream.read()
         return self.command_window.eval(source)
+
+    @property
+    def workspace(self) -> "WorkspaceBrowser":
+        """Workspace panel; while paused it shows the frame picked in the stack selector."""
+        return self.workspace_browser
+
+    def eval_value(self, name: str):
+        """Value of a variable in the shown workspace as a Python scalar / nested list (tests, tooling)."""
+        import numpy as np
+
+        v = self.workspace_browser._ws().get(name)
+        text = getattr(v, "text", None)
+        if isinstance(text, str):
+            return text
+        a = np.asarray(v.backend_buffer())
+        return a.reshape(-1)[0].item() if a.size == 1 else a.tolist()
+
+    def debug_toolbar(self) -> Tuple[str, ...]:
+        """Editor debug toolbar actions (M11 D-E4)."""
+        from openmatlab.host.debug_ui import DEBUG_TOOLBAR
+
+        return DEBUG_TOOLBAR
 
     def menu_bar(self) -> Tuple[Tuple[str, Tuple[str, ...]], ...]:
         """Menu bar spec (W07)."""
@@ -601,6 +676,18 @@ class Workbench:
         center_split.add(cw_frame, weight=2)
 
         ttk.Label(ed_frame, text="Editor", font=("", 10, "bold")).pack(anchor="w")
+        # Debug toolbar + stack selector (M11 D-E4); F12 or a gutter click toggles a breakpoint
+        dbg_bar = ttk.Frame(ed_frame)
+        dbg_bar.pack(fill="x", pady=(0, 2))
+        dbg_btns: dict = {}
+        for label in self.debug_toolbar():
+            b = ttk.Button(dbg_bar, text=label, state="disabled")
+            b.pack(side="left", padx=1)
+            dbg_btns[label] = b
+        ttk.Label(dbg_bar, text="  Stack:").pack(side="left")
+        stack_var = tk.StringVar(value="")
+        stack_box = ttk.Combobox(dbg_bar, textvariable=stack_var, state="disabled", width=36)
+        stack_box.pack(side="left", padx=2)
         ed_nb = ttk.Notebook(ed_frame)
         ed_nb.pack(fill="both", expand=True)
         ed_text_widgets: list = []
@@ -610,7 +697,8 @@ class Workbench:
         out.pack(fill="both", expand=True)
         cw_row = ttk.Frame(cw_frame)
         cw_row.pack(fill="x", pady=2)
-        ttk.Label(cw_row, text=">>").pack(side="left")
+        prompt_var = tk.StringVar(value=">>")
+        ttk.Label(cw_row, textvariable=prompt_var).pack(side="left")
         entry = ttk.Entry(cw_row, font=("Courier", 10))
         entry.pack(side="left", fill="x", expand=True, padx=4)
         hist_index = {"i": 0}
@@ -660,16 +748,95 @@ class Workbench:
         def _rebuild_editor_tabs() -> None:
             for tab_id in ed_nb.tabs():
                 ed_nb.forget(tab_id)
+                ed_nb.nametowidget(tab_id).destroy()
             ed_text_widgets.clear()
             for i, panel in enumerate(self.documents.panels):
                 tab = ttk.Frame(ed_nb)
                 ed_nb.add(tab, text=panel.tab_title)
+                gutter = tk.Text(tab, width=6, wrap="none", font=("Courier", 10), cursor="hand2",
+                                 background="#f0f0f0", borderwidth=0)
+                gutter.pack(side="left", fill="y")
                 txt = tk.Text(tab, wrap="none", font=("Courier", 10))
-                txt.pack(fill="both", expand=True)
+                txt.pack(side="left", fill="both", expand=True)
                 txt.insert("1.0", panel.text)
+                txt.tag_configure("bp", background="#f6d0d0")
+                txt.tag_configure("cur", background="#fff2a8")
+                txt.bind("<F12>", lambda _e, w=txt: _toggle_bp(int(w.index("insert").split(".")[0])))
+                gutter.bind("<Button-1>", lambda e, g=gutter: (
+                    _toggle_bp(int(g.index(f"@{e.x},{e.y}").split(".")[0])), "break")[1])
+                txt.gutter = gutter
                 ed_text_widgets.append(txt)
             if self.documents.panels:
                 ed_nb.select(self.documents.active_index)
+            _paint_debug()
+
+        def _paint_debug() -> None:
+            """Gutter breakpoint dots, current-line marker, toolbar state, stack selector."""
+            for panel, txt in zip(self.documents.panels, ed_text_widgets):
+                n = int(txt.index("end-1c").split(".")[0])
+                bps = set(int(x) for x in panel.breakpoints().reshape(-1)) if panel.path else set()
+                g = txt.gutter
+                g.configure(state="normal")
+                g.delete("1.0", "end")
+                g.insert("1.0", "\n".join(("\u25cf" if k in bps else " ") + f"{k:>4}" for k in range(1, n + 1)))
+                g.configure(state="disabled")
+                txt.tag_remove("bp", "1.0", "end")
+                txt.tag_remove("cur", "1.0", "end")
+                for k in bps:
+                    txt.tag_add("bp", f"{k}.0", f"{k}.end+1c")
+                cf = self.debug.current_file()
+                if cf is not None and panel.path == cf:
+                    ln = self.debug.current_line()
+                    txt.tag_add("cur", f"{ln}.0", f"{ln}.end+1c")
+                    txt.see(f"{ln}.0")
+            paused = self.debug.is_paused()
+            for b in dbg_btns.values():
+                b.configure(state="normal" if paused else "disabled")
+            frames = self.debug.stack()
+            stack_box.configure(values=[f"{n} (line {ln})" for n, _f, ln in frames],
+                                state="readonly" if paused else "disabled")
+            stack_var.set(stack_box["values"][self.debug.selected_frame()] if frames else "")
+            prompt_var.set("K>>" if paused else ">>")
+
+        def _show_paused() -> None:
+            text = self.command_window._stream.getvalue()[_out_mark["n"]:]
+            _out_mark["n"] = len(self.command_window._stream.getvalue())
+            if text:
+                out.insert("end", text)
+                out.see("end")
+            cf = self.debug.current_file()
+            if cf is not None and cf.is_file():
+                self.documents.open_file(cf)
+                _rebuild_editor_tabs()
+            else:
+                _paint_debug()
+            refresh_ws()
+            refresh_figs()
+
+        _out_mark = {"n": 0}
+
+        def _toggle_bp(line: int) -> None:
+            _sync_editor_from_ui()
+            try:
+                if self.editor.dirty:
+                    self.editor.save()
+                self.editor.toggle_breakpoint(line)
+            except Exception as exc:
+                messagebox.showerror("Breakpoints", str(exc))
+            _paint_debug()
+
+        def _debug_action(fn) -> None:
+            try:
+                fn()
+            except Exception as exc:
+                out.insert("end", f"Error: {exc}\n")
+            _show_paused()
+
+        def _on_stack(_event=None) -> None:
+            vals = list(stack_box["values"])
+            if stack_var.get() in vals:
+                self.debug.select_frame(vals.index(stack_var.get()))
+                _show_paused()
 
         def _on_ed_tab_changed(_event=None) -> None:
             try:
@@ -794,16 +961,15 @@ class Workbench:
             src = self.editor.text.strip()
             if not src:
                 return
-            out.insert("end", f">> (run editor)\n")
-            try:
-                text = self.command_window.eval(src)
-                if text:
-                    out.insert("end", text)
-            except Exception as exc:
-                out.insert("end", f"Error: {exc}\n")
-            out.see("end")
-            refresh_ws()
-            refresh_figs()
+            out.insert("end", ">> (run editor)\n")
+            _out_mark["n"] = len(self.command_window._stream.getvalue())
+            if self.editor.path is not None:  # run the saved file so its breakpoints apply
+                if self.editor.dirty:
+                    self.editor.save()
+                p = self.editor.path.as_posix().replace("'", "''")
+                _debug_action(lambda: self.debug.run(f"run('{p}')"))
+            else:
+                _debug_action(lambda: self.debug.run(src))
 
         def on_eval(_event=None) -> None:
             line = entry.get().strip()
@@ -811,16 +977,13 @@ class Workbench:
                 return
             entry.delete(0, "end")
             hist_index["i"] = 0
-            out.insert("end", f">> {line}\n")
-            try:
-                text = self.command_window.eval(line)
-                if text:
-                    out.insert("end", text)
-            except Exception as exc:
-                out.insert("end", f"Error: {exc}\n")
-            out.see("end")
-            refresh_ws()
-            refresh_figs()
+            out.insert("end", f"{prompt_var.get()} {line}\n")
+            _out_mark["n"] = len(self.command_window._stream.getvalue())
+            if self.debug.is_paused():
+                self.command_window._history.append(line)
+                _debug_action(lambda: self.debug.send(line))
+            else:
+                _debug_action(lambda: self.debug.run(line))
 
         def hist_up(_event=None):
             hist = self.command_window.history()
@@ -887,6 +1050,10 @@ class Workbench:
         tool_btns["Open…"].configure(command=ed_open)
         tool_btns["Save"].configure(command=ed_save)
         tool_btns["Run"].configure(command=ed_run)
+        for label, fn in zip(self.debug_toolbar(), (self.debug.continue_, self.debug.step, self.debug.step_in,
+                                                    self.debug.step_out, self.debug.quit)):
+            dbg_btns[label].configure(command=lambda f=fn: _debug_action(f))
+        stack_box.bind("<<ComboboxSelected>>", _on_stack)
 
         _rebuild_editor_tabs()
         refresh_cf()

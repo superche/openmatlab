@@ -506,6 +506,14 @@ features:
     notes: "csv-module splitting, per-column typing (double/datetime/text), makeValidName headers; T08 (Epic #694). Residual #721: import options, VariableDescriptions, encodings"
     tests: [tests/unit/test_table_io.py, tests/bdd/test_table_io_bdd.py]
 
+  - id: host.debug_ui
+    layer: host
+    name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"
+    status: done
+    depends_on: [runtime.debugger]
+    notes: "worker-thread DebugController over the D-E2 engine; gutter=dbstop, K>> routing, stack selector rebinding Workspace; D08 (Epic #701). Residual #725: Pause button, conditional bps from gutter"
+    tests: [tests/unit/test_workbench_debug.py, tests/bdd/test_workbench_debug_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

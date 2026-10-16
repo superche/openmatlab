@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import sys
+import weakref
 from collections import deque
 from pathlib import Path
 from typing import Dict, Optional
@@ -19,7 +20,7 @@ from openmatlab.runtime import callstack
 
 ON = False  # any session has breakpoints or a pending step: the hook is consulted
 _ACTIVE: contextvars.ContextVar = contextvars.ContextVar("openmatlab_debugger", default=None)
-_ALL = []  # weak bookkeeping for ON recomputation
+_ALL = weakref.WeakSet()  # every live Debugger, for ON recomputation (dead sessions drop out)
 
 
 class DbQuit(BaseException):
@@ -47,7 +48,13 @@ def activated(dbg):
 
 def _recompute_on():
     global ON
-    ON = any(d.bps or d.step is not None or d.cond_stops for d in _ALL)
+    busy = [d for d in _ALL if d.bps or d.step is not None or d.cond_stops]
+    if busy and active() not in busy:  # only other sessions keep the hook on: drop dead (cyclic) ones first
+        import gc
+
+        gc.collect()
+        busy = [d for d in _ALL if d.bps or d.step is not None or d.cond_stops]
+    ON = bool(busy)
 
 
 def statement_lines(stmts) -> list:
@@ -86,7 +93,7 @@ class Debugger:
         self.out = None  # stream for pause messages (None: sys.stdout)
         self.display = None
         self.read_line = None  # optional callable(prompt) -> str (Workbench); else console input()
-        _ALL.append(self)
+        _ALL.add(self)
 
     # -- breakpoints -----------------------------------------------------------
     def set_bp(self, file: str, name: str, line: int, cond: Optional[str]):
@@ -135,6 +142,23 @@ class Debugger:
                 hit = cond is None or self._truthy(ev, cond)
         if hit:
             self.pause(ev, frame, line)
+
+    def on_return(self):
+        """dbstep out: pause in the caller at the call line as soon as the function returns (MATLAB)."""
+        if self.step is None or self.step[0] != "out":
+            return
+        st = callstack._STACK.get()
+        _mode, base, n = self.step
+        if not st or len(st) >= base:
+            return
+        if n > 1:
+            self.step = ("out", len(st) + 1, n - 1)
+            return
+        self.step = None
+        _recompute_on()
+        frame = st[-1]
+        if getattr(frame, "ev", None) is not None and frame.line:
+            self.pause(frame.ev, frame, frame.line)
 
     def _truthy(self, ev, cond: str) -> bool:
         import numpy as np
