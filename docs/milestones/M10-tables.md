@@ -32,7 +32,7 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | T01 | `table` construction (`table(a,b)`, `'VariableNames'`, `'RowNames'`, `array2table`, `cell2table`, `struct2table`), `height`/`width`/`size`, `Properties.VariableNames`/`RowNames`, display, `istable`/`class` | m10_t01_table_construct_display | p0 | #691 | met (Epic #691; residual #709) |
 | T02 | Indexing: `T.Var`, `T{r,c}`, `T(r,c)`, logical rows, add/delete variables and rows, `end`, `[T1;T2]`/`[T1,T2]` with name checks and errors | m10_t02_table_indexing | p0 | #691 | met (Epic #691; residual #709) |
 | T03 | `table2array`/`table2cell`/`table2struct`, `summary`, `head`/`tail`, `isempty`, `rowfun`/`varfun`, `removevars`/`renamevars`/`movevars`/`addvars` | m10_t03_table_conversion_varfun | p1 | #693 | pending |
-| T04 | `categorical`: valueset/catnames/`Ordinal`, `categories`, `countcats`, `addcats`/`removecats`/`mergecats`/`renamecats`, comparisons, `<undefined>`/`isundefined`, table variable | m10_t04_categorical | p0 | #692 | pending |
+| T04 | `categorical`: valueset/catnames/`Ordinal`, `categories`, `countcats`, `addcats`/`removecats`/`mergecats`/`renamecats`, comparisons, `<undefined>`/`isundefined`, table variable | m10_t04_categorical | p0 | #692 | met (Epic #692; residual #717) |
 | T05 | `sortrows(T,vars,dir)`, `issortedrows`, `sort`/`unique`/`ismember` on categorical, string and table | m10_t05_sortrows_sets | p1 | #693 (#585) | pending |
 | T06 | `join`, `innerjoin`, `outerjoin` (`'Type'`, `'MergeKeys'`, `'Keys'`), key-mismatch errors | m10_t06_joins | p1 | #696 | pending |
 | T07 | `findgroups`, `splitapply`, `groupsummary` (mean/sum/min/max, multiple groups), `groupcounts` | m10_t07_grouping | p1 | #696 | pending |
@@ -64,4 +64,4 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **2 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)). Next: D-E2 (#699), then T-E2 (#692) / T-E4 (#694).
+M10 opened 2026-10-16. **3 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)). Next: T-E4 (#694) readtable/writetable, then D-E4 (#701).

@@ -1315,3 +1315,6 @@ _stats_mod = __import__("openmatlab.libs.stats", fromlist=["register"])
 _stats_mod.register(BUILTINS)
 _jsonio_mod = __import__("openmatlab.libs.jsonio", fromlist=["register"])
 _jsonio_mod.register(BUILTINS)
+from openmatlab.libs import categorical_builtins as _categorical_builtins  # noqa: E402
+
+_categorical_builtins.register(BUILTINS)  # M10 T-E2 (#692)
