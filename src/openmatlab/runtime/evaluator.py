@@ -472,8 +472,7 @@ class Evaluator:
         from openmatlab.runtime import struct_eval as _se
 
         for row in expr.rows:
-            vals = [v for cell in row for v in (_se.expand(self, cell) if isinstance(cell, ast.FieldExpr)
-                                                else [self.eval_expr(cell)])]
+            vals = [v for cell in row for v in self._cs_values(cell)]
             if width is None:
                 width = len(vals)
             elif len(vals) != width:
@@ -848,9 +847,7 @@ class Evaluator:
         assert isinstance(cell, CellValue)
         if not idx_exprs:
             raise EvalError(f"{label}: missing indices")
-        rows, cols = cell.shape
-        if rows == 0 and cols == 0:
-            raise EvalError(f"{label}: empty cell")
+        rows, cols = cell.shape  # an empty cell yields an empty cs-list (c{:} with c = {}, #766)
 
         def _eval_dim(aexpr, dim_size: int, linear_numel: int | None = None):
             end_val = float(linear_numel if linear_numel is not None else dim_size)
@@ -1196,36 +1193,40 @@ class Evaluator:
         return CellValue(rows=grid)
 
 
-    def _eval_call_args(self, arg_exprs: List[ast.Expr]) -> list:
-        """Evaluate call args with cell CSL expansion c{:} / c{:,k} pack→list."""
+    def _cs_values(self, a) -> list:
+        """Values of one list-context element: s.f and c{...} expand to their cs-list (#766)."""
         from openmatlab.runtime.cell_value import CellValue
 
+        if isinstance(a, ast.FieldExpr):
+            from openmatlab.runtime import struct_eval as _se
+
+            return _se.expand(self, a)
+        if isinstance(a, ast.CellIndexExpr):
+            t = a.target
+            if isinstance(t, ast.Name) and t.id in self.workspace:
+                target = self.workspace.get(t.id)
+            elif isinstance(t, (ast.Name, ast.CellIndexExpr)):
+                target = None
+            else:
+                target = self.eval_expr(t)
+            if isinstance(target, CellValue):
+                idxs = list(a.indices)
+                if len(idxs) > 2:
+                    res = self._cell_nd_select(target, idxs, "cell index")
+                    return list(res.reshape(-1, order="F"))
+                if not idxs:
+                    return [target]
+                ri, cj = self._cell_subscript_lists(target, idxs, "cell index")
+                if len(idxs) == 1:
+                    return [target.get(i, j) for i, j in zip(ri, cj)]
+                return [target.get(i, j) for j in cj for i in ri]
+        return [self.eval_expr(a)]
+
+    def _eval_call_args(self, arg_exprs: List[ast.Expr]) -> list:
+        """Evaluate call args with cell CSL expansion c{:} / c{:,k} / s.f (#506, #766)."""
         out: list = []
         for a in arg_exprs:
-            if isinstance(a, ast.FieldExpr):  # s.f cs-list expands into arguments (#506)
-                from openmatlab.runtime import struct_eval as _se
-
-                out.extend(_se.expand(self, a))
-                continue
-            # CSL: content index with only bare colon(s) or multi result cell from {}
-            if isinstance(a, ast.CellIndexExpr):
-                val = self.eval_expr(a)
-                # If multi-content packed as cell (from colon), expand
-                bare = all(
-                    isinstance(ix, ast.ColonExpr)
-                    and ix.start is None
-                    and ix.stop is None
-                    for ix in a.indices
-                )
-                if bare and isinstance(val, CellValue):
-                    rows, cols = val.shape
-                    for j in range(cols):
-                        for i in range(rows):
-                            out.append(val.get(i, j))
-                    continue
-                out.append(val)
-                continue
-            out.append(self.eval_expr(a))
+            out.extend(self._cs_values(a))
         return out
 
     def _invoke_call(
@@ -1756,10 +1757,8 @@ class Evaluator:
 
         out: list = []
         for el in row:
-            if isinstance(el, ast.FieldExpr):  # [s.f] expands the cs-list (#506)
-                from openmatlab.runtime import struct_eval as _se
-
-                out.extend(_se.expand(self, el))
+            if isinstance(el, (ast.FieldExpr, ast.CellIndexExpr)):  # [s.f], [c{:}] expand the cs-list (#506, #766)
+                out.extend(self._cs_values(el))
                 continue
             val = self.eval_expr(el)
             # CSL inside []: [c{:}] expands contents into the row
@@ -2094,6 +2093,7 @@ class Evaluator:
         return av == bv
 
     def _eval_switch(self, stmt: ast.SwitchStmt) -> Value:
+        from openmatlab.runtime.cell_value import CellValue
         from openmatlab.runtime.char_value import CharValue
 
         needle = self.eval_expr(stmt.expr)
@@ -2104,7 +2104,12 @@ class Evaluator:
         last: Value = self.numerics.from_scalar(0.0)
         for case in stmt.cases:
             for vexpr in case.values:
-                if self._values_equal(needle, self.eval_expr(vexpr)):
+                cv = self.eval_expr(vexpr)
+                if isinstance(cv, CellValue):  # case c: a cell-valued case matches any element (#766)
+                    hit = any(self._values_equal(needle, x) for x in cv.to_obj().reshape(-1, order="F"))
+                else:
+                    hit = self._values_equal(needle, cv)
+                if hit:
                     for s in case.body:
                         last = self.eval_stmt(s)
                     return last

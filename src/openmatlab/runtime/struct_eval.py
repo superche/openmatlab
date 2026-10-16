@@ -328,6 +328,11 @@ def _class_rooted_ref(ev, expr) -> bool:
 def expand(ev, expr) -> List:
     """Values of one element in a list context ([...], {...}, call args)."""
     if isinstance(expr, ast.FieldExpr) and not _class_rooted_ref(ev, expr):
+        from openmatlab.runtime import classdef_subs as _cs
+
+        r = _cs.try_ref(ev, expr)  # subsref overloads apply in list contexts too (#766)
+        if r is not None:
+            return list(r[:1])
         v = read_field(ev, expr)
         return list(v.values) if isinstance(v, CsList) else [v]
     v = ev.eval_expr(expr)

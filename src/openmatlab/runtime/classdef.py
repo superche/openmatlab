@@ -540,8 +540,9 @@ class ClassInstance:
     def index(self, args):
         if not args:
             return self
-        raise _err(f"Index exceeds the number of array elements. Index must not exceed 1.", "MATLAB:index:outOfBounds") \
-            if _is_index_one(args) is False else self
+        if _is_index_one(args):
+            return self
+        raise _err("Index exceeds the number of array elements. Index must not exceed 1.", "MATLAB:index:outOfBounds")
 
     def assign(self, args, value):
         raise _err(f"Indexed assignment is not supported for objects of class '{self.info.name}' in this release.",

@@ -435,8 +435,8 @@ class NumPyArrayBackend:
 
         def _as_1based_int_vec(buf: Any, *, label: str) -> Any:
             flat = np.asarray(buf, dtype=np.float64).reshape(-1)
-            if flat.size == 0:
-                raise NumericsError(f"set_index: empty {label}")
+            if flat.size == 0:  # A([]) = v, A([], j) = v: no-op assignment (#766)
+                return flat.astype(np.int64)
             if np.any(flat != np.floor(flat)) or np.any(flat < 1):
                 raise NumericsError("set_index: indices must be positive integers")
             return flat.astype(np.int64)
@@ -502,7 +502,7 @@ class NumPyArrayBackend:
                 k = _as_1based_int_vec(
                     ind_a.backend_buffer(), label="linear index"
                 )
-                need = int(np.max(k))
+                need = int(np.max(k)) if k.size else 0
                 if need > flat.size and data.ndim > 2:
                     raise NumericsError("Attempt to grow array along ambiguous dimension.")
                 if need > flat.size:
@@ -535,7 +535,7 @@ class NumPyArrayBackend:
                 )
             else:
                 subs.append(_as_1based_int_vec(ind_a.backend_buffer(), label="subscript"))
-        need = [max(view_shape[d], int(np.max(s_))) for d, s_ in enumerate(subs)]
+        need = [max(view_shape[d], int(np.max(s_)) if s_.size else 0) for d, s_ in enumerate(subs)]
         if vbuf.size == 0 and tuple(need) != view_shape:
             raise NumericsError("Matrix index is out of range for deletion.")
         if tuple(need) != view_shape:
