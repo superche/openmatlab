@@ -147,6 +147,10 @@ class GraphicsHandle(NDArrayValue):
         t = set(self._types())
         if not t:
             return "matlab.graphics.Graphics"
+        objs = getattr(self._model, "objs", {})
+        cls = {objs[i].props.get("_cls") for i in self.ids if i in objs}
+        if len(t) == 1 and len(cls) == 1 and None not in cls:
+            return next(iter(cls))
         if len(t) == 1:
             k = next(iter(t))
             return FULL_CLASS.get(k, "matlab.graphics.GraphicsPlaceholder" if not k else f"matlab.graphics.primitive.{k.title()}")
@@ -308,8 +312,7 @@ def _row_cells(strs):
 
 def _props_view(o: GObj) -> Dict[str, Any]:
     d = {k: v for k, v in o.props.items() if not k.startswith("_")}
-    if o.type in ("figure", "axes", "root"):
-        d["Children"] = None
+    d["Children"] = None  # every graphics object has Children (empty for leaves)
     if o.type != "root":
         d["Parent"] = None
     if o.type == "figure":
@@ -379,6 +382,8 @@ def _color(v, fn):
             return s
         raise _err(f"{fn}: invalid color '{v.text}'", "MATLAB:hg:ColorSpec_InvalidColor")
     c = _arr(v, fn).reshape(-1).astype(float)
+    if c.size == 4 and not (np.any(c < 0) or np.any(c > 1)):  # RGBA (undocumented MATLAB form, #771)
+        c = c[:3]
     if c.size != 3 or np.any(c < 0) or np.any(c > 1):
         raise _err(f"{fn}: color must be an RGB triplet with values in [0, 1]", "MATLAB:hg:ColorSpec_InvalidColor")
     return c.tolist()
@@ -393,6 +398,14 @@ def _set_prop(m: Model, o: GObj, name: str, v) -> None:
         o.parent = p
         p.children.append(o)
         return
+    if k == "Children" and o.type in ("figure", "axes"):  # reorder: set(ax, 'Children', flipud(...)) (#771)
+        ids = [float(i) for i in _arr(v, "set").reshape(-1)]
+        cur = [c for c in o.children if c.alive and c.type != "legend"]
+        if sorted(ids) != sorted(c.id for c in cur):
+            raise _err("Children may only be set to a permutation of itself.", "MATLAB:hg:g_object:BadChildren")
+        rest = [c for c in o.children if c not in cur]
+        o.children = rest + [m.get(i) for i in reversed(ids)]
+        return
     if k in _READ_ONLY:
         raise _err(f"Unable to set the '{k}' property of class '{CLASS_NAMES.get(o.type, o.type)}' because it is read-only.", "MATLAB:class:SetProhibited")
     if k in _ENUMS:
@@ -400,7 +413,7 @@ def _set_prop(m: Model, o: GObj, name: str, v) -> None:
             raise _err(f"Invalid value for '{k}' property.", "MATLAB:datatypes:InvalidEnumValue")
         o.props[k] = v.text
     elif k in ("Color", "FaceColor", "EdgeColor", "MarkerEdgeColor", "MarkerFaceColor", "XColor", "YColor",
-               "ZColor", "BackgroundColor", "LineColor", "TextColor") or (k == "CData" and o.type in (
+               "ZColor", "BackgroundColor", "LineColor", "TextColor", "TextEdgeColor", "TextBackgroundColor") or (k == "CData" and o.type in (
                    "line", "scatter", "bar", "figure", "axes", "text", "legend")):
         if k == "CData" and o.type == "scatter" and hasattr(v, "backend_buffer") and _arr(v, "set").size != 3:
             o.props[k] = _arr(v, "set").astype(float).tolist()
@@ -743,7 +756,8 @@ def _scatter(ev, args, nargout):
         cdata = c.reshape(-1).tolist() if c.size == 3 else c.tolist()
     marker = "o"
     face = None
-    while tail and _is_text(tail[0]) and (tail[0].text.lower() == "filled" or (len(tail) % 2 == 1)):
+    while tail and _is_text(tail[0]) and (tail[0].text.lower() == "filled" or len(tail) % 2 == 1 or (
+            parse_linespec(tail[0].text) is not None and tail[0].text.lower() not in _LINE_PROPS)):
         w = tail.pop(0).text
         if w.lower() == "filled":
             face = "flat"
@@ -751,6 +765,8 @@ def _scatter(ev, args, nargout):
             ps = parse_linespec(w)
             if ps and ps[2]:
                 marker = ps[2]
+            if ps and ps[0]:
+                cdata = [float(x) for x in SPEC_COLORS[ps[0]]]
     m.prepare_axes_for_plot(a)
     o = m.add_child(a, "scatter", {"XData": x.tolist(), "YData": y.tolist(), "SizeData": size,
                                    "CData": cdata if cdata is not None else m.next_color(a), "Marker": marker,
@@ -819,11 +835,18 @@ def _label(key):
     def f(ev, args, nargout):
         m = model(ev)
         a, rest = _target_axes(m, args)
+        t = None
+        if a is None and args and hasattr(args[0], "backend_buffer") and not _is_text(args[0]):
+            hh = _arr(args[0]).reshape(-1)
+            if hh.size == 1 and m.is_handle(hh[0]) and isinstance(m.get(hh[0]).props.get("Label"), GObj):
+                cbar = m.get(hh[0])  # title(colorbar, ...) / ylabel(colorbar, ...) label the colorbar (#771)
+                t, rest = cbar.props["Label"], list(args[1:])
+                a = getattr(cbar, "axes", None) or m.gca()
         a = a or m.gca()
         if not rest:
             raise _err("Not enough input arguments.", "MATLAB:narginchk:notEnoughInputs")
         s = rest[0]
-        t = a.props[key]
+        t = t if t is not None else a.props[key]
         if _is_cell(s):
             t.props["String"] = "\n".join(_cellstrs(s))
         elif _is_text(s):

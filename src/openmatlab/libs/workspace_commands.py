@@ -415,3 +415,8 @@ STATEMENT_ZERO |= {"line", "loglog", "semilogx", "semilogy", "errorbar", "area",
                    "hist", "patch", "fill", "rectangle", "imagesc", "image", "pcolor", "contour", "contourf",
                    "quiver", "spy", "polar", "polarplot", "rose", "compass", "plotyy", "colormap", "caxis",
                    "clim", "colorbar", "zlabel", "box", "drawnow", "annotation", "axes"}
+# 3-D, colour and axes helpers (Epic #771); sphere/cylinder/ellipsoid with no outputs plot
+STATEMENT_ZERO |= {"plot3", "scatter3", "surf", "surfc", "mesh", "meshc", "waterfall", "surface", "contour3",
+                   "bar3", "sphere", "cylinder", "ellipsoid", "view", "zlim", "shading", "light", "camlight",
+                   "lighting", "material", "imshow", "daspect", "pbaspect", "clabel", "uistack", "xticks",
+                   "yticks", "zticks", "xticklabels", "yticklabels", "zticklabels"}
