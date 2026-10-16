@@ -142,15 +142,47 @@ class CommandWindow:
         s.display = ConsoleDisplay(workspace=s.workspace, stream=buf)
         return cls(session=s, repl=ReplSession(s), _stream=buf)
 
-    def eval(self, source: str) -> str:
-        """Evaluate one or more statements; return captured display text."""
+    _last_error: Optional[Tuple[str, int]] = None  # (file, line) of the last uncaught error (M11 D-E6)
+
+    def eval(self, source: str, *, history: bool = True) -> str:
+        """Evaluate one or more statements; return captured display text.
+
+        Raises the evaluation error (callers decide how to show it); the error's location is
+        recorded for the Command Window error hyperlink (``last_error_location``).
+        """
         line = source.strip()
-        if line:
+        if line and history:
             self._history.append(line)
         before = self._stream.tell()
-        self.repl.run_line(source)
+        try:
+            self.repl.run_line(source)
+        except Exception as exc:
+            self.record_error(exc)
+            raise
         self._stream.seek(before)
         return self._stream.read()
+
+    def record_error(self, exc) -> None:
+        frames = [f for f in (getattr(exc, "mstack", None) or ()) if f and f[0]]
+        self._last_error = (str(frames[0][0]), int(frames[0][2])) if frames else None
+
+    def error_text(self, exc) -> str:
+        """MATLAB-style uncaught error text ("Error using f (line n)" + message); never a traceback."""
+        from openmatlab.runtime import errors
+
+        frames = tuple(getattr(exc, "mstack", None) or ())
+        return errors.report(str(exc), frames, basic=True) if frames else f"Error: {exc}"
+
+    def last_error_location(self) -> Optional[Tuple[str, int]]:
+        """``(file, line)`` the last error's hyperlink points to, or ``None`` (M11 D-E6)."""
+        return self._last_error
+
+    def rerun_history(self, index: int = -1) -> str:
+        """Command History re-run: evaluate entry ``index`` (Python-style; -1 = newest) again."""
+        hist = self._history
+        if not hist:
+            raise IndexError("Command History is empty")
+        return self.eval(hist[index])
 
     def history(self) -> List[str]:
         """Command history newest-last (W11)."""
@@ -158,6 +190,18 @@ class CommandWindow:
 
     def workspace_names(self) -> List[str]:
         return sorted(n for n in self.session.workspace.names() if n != "ans")
+
+
+def _is_section_marker(line: str) -> bool:
+    t = line.lstrip()
+    return t.startswith("%%") and (len(t) == 2 or t[2] in " \t")
+
+
+class _Title(str):
+    """Tab title string; also callable (``ed.tab_title()``) for tooling."""
+
+    def __call__(self) -> str:
+        return str(self)
 
 
 @dataclass
@@ -168,6 +212,44 @@ class EditorPanel:
     text: str = ""
     dirty: bool = False
     session: Any = field(default=None, repr=False, compare=False)  # set by EditorDocuments (D-E4)
+    _cursor: int = 1  # 1-based caret line (M11 D-E6)
+
+    # -- code sections (M11 D-E6) ------------------------------------------------
+    def sections(self) -> List[Tuple[int, int]]:
+        """Code sections as 1-based inclusive ``(first, last)`` line ranges.
+
+        A line whose first non-blank characters are ``%%`` followed by a space or the end of the
+        line starts a section (MATLAB); text before the first marker is a section of its own.
+        """
+        lines = self.text.split("\n")
+        if lines and lines[-1] == "":
+            lines = lines[:-1]
+        starts = [i + 1 for i, ln in enumerate(lines) if _is_section_marker(ln)]
+        if not lines:
+            return [(1, 1)]
+        if not starts or starts[0] != 1:
+            starts = [1] + starts
+        ends = [b - 1 for b in starts[1:]] + [len(lines)]
+        return list(zip(starts, ends))
+
+    def section_at(self, line: Optional[int] = None) -> Tuple[int, int]:
+        ln = self._cursor if line is None else line
+        secs = self.sections()
+        for a, b in secs:
+            if a <= ln <= b:
+                return (a, b)
+        return secs[-1]
+
+    def section_text(self, line: Optional[int] = None) -> str:
+        a, b = self.section_at(line)
+        return "\n".join(self.text.split("\n")[a - 1:b])
+
+    def set_cursor_line(self, line: int) -> None:
+        n = max(1, len(self.text.split("\n")))
+        self._cursor = min(max(1, int(line)), n)
+
+    def cursor_line(self) -> int:
+        return self._cursor
 
     def toggle_breakpoint(self, line: int) -> None:
         """Gutter click at ``line``: dbstop / dbclear on the saved file (M11 D-E4)."""
@@ -221,8 +303,8 @@ class EditorPanel:
     def tab_title(self) -> str:
         if self.path is not None:
             mark = "*" if self.dirty else ""
-            return f"{mark}{self.path.name}"
-        return "*untitled.m" if self.dirty else "untitled.m"
+            return _Title(f"{mark}{self.path.name}")
+        return _Title("*untitled.m" if self.dirty else "untitled.m")
 
 
 @dataclass
@@ -490,14 +572,59 @@ class Workbench:
 
         While the debugger is paused the line goes to the ``K>>`` prompt instead.
         """
+        cw = self.command_window
         if self.debug is not None and self.debug.is_paused():
-            cw = self.command_window
             before = cw._stream.tell()
             cw._history.append(source.strip())
             self.debug.send(source)
             cw._stream.seek(before)
             return cw._stream.read()
-        return self.command_window.eval(source)
+        before = cw._stream.tell()
+        try:
+            return cw.eval(source)
+        except Exception as exc:  # shown in the Command Window as MATLAB error text, never a traceback
+            cw._stream.seek(0, 2)
+            cw._stream.write(cw.error_text(exc) + "\n")
+            cw._stream.seek(before)
+            return cw._stream.read()
+
+    # -- Workbench workflows (M11 D-E6) --------------------------------------------
+    def _run_code(self, source: str) -> None:
+        """Run editor code through the debug controller (breakpoints apply); no Command History entry."""
+        self.debug.run(source, history=False)
+
+    def run_section(self) -> None:
+        """Run Section: evaluate the section at the caret in the base workspace."""
+        self._run_code(self.editor.section_text())
+
+    def run_and_advance(self) -> None:
+        """Run and Advance: run the caret's section, then move the caret to the next section."""
+        ed = self.editor
+        a, b = ed.section_at()
+        self._run_code(ed.section_text())
+        nxt = [s for s in ed.sections() if s[0] > b]
+        if nxt:
+            ed.set_cursor_line(nxt[0][0])
+
+    def run_file(self) -> None:
+        """Editor Run: save if needed and run the file so its breakpoints apply."""
+        ed = self.editor
+        if ed.path is None:
+            self._run_code(ed.text)
+            return
+        if ed.dirty:
+            ed.save()
+        p = ed.path.as_posix().replace("'", "''")
+        self._run_code(f"run('{p}')")
+
+    def open_error_link(self) -> Optional[EditorPanel]:
+        """Follow the last error's hyperlink: open its file in the Editor at the error line."""
+        loc = self.command_window.last_error_location()
+        if loc is None or not Path(loc[0]).is_file():
+            return None
+        ed = self.documents.open_file(loc[0])
+        ed.set_cursor_line(loc[1])
+        return ed
 
     @property
     def workspace(self) -> "WorkspaceBrowser":

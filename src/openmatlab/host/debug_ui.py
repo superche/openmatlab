@@ -49,14 +49,14 @@ class DebugController:
             except Exception:
                 pass
 
-    def _work(self, source: str) -> None:
+    def _work(self, source: str, history: bool = True) -> None:
         dbg = self.session.debugger
         dbg.read_line = self._read_line
         dbg.out = self.cw._stream
         try:
-            self.cw.eval(source)
-        except Exception as exc:  # never a traceback: report in the Command Window
-            self.cw._stream.write(f"error: {exc}\n")
+            self.cw.eval(source, history=history)
+        except Exception as exc:  # never a traceback: MATLAB error text in the Command Window
+            self.cw._stream.write(self.cw.error_text(exc) + "\n")
         finally:
             dbg.read_line = None
             dbg.out = None
@@ -72,12 +72,12 @@ class DebugController:
             self._worker = None
 
     # -- UI side ---------------------------------------------------------------
-    def run(self, source: str) -> None:
+    def run(self, source: str, history: bool = True) -> None:
         """Run code (Command Window line or editor Run) so breakpoints can pause it."""
         if self._state != "idle":
             raise DebugError("debug: code is already running; Continue or Quit Debugging first")
         self._state = "running"
-        self._worker = threading.Thread(target=self._work, args=(source,), daemon=True, name="openmatlab-run")
+        self._worker = threading.Thread(target=self._work, args=(source, history), daemon=True, name="openmatlab-run")
         self._worker.start()
         self._wait_settled()
 
