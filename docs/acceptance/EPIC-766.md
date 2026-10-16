@@ -16,7 +16,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M12 criterion C09 is **met**; C05 and C06 remain pending (rolling burn-down continues). Epic #766 stays **open** until the user accepts it.
+**Ready for user acceptance.** M12 criteria C09 and C05 are **met**; C06 remains pending (rolling burn-down continues). Epic #766 stays **open** until the user accepts it.
 
 The full corpus re-run reports `internal-crash` = 0 (was 2): `*` width/precision in `sprintf`/`fprintf` and `display` inside function bodies no longer raise Python errors. Pass rates: T0 87.5 % (850/971), T1 26.2 % (185/706). C-E6 is rolling: C05 (T0 ≥ 95 %) and C06 (T1 ≥ 65 %) continue in later increments.
 
@@ -64,6 +64,7 @@ qa.corpus_no_crash               qa         done     Corpus full run has no inte
 
 ## Milestone progress (M12)
 
-- Criteria met: **6 / 10** (C01, C02, C03, C04, C09, C10)
-- Conformance scripts passing: **6 / 10** (strict xfail pending: C05, C06, C07, C08)
-- Next: #766 burn-down of top corpus issues by T1 impact (C05, C06), C-E5 #765 (C07, C08), M13 epics.
+- Criteria met: **7 / 10** (C01, C02, C03, C04, C05, C09, C10)
+- Conformance scripts passing: **7 / 10** (strict xfail pending: C06, C07, C08)
+- Increment 2 (C05): endless functions (#842), `private/` and `@class` folders, parser gaps; full run T0 97.9 % (954/974), T1 27.5 % (193/701).
+- Next: #766 burn-down of top corpus issues by T1 impact (C06), C-E5 #765 (C07, C08), M13 epics.

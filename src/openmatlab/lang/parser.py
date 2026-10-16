@@ -66,6 +66,7 @@ _JUXTAPOSE_START = frozenset(
         TokenType.LPAREN,
         TokenType.LBRACKET,
         TokenType.LBRACE,
+        TokenType.AT,  # {@(x)sin(x) @(x)cos(x)} (#766)
     }
 )
 
@@ -281,11 +282,13 @@ class Parser:
         if name in ("get", "set") and self.current().type == TokenType.DOT:  # get.Prop / set.Prop (M8)
             self.advance()
             name = name + "." + self.expect(TokenType.IDENT).value
-        self.expect(TokenType.LPAREN)
         inputs: List[str] = []
-        if self.current().type != TokenType.RPAREN:
-            inputs = self._parse_name_list()
-        self.expect(TokenType.RPAREN)
+        if self.match(TokenType.LPAREN):  # parentheses are optional with no inputs: function f (#766)
+            if self.current().type != TokenType.RPAREN:
+                inputs = self._parse_name_list(tilde=True)
+            self.expect(TokenType.RPAREN)
+        elif self.current().type not in (TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.COMMA, TokenType.EOF):
+            self.expect(TokenType.LPAREN)
         while self._match_sep():
             pass
         body: List[Stmt] = []
@@ -310,10 +313,15 @@ class Parser:
             body=tuple(body),
         )
 
-    def _parse_name_list(self) -> List[str]:
-        names: List[str] = [self.expect(TokenType.IDENT).value]
+    def _parse_name_list(self, tilde: bool = False) -> List[str]:
+        def one() -> str:
+            if tilde and self.match(TokenType.TILDE):  # ignored input: function f(a, ~) (#766)
+                return "~"
+            return self.expect(TokenType.IDENT).value
+
+        names: List[str] = [one()]
         while self.match(TokenType.COMMA):
-            names.append(self.expect(TokenType.IDENT).value)
+            names.append(one())
         return names
 
     def parse_if(self) -> IfStmt:
@@ -397,9 +405,16 @@ class Parser:
 
     def parse_for(self) -> ForStmt:
         self.expect(TokenType.KW_FOR)
+        paren = (self.current().type == TokenType.LPAREN and self.pos + 2 < len(self.tokens)
+                 and self.tokens[self.pos + 1].type == TokenType.IDENT
+                 and self.tokens[self.pos + 2].type == TokenType.ASSIGN)
+        if paren:  # for (k = 1:n) (#766)
+            self.advance()
         var = self.expect(TokenType.IDENT).value
         self.expect(TokenType.ASSIGN)
         iterable = self.parse_expression()
+        if paren:
+            self.expect(TokenType.RPAREN)
         while self._match_sep():
             pass
         body = self._parse_block(TokenType.KW_END)
@@ -727,7 +742,8 @@ class Parser:
                 elems.append(self.parse_expression())
                 continue
             # whitespace juxtaposition: next primary starts a new element
-            if self.current().type in _JUXTAPOSE_START:
+            if self.current().type in _JUXTAPOSE_START or (
+                    self.current().type == TokenType.KW_END and self._in_subscript > 0):  # x([1 end]) (#766)
                 elems.append(self.parse_expression())
                 continue
             break

@@ -1873,6 +1873,33 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.private_functions
+    kind: unit
+    title: private/ folder function resolution (Epic #766)
+    features: [lang.private_and_class_folders]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_private_functions.py
+    status: active
+    env: unit
+
+  - id: tc.class_folders
+    kind: unit
+    title: "@class folders with separate method files (Epic #766)"
+    features: [lang.private_and_class_folders]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_class_folders.py
+    status: active
+    env: unit
+
+  - id: tc.corpus_parser_gaps
+    kind: unit
+    title: Corpus parser gaps (Epic #766)
+    features: [lang.corpus_parser_gaps]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_parser_gaps.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

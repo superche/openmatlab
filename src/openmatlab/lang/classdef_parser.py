@@ -100,6 +100,8 @@ class ClassDefNode:
     events: List[Tuple[str, Dict[str, object]]] = field(default_factory=list)
     enums: List[EnumDecl] = field(default_factory=list)
     abstract_methods: List[str] = field(default_factory=list)
+    # signature-only methods (bodies live in the @class folder, #766): name -> block attributes
+    signatures: Dict[str, Dict[str, object]] = field(default_factory=dict)
 
 
 def is_classdef_source(text: str) -> bool:
@@ -321,7 +323,12 @@ class ClassParser(Parser):
             if attrs.get("abstract"):
                 node.abstract_methods.append(self._signature_name())
                 continue
-            self._skip_line()  # signature only (defined in a separate file)
+            save = self.pos  # signature only (defined in a separate file in the @class folder)
+            try:
+                node.signatures[self._signature_name()] = dict(attrs)
+            except ParseError:
+                self.pos = save
+            self._skip_line()
 
     def _signature_name(self) -> str:
         """Name from an abstract signature line ``[a, b] = name(args)`` / ``name(args)``."""

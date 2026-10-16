@@ -400,8 +400,36 @@ class FunctionResolver:
     def register_builtin(self, name: str, fn: CallableFunction) -> None:
         self.builtins[name.lower()] = fn
 
+    def _find_private(self, name: str):
+        """name.m in the caller's private folder (MATLAB: private shadows builtins and the path, #766)."""
+        if not name.isidentifier():
+            return None
+        from openmatlab.runtime import callstack as _cs
+
+        fr = _cs.top()
+        if fr is None or not fr.file:
+            return None
+        d = Path(fr.file).parent
+        pdir = d if d.name == "private" else d / "private"
+        cache = self.__dict__.setdefault("_private_dirs", {})
+        try:
+            mtime = pdir.stat().st_mtime_ns
+        except OSError:
+            return None
+        hit = cache.get(pdir)
+        if hit is None or hit[0] != mtime:
+            names = {}
+            for f in pdir.iterdir():
+                if f.suffix in (".m", ".M") and f.is_file():
+                    names.setdefault(f.stem, f.resolve())
+            hit = cache[pdir] = (mtime, names)
+        return hit[1].get(name)
+
     def resolve(self, name: str) -> CallableFunction:
         key = name.lower()
+        priv = self._find_private(name)
+        if priv is not None:
+            return self._load(priv, name)
         if key in self.builtins:
             return self.builtins[key]
         mfile = self._find(name)
@@ -411,6 +439,9 @@ class FunctionResolver:
 
     def which(self, name: str) -> str:
         key = name.lower()
+        priv = self._find_private(name)
+        if priv is not None:
+            return f"{priv}  % Private to {priv.parent.parent.name}"
         if key in self.builtins:
             return f"builtin/{key}"
         mfile = self._find(name)

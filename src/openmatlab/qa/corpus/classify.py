@@ -91,6 +91,13 @@ GRAPHICS_FUNCS = {
     "histogram_", "heatmap", "imshow", "wordcloud", "geoplot", "boxplot", "graph_plot", "colorbar_",
 }
 
+# Base-MATLAB functions whose names look like user helpers (camelCase / digits): never `corpus-noise` (#766)
+BASE_CAMEL_FUNCS = {"verLessThan", "isMATLABReleaseOlderThan", "matlabRelease", "inputParser", "inputname",
+                    "containers", "validateattributes", "validatestring", "mustBeNumeric", "mustBePositive",
+                    "isStringScalar", "convertStringsToChars", "convertCharsToStrings", "num2str", "str2func",
+                    "func2str", "mat2str", "int2str", "str2num", "str2double", "cellfun", "arrayfun",
+                    "bitget", "dec2base", "base2dec", "log1p", "expm1", "gammaln", "besselj", "ind2sub", "sub2ind"}
+
 _UNDEF = re.compile(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)")
 _UNDEF_VAR = re.compile(r"^Undefined variable:?\s*'?([A-Za-z_]\w*)")
 _IO_MSG = re.compile(r"(fopen|file identifier|Unable to find or open|No such file|input: no more input|"
@@ -196,6 +203,8 @@ def classify_features(result: dict, f: dict) -> Tuple[str, str]:
             return "toolbox:" + _TOOLBOX_OF[name], name
         if name in IO_ENV_FUNCS:
             return "io-env", name
+        if name in BASE_CAMEL_FUNCS and name not in defined:
+            return "missing-builtin", name
         if name in GRAPHICS_FUNCS:
             return "graphics", name
         where = f.get("resolvable", {}).get(name)

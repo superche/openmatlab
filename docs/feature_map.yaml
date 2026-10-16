@@ -634,6 +634,22 @@ features:
     notes: "M12 burn-down, Epic #766, corpus #794"
     tests: [tests/unit/test_endless_functions.py]
 
+  - id: lang.private_and_class_folders
+    layer: qa
+    name: "private/ folder functions and @class folders (method files, folder-private helpers)"
+    status: done
+    depends_on: [qa.corpus_report]
+    notes: "M12 burn-down, Epic #766, corpus #793 #795"
+    tests: [tests/unit/test_private_functions.py, tests/unit/test_class_folders.py]
+
+  - id: lang.corpus_parser_gaps
+    layer: qa
+    name: "Parser gaps from the corpus (end in matrix subscript, for (...), ~ inputs, paren-less function, handles in cells, for over cells)"
+    status: done
+    depends_on: [qa.corpus_report]
+    notes: "M12 burn-down, Epic #766"
+    tests: [tests/unit/test_corpus_parser_gaps.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

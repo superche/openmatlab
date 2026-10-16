@@ -45,4 +45,7 @@ class ToolboxPath:
                 hit = entry / sub / cand
                 if hit.is_file():
                     return hit.resolve()
+                hit = entry / sub / ("@" + base) / cand  # class folder (#766)
+                if hit.is_file():
+                    return hit.resolve()
         return None
