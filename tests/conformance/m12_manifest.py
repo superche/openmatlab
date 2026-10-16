@@ -19,5 +19,5 @@ CRITERIA = {
     "C07": ("m12_c07_tier2", "p1", [765], "pending"),
     "C08": ("m12_c08_tier3", "p1", [765], "pending"),
     "C09": ("m12_c09_no_crash", "p0", [766], "pending"),
-    "C10": ("m12_c10_report_triage", "p1", [764], "pending"),
+    "C10": ("m12_c10_report_triage", "p1", [764], "met"),
 }
