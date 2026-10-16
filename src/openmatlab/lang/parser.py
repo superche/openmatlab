@@ -75,6 +75,7 @@ class Parser:
         self.tokens = tokens
         self.pos = 0
         self._in_subscript = 0
+        self._endless = False  # file whose functions are not end-terminated (#766)
 
     def current(self) -> Token:
         return self.tokens[self.pos]
@@ -288,10 +289,16 @@ class Parser:
         while self._match_sep():
             pass
         body: List[Stmt] = []
-        while self.current().type not in (TokenType.KW_END, TokenType.EOF):
+        stop = (TokenType.KW_FUNCTION, TokenType.EOF) if self._endless else (TokenType.KW_END, TokenType.EOF)
+        while self.current().type not in stop:
             body.append(self.parse_statement())
             while self._match_sep():
                 pass
+        if self._endless:
+            if self.current().type == TokenType.KW_END:
+                tok = self.current()
+                raise ParseError("Unexpected end in a file whose functions have no end", tok.line, tok.column)
+            return FunctionDef(name=name, outputs=tuple(outputs), inputs=tuple(inputs), body=tuple(body))
         if self.current().type != TokenType.KW_END:
             tok = self.current()
             raise ParseError("Expected end to close function", tok.line, tok.column)
@@ -741,4 +748,17 @@ class Parser:
 
 
 def parse(source: str, commands: bool = True) -> Program:
-    return Parser(tokenize(source, commands=commands)).parse()
+    tokens = tokenize(source, commands=commands)
+    try:
+        return Parser(tokens).parse()
+    except ParseError as exc:
+        # MATLAB allows a file whose functions all omit `end`: each body runs to
+        # the next `function` or end of file (#766).
+        if not str(exc).startswith("Expected end to close function"):
+            raise
+        retry = Parser(tokens)
+        retry._endless = True
+        try:
+            return retry.parse()
+        except ParseError:
+            raise exc from None
