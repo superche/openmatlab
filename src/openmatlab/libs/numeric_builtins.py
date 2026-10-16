@@ -1318,3 +1318,6 @@ _jsonio_mod.register(BUILTINS)
 from openmatlab.libs import categorical_builtins as _categorical_builtins  # noqa: E402
 
 _categorical_builtins.register(BUILTINS)  # M10 T-E2 (#692)
+from openmatlab.libs import table_io as _table_io  # noqa: E402
+
+_table_io.register(BUILTINS)  # M10 T-E4 (#694)

@@ -334,6 +334,13 @@ def _isa(cls):
     return f
 
 
+def _isnat(args, *, nargout=1):
+    if not args or not isinstance(args[0], DatetimeValue):
+        cls = args[0].matlab_class() if args else "double"
+        raise _err(f"Undefined function 'isnat' for input arguments of type '{cls}'.", "MATLAB:UndefinedFunction")
+    return (NDArrayValue(np.isnan(args[0].v)),)
+
+
 def _isobject(args, *, nargout=1):
     v = args[0]
     return (NDArrayValue(np.array([[bool(getattr(v, "is_object", False) or getattr(v, "is_graphics_handle", False))]])),)
@@ -348,7 +355,7 @@ def register(builtins: Dict[str, Callable]) -> None:
         "seconds": _unit("seconds"), "milliseconds": _unit("milliseconds"), "duration": _duration,
         "datenum": _datenum, "datestr": _datestr, "now": _now, "clock": _clock, "date": _date,
         "weekday": _weekday, "etime": _etime, "isdatetime": _isa(DatetimeValue), "isduration": _isa(DurationValue),
-        "isobject": _isobject,
+        "isobject": _isobject, "isnat": _isnat,
     }
     for k, v in table.items():
         builtins.setdefault(k.lower(), v)  # the resolver looks names up lower-cased
