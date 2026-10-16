@@ -990,6 +990,8 @@ def _delete(ev, args, nargout):
         return out if nargout else ()
     m = model(ev)
     for i in _arr(args[0], "delete").reshape(-1, order="F"):
+        if i != i:  # GraphicsPlaceholder (gobjects)
+            continue
         o = m.objs.get(float(i))
         if o is None:
             raise _err("Invalid or deleted object.", "MATLAB:class:InvalidHandle")

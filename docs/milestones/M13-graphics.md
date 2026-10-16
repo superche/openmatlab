@@ -33,7 +33,7 @@ Primary gate: handle-model property assertions from MATLAB documentation. Second
 
 | # | Criterion | Script | Priority | Epic | Status |
 |---|-----------|--------|----------|------|--------|
-| G01 | Handle arrays `h(k).Prop` read/write; `[h.Prop]`, `get(h,'Prop')` cell; `class(h)` full `matlab.graphics.*` name; "Line with properties" display; `isgraphics`/`isvalid`/`delete` on arrays; `double(h)` compatible | m13_g01_handle_arrays | p0 | #768 (#673) | pending |
+| G01 | Handle arrays `h(k).Prop` read/write; `[h.Prop]`, `get(h,'Prop')` cell; `class(h)` full `matlab.graphics.*` name; "Line with properties" display; `isgraphics`/`isvalid`/`delete` on arrays; `double(h)` compatible | m13_g01_handle_arrays | p0 | #768 (#673) | **met** (Epic #768, [design](../design/EPIC-768-handle-model.md)) |
 | G02 | `findobj` (Type/value/`-depth`/`-regexp`/`-and`/`-or`/`-not`), `findall`, `allchild`, `gco`, `ancestor`, `axes(...)`, `groot`; MATLAB Children order | m13_g02_findobj | p0 | #769 (#593) | pending |
 | G03 | `subplot` replace/position, `tiledlayout`/`nexttile`, `yyaxis`, nice-tick auto limits, `axis equal/tight/square/ij/xy/off` | m13_g03_layout_axes | p0 | #770 (#593) | pending |
 | G04 | `errorbar`, `area`, `stairs`, `stem`, `pie`, `barh`/stacked/grouped `bar`, `histogram` properties, `fill`/`patch`, `line` | m13_g04_charts2d | p1 | #772 (#593) | pending |
@@ -80,4 +80,4 @@ MATLAB `.fig` binary compatibility; `uifigure`/App Designer/UI controls; interac
 
 ## Progress snapshot
 
-M13 opened 2026-10-16. **0 / 10** criteria met. G-E0 #767 delivered the G09 output-routing half (#760; [design](../design/EPIC-767-output-routing.md)); G09 flips when G-E7 #774 adds figure docking. Next: M12 C-E1 #761.
+M13 opened 2026-10-16. **1 / 10** criteria met. G-E0 #767 delivered the G09 output-routing half (#760; [design](../design/EPIC-767-output-routing.md)); G09 flips when G-E7 #774 adds figure docking. G01 (Epic #768, [design](../design/EPIC-768-handle-model.md)): handle arrays, full `matlab.graphics.*` class names, `h(k).Prop` read/write, cs-list `[h.Prop]`, element-wise `isvalid`/`isgraphics`/`delete`, `gobjects`, "Line with properties" display. Next: G-E5 #772 and G-E4 #771 (the largest corpus `graphics` groups), then G-E2 #769, G-E3 #770, G-E6 #773, G-E7 #774, interleaved with M12 C-E5 #765.
