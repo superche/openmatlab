@@ -1765,6 +1765,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_charts2d
+    kind: unit
+    title: 2-D charts, annotations and colormaps (Epic #772)
+    features: [libs.graphics.charts2d]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic772_charts2d.py
+    status: active
+    env: unit
+
+  - id: tc.graphics_charts2d_bdd
+    kind: bdd
+    title: 2-D charts Gherkin scenarios (Epic #772)
+    features: [libs.graphics.charts2d]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_graphics_charts2d_bdd.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)

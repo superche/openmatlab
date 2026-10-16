@@ -288,6 +288,10 @@ def _to_value(m: Model, o: GObj, key: str, val):
         return _h(o.parent.id) if o.parent is not None else NDArrayValue(np.zeros((0, 0)))
     if isinstance(val, str):
         return CharValue(val)
+    if isinstance(val, dict):
+        return _to_value(m, o, key, None)
+    if hasattr(val, "backend_buffer") or type(val).__module__.startswith("openmatlab"):
+        return val  # a stored MATLAB value (UserData struct, cell...)
     if isinstance(val, list) and val and all(isinstance(x, str) for x in val):
         return _cells([CharValue(x) for x in val]) if False else _row_cells(val)
     if val is None:
@@ -315,9 +319,18 @@ def _props_view(o: GObj) -> Dict[str, Any]:
     return d
 
 
+def _known(o: GObj) -> Dict[str, Any]:
+    from openmatlab.libs import chart_builtins
+
+    return chart_builtins.known(o)
+
+
 def _canon(o: GObj, name: str) -> str:
     view = _props_view(o)
     for k in view:
+        if k.lower() == name.lower():
+            return k
+    for k in _known(o):  # documented properties stored without behaviour (#772)
         if k.lower() == name.lower():
             return k
     raise _err(f"Unrecognized property {name} for class {CLASS_NAMES.get(o.type, o.type)}.", "MATLAB:class:InvalidProperty")
@@ -339,6 +352,8 @@ def _get_prop(m: Model, o: GObj, name: str):
     if o.type == "figure" and k == "CurrentAxes":
         a = getattr(o, "current_axes", None)
         return _h(a.id) if a is not None and a.alive else NDArrayValue(np.zeros((0, 0)))
+    if k not in o.props and k not in ("Children", "Parent"):
+        return _to_value(m, o, k, _known(o).get(k))
     return _to_value(m, o, k, o.props.get(k))
 
 
@@ -349,6 +364,10 @@ _ENUMS = {"XGrid": ("on", "off"), "YGrid": ("on", "off"), "Visible": ("on", "off
           "LineStyle": ("-", "--", ":", "-.", "none")}
 
 
+_MATRIX_PROPS = {"CData", "ZData", "Vertices", "Faces", "FaceVertexCData", "ColorOrder", "Colormap", "AlphaData"}
+_COLOR_WORDS = ("none", "auto", "flat", "interp", "texturemap")
+
+
 def _color(v, fn):
     if _is_text(v):
         s = v.text.lower()
@@ -356,8 +375,8 @@ def _color(v, fn):
         s = named.get(s, s)
         if s in SPEC_COLORS:
             return [float(x) for x in SPEC_COLORS[s]]
-        if s == "none":
-            return "none"
+        if s in _COLOR_WORDS:
+            return s
         raise _err(f"{fn}: invalid color '{v.text}'", "MATLAB:hg:ColorSpec_InvalidColor")
     c = _arr(v, fn).reshape(-1).astype(float)
     if c.size != 3 or np.any(c < 0) or np.any(c > 1):
@@ -367,14 +386,26 @@ def _color(v, fn):
 
 def _set_prop(m: Model, o: GObj, name: str, v) -> None:
     k = _canon(o, name)
+    if k == "Parent" and o.type not in ("root", "figure"):  # reparent: set(h, 'Parent', ax) (#772)
+        p = _handles(m, v, "set")[0]
+        if o.parent is not None and o in o.parent.children:
+            o.parent.children.remove(o)
+        o.parent = p
+        p.children.append(o)
+        return
     if k in _READ_ONLY:
         raise _err(f"Unable to set the '{k}' property of class '{CLASS_NAMES.get(o.type, o.type)}' because it is read-only.", "MATLAB:class:SetProhibited")
     if k in _ENUMS:
         if not _is_text(v) or v.text not in _ENUMS[k]:
             raise _err(f"Invalid value for '{k}' property.", "MATLAB:datatypes:InvalidEnumValue")
         o.props[k] = v.text
-    elif k in ("Color", "FaceColor", "CData", "EdgeColor"):
-        o.props[k] = _color(v, "set")
+    elif k in ("Color", "FaceColor", "EdgeColor", "MarkerEdgeColor", "MarkerFaceColor", "XColor", "YColor",
+               "ZColor", "BackgroundColor", "LineColor", "TextColor") or (k == "CData" and o.type in (
+                   "line", "scatter", "bar", "figure", "axes", "text", "legend")):
+        if k == "CData" and o.type == "scatter" and hasattr(v, "backend_buffer") and _arr(v, "set").size != 3:
+            o.props[k] = _arr(v, "set").astype(float).tolist()
+        else:
+            o.props[k] = _color(v, "set")
     elif k in ("Title", "XLabel", "YLabel"):
         o.props[k] = _handles(m, v, "set")[0]
     elif k in ("String", "Name", "DisplayName", "Marker", "Interpreter", "Tag"):
@@ -401,9 +432,22 @@ def _set_prop(m: Model, o: GObj, name: str, v) -> None:
             m.autoscale(o.parent)
     elif _is_text(v):
         o.props[k] = v.text
+    elif _is_cell(v):  # XTickLabel = {...} and other cellstr properties (#772)
+        o.props[k] = [x.text if _is_text(x) else "" for x in (v.get(i, j) for i in range(v.shape[0]) for j in range(v.shape[1]))]
+    elif not hasattr(v, "backend_buffer"):
+        o.props[k] = v  # e.g. UserData holding a struct or object
     else:
-        a = _arr(v, "set").astype(float)
-        o.props[k] = float(a.reshape(-1)[0]) if a.size == 1 else a.tolist()
+        a = np.asarray(v.backend_buffer())
+        if a.dtype.kind not in "biuf":
+            o.props[k] = v
+            return
+        a = a.astype(float)
+        if a.ndim == 0 or a.size == 1:
+            o.props[k] = float(a.reshape(-1)[0])
+        elif a.ndim == 2 and 1 in a.shape and k not in _MATRIX_PROPS:
+            o.props[k] = a.reshape(-1).tolist()
+        else:
+            o.props[k] = a.tolist()
 
 
 def _render(m: Model, o: GObj) -> None:
@@ -693,9 +737,26 @@ def _scatter(ev, args, nargout):
     if tail and not _is_text(tail[0]):
         s = _arr(tail.pop(0), "scatter").reshape(-1)
         size = s.tolist() if s.size > 1 else (float(s[0]) if s.size else 36.0)
+    cdata = None
+    if tail and not _is_text(tail[0]):  # scatter(x, y, s, c) (#772)
+        c = _arr(tail.pop(0), "scatter").astype(float)
+        cdata = c.reshape(-1).tolist() if c.size == 3 else c.tolist()
+    marker = "o"
+    face = None
+    while tail and _is_text(tail[0]) and (tail[0].text.lower() == "filled" or (len(tail) % 2 == 1)):
+        w = tail.pop(0).text
+        if w.lower() == "filled":
+            face = "flat"
+        else:
+            ps = parse_linespec(w)
+            if ps and ps[2]:
+                marker = ps[2]
     m.prepare_axes_for_plot(a)
     o = m.add_child(a, "scatter", {"XData": x.tolist(), "YData": y.tolist(), "SizeData": size,
-                                   "CData": m.next_color(a), "Marker": "o", "DisplayName": "", "Tag": ""})
+                                   "CData": cdata if cdata is not None else m.next_color(a), "Marker": marker,
+                                   "DisplayName": "", "Tag": ""})
+    if face:
+        o.props["MarkerFaceColor"] = face
     for k, v in _name_values(tail, "scatter"):
         _set_prop(m, o, k, v)
     m.autoscale(a)

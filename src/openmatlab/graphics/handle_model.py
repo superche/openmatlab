@@ -157,6 +157,10 @@ class Model:
             old = a.props.get(k)
             if old is not None:
                 old.alive = False
+        if keep_position:  # replace-mode plotting resets the stored axes properties (#772); keep the layout ones
+            for k in list(a.props):
+                if k in RESET_ON_REPLACE:
+                    del a.props[k]
         a.props.update({
             "Title": self._text(a), "XLabel": self._text(a), "YLabel": self._text(a),
             "XGrid": "off", "YGrid": "off", "Box": "on", "NextPlot": a.props.get("NextPlot", "replace") if keep_position else "replace",
@@ -240,6 +244,32 @@ class Model:
             elif c.type == "histogram":
                 xs.append(np.asarray(c.props["BinEdges"], float).ravel())
                 ys.append(np.concatenate([np.asarray(c.props["Values"], float).ravel(), [0.0]]))
+            elif c.type == "image":
+                xd, yd = c.props.get("XData") or [], c.props.get("YData") or []
+                if len(xd) and len(yd):
+                    xs.append(np.array([min(xd) - 0.5, max(xd) + 0.5]))
+                    ys.append(np.array([min(yd) - 0.5, max(yd) + 0.5]))
+            elif c.type == "rectangle":
+                x, y, w, h = (list(c.props.get("Position", [0, 0, 1, 1])) + [1] * 4)[:4]
+                xs.append(np.array([x, x + w], float))
+                ys.append(np.array([y, y + h], float))
+            elif c.type != "text" and "XData" in c.props and "YData" in c.props:  # Epic #772 charts
+                try:
+                    x = np.asarray(c.props["XData"], float).ravel()
+                    y = np.asarray(c.props["YData"], float).ravel()
+                except (TypeError, ValueError):
+                    continue
+                if c.type == "errorbar":
+                    lo = np.asarray(c.props.get("YNegativeDelta") or 0.0, float).ravel()
+                    hi = np.asarray(c.props.get("YPositiveDelta") or 0.0, float).ravel()
+                    y = np.concatenate([y - lo, y + hi]) if lo.size in (1, y.size) and hi.size in (1, y.size) else y
+                if c.type in ("stem", "area"):
+                    y = np.concatenate([y, [float(c.props.get("BaseValue", 0.0))]])
+                if c.type == "quiver":
+                    x = np.concatenate([x, x + np.asarray(c.props.get("UData") or [], float).ravel()[: x.size]])
+                    y = np.concatenate([y, y + np.asarray(c.props.get("VData") or [], float).ravel()[: y.size]])
+                xs.append(x)
+                ys.append(y)
         def rng(parts):
             v = np.concatenate(parts) if parts else np.array([])
             v = v[np.isfinite(v)]
@@ -267,6 +297,12 @@ class Model:
         fig.props["_rendered"] = True
 
 
+RESET_ON_REPLACE = {"XScale", "YScale", "XDir", "YDir", "CLim", "CLimMode", "XTick", "YTick", "XTickLabel",
+                    "YTickLabel", "XTickMode", "YTickMode", "ZLim", "View", "ZLabel"}
+EXTRA_DRAW = None  # chart types of Epic #772 (set by openmatlab.libs.chart_builtins)
+POST_DRAW = None
+
+
 def _style(s):
     return {"none": "None"}.get(s, s)
 
@@ -283,21 +319,29 @@ def draw_figure(model: Model, fig: GObj, mfig) -> None:
                 continue
             p = c.props
             label = p.get("DisplayName") or None
-            if c.type == "line":
-                mk = p.get("Marker", "none")
-                ax.plot(np.ravel(p["XData"]), np.ravel(p["YData"]), color=p["Color"],
-                        linestyle=_style(p["LineStyle"]), linewidth=float(p["LineWidth"]),
-                        marker=None if mk == "none" else mk, label=label)
-            elif c.type == "bar":
-                ax.bar(np.ravel(p["XData"]), np.ravel(p["YData"]), width=float(p["BarWidth"]),
-                       color=p["FaceColor"], label=label)
-            elif c.type == "scatter":
-                ax.scatter(np.ravel(p["XData"]), np.ravel(p["YData"]), s=float(np.ravel(p["SizeData"])[0]),
-                           color=p["CData"], label=label)
-            elif c.type == "histogram":
-                e = np.ravel(p["BinEdges"])
-                ax.bar(e[:-1], np.ravel(p["Values"]), width=np.diff(e), align="edge",
-                       color=p["FaceColor"], edgecolor="k", label=label)
+            try:
+                if c.type == "line":
+                    mk = p.get("Marker", "none")
+                    ax.plot(np.ravel(p["XData"]), np.ravel(p["YData"]), color=p["Color"],
+                            linestyle=_style(p["LineStyle"]), linewidth=float(p["LineWidth"]),
+                            marker=None if mk == "none" else mk, label=label)
+                elif c.type == "bar":
+                    ax.bar(np.ravel(p["XData"]), np.ravel(p["YData"]), width=float(p["BarWidth"]),
+                           color=p["FaceColor"], label=label)
+                elif c.type == "scatter":
+                    ax.scatter(np.ravel(p["XData"]), np.ravel(p["YData"]), s=float(np.ravel(p["SizeData"])[0]),
+                               color=p["CData"], label=label)
+                elif c.type == "histogram":
+                    e = np.ravel(p["BinEdges"])
+                    ax.bar(e[:-1], np.ravel(p["Values"]), width=np.diff(e), align="edge",
+                           color=p["FaceColor"], edgecolor="k", label=label)
+                elif EXTRA_DRAW is not None:
+                    try:
+                        EXTRA_DRAW(ax, c, model)
+                    except Exception:  # best-effort rendering never fails the script (#772)
+                        pass
+            except Exception:  # best-effort rendering never fails the script (#772)
+                pass
         ax.set_title(a.props["Title"].props["String"])
         ax.set_xlabel(a.props["XLabel"].props["String"])
         ax.set_ylabel(a.props["YLabel"].props["String"])
@@ -306,6 +350,11 @@ def draw_figure(model: Model, fig: GObj, mfig) -> None:
         ax.set_ylim(*a.props["YLim"])
         if a.props.get("Visible") == "off":
             ax.set_axis_off()
+        if POST_DRAW is not None:
+            try:
+                POST_DRAW(ax, a)
+            except Exception:
+                pass
         if a.legend is not None and a.legend.alive:
             names = list(a.legend.props["String"])
             if names:
