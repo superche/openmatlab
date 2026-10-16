@@ -853,6 +853,13 @@ def _axes_fn(ev, args, nargout):
     m = _m(ev)
     if len(args) == 1 and not _is_text(args[0]):
         h = _arr(args[0], "axes").reshape(-1)
+        if h.size == 1 and m.is_handle(h[0]) and m.get(h[0]).type == "figure":
+            f = m.get(h[0])
+            m.current_figure = f
+            a = m.new_axes(f)
+            a.position = None
+            m.render(f)
+            return (_h(a.id),) if nargout else ()
         if h.size == 1 and m.is_handle(h[0]) and m.get(h[0]).type == "axes":
             a = m.get(h[0])
             f = a.parent
