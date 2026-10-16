@@ -41,7 +41,7 @@ Primary gate: handle-model property assertions from MATLAB documentation. Second
 | G06 | `plot3`, `scatter3`, `surf`/`mesh`/`surfc`, `contour`/`contourf`, `bar3`, `view`, `zlabel`/`zlim`, `shading`, `light`/`lighting` (approx.) | m13_g06_3d | p1 | #771 (#593) | pending |
 | G07 | `text` (3-D position, Interpreter), `annotation` (line/arrow/textbox/rectangle), `legend` (Location/`'off'`/DisplayName) | m13_g07_annotation | p1 | #772 | pending |
 | G08 | `savefig`/`openfig` round-trip with zero property-tree diff (own `.fig` format); `exportgraphics`; `print -dpng/-dpdf -rN`; `saveas` `.fig` | m13_g08_save_export | p0 | #773 (#593) | pending |
-| G09 | Workbench: script/function `fprintf`/`disp`/warning/error output goes to the Command Window (#760); figures dock in the Figures panel; new figure takes focus | m13_g09_workbench_figures | p0 | #767, #774 (#760) | pending |
+| G09 | Workbench: script/function `fprintf`/`disp`/warning/error output goes to the Command Window (#760); figures dock in the Figures panel; new figure takes focus | m13_g09_workbench_figures | p0 | #767, #774 (#760) | pending (output routing delivered by Epic #767; docking/focus wait for #774) |
 | G10 | ≥ 40 golden snapshot scenes within tolerance; deterministic rendering | m13_g10_snapshots | p1 | #774 | pending |
 
 ## Epics
@@ -63,4 +63,4 @@ MATLAB `.fig` binary compatibility; `uifigure`/App Designer/UI controls; interac
 
 ## Progress snapshot
 
-M13 opened 2026-10-16. **0 / 10** criteria met.
+M13 opened 2026-10-16. **0 / 10** criteria met. G-E0 #767 delivered the G09 output-routing half (#760; [design](../design/EPIC-767-output-routing.md)); G09 flips when G-E7 #774 adds figure docking. Next: M12 C-E1 #761.

@@ -554,6 +554,14 @@ features:
     notes: "Variables region: numeric/char/cell/struct/table grid, cell edit writes back via MATLAB indexed assignment (Epic #702)"
     tests: [tests/unit/test_variable_editor.py, tests/bdd/test_variable_editor_bdd.py]
 
+  - id: host.workbench.output_routing
+    layer: host
+    name: Workbench output routing to the Command Window
+    status: done
+    depends_on: [host.workbench.command_window]
+    notes: "fprintf/disp/warning/stderr writes from scripts, functions and builtins land in the Command Window of the evaluating thread, not the terminal (#760, Epic #767, M13 G09 first half)"
+    tests: [tests/unit/test_workbench_output_routing.py, tests/bdd/test_workbench_output_routing_bdd.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows

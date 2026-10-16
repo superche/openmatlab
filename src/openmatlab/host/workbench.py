@@ -8,6 +8,9 @@ folder, figures). Plugins contribute additional panels via the extensions
 from __future__ import annotations
 
 import io
+import sys
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple
@@ -128,6 +131,59 @@ def _value_preview(val: Value, *, max_len: int = 48) -> str:
     return val.matlab_class()
 
 
+class _RoutedStream:
+    """``sys.stdout``/``sys.stderr`` proxy: writes go to the Command Window of the evaluating thread.
+
+    Builtins (``fprintf``, ``disp`` of tables, ``warning``, ``tic``/``toc`` ...) write to the process
+    streams; while a Command Window evaluates on a thread, those writes land in its transcript
+    instead of the launching terminal (#760). Other threads keep the original stream.
+    """
+
+    def __init__(self, orig):
+        self._orig = orig
+        self._local = threading.local()
+
+    def _target(self):
+        return getattr(self._local, "target", None) or self._orig
+
+    def write(self, text):
+        return self._target().write(text)
+
+    def flush(self):
+        t = self._target()
+        if hasattr(t, "flush"):
+            t.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._orig, name)
+
+
+_ROUTE_LOCK = threading.Lock()
+
+
+def _routed(name: str) -> _RoutedStream:
+    with _ROUTE_LOCK:
+        cur = getattr(sys, name)
+        if not isinstance(cur, _RoutedStream):
+            cur = _RoutedStream(cur)
+            setattr(sys, name, cur)
+        return cur
+
+
+@contextmanager
+def _route_output(stream):
+    """Route this thread's stdout/stderr writes into ``stream`` for the duration."""
+    proxies = [_routed("stdout"), _routed("stderr")]
+    saved = [getattr(p._local, "target", None) for p in proxies]
+    for p in proxies:
+        p._local.target = stream
+    try:
+        yield
+    finally:
+        for p, old in zip(proxies, saved):
+            p._local.target = old
+
+
 @dataclass
 class CommandWindow:
     """Headless Command Window — eval lines via ReplSession (W02/W11)."""
@@ -155,14 +211,20 @@ class CommandWindow:
         line = source.strip()
         if line and history:
             self._history.append(line)
+        self._stream.seek(0, 2)
         before = self._stream.tell()
         try:
-            self.repl.run_line(source)
+            with _route_output(self._stream):
+                self.repl.run_line(source)
         except Exception as exc:
             self.record_error(exc)
             raise
         self._stream.seek(before)
         return self._stream.read()
+
+    def text(self) -> str:
+        """Whole Command Window transcript (display, fprintf/disp, warnings, error text)."""
+        return self._stream.getvalue()
 
     def record_error(self, exc) -> None:
         frames = [f for f in (getattr(exc, "mstack", None) or ()) if f and f[0]]
@@ -609,8 +671,13 @@ class Workbench:
         if nxt:
             ed.set_cursor_line(nxt[0][0])
 
-    def run_file(self) -> None:
-        """Editor Run: save if needed and run the file so its breakpoints apply."""
+    def run_file(self, path: Optional[Path | str] = None) -> None:
+        """Editor Run: save if needed and run the file so its breakpoints apply.
+
+        ``path`` opens that file in the Editor first (same as opening it and pressing Run).
+        """
+        if path is not None:
+            self.documents.open_file(path)
         ed = self.editor
         if ed.path is None:
             self._run_code(ed.text)
