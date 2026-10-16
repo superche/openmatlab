@@ -43,7 +43,7 @@ doc = f"""# Acceptance evidence: Epic #{c['epic']} ({c['title']})
 
 ## Verdict
 
-**Ready for user acceptance.** {M['label']} criterion {c['cid']} is **met**. Epic #{c['epic']} stays **open** until the user accepts it.
+**Ready for user acceptance.** {c.get('status_line') or (M['label'] + ' criterion ' + c['cid'] + ' is **met**.')} Epic #{c['epic']} stays **open** until the user accepts it.
 
 {c['verdict']}
 
