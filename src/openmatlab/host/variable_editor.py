@@ -243,7 +243,12 @@ class VariableEditor:
 
         def do(ev):
             base = self.workspace().get(name)
-            val = self._parse_value(ev, text)
+            if kind == "char" and len(text or "") == 1:  # a typed character is the character itself
+                from openmatlab.runtime.char_value import CharValue
+
+                val = CharValue(text)
+            else:
+                val = self._parse_value(ev, text)
             if kind == "struct":
                 return base.with_field(base.fields[r - 1], val)
             from openmatlab.runtime.table_subs import ix_asgn
@@ -257,7 +262,12 @@ class VariableEditor:
         except VariableEditError:
             raise
         except EvalError as e:
-            raise VariableEditError(str(e)) from None
+            msg = str(e)
+            if msg.startswith("array assign:"):  # internal wording -> MATLAB-style
+                msg = "Conversion to the variable's type from the entered value is not possible."
+            raise VariableEditError(msg) from None
+        except Exception as e:  # never a Python traceback to the user
+            raise VariableEditError(f"Cannot apply edit: {e}") from None
         self.workspace().set(name, new)
         for cb in list(self.on_change):
             cb(name)
