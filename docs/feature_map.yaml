@@ -578,6 +578,14 @@ features:
     notes: "errorbar/area/stairs/stem/pie/barh/matrix bar/hist/patch/fill/rectangle/line/imagesc/image/pcolor/contour(f)/quiver/spy/polar/rose/compass/plotyy/log plots; text 3-D, annotation shapes, colorbar, colormap tables (parula/turbo clean-room approximations), caxis/clim; documented properties stored with defaults (Epic #772, M13 G04/G07)"
     tests: [tests/unit/test_epic772_charts2d.py, tests/bdd/test_graphics_charts2d_bdd.py]
 
+  - id: libs.graphics.object_queries
+    layer: libs
+    name: graphics object queries
+    status: done
+    depends_on: [libs.graphics.handle_arrays]
+    notes: "findobj (Name/Value, -regexp, -property, -and/-or/-xor/-not, -depth, flat), findall, allchild, ancestor, groot, gco, axes(fig) (Epic #769, M13 G02)"
+    tests: [tests/unit/test_epic769_object_queries.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows

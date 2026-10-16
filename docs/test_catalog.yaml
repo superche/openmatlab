@@ -1783,6 +1783,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_object_queries
+    kind: unit
+    title: Graphics object queries (Epic #769)
+    features: [libs.graphics.object_queries]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic769_object_queries.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
