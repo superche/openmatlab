@@ -42,7 +42,7 @@ Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-ch
 | C06 | T1 run pass rate ≥ 65 % (locked 2026-10-16 after the first full run: 26.1 %) | m12_c06_tier1 | p0 | #766 | pending |
 | C07 | T2 self-check pass rate ≥ 75 % (locked at the proposal value: no T2 oracle existed in the first full run; C-E5 #765 builds it) | m12_c07_tier2 | p1 | #765 | pending |
 | C08 | T3 golden pass rate ≥ 70 % (locked at the proposal value: no T3 oracle existed in the first full run; C-E5 #765 builds it); every Octave-sourced golden links MATLAB docs | m12_c08_tier3 | p1 | #765 | pending |
-| C09 | `internal-crash` = 0 in the full run | m12_c09_no_crash | p0 | #766 | pending |
+| C09 | `internal-crash` = 0 in the full run | m12_c09_no_crash | p0 | #766 | met (Epic #766 PR: `*` width/precision in `sprintf`/`fprintf`, `display` inside functions; residual #838) |
 | C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764; CI workflow install pending #833, residuals #832) |
 
 ## Threshold calibration
@@ -75,4 +75,4 @@ Byte-exact comparison with MATLAB output; making toolbox-dependent scripts pass 
 
 ## Progress snapshot
 
-M12 opened 2026-10-16. **5 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)), C03 and C04 (Epic #763, [design](../design/EPIC-763-preprocess-classifier.md)): residual noise 5.5 % (raw 43.8 %), classifier 92.0 % on 88 labelled failures, crash recall 100 %. C10 (Epic #764, [design](../design/EPIC-764-report-triage.md)): [REPORT](../corpus/REPORT.md) T0 87.5 %, T1 26.1 %; thresholds locked; 39 deduplicated `corpus` issues filed (#793-#831). Next: C-E6 #766 burn-down (p0: C05, C06, C09), interleaved with M13 epics ranked by corpus graphics failures.
+M12 opened 2026-10-16. **6 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)), C03 and C04 (Epic #763, [design](../design/EPIC-763-preprocess-classifier.md)): residual noise 5.5 % (raw 43.8 %), classifier 92.0 % on 88 labelled failures, crash recall 100 %. C10 (Epic #764, [design](../design/EPIC-764-report-triage.md)): [REPORT](../corpus/REPORT.md) T0 87.5 %, T1 26.1 %; thresholds locked; 39 deduplicated `corpus` issues filed (#793-#831). C09 (Epic #766, rolling): the two internal crashes are fixed and a re-run shows internal-crash = 0 (T1 26.2 %). Next: C-E6 #766 burn-down (p0: C05, C06), interleaved with M13 epics ranked by corpus graphics failures.
