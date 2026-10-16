@@ -647,7 +647,7 @@ def find_method_for_args(name: str, args: Sequence[Any]) -> Optional[MethodInfo]
             return _BuiltinObjMethod(a, name)
         if is_instance(a):
             m = a.info.find_method(name)
-            if m is not None and not m.static:
+            if m is not None and not m.static and m.name.lower() != m.owner.short.lower():  # not a constructor (#766)
                 return m
     return None
 

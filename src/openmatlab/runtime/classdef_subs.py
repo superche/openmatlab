@@ -30,7 +30,8 @@ def _cv(s):
 
 
 def _in_own_class(obj) -> bool:
-    return any(obj.info.isa(c.name) or c.isa(obj.info.name) for c in cd._CTX.get())
+    ctx = cd._CTX.get()  # only the innermost method's class bypasses overloads (MATLAB rule, #766)
+    return bool(ctx) and (obj.info.isa(ctx[-1].name) or ctx[-1].isa(obj.info.name))
 
 
 def overloaded(obj, name: str):
