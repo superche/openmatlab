@@ -55,7 +55,24 @@ Primary gate: handle-model property assertions from MATLAB documentation. Second
 7. **G-E6 #773 (p0):** `.fig` + export — G08.
 8. **G-E7 #774 (p1):** figure docking + snapshot infrastructure — G09 second half, G10.
 
-G-E1..G-E7 are ranked after M12 C-E4 using corpus `graphics` failure counts. Absorbed residuals are referenced, not moved: #593 (all), #673 (graphics part only; datetime part stays), #760.
+G-E1..G-E7 are ranked after M12 C-E4 using corpus `graphics` failure counts. **Ranked 2026-10-16** (see [Corpus ranking](#corpus-ranking)). Absorbed residuals are referenced, not moved: #593 (all), #673 (graphics part only; datetime part stays), #760.
+
+
+## Corpus ranking
+
+Source: the first full M12 corpus run ([`REPORT.md`](../corpus/REPORT.md)). There are 37 `graphics` failures. Each is mapped to the epic whose criterion covers the failing function.
+
+| Rank | Epic | Corpus `graphics` failures | Functions (count) | Criterion priority |
+|---|---|---|---|---|
+| 1 | G-E5 #772 | 18 | errorbar 3, patch 3, fill 2, stem 2, loglog, stairs, line, area, rectangle, polarplot, spy, hist | p1 (G04, G07) |
+| 2 | G-E4 #771 | 11 | sphere 3, imagesc 3, plot3, pcolor, contourf, colormap, imshow | p0 (G05), p1 (G06) |
+| 3 | G-E2 #769 | 4 | axes(...) 3, findobj | p0 (G02) |
+| 4 | G-E1 #768 | 2 | handle property access 2 | p0 (G01) |
+| 4 | G-E3 #770 | 2 | plotyy 2 (-> yyaxis) | p0 (G03) |
+| 6 | G-E6 #773 | 0 | none | p0 (G08) |
+| 6 | G-E7 #774 | 0 | none | p1 (G09 second half, G10) |
+
+**Work order** (the highest-priority unmet criterion first, then corpus count; G-E1 stays ahead of G-E2..G-E6 because they build on its handle model): G-E1 #768 -> G-E4 #771 -> G-E2 #769 -> G-E3 #770 -> G-E6 #773 -> G-E5 #772 -> G-E7 #774. The M12 p0 burn-down C-E6 #766 (C05, C06, C09) is interleaved ahead of the p1 epics.
 
 ## Non-goals
 
