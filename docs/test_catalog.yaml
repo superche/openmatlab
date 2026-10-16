@@ -1792,6 +1792,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_plot3d
+    kind: unit
+    title: 3-D plotting, imshow and axes helpers (Epic #771)
+    features: [libs.graphics.plot3d]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic771_colour_3d.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
