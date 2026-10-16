@@ -467,7 +467,7 @@ def _del2(args, *, nargout=1):
             d[0] = 2 * d[1] - d[2]
             d[-1] = 2 * d[-2] - d[-3]
         L += np.moveaxis(d, 0, ax)
-    return (NDArrayValue(L / (2 * len(axes))),)
+    return (NDArrayValue(L / 4.0),)  # MATLAB: L = (u_xx + u_yy) / 4, also for vectors
 
 
 def _conv2_full(a, b):
