@@ -251,6 +251,8 @@ def format_struct(v) -> str:
 
 
 def _format_value(value: object) -> str:
+    if getattr(value, "is_graphics_handle", False) and hasattr(value, "display_text"):  # (#768)
+        return value.display_text()
     if getattr(value, "is_object", False):  # containers.Map / datetime / duration (Epic #539)
         return value.display_text()
     if getattr(value, "is_struct", False):  # (Epic #506)

@@ -208,7 +208,7 @@ class Evaluator:
         if isinstance(stmt, ast.CellAssign):
             return self._eval_cell_assign(stmt)
         if isinstance(stmt, ast.ArrayAssign):
-            return self._eval_array_assign(stmt)
+            return self._graphics_array_assign(stmt)
         if isinstance(stmt, ast.MultiAssign):
             return self._eval_multi_assign(stmt)
         if isinstance(stmt, ast.IfStmt):
@@ -436,10 +436,11 @@ class Evaluator:
                 if operand.nd:
                     raise EvalError("Transpose on ND array is not defined. Use PERMUTE instead.", "MATLAB:transpose:NDArray")
                 return CellValue(rows=tuple(zip(*operand.rows)))
-            return self.numerics.transpose(
+            out = self.numerics.transpose(
                 self._require_array(operand, "transpose"),
                 conjugate=expr.conjugate,
             )
+            return operand.rewrap(out) if getattr(operand, "is_graphics_handle", False) else out  # (#768)
         if isinstance(expr, (ast.FieldExpr, ast.SuperRef, ast.MetaClassExpr)):  # classdef objects (M8)
             from openmatlab.runtime import classdef_eval as _cde
 
@@ -525,6 +526,28 @@ class Evaluator:
         )
         return CellValue(rows=grid)
 
+
+    def _graphics_array_assign(self, stmt: "ast.ArrayAssign") -> Value:
+        """h(k) = g / h(k) = [] keep a graphics handle array a handle array (#768)."""
+        t = stmt.target.target
+        old = None
+        if isinstance(t, ast.Name):
+            try:
+                old = self.workspace.get(t.id)
+            except KeyError:
+                old = None
+        out = self._eval_array_assign(stmt)
+        if not getattr(old, "is_graphics_handle", False):
+            return out
+        new = self.workspace.get(t.id)
+        if getattr(new, "is_graphics_handle", False):
+            return out
+        new2 = old.rewrap(new)
+        if getattr(new2, "is_graphics_handle", False) and not all(i in old._model.objs or i != i for i in new2.ids):
+            return out  # numbers that are not handles stay numbers
+        if new2 is not new:
+            self.workspace.set(t.id, new2)
+        return new2 if out is new else out
 
     def _eval_array_assign(self, stmt: "ast.ArrayAssign") -> Value:
         from openmatlab.runtime.cell_value import CellValue
@@ -1245,6 +1268,8 @@ class Evaluator:
                 if getattr(out, "issparse", False):  # S(:) stays sparse (#517)
                     return type(out)(out.store.reshape(out.numel(), 1))
                 out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
+            if getattr(target_a, "is_graphics_handle", False):  # h(k) stays a handle array (#768)
+                out = target_a.rewrap(out)
             return out
         if not results:
             self._no_output = self.numerics.from_nested([])
@@ -1846,7 +1871,11 @@ class Evaluator:
             return self._concat_strings(rows)
         if any(isinstance(v, CharValue) for v in flat):
             return self._concat_chars(rows)
-        return self._concat_arrays(rows)
+        out = self._concat_arrays(rows)
+        nonempty = [v for v in flat if getattr(v, "numel", lambda: 1)() != 0]
+        if nonempty and all(getattr(v, "is_graphics_handle", False) for v in nonempty):  # [h1 h2] (#768)
+            out = nonempty[0].rewrap(out)
+        return out
 
     def _concat_objects(self, rows):
         def cat(name, parts):
@@ -2293,6 +2322,8 @@ class Evaluator:
                 )
             else:
                 items = (NDArrayValue(np.array(cols[:, [k]], dtype=raw.dtype)) for k in range(cols.shape[1]))
+        if getattr(value, "is_graphics_handle", False):  # loop variable stays a handle (#768)
+            items = [value.rewrap(it) for it in items]
         last: Value = self.numerics.from_scalar(0.0)
         self._loop_depth += 1
         try:

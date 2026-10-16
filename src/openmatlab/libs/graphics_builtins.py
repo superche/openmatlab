@@ -63,24 +63,52 @@ def _arr(v, fn="graphics"):
     return b.reshape(1, 1) if b.ndim == 0 else (b.reshape(1, -1) if b.ndim == 1 else b)
 
 
-class GraphicsHandle(NDArrayValue):
-    """A scalar graphics handle (M8 O-E6).
+FULL_CLASS = {
+    "root": "matlab.ui.Root", "figure": "matlab.ui.Figure", "axes": "matlab.graphics.axis.Axes",
+    "line": "matlab.graphics.chart.primitive.Line", "bar": "matlab.graphics.chart.primitive.Bar",
+    "scatter": "matlab.graphics.chart.primitive.Scatter", "histogram": "matlab.graphics.chart.primitive.Histogram",
+    "text": "matlab.graphics.primitive.Text", "legend": "matlab.graphics.illustration.Legend",
+}
+_SHOWN = {  # properties listed by "<Class> with properties:" (MATLAB's short display)
+    "figure": ("Number", "Name", "Color", "Position", "Units"),
+    "axes": ("XLim", "YLim", "XScale", "YScale", "GridLineStyle", "Position", "Units"),
+    "line": ("Color", "LineStyle", "LineWidth", "Marker", "MarkerSize", "MarkerFaceColor", "XData", "YData", "ZData"),
+    "bar": ("BarLayout", "BarWidth", "FaceColor", "EdgeColor", "BaseValue", "XData", "YData"),
+    "scatter": ("Marker", "MarkerEdgeColor", "MarkerFaceColor", "SizeData", "LineWidth", "XData", "YData", "ZData", "CData"),
+    "histogram": ("Data", "Values", "NumBins", "BinEdges", "BinWidth", "BinLimits", "Normalization", "FaceColor", "EdgeColor"),
+    "text": ("String", "FontSize", "FontWeight", "FontName", "Color", "HorizontalAlignment", "Position", "Units"),
+    "legend": ("String", "Location", "Orientation", "FontSize", "Position", "Units"),
+}
 
-    It is still the numeric handle id for ``get``/``set``/arithmetic and ``==``,
-    and also supports dot notation on the class model: ``h.Prop`` reads and
-    ``h.Prop = v`` writes through the shared handle model, and ``isvalid`` /
-    ``isobject`` report it as an object.
+
+class GraphicsHandle(NDArrayValue):
+    """An array of graphics handles (M8 O-E6, M13 G-E1 #768).
+
+    The buffer holds the numeric handle ids, so ``get``/``set``, ``==`` and
+    ``double(h)`` keep working on the numbers. On top of that the value knows its
+    model: ``class(h)`` is the full ``matlab.graphics.*`` name, ``h(k)`` and
+    ``[h1 h2]`` stay handles, ``h.Prop`` reads (a cs-list for arrays, so
+    ``[h.Prop]`` works), ``h.Prop = v`` / ``h(k).Prop = v`` write through the
+    shared model, and ``isvalid``/``isgraphics`` are element-wise.
     """
 
     __slots__ = ("_model",)
     is_graphics_handle = True
 
-    def __init__(self, hid: float, m: "Model") -> None:
-        super().__init__(np.array([[float(hid)]]))
+    def __init__(self, hid, m: "Model") -> None:
+        a = np.asarray(hid, dtype=float)
+        super().__init__(a.reshape(1, 1) if a.ndim == 0 else (a.reshape(1, -1) if a.ndim == 1 else a))
         self._model = m
 
     @property
+    def ids(self) -> List[float]:
+        return [float(x) for x in self._data.reshape(-1, order="F")]
+
+    @property
     def hid(self) -> float:
+        if self._data.size != 1:
+            raise _err("Expected one output from a curly brace or dot indexing expression, but there were "
+                       f"{self._data.size} results.", "MATLAB:index:expected_one_output_from_expression")
         return float(self._data.reshape(-1)[0])
 
     def _obj(self) -> GObj:
@@ -90,19 +118,70 @@ class GraphicsHandle(NDArrayValue):
 
     @property
     def alive(self) -> bool:
-        return self._model.is_handle(self.hid)
+        return bool(self._data.size) and all(self._model.is_handle(i) for i in self.ids)
+
+    def valid_mask(self) -> NDArrayValue:
+        m = np.array([self._model.is_handle(i) for i in self.ids], dtype=bool)
+        return NDArrayValue(m.reshape(self._data.shape, order="F"))
+
+    def rewrap(self, out):
+        """Numeric result of indexing / concatenation -> handle array again."""
+        if isinstance(out, GraphicsHandle) or not hasattr(out, "backend_buffer"):
+            return out
+        b = np.asarray(out.backend_buffer())
+        if b.dtype == bool or not np.issubdtype(b.dtype, np.number):
+            return out
+        return GraphicsHandle(b.astype(float), self._model)
+
+    def _types(self) -> List[str]:
+        objs = getattr(self._model, "objs", {})
+        return [objs[i].type if i in objs else "" for i in self.ids]
 
     def graphics_class(self) -> str:
-        o = self._model.objs.get(self.hid) if hasattr(self._model, "objs") else None
-        return CLASS_NAMES.get(o.type, o.type) if o is not None else "matlab.graphics.GraphicsPlaceholder"
+        t = set(self._types())
+        if len(t) == 1 and "" not in t:
+            return CLASS_NAMES.get(next(iter(t)), next(iter(t)))
+        return "GraphicsPlaceholder" if t == {""} else "Graphics"
+
+    def matlab_class(self) -> str:
+        t = set(self._types())
+        if not t:
+            return "matlab.graphics.Graphics"
+        if len(t) == 1:
+            k = next(iter(t))
+            return FULL_CLASS.get(k, "matlab.graphics.GraphicsPlaceholder" if not k else f"matlab.graphics.primitive.{k.title()}")
+        return "matlab.graphics.Graphics"
 
     def get_prop(self, name: str):
+        prev = _CUR["model"]
+        _CUR["model"] = self._model  # handles read through h.Prop stay handles (#768)
         try:
-            return _get_prop(self._model, self._obj(), name)
-        except GraphicsError as e:
-            raise _err(str(e), e.identifier) from None
+            return self._get_prop(name)
+        finally:
+            _CUR["model"] = prev
+
+    def _get_prop(self, name: str):
+        if self._data.size == 1:
+            try:
+                return _get_prop(self._model, self._obj(), name)
+            except GraphicsError as e:
+                raise _err(str(e), e.identifier) from None
+        from openmatlab.runtime.struct_value import CsList
+
+        out = []
+        for i in self.ids:
+            if not self._model.is_handle(i):
+                raise _err("Invalid or deleted object.", "MATLAB:class:InvalidHandle")
+            try:
+                out.append(_get_prop(self._model, self._model.get(i), name))
+            except GraphicsError as e:
+                raise _err(str(e), e.identifier) from None
+        return CsList(out)
 
     def set_prop(self, name: str, value):
+        if self._data.size != 1:
+            raise _err("Scalar object required for this assignment. Use set(h, ...) or h(k).Prop = v for arrays.",
+                       "MATLAB:class:ScalarObjectRequired")
         o = self._obj()
         try:
             _set_prop(self._model, o, name, value)
@@ -114,6 +193,56 @@ class GraphicsHandle(NDArrayValue):
         except GraphicsError as e:
             raise _err(str(e), e.identifier) from None
         return self  # handle semantics: the variable keeps the same handle
+
+    def display_text(self) -> str:
+        n = self._data.size
+        if n != 1:
+            dims = "×".join(str(d) for d in self._data.shape)
+            if not n:
+                return f"  {dims} empty GraphicsPlaceholder array."
+            lines = [f"  {dims} {self.graphics_class()} array:", ""]
+            for i in self.ids:
+                o = self._model.objs.get(i)
+                if o is None:
+                    lines.append("    GraphicsPlaceholder")
+                    continue
+                if not o.alive:
+                    lines.append("    handle to deleted object")
+                    continue
+                name = o.props.get("DisplayName") or o.props.get("Name") or o.props.get("String") or ""
+                name = name if isinstance(name, str) else ""
+                lines.append(f"    {CLASS_NAMES.get(o.type, o.type)}" + (f"    ({name})" if name else ""))
+            return "\n".join(lines)
+        if self.hid != self.hid:
+            return "  GraphicsPlaceholder with no properties."
+        if not self._model.is_handle(self.hid):
+            return f"  handle to deleted {self.graphics_class()}"
+        o = self._obj()
+        names = [k for k in _SHOWN.get(o.type, ()) if k in o.props]
+        names = names or sorted(k for k in o.props if not k.startswith("_") and k != "Type")
+        lines = [f"  {CLASS_NAMES.get(o.type, o.type)} with properties:", ""]
+        w = max((len(k) for k in names), default=0)
+        for k in names:
+            lines.append(f"    {k.rjust(w)}: {_summary(o.props[k])}")
+        lines += ["", "  Show all properties"]
+        return "\n".join(lines)
+
+
+def _summary(v) -> str:
+    if isinstance(v, GObj):
+        return f"[1×1 {CLASS_NAMES.get(v.type, v.type)}]"
+    if isinstance(v, str):
+        return f"'{v}'"
+    if isinstance(v, list) and v and all(isinstance(x, str) for x in v):
+        return "{" + " ".join(f"'{x}'" for x in v) + "}"
+    if v is None:
+        return "[]"
+    a = np.asarray(v, dtype=float).reshape(-1)
+    if a.size == 1:
+        return f"{a[0]:g}"
+    if a.size <= 4:
+        return "[" + " ".join(f"{x:g}" for x in a) + "]"
+    return f"[1×{a.size} double]"
 
 
 _CUR = {"model": None}
@@ -129,9 +258,9 @@ def _h(x) -> NDArrayValue:
 def _hcol(ids) -> NDArrayValue:
     if not ids:
         return NDArrayValue(np.zeros((0, 1)))
-    if len(ids) == 1:
-        return _h(ids[0])  # scalar handle supports h.Prop (O-E6)
-    return NDArrayValue(np.array(ids, dtype=float).reshape(-1, 1))
+    m = _CUR["model"]
+    a = np.array(ids, dtype=float).reshape(-1, 1)
+    return GraphicsHandle(a, m) if m is not None else NDArrayValue(a)
 
 
 def _cells(items):
@@ -860,8 +989,14 @@ def _delete(ev, args, nargout):
         out = tuple(fn(list(args), nargout=nargout))
         return out if nargout else ()
     m = model(ev)
-    for o in _handles(m, args[0], "delete"):
-        m.delete(o)
+    for i in _arr(args[0], "delete").reshape(-1, order="F"):
+        if i != i:  # GraphicsPlaceholder (gobjects)
+            continue
+        o = m.objs.get(float(i))
+        if o is None:
+            raise _err("Invalid or deleted object.", "MATLAB:class:InvalidHandle")
+        if o.alive:  # deleting an already deleted handle is a no-op (MATLAB)
+            m.delete(o)
     return ()
 
 
@@ -874,6 +1009,20 @@ def _ishandle(ev, args, nargout):
     a = _arr(args[0])
     out = np.vectorize(lambda x: m.is_handle(x), otypes=[bool])(a) if a.size else np.zeros(a.shape, bool)
     return (NDArrayValue(out),)
+
+
+def _gobjects(ev, args, nargout):
+    """gobjects(n) / gobjects(m,n,...): an array of GraphicsPlaceholder elements (NaN ids) (#768)."""
+    dims = [int(_arr(a, "gobjects").reshape(-1)[0]) if _arr(a, "gobjects").size == 1 else None for a in args]
+    if len(args) == 1 and _arr(args[0], "gobjects").size > 1:
+        dims = [int(x) for x in _arr(args[0], "gobjects").reshape(-1)]
+    if not dims:
+        dims = [1, 1]
+    elif len(dims) == 1:
+        dims = [dims[0], dims[0]]
+    if any(d is None for d in dims):
+        raise _err("gobjects: size arguments must be scalars.", "MATLAB:gobjects:InvalidSize")
+    return (GraphicsHandle(np.full([max(d, 0) for d in dims], np.nan), model(ev)),)
 
 
 def _wrap(fn):
@@ -898,8 +1047,8 @@ INTRINSICS = {k: _wrap(v) for k, v in {
     "scatter": _scatter, "histogram": _histogram, "title": _label("Title"), "xlabel": _label("XLabel"),
     "ylabel": _label("YLabel"), "legend": _legend, "grid": _grid, "xlim": _lim("XLim"), "ylim": _lim("YLim"),
     "axis": _axis, "text": _text_fn, "get": _get, "set": _set, "saveas": _saveas, "delete": _delete,
-    "ishandle": _ishandle, "isgraphics": _ishandle,
+    "ishandle": _ishandle, "isgraphics": _ishandle, "gobjects": _gobjects,
 }.items()}
 
 # called as statements these print nothing and do not set ans
-STATEMENT_ZERO = set(INTRINSICS) - {"gcf", "gca", "ishold", "get", "ishandle", "isgraphics"}
+STATEMENT_ZERO = set(INTRINSICS) - {"gcf", "gca", "ishold", "get", "ishandle", "isgraphics", "gobjects"}
