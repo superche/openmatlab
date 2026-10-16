@@ -37,7 +37,7 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | T06 | `join`, `innerjoin`, `outerjoin` (`'Type'`, `'MergeKeys'`, `'Keys'`), key-mismatch errors | m10_t06_joins | p1 | #696 | pending |
 | T07 | `findgroups`, `splitapply`, `groupsummary` (mean/sum/min/max, multiple groups), `groupcounts` | m10_t07_grouping | p1 | #696 | pending |
 | T08 | `readtable`/`writetable` CSV/delimited round-trip (header, `'VariableNames'`, mixed columns, `'Delimiter'`, missing → NaN, datetime columns), `readcell`/`writecell` | m10_t08_readtable_writetable | p0 | #694 (#577) | met (Epic #694; residual #721) |
-| T09 | datetime arrays: column vectors, concatenation, NaT/`isnat`, `InputFormat`/`Format`, `dateshift`, `between`, `caldays`/`calmonths`, component assignment with rollover | m10_t09_datetime_arrays | p1 | #695 (#602, #673) | pending |
+| T09 | datetime arrays: column vectors, concatenation, NaT/`isnat`, `InputFormat`/`Format`, `dateshift`, `between`, `caldays`/`calmonths`, component assignment with rollover | m10_t09_datetime_arrays | p1 | #695 (#602, #673) | met (Epic #695; residual #733) |
 | T10 | `timetable`, `table2timetable`, `timerange`/`withtol`, `retime`, `synchronize`, `lag` | m10_t10_timetable | p2 (cuttable) | #697 | pending |
 
 ## Epics (approved order, interleaved with M11)
@@ -64,4 +64,4 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **4 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)). Next: T-E3 (#693) / T-E5 (#695), interleaved with D-E5 (#702).
+M10 opened 2026-10-16. **5 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)). Next: T-E3 (#693) table utilities, sorting and sets, interleaved with D-E5 (#702).

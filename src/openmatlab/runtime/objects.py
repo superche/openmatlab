@@ -343,14 +343,37 @@ class _TimeBase:
             return type(self)._like(self, flat[idx[0]].reshape(1, -1) if self.v.shape[0] == 1 else flat[idx[0]].reshape(-1, 1))
         return type(self)._like(self, self.v[np.ix_(*[np.atleast_1d(np.arange(self.v.shape[k])[i]) for k, i in enumerate(idx)])])
 
+    def transpose_value(self):
+        return type(self)._like(self, self.v.T.copy())
+
     def assign(self, args, value):
         other = self._coerce(value)
+        src = other.v.reshape(-1, order="F")
+
+        def lin(a, n):
+            if _is_text(a) and _text(a) == ":":
+                return np.arange(n)
+            b = np.asarray(a.backend_buffer())
+            return np.flatnonzero(b.reshape(-1, order="F")) if b.dtype == bool else b.reshape(-1, order="F").astype(int) - 1
+        if len(args) >= 2:  # t(r, c) = v (M10 T-E5)
+            r, c = lin(args[0], self.v.shape[0]), lin(args[1], self.v.shape[1])
+            R = max(self.v.shape[0], r.max(initial=-1) + 1)
+            C = max(self.v.shape[1], c.max(initial=-1) + 1)
+            out = np.full((R, C), np.nan)
+            out[:self.v.shape[0], :self.v.shape[1]] = self.v
+            blk = src.reshape(len(r), len(c), order="F") if src.size == len(r) * len(c) else np.full((len(r), len(c)), src[0])
+            out[np.ix_(r, c)] = blk
+            return type(self)._like(self, out)
         flat = self.v.reshape(-1, order="F").copy()
-        b = np.asarray(args[0].backend_buffer()).reshape(-1).astype(int) - 1
-        if b.max(initial=-1) >= flat.size:
+        b = lin(args[0], flat.size)
+        grow = b.max(initial=-1) >= flat.size
+        if grow:
             flat = np.concatenate([flat, np.full(b.max() + 1 - flat.size, np.nan)])
-        flat[b] = other.v.reshape(-1)
-        return type(self)._like(self, flat.reshape(1, -1))
+        flat[b] = src if src.size == b.size else src[0]
+        if not grow:
+            return type(self)._like(self, flat.reshape(self.v.shape, order="F"))
+        col = self.v.ndim == 2 and self.v.shape[1] == 1 and self.v.shape[0] > 1
+        return type(self)._like(self, flat.reshape(-1, 1) if col else flat.reshape(1, -1))
 
 
 class DatetimeValue(_TimeBase):
@@ -374,16 +397,51 @@ class DatetimeValue(_TimeBase):
 
     def get_prop(self, name):
         n = name.lower()
-        parts = [parts_from_datenum(x) for x in self.v.reshape(-1)]
         idx = {"year": 0, "month": 1, "day": 2, "hour": 3, "minute": 4, "second": 5}
         if n in idx:
-            return _num(np.array([p[idx[n]] for p in parts], float).reshape(self.v.shape))
+            vals = [np.nan if np.isnan(x) else parts_from_datenum(x)[idx[n]] for x in self.v.reshape(-1)]
+            return _num(np.array(vals, float).reshape(self.v.shape))
         if n == "format":
-            return _cv(self.fmt or "dd-MMM-yyyy")
+            return _cv(self.fmt or default_datetime_format(self.v))
         raise _err(f"Unrecognized property '{name}' for class 'datetime'.", "MATLAB:noSuchMethodOrField")
+
+    def set_prop(self, name, value):
+        """t.Format = f; t.Year/Month/Day/Hour/Minute/Second = v with MATLAB rollover (M10 T-E5)."""
+        n = name.lower()
+        if n == "format":
+            if not _is_text(value):
+                raise _err("Format must be a character vector or string scalar.", "MATLAB:datetime:InvalidFormat")
+            f = _text(value)
+            return DatetimeValue(self.v.copy(), f or None)
+        idx = {"year": 0, "month": 1, "day": 2, "hour": 3, "minute": 4, "second": 5}
+        if n not in idx:
+            raise _err(f"Unrecognized property '{name}' for class 'datetime'.", "MATLAB:noSuchMethodOrField")
+        if _is_text(value) or not hasattr(value, "backend_buffer"):
+            raise _err(f"The {name} property must be numeric.", "MATLAB:datetime:InvalidComponent")
+        nv = np.asarray(value.backend_buffer(), float)
+        flat = self.v.reshape(-1, order="F")
+        if nv.size == 1:
+            nv = np.full(flat.shape, float(nv.reshape(-1)[0]))
+        elif nv.size == flat.size:
+            nv = nv.reshape(-1, order="F")
+        else:
+            raise _err("The new value must be a scalar or the same size as the datetime array.", "MATLAB:datetime:InvalidComponent")
+        out = np.empty_like(flat)
+        for k, (x, c) in enumerate(zip(flat, nv)):
+            if np.isnan(x) or np.isnan(c):
+                out[k] = np.nan
+                continue
+            p = list(parts_from_datenum(x))
+            p[idx[n]] = c
+            out[k] = datenum_from_parts(*p)
+        return DatetimeValue(out.reshape(self.v.shape, order="F"), self.fmt)
 
     def binop(self, op, other, reflected):
         o = other
+        if getattr(o, "is_calendar_duration", False):
+            from openmatlab.runtime import calendar_duration as _cd
+
+            return _cd.datetime_binop(self, op, o, reflected)
         if op in ("+", "-"):
             if isinstance(o, DurationValue) or (not isinstance(o, _TimeBase) and hasattr(o, "backend_buffer") and not _is_text(o)):
                 dv = o.v if isinstance(o, DurationValue) else np.asarray(o.backend_buffer(), float)
@@ -400,19 +458,60 @@ class DatetimeValue(_TimeBase):
             return NDArrayValue(_cmp(op, a, b))
         return NotImplemented
 
+    def text_grid(self):
+        """Element texts (2-D list of str) in the display format."""
+        f = self.fmt or default_datetime_format(self.v)
+        return [["NaT" if np.isnan(x) else java_format(x, f) for x in row] for row in self.v]
+
     def display_text(self):
-        f = self.fmt
-        def one(x):
-            if np.isnan(x):
-                return "NaT"
-            if f:
-                return datestr_format(x, _java_to_datestr(f))
-            y, mo, d, h, mi, s = parts_from_datenum(x)
-            return datestr_format(x, "dd-mmm-yyyy HH:MM:SS" if (h or mi or s) else "dd-mmm-yyyy")
-        vals = [one(x) for x in self.v.reshape(-1)]
-        if len(vals) == 1:
-            return f"   {vals[0]}"
-        return "   " + "   ".join(vals)
+        return _grid_text(self.text_grid())
+
+
+def default_datetime_format(v):
+    """MATLAB's default display: date only unless some element has a time of day."""
+    for x in np.asarray(v, float).reshape(-1):
+        if not np.isnan(x) and parts_from_datenum(x)[3:] != (0, 0, 0):
+            return "dd-MMM-yyyy HH:mm:ss"
+    return "dd-MMM-yyyy"
+
+
+def java_format(dn, f):
+    """Format a datenum with a datetime Format string (Unicode/CLDR-style tokens, 'quoted' literals)."""
+    y, mo, d, h, mi, s = parts_from_datenum(dn)
+    wd = int((math.floor(dn) - 2) % 7)
+    h12 = h % 12 or 12
+    toks = [("yyyy", f"{y:04d}"), ("uuuu", f"{y:04d}"), ("yy", f"{y % 100:02d}"), ("y", str(y)),
+            ("MMMM", _dt.date(2000, mo, 1).strftime("%B")), ("MMM", _MONTHS[mo - 1]), ("MM", f"{mo:02d}"),
+            ("M", str(mo)), ("dd", f"{d:02d}"), ("d", str(d)), ("HH", f"{h:02d}"), ("H", str(h)),
+            ("hh", f"{h12:02d}"), ("h", str(h12)), ("mm", f"{mi:02d}"), ("m", str(mi)), ("ss", f"{int(s):02d}"),
+            ("s", str(int(s))), ("SSS", f"{min(int(round((s - int(s)) * 1000)), 999):03d}"),
+            ("SS", f"{min(int(round((s - int(s)) * 100)), 99):02d}"), ("S", str(min(int(round((s - int(s)) * 10)), 9))),
+            ("a", "AM" if h < 12 else "PM"), ("EEEE", _dt.date(2000, 1, 2 + wd).strftime("%A")),
+            ("eeee", _dt.date(2000, 1, 2 + wd).strftime("%A")), ("EEE", _DAYS[wd]), ("eee", _DAYS[wd])]
+    out, i = "", 0
+    while i < len(f):
+        if f[i] == "'":
+            j = f.find("'", i + 1)
+            j = len(f) if j < 0 else j
+            out += f[i + 1:j]
+            i = j + 1
+            continue
+        for t, rep in toks:
+            if f.startswith(t, i):
+                out += rep
+                i += len(t)
+                break
+        else:
+            out += f[i]
+            i += 1
+    return out
+
+
+def _grid_text(grid):
+    if not grid or not grid[0]:
+        return ""
+    w = max(len(t) for r in grid for t in r)
+    return "\n".join("   " + "   ".join(t.rjust(w) for t in r) for r in grid)
 
 
 def _java_to_datestr(f):
@@ -503,5 +602,9 @@ class DurationValue(_TimeBase):
             m = int((secs % 3600) // 60)
             s = secs % 60
             return f"{sign}{h:02d}:{m:02d}:{int(s):02d}"
-        vals = [one(x) for x in self.v.reshape(-1)]
-        return "   " + "   ".join(vals)
+        return _grid_text(self.text_grid(one))
+
+    def text_grid(self, one=None):
+        if one is None:
+            return [[t.strip() for t in r.split("   ") if t.strip()] for r in self.display_text().split("\n")] if self.v.size else []
+        return [[one(x) for x in row] for row in self.v]

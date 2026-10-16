@@ -1706,6 +1706,10 @@ class Evaluator:
             from openmatlab.runtime import categorical_value as _cat
 
             return _cat.concat(rows)
+        from openmatlab.libs import datetime_arrays as _dta
+
+        if any(_dta.is_time(v) for v in flat):  # datetime/duration/calendarDuration arrays (M10 T-E5)
+            return _dta.concat(rows)
         if any(getattr(v, "is_missing_value", False) for v in flat):  # [1 missing], ["a" missing] (#504)
             from openmatlab.runtime import missing_value as _mv
 

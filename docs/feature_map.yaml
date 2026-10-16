@@ -522,6 +522,14 @@ features:
     notes: "keyboard + input via the K>> input source; on_error/on_warning/on_value hooks behind debugger.ON; TRY_DEPTH ContextVar for caught errors; D06/D07 (Epic #700). Residual #729: naninf granularity, base-workspace stops"
     tests: [tests/unit/test_condition_stops.py, tests/bdd/test_condition_stops_bdd.py]
 
+  - id: libs.datetime_arrays
+    layer: libs
+    name: datetime/duration arrays, NaT, InputFormat, calendarDuration, between, dateshift
+    status: done
+    depends_on: [runtime.table_core]
+    notes: "column vectors, concat, NaT, InputFormat/Format, component rollover, calendarDuration (clamped month arithmetic), between/split, dateshift; T09 (Epic #695). Residual #733: dateshift end for time units, ConvertFrom, time zones"
+    tests: [tests/unit/test_datetime_arrays.py, tests/bdd/test_datetime_arrays_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
