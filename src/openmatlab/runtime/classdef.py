@@ -253,6 +253,15 @@ class ClassInfo:
 
     # -- hierarchy -----------------------------------------------------------
     def mro(self) -> List["ClassInfo"]:
+        key = tuple(map(id, self.supers))
+        hit = self.__dict__.get("_om_mro")
+        if hit is not None and hit[0] == key:  # memoised (#797); a fresh list so callers may mutate it
+            return list(hit[1])
+        out = self._mro_walk()
+        self.__dict__["_om_mro"] = (key, tuple(out))
+        return out
+
+    def _mro_walk(self) -> List["ClassInfo"]:
         out: List[ClassInfo] = []
         stack = [self]
         while stack:
@@ -288,12 +297,19 @@ class ClassInfo:
             m = c.own_methods.get(name)
             if m is not None:
                 return m
-        low = name.lower()
-        for c in self.mro():  # MATLAB method names are case-sensitive; tolerate case only as fallback
-            for k, m in c.own_methods.items():
-                if k.lower() == low and k != c.short:
-                    return m
-        return None
+        # MATLAB method names are case-sensitive; tolerate case only as fallback (map cached, #797)
+        mro = self.mro()
+        key = tuple((id(c.own_methods), len(c.own_methods)) for c in mro)
+        cached = self.__dict__.get("_om_lowmap")
+        if cached is None or cached[0] != key:
+            low_map: Dict[str, MethodInfo] = {}
+            for c in mro:
+                for k, m in c.own_methods.items():
+                    if k != c.short:
+                        low_map.setdefault(k.lower(), m)
+            cached = (key, low_map)
+            self.__dict__["_om_lowmap"] = cached
+        return cached[1].get(name.lower())
 
     def find_accessor(self, table: str, prop: str) -> Optional[MethodInfo]:
         for c in self.mro():

@@ -24,3 +24,27 @@ def test_find_mfile_sees_new_files_immediately(tmp_path):
     (tmp_path / "@k").mkdir()
     (tmp_path / "@k" / "k.m").write_text("classdef k\nend\n", encoding="utf-8")
     assert tp.find_mfile("k") == (tmp_path / "@k" / "k.m").resolve()
+
+
+def test_array_protocol_cache_matches_structural_check():
+    import numpy as np
+
+    from openmatlab.numerics.ndarray_value import NDArrayValue
+    from openmatlab.runtime.value import Array, Value
+
+    x = NDArrayValue(np.zeros((1, 1)))
+    assert isinstance(x, Array) and isinstance(x, Array) and isinstance(x, Value)
+    assert not isinstance(3, Array) and not isinstance("s", Array)
+
+    class Fwd:  # forwards attributes dynamically: never cached
+        def __init__(self, inner):
+            self._inner = inner
+
+        def __getattr__(self, a):
+            return getattr(self._inner, a)
+
+    import typing
+
+    for obj in (Fwd(x), Fwd(3), x, 3):  # same answer as the uncached structural check, twice
+        want = typing._ProtocolMeta.__instancecheck__(Array, obj)
+        assert isinstance(obj, Array) is want and isinstance(obj, Array) is want
