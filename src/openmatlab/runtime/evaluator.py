@@ -1245,6 +1245,8 @@ class Evaluator:
                 if getattr(out, "issparse", False):  # S(:) stays sparse (#517)
                     return type(out)(out.store.reshape(out.numel(), 1))
                 out = NDArrayValue(np.asarray(out.backend_buffer()).reshape(-1, 1))
+            if getattr(target_a, "is_graphics_handle", False):  # h(k) stays a handle array (#768)
+                out = target_a.rewrap(out)
             return out
         if not results:
             self._no_output = self.numerics.from_nested([])
@@ -1846,7 +1848,11 @@ class Evaluator:
             return self._concat_strings(rows)
         if any(isinstance(v, CharValue) for v in flat):
             return self._concat_chars(rows)
-        return self._concat_arrays(rows)
+        out = self._concat_arrays(rows)
+        nonempty = [v for v in flat if getattr(v, "numel", lambda: 1)() != 0]
+        if nonempty and all(getattr(v, "is_graphics_handle", False) for v in nonempty):  # [h1 h2] (#768)
+            out = nonempty[0].rewrap(out)
+        return out
 
     def _concat_objects(self, rows):
         def cat(name, parts):

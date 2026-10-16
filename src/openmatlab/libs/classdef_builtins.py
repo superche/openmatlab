@@ -71,6 +71,8 @@ def _wrap_isvalid(orig):
                 raise _err(f"Undefined function 'isvalid' for input arguments of type '{args[0].info.name}'.",
                            "MATLAB:UndefinedFunction")
             return (_b(args[0].alive),)
+        if len(args) == 1 and hasattr(args[0], "valid_mask"):  # graphics handle arrays (#768)
+            return (args[0].valid_mask(),)
         if len(args) == 1 and (getattr(args[0], "is_graphics_handle", False) or getattr(args[0], "is_listener", False)):
             # graphics handle (O-E6), event.listener (O-E7)
             return (_b(args[0].alive),)

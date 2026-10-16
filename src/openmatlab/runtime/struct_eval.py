@@ -274,6 +274,17 @@ def _assign(ev, cur, steps, rhs, depth):
         if elem.numel() != 1:
             raise _err("Scalar object required for this assignment.")
         return cur.assign(args, _assign(ev, elem, rest, rhs, depth + 1))
+    if kind == "paren" and getattr(cur, "is_graphics_handle", False):  # h(k).Prop = v, h(k) = g (#768)
+        if not rest:
+            out = _temp_assign(ev, cur, "paren", arg, rhs, depth)
+            return cur.rewrap(out) if getattr(rhs, "is_graphics_handle", False) else out
+        elem = _temp_read(ev, cur, "paren", arg, depth)
+        if elem is None or not getattr(elem, "is_graphics_handle", False):
+            raise _err("Index exceeds the number of array elements.")
+        if elem.numel() != 1:
+            raise _err("Scalar object required for this assignment.")
+        _assign(ev, elem, rest, rhs, depth + 1)
+        return cur
     if kind == "paren":
         if is_struct(cur) or ((cur is None or _is_empty_double(cur)) and (rest or is_struct(rhs))):
             if not rest:
