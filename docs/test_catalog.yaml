@@ -1729,6 +1729,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.workbench_output_routing
+    kind: unit
+    title: Workbench output routing to the Command Window (Epic #767)
+    features: [host.workbench.output_routing]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_workbench_output_routing.py
+    status: active
+    env: unit
+
+  - id: tc.workbench_output_routing_bdd
+    kind: bdd
+    title: Workbench output routing Gherkin scenarios (Epic #767)
+    features: [host.workbench.output_routing]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_workbench_output_routing_bdd.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
