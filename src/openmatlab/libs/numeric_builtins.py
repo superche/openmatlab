@@ -930,6 +930,9 @@ def _cellfun(
     cell = args[1]
     from openmatlab.runtime.char_value import CharValue
 
+    if (isinstance(fh, CharValue) and resolver is not None and fh.text in ("isclass", "size")
+            and len(args) == 3 and isinstance(cell, CellValue)):
+        return (_cellfun_legacy(fh.text, cell, args[2], resolver),)
     if isinstance(fh, CharValue) and resolver is not None:
         name = fh.text
         try:
@@ -992,6 +995,31 @@ def _cellfun(
     return (CellValue(rows=tuple(grid)),)
 
 
+
+
+def _cellfun_legacy(name, cell, extra, resolver):
+    """Backward-compatible ``cellfun('isclass', C, cls)`` / ``cellfun('size', C, k)`` (MATLAB)."""
+    rows, cols = cell.shape
+    if name == "isclass":
+        cls = _char_flag(extra)
+        if cls is None:
+            raise BuiltinError("cellfun: 'isclass' needs a class name")
+        cfn = resolver.resolve("class")
+        out = np.zeros((rows, cols), dtype=bool)
+        for i in range(rows):
+            for j in range(cols):
+                r = cfn([cell.get(i, j)], nargout=1) if callable(cfn) else cfn.call([cell.get(i, j)], nargout=1)
+                out[i, j] = _char_flag(r[0]) == cls
+        return NDArrayValue(out)
+    k = int(float(np.asarray(extra.backend_buffer()).reshape(-1)[0]))
+    if k < 1:
+        raise BuiltinError("cellfun: size dimension must be a positive integer")
+    out = np.zeros((rows, cols), dtype=np.float64)
+    for i in range(rows):
+        for j in range(cols):
+            shp = tuple(getattr(cell.get(i, j), "shape", (1, 1)))
+            out[i, j] = shp[k - 1] if k <= len(shp) else 1
+    return _wrap(out)
 
 
 def _cellfun_multi(fh, args, nargout):

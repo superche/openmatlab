@@ -587,6 +587,8 @@ class Evaluator:
             rhs = _char_codes(rhs_val)
         else:
             rhs = self._require_array(rhs_val, "array assign")
+        if len(idxs) > 1 and rhs.numel() > 0:
+            idxs = self._fill_empty_colons(list(stmt.target.indices), idxs, rhs)
         try:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
         except Exception as exc:  # NumericsError
@@ -1007,6 +1009,39 @@ class Evaluator:
             finally:
                 self._end_stack.pop()
         return idxs
+
+    def _fill_empty_colons(self, ix_exprs: list, idxs: List[Array], rhs: Array) -> List[Array]:
+        """A(:,j) = v on a dimension of extent 0: the colon takes its extent from the
+        RHS (MATLAB: ``y(mask,:) = col`` with ``y`` undefined, ``x = zeros(1,0); x(1,:) = 1:4``)."""
+        k = len(idxs)
+        empty = [d for d in range(k) if self._is_bare_colon(ix_exprs[d]) and idxs[d].numel() == 0]
+        if not empty:
+            return idxs
+        import numpy as _np
+
+        counts = []
+        for a in idxs:
+            buf = _np.asarray(a.backend_buffer())
+            counts.append(int(_np.count_nonzero(buf)) if buf.dtype == _np.bool_ else int(buf.size))
+        if rhs.numel() == 1:
+            ext = {d: 1 for d in empty}
+        else:
+            rs = [int(x) for x in rhs.shape]
+            rs = (rs + [1] * k)[:k] if len(rs) <= k else rs[: k - 1] + [int(rhs.numel() // max(1, _prod(rs[: k - 1])))]
+            if all(counts[d] == rs[d] for d in range(k) if d not in empty):
+                ext = {d: rs[d] for d in empty}
+            elif len(empty) == 1:
+                others = _prod([counts[d] for d in range(k) if d != empty[0]])
+                if others == 0 or rhs.numel() % others:
+                    return idxs
+                ext = {empty[0]: int(rhs.numel() // others)}
+            else:
+                return idxs
+        out = list(idxs)
+        for d, n in ext.items():
+            if n > 0:
+                out[d] = self.numerics.colon(1.0, float(n), 1.0)
+        return out
 
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):
@@ -2371,3 +2406,10 @@ def _string_text(v):
         x = float(x)
         return str(int(x)) if x == int(x) and abs(x) < 1e15 else f"{x:.4f}".rstrip("0")
     return None
+
+
+def _prod(xs) -> int:
+    out = 1
+    for x in xs:
+        out *= int(x)
+    return out
