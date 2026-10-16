@@ -86,7 +86,3 @@ Deduplicated by `(category, key)`; filed as `corpus` issues.
 | `graphics` | `rectangle` | 2 | `matlab2tikz/ACID/073_rectanglePlot` |
 | `graphics` | `stairs` | 2 | `matlab2tikz/ACID/021_zoom` |
 | `missing-builtin` | `beta` | 2 | `chebfun/misc/test_pswf` |
-
-## Regressions (pass -> fail)
-
-None.
