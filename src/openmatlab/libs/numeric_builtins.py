@@ -160,9 +160,9 @@ def _shape_of(v: Value) -> tuple:
         return v.shape
     if isinstance(v, CellValue):
         return tuple(v.full_shape)
-    if (getattr(v, "is_string", False) or getattr(v, "is_struct", False) or getattr(v, "is_enum_array", False)
+    if (getattr(v, "is_string", False) or getattr(v, "is_struct", False) or getattr(v, "is_enum_array", False) or getattr(v, "is_object_array", False)
             or getattr(v, "is_table", False)):
-        return tuple(v.shape)  # string arrays (#459), struct arrays (#506), enumeration arrays (M8 O-E5)
+        return tuple(v.shape)  # string arrays (#459), struct arrays (#506), enumeration and object arrays
     if getattr(v, "issparse", False):
         return tuple(v.shape)  # compressed storage: no densify (#515)
     if isinstance(v, Array):
@@ -1083,7 +1083,8 @@ def _isempty(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     elif isinstance(v, CellValue):
         r, c = v.shape
         n = r * c
-    elif isinstance(v, Array) or getattr(v, "is_string", False) or getattr(v, "is_struct", False):
+    elif isinstance(v, Array) or getattr(v, "is_string", False) or getattr(v, "is_struct", False) \
+            or getattr(v, "is_object_array", False):
         n = v.numel()
     else:
         n = 1  # function handles etc. are 1x1
