@@ -1298,6 +1298,7 @@ _strfun_builtins.register_late(BUILTINS)
 from openmatlab.libs import time_builtins as _time_builtins  # noqa: E402
 
 _time_builtins.register(BUILTINS)
+__import__("openmatlab.libs.version_builtins", fromlist=["register"]).register(BUILTINS)
 _classdef_builtins_mod = __import__("openmatlab.libs.classdef_builtins", fromlist=["register_late"])
 _classdef_builtins_mod.register_late(BUILTINS)
 
