@@ -86,9 +86,3 @@ Deduplicated by `(category, key)`; filed as `corpus` issues.
 | `graphics` | `daspect` | 1 | `matlab2tikz/ACID/073_rectanglePlot` |
 | `graphics` | `imshow` | 1 | `rosetta/Xiaolin_Wu_s_line_algorithm/1` |
 | `graphics` | `mesh` | 1 | `matlab2tikz/ACID/060_meshPlot` |
-
-## Regressions (pass -> fail)
-
-- `chebfun/trigtech/test_roots`
-- `matlab2tikz/ACID/089_annotationText`
-- `matlab2tikz/ACID/090_annotationTextUnits`
