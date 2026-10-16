@@ -10,6 +10,10 @@ MS = {
                 doc="docs/milestones/M10-tables.md", title="Tables and data types (M10)", num=10, label="M10"),
     "m11": dict(manifest="tests/conformance/m11_manifest.py", test="tests/conformance/test_m11_conformance.py", fn="test_m11_criterion",
                 doc="docs/milestones/M11-debugger-workbench.md", title="Debugger and Workbench (M11)", num=11, label="M11"),
+    "m12": dict(manifest="tests/conformance/m12_manifest.py", test="tests/conformance/test_m12_conformance.py", fn="test_m12_criterion",
+                doc="docs/milestones/M12-corpus-gate.md", title="Real-script compatibility gate (M12)", num=12, label="M12"),
+    "m13": dict(manifest="tests/conformance/m13_manifest.py", test="tests/conformance/test_m13_conformance.py", fn="test_m13_criterion",
+                doc="docs/milestones/M13-graphics.md", title="Graphics completion (M13)", num=13, label="M13"),
 }
 
 

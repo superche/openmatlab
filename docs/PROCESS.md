@@ -85,7 +85,7 @@ opens or updates an Issue (with labels + milestone) before or as it acts.
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 
-States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Core backlog, /10 Tables and data types (M10) and /11 Debugger and Workbench (M11) **open** (M10/M11 approved 2026-10-16, interleaved, led by D-E1). M3 Domain toolboxes closed 2026-10-16 at 7/7; M8 Object system closed 2026-10-16 at 10/10.
+States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /10 Tables and data types (M10) and /11 Debugger and Workbench (M11) **closed** (10/10 each); /9 Core backlog, /12 Real-script compatibility gate (M12) and /13 Graphics completion (M13) **open** (M12/M13 approved 2026-10-16, interleaved, led by G-E0). M3 Domain toolboxes closed 2026-10-16 at 7/7; M8 Object system closed 2026-10-16 at 10/10.
 
 | Milestone | Intent |
 |-----------|--------|
@@ -100,6 +100,8 @@ States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Cor
 | **Core backlog** | Core-language p1/p2 residuals not tied to an active criterion; promoted into a milestone criterion when prioritized. GitHub milestone/9 |
 | **Tables and data types** | `table`, `categorical`, `readtable`/`writetable`, joins/grouping, datetime arrays, `timetable` (p2). GitHub milestone/10. Doc: [`milestones/M10-tables.md`](milestones/M10-tables.md); manifest `tests/conformance/m10_manifest.py`. Epics #691–#697 |
 | **Debugger and Workbench** | `MException.stack`/`dbstack`, breakpoints/stepping, `keyboard`/`input`, Workbench debug UI, variable editor, workflows. GitHub milestone/11. Doc: [`milestones/M11-debugger-workbench.md`](milestones/M11-debugger-workbench.md); manifest `tests/conformance/m11_manifest.py`. Epics #698–#703 |
+| **Real-script compatibility gate** | Public real-MATLAB corpus (runtime-fetched for GPL/GFDL sources), sandboxed runner, tiers T0–T3, classifier, REPORT and `corpus` issue triage. GitHub milestone/12. Doc: [`milestones/M12-corpus-gate.md`](milestones/M12-corpus-gate.md); manifest `tests/conformance/m12_manifest.py`. Epics #761–#766 |
+| **Graphics completion** | Handle model, queries, layout, charts, colour/3-D, own-format `.fig`/export, Workbench figures, snapshots. GitHub milestone/13. Doc: [`milestones/M13-graphics.md`](milestones/M13-graphics.md); manifest `tests/conformance/m13_manifest.py`. Epics #767–#774 |
 
 **Rules**
 

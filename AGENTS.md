@@ -62,7 +62,8 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - 开放 Issue 必须带 `p0`/`p1`/`p2` 标签。详见 `docs/PROCESS.md` 与 `docs/milestones/M2-octave-breadth.md`。
 - **Plugins:** VS Code–style host contract is locked in `docs/design/PLUGIN-CONTRACT.md`; exit criteria in `docs/milestones/M-plugins.md`. Community plugins only (no MathWorks proprietary toolboxes). Historical options: `docs/design/PLUGIN-OPTIONS.md`.
 - **Domain gate:** business-conformance reference vectors — `docs/milestones/M-domain-conformance.md` (milestone/5).
-- **Tables / Debugger:** `docs/milestones/M10-tables.md` (milestone/10), `docs/milestones/M11-debugger-workbench.md` (milestone/11).
+- **Tables / Debugger:** `docs/milestones/M10-tables.md` (milestone/10), `docs/milestones/M11-debugger-workbench.md` (milestone/11), both closed.
+- **Corpus gate / Graphics:** `docs/milestones/M12-corpus-gate.md` (milestone/12), `docs/milestones/M13-graphics.md` (milestone/13). Corpus licensing: GPL/GFDL sources are fetched at runtime only, never committed.
 - **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6).
 
 ## Residual Issues（强制）
