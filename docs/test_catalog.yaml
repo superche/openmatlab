@@ -1747,6 +1747,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.timetable
+    kind: unit
+    title: timetable (Epic #697)
+    features: [runtime.timetable]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_timetable.py
+    status: active
+    env: unit
+
+  - id: tc.timetable_bdd
+    kind: bdd
+    title: timetable Gherkin scenarios (Epic #697)
+    features: [runtime.timetable]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_timetable_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

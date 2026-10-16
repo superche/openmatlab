@@ -562,6 +562,14 @@ features:
     notes: "Code sections, Run Section / Run and Advance, run with breakpoints, error hyperlinks, Command History re-run (Epic #703)"
     tests: [tests/unit/test_workbench_workflows.py, tests/bdd/test_workbench_workflows_bdd.py]
 
+  - id: runtime.timetable
+    layer: runtime
+    name: timetable
+    status: done
+    depends_on: [runtime.table_core, libs.datetime_arrays]
+    notes: "timetable value, timerange/withtol subscripts, table2timetable/timetable2table, retime/synchronize, lag (Epic #697)"
+    tests: [tests/unit/test_timetable.py, tests/bdd/test_timetable_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
