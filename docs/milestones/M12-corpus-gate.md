@@ -28,14 +28,16 @@ M12 is **done** only when **all** of these hold on `main`:
 
 Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-checks (`assert`, `%!assert`, bundled tests) pass; **T3** stdout matches a golden (transcript output, or Octave output only where MATLAB docs document the same behaviour, each with a doc link). Pass rates exclude `corpus-noise`; T1 also excludes `toolbox:*` and `io-env`.
 
+**C03 noise rate** is measured on the Rosetta script blocks: the share that preprocessing passes on as runnable but whose run still fails for a sample reason (residual `corpus-noise`). Blocks that preprocessing sets aside up front (Octave/Scilab dialect, fragments that read undefined context) are de-noised: they are listed with a `dialect:`/`fragment:` note in `docs/corpus/results.json` and are not run. **C04** compares the top-level category (`toolbox:*` counts as `toolbox`) on `corpus/labels.json`.
+
 ## Criteria
 
 | # | Criterion | Script | Priority | Epic | Status |
 |---|-----------|--------|----------|------|--------|
 | C01 | Corpus manifest ≥ 300 runnable entries from ≥ 4 sources, each with licence/URL/revid/sha256; CI licence allow-list; no GPL/GFDL code bodies in the repo | m12_c01_corpus_manifest | p0 | #762 | met (Epic #762; residual #785) |
 | C02 | Runner: subprocess sandbox, timeout, stdin isolation, JSON results; one hang/crash does not affect others; full CI run ≤ 15 min | m12_c02_runner_isolation | p0 | #761 | met (Epic #761; residual #780) |
-| C03 | Deterministic preprocessing (transcript de-prompting, function-file detection, `input` fixtures) with unit tests; pilot noise rate 46 % → ≤ 10 % | m12_c03_preprocess | p0 | #763 | pending |
-| C04 | Classifier: ≥ 90 % category accuracy on ≥ 60 hand-labelled failures; `internal-crash` recall 100 % | m12_c04_classifier | p0 | #763 | pending |
+| C03 | Deterministic preprocessing (transcript de-prompting, function-file detection, `input` fixtures) with unit tests; pilot noise rate 46 % → ≤ 10 % | m12_c03_preprocess | p0 | #763 | met (Epic #763; residual #789) |
+| C04 | Classifier: ≥ 90 % category accuracy on ≥ 60 hand-labelled failures; `internal-crash` recall 100 % | m12_c04_classifier | p0 | #763 | met (Epic #763; residual #789) |
 | C05 | T0 parse pass rate ≥ 98 % (proposal; locked after first full run) | m12_c05_tier0 | p0 | #766 | pending |
 | C06 | T1 run pass rate ≥ 85 % (proposal; locked after first full run) | m12_c06_tier1 | p0 | #766 | pending |
 | C07 | T2 self-check pass rate ≥ 75 % (proposal; locked after first full run) | m12_c07_tier2 | p1 | #765 | pending |
@@ -60,4 +62,4 @@ Byte-exact comparison with MATLAB output; making toolbox-dependent scripts pass 
 
 ## Progress snapshot
 
-M12 opened 2026-10-16. **2 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)). Next: C-E3 #763 preprocessing and classifier.
+M12 opened 2026-10-16. **4 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)), C01 (Epic #762, [design](../design/EPIC-762-corpus-manifest.md)), C03 and C04 (Epic #763, [design](../design/EPIC-763-preprocess-classifier.md)): residual noise 5.5 % (raw 43.8 %), classifier 92.0 % on 88 labelled failures, crash recall 100 %. Next: C-E4 #764 REPORT dashboard, regression gate and corpus issue filing.

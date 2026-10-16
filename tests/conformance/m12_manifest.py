@@ -12,8 +12,8 @@ from __future__ import annotations
 CRITERIA = {
     "C01": ("m12_c01_corpus_manifest", "p0", [762], "met"),
     "C02": ("m12_c02_runner_isolation", "p0", [761], "met"),
-    "C03": ("m12_c03_preprocess", "p0", [763], "pending"),
-    "C04": ("m12_c04_classifier", "p0", [763], "pending"),
+    "C03": ("m12_c03_preprocess", "p0", [763], "met"),
+    "C04": ("m12_c04_classifier", "p0", [763], "met"),
     "C05": ("m12_c05_tier0", "p0", [766], "pending"),
     "C06": ("m12_c06_tier1", "p0", [766], "pending"),
     "C07": ("m12_c07_tier2", "p1", [765], "pending"),
