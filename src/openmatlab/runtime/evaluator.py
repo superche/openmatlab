@@ -983,6 +983,9 @@ class Evaluator:
 
     def _require_array(self, val: Value, ctx: str) -> Array:
         if not isinstance(val, Array):
+            if getattr(val, "is_table", False):  # MATLAB: no such operator/function for tables (M10)
+                raise EvalError(f"Undefined function '{ctx}' for input arguments of type 'table'.",
+                                "MATLAB:UndefinedFunction")
             raise EvalError(f"{ctx}: expected Array, got {type(val).__name__}")
         return val
 
@@ -1653,6 +1656,10 @@ class Evaluator:
         flat = [v for r in rows for v in r]
         if any(_is_class_obj(v) for v in flat):  # horzcat/vertcat overloads (O-E4)
             return self._concat_objects(rows)
+        if any(getattr(v, "is_table", False) for v in flat):  # table concatenation (M10 T-E1)
+            from openmatlab.runtime import table_subs as _ts
+
+            return _ts.concat(self, rows)
         if any(getattr(v, "is_missing_value", False) for v in flat):  # [1 missing], ["a" missing] (#504)
             from openmatlab.runtime import missing_value as _mv
 

@@ -229,6 +229,14 @@ def _assign(ev, cur, steps, rhs, depth):
         return rhs
     kind, arg = steps[0]
     rest = steps[1:]
+    if getattr(cur, "native_subs", False):  # table inside a struct/cell chain (M10)
+        from types import SimpleNamespace
+
+        from openmatlab.runtime import table_subs as _ts
+
+        shim = [(".", SimpleNamespace(name=field_name(ev, a), name_expr=None)) if k == "field"
+                else ("()" if k == "paren" else "{}", SimpleNamespace(indices=tuple(a))) for k, a in steps]
+        return _ts.asgn(ev, cur, _ts.levels(ev, cur, shim), rhs)
     if kind == "field" and (getattr(cur, "is_class_instance", False) or hasattr(cur, "set_prop")):  # obj.prop = v (M8)
         name = field_name(ev, arg)
         child = cur.get_prop(name) if rest else None

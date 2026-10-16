@@ -1252,6 +1252,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.table_core
+    kind: unit
+    title: table core (Epic #691)
+    features: [runtime.table_core]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_table_core.py
+    status: active
+    env: unit
+
+  - id: tc.table_core_bdd
+    kind: bdd
+    title: table core Gherkin scenarios (Epic #691)
+    features: [runtime.table_core]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_table_core_bdd.py
+    status: active
+    env: unit
+
   - id: tc.frames_help
     kind: unit
     title: caller/base workspaces and help browsing (Epic #610)
