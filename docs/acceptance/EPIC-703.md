@@ -57,11 +57,21 @@ $ openmatlab features | rg -F host.workbench.workflows
 host.workbench.workflows         host       done     Workbench workflows
 ```
 
+## Window recording (E2E) — D10
+
+- Video: [`demos/workbench/showcase_d10_debugger_workflows.mp4`](../../demos/workbench/showcase_d10_debugger_workflows.mp4) (~89s, 1920×1200)
+- Helper: `demos/workbench/record_d10_showcase.sh` (ffmpeg x11grab) + driver `demos/workbench/d10_driver.py` (real tk Workbench, xdotool pointer/keyboard)
+- Flow: open `.m` from Current Folder → gutter breakpoint → Run pauses at line (K>>) → Step In / Step → Variables editor (`w`) → Stack selector (caller/callee frames) → Continue → clear breakpoint → `clear all` → Run Section → Run and Advance ×2 → `bad_d10()` error → click "Error in bad_d10 (line 3)" hyperlink → editor opens file at line 3.
+
+```bash
+DISPLAY=:2 ./demos/workbench/record_d10_showcase.sh
+```
+
 ## Residuals (filed)
 
 | Residual | Issue |
 |---|---|
-| Section-relative error lines, section highlighting, recorded video capture, history search, unsaved-buffer breakpoints | [#751](https://github.com/superche/openmatlab/issues/751) |
+| Section-relative error lines, section highlighting, history search, unsaved-buffer breakpoints | [#751](https://github.com/superche/openmatlab/issues/751) |
 
 ## Milestone progress (M11)
 
