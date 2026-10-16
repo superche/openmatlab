@@ -376,6 +376,8 @@ class ClassInfo:
         for c in reversed(self.mro()):
             for k in c.own_methods:
                 pending.pop(k, None)
+            for k in getattr(c.node, "signatures", {}):  # concrete declaration, body file optional (#874)
+                pending.pop(k, None)
             for k, p in c.own_props.items():
                 if not p.abstract:
                     pending.pop(k, None)
