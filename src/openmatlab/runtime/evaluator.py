@@ -13,6 +13,11 @@ from openmatlab.runtime.functions import FunctionResolver
 from openmatlab.runtime.value import Array, Value
 from openmatlab.runtime.workspace import Workspace
 
+import numpy as _np
+from openmatlab.numerics.ndarray_value import NDArrayValue as _NDArrayValue
+
+_F64 = _np.dtype(_np.float64)
+
 if TYPE_CHECKING:
     from openmatlab.host.plot_surface import PlotSurface
 
@@ -37,6 +42,8 @@ class _ReturnSignal(Exception):
     """Internal: return exits current function/script body."""
 
 
+_AST_NUM, _AST_BINOP, _AST_NAME = ast.NumberLiteral, ast.BinOp, ast.Name
+_AST_INDEX, _AST_CALL = ast.IndexExpr, ast.CallExpr
 _SUBS_NODES = (ast.FieldExpr, ast.IndexExpr, ast.CallExpr, ast.CellIndexExpr)
 
 
@@ -319,6 +326,20 @@ class Evaluator:
         return call
 
     def eval_expr(self, expr: ast.Expr) -> Value:
+        t = type(expr)  # exact-type fast paths for the hottest nodes (#797)
+        if t is _AST_NUM:
+            return self.numerics.from_scalar(expr.value)
+        if t is _AST_BINOP:
+            return self._eval_binop(expr)
+        if t is _AST_NAME:
+            try:
+                return self.workspace.get(expr.id)
+            except KeyError:
+                pass  # unbound: the general path below resolves i/j, scripts and functions
+        if t is _AST_INDEX or t is _AST_CALL:
+            r = self._fast_scalar_index(expr)
+            if r is not None:
+                return r
         if isinstance(expr, _SUBS_NODES):  # subsref overloads (O-E4)
             from openmatlab.runtime import classdef_subs as _cs
 
@@ -1218,6 +1239,41 @@ class Evaluator:
         finally:
             for t in names:
                 self.workspace.clear(t)
+
+    def _fast_scalar_index(self, expr):
+        """A(i) / A(i, j) on a plain numeric variable with bound-name or literal real
+        scalar subscripts: skip overload, call-resolution and subscript machinery (#797).
+        Returns None whenever any precondition fails, so the general path decides."""
+        target = expr.target if type(expr) is _AST_INDEX else expr.func
+        args = expr.indices if type(expr) is _AST_INDEX else expr.args
+        if type(target) is not _AST_NAME or not 1 <= len(args) <= 2:
+            return None
+        get = self.workspace.get
+        try:
+            a = get(target.id)
+        except KeyError:
+            return None
+        if type(a) is not _NDArrayValue:
+            return None
+        idx = []
+        for e in args:
+            te = type(e)
+            if te is _AST_NAME:
+                try:
+                    v = get(e.id)
+                except KeyError:
+                    return None
+                if type(v) is not _NDArrayValue:
+                    return None
+                b = v._data
+                if b.size != 1 or b.dtype != _F64:
+                    return None
+                idx.append(v)
+            elif te is _AST_NUM:
+                idx.append(self.numerics.from_scalar(e.value))
+            else:
+                return None
+        return self.numerics.index(a, idx)
 
     def _eval_call_or_index(self, target_expr: ast.Expr, arg_exprs: List[ast.Expr]) -> Value:
         if isinstance(target_expr, (ast.FieldExpr, ast.SuperRef)):  # classdef objects (M8)
