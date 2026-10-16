@@ -52,7 +52,12 @@ def _cputime(ev, args, nargout):
 def _display(ev, args, nargout):
     if len(args) != 1:
         raise _err("display: expected one argument.", "MATLAB:display:InvalidInput")
-    ev.display.show(args[0], name=None)
+    d = ev.display
+    if d is None:  # inside a function body: no session display, print to the current stdout
+        from openmatlab.host.display import ConsoleDisplay
+
+        d = ConsoleDisplay(workspace=None)
+    d.show(args[0], name=None)
     return ()
 
 

@@ -136,7 +136,7 @@ def _split_wrap(old):
 
 # ----- sprintf / compose -----
 
-_SPEC = re.compile(r"%(?P<flags>[-+ 0#]*)(?P<width>\d+|\*)?(?:\.(?P<prec>\d+))?(?P<conv>[diouxXfeEgGcs%])")
+_SPEC = re.compile(r"%(?P<flags>[-+ 0#]*)(?P<width>\d+|\*)?(?:\.(?P<prec>\d+|\*))?(?P<conv>[diouxXfeEgGcs%])")
 
 
 def _escapes(fmt: str) -> str:
@@ -214,7 +214,24 @@ def _format(fmt: str, vals: list) -> str:
             if i >= len(vals):
                 k = len(fmt)  # MATLAB stops output at the first spec without data
                 break
-            out.append(_fmt_one(m, vals[i]))
+            spec = m
+            if m["width"] == "*" or m["prec"] == "*":  # '*' takes the width/precision from the data
+                spec = {"flags": m["flags"], "width": m["width"], "prec": m["prec"], "conv": m["conv"]}
+                for part in ("width", "prec"):
+                    if spec[part] == "*":
+                        n = vals[i] if i < len(vals) else None
+                        i += 1
+                        if isinstance(n, str) or n is None or isinstance(n, complex) or float(n) != int(float(n)):
+                            raise _err("sprintf: '*' width or precision needs an integer argument.",
+                                       "MATLAB:sprintf:InvalidStar")
+                        n = int(float(n))
+                        if part == "width" and n < 0:
+                            spec["flags"], n = spec["flags"] + "-", -n
+                        spec[part] = str(max(n, 0))
+                if i >= len(vals):
+                    k = len(fmt)
+                    break
+            out.append(_fmt_one(spec, vals[i]))
             i += 1
         else:
             out.append(fmt[k:])
