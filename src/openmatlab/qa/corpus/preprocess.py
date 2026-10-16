@@ -89,6 +89,91 @@ def deprompt(code: str) -> tuple[str, str]:
     return "\n".join(kept) + "\n", "\n".join(dropped).strip("\n")
 
 
+_DISPLAY_HEADER = re.compile(r"^\s*(ans|[A-Za-z_]\w*)\s*=\s*$")
+_DISPLAY_ROW = re.compile(r"^\s*$|^\s*(Columns?\s+\d+.*|[-+\d.eEiInfNa\s:/*]+|\{.*\}|\[.*\]|'[^']*'(\s+'[^']*')*|"
+                          r"\S.*\[\d+x\d+ \w+\].*|<\d+x\d+ \w+>|(true|false)(\s+(true|false))*|\d+x\d+ \w+ array.*|"
+                          r"[A-Za-z]\w*: .*)$")
+
+
+def strip_echo(code: str) -> tuple[str, str]:
+    """Drop command-window echo pasted without prompts (``name =`` header plus display rows)."""
+    lines = code.splitlines()
+    if not any(_DISPLAY_HEADER.match(ln) for ln in lines):
+        return code, ""
+    kept, dropped, in_out = [], [], False
+    for i, ln in enumerate(lines):
+        if _DISPLAY_HEADER.match(ln):
+            in_out = True
+        elif in_out and not _DISPLAY_ROW.match(ln):
+            in_out = False
+        (dropped if in_out else kept).append(ln)
+    return "\n".join(kept).rstrip("\n") + "\n", "\n".join(dropped).strip("\n")
+
+
+_KEYWORDS = {"if", "else", "elseif", "end", "for", "parfor", "while", "switch", "case", "otherwise", "try", "catch",
+             "function", "return", "break", "continue", "global", "persistent", "classdef", "properties", "methods",
+             "events", "enumeration", "spmd", "do", "until"}
+_CONSTANTS = {"i", "j", "Inf", "inf", "NaN", "nan", "ans", "varargin", "varargout", "nargin", "nargout", "end", "true",
+              "false", "pi", "eps", "NA", "e",
+              # MATLAB functions commonly used as bare values; never call them context
+              "matlabroot", "version", "pwd", "date", "clock", "now", "cputime", "userpath", "tempdir", "path"}
+_KNOWN: Optional[set] = None
+
+
+def known_functions() -> set:
+    """Names OpenMATLAB resolves without a file (builtins, intrinsics), lower-cased."""
+    global _KNOWN
+    if _KNOWN is None:
+        from openmatlab.libs.function_intrinsics import INTRINSICS
+        from openmatlab.runtime.session import Session
+
+        _KNOWN = {n.lower() for n in Session.create_default().functions.builtins} | {n.lower() for n in INTRINSICS}
+    return _KNOWN
+
+
+def _clean(code: str) -> List[str]:
+    out = []
+    for ln in code.splitlines():
+        ln = re.sub(r'"[^"\n]*"', '""', ln)
+        ln = re.sub(r"(?<![\w)\]}.'])'(?:[^'\n]|'')*'", "''", ln)
+        out.append(re.sub(r"%.*$", "", ln))
+    return out
+
+
+def free_reads(code: str, siblings=()) -> List[str]:
+    """Identifiers read as values (operands/arguments) that nothing in the file or the engine defines.
+
+    Conservative: a name that is ever called with ``(``, used as a whole statement (command
+    form), used alone on an assignment right-hand side, or field-accessed is never reported,
+    because it may be a function OpenMATLAB lacks (``missing-builtin``) rather than context.
+    """
+    lines = _clean(code)
+    text = "\n".join(lines)
+    assigned = set(re.findall(r"(?:^|[;,])\s*([A-Za-z_]\w*)\s*(?:\([^=\n]*\)|\{[^=\n]*\}|\.[\w.]+)?\s*=(?!=)", text, re.M))
+    for grp in re.findall(r"\[([^\]\n]*)\]\s*=(?!=)", text):
+        assigned.update(re.findall(r"[A-Za-z_]\w*", grp))
+    assigned.update(re.findall(r"\b(?:for|parfor)\s*\(?\s*([A-Za-z_]\w*)\s*=", text))
+    for sig in re.findall(r"^\s*function\b([^\n]*)", text, re.M):
+        assigned.update(re.findall(r"[A-Za-z_]\w*", sig))
+    assigned.update(re.findall(r"\b(?:global|persistent)\s+([\w ]+)", text) and
+                    re.findall(r"[A-Za-z_]\w*", " ".join(re.findall(r"\b(?:global|persistent)\s+([\w ]+)", text))))
+    assigned.update(re.findall(r"@\(([^)]*)\)", text) and re.findall(r"[A-Za-z_]\w*", " ".join(re.findall(r"@\(([^)]*)\)", text))))
+    called = set(re.findall(r"\b([A-Za-z_]\w*)\s*\(", text)) | set(re.findall(r"@([A-Za-z_]\w*)", text))
+    command = set(re.findall(r"(?:^|(?<=[;,]))\s*([A-Za-z_]\w*)\s*(?=[;,]|$|\s+[A-Za-z'\-])", text, re.M))
+    for args in re.findall(r"(?:^|(?<=[;,]))\s*[A-Za-z_]\w*((?:[ \t]+[A-Za-z_]\w*)+)[ \t]*(?=[;,]|$)", text, re.M):
+        command.update(args.split())  # command-syntax arguments: hold on, axis equal, format long
+    rhs_alone = set(re.findall(r"=\s*([A-Za-z_]\w*)\s*(?:[;,]|$)", text, re.M))
+    fielded = set(re.findall(r"\b([A-Za-z_]\w*)\s*\.(?!['*/^\\])", text))
+    known = known_functions()
+    out = []
+    for name in re.findall(r"(?<![\w.@'])([A-Za-z_]\w*)\b(?!\s*\()", text):
+        if (name in assigned or name in called or name in command or name in rhs_alone or name in fielded
+                or name in _KEYWORDS or name in _CONSTANTS or name.lower() in known or name in siblings or name in out):
+            continue
+        out.append(name)
+    return out
+
+
 def _statements(code: str):
     for ln in code.splitlines():
         s = _strip_comment(ln).strip()
@@ -99,6 +184,8 @@ def _statements(code: str):
 def role_of(code: str) -> str:
     """``function`` for a pure function file, else ``script``."""
     stmts = list(_statements(code))
+    if stmts and re.match(r"classdef\b", stmts[0]):
+        return "function"  # a class definition file: parsed (T0), never run as a script
     if not stmts or not re.match(r"function\b", stmts[0]):
         return "script"
     depth, uses_end = 0, any(re.match(r"(end|endfunction)\b\s*;?$", s) for s in stmts)
@@ -127,12 +214,25 @@ def input_fixture(code: str) -> List[str]:
     return answers + ["5"] * SPARE_ANSWERS
 
 
-def prepare(code: str) -> Prepared:
+def prepare(code: str, siblings=()) -> Prepared:
+    from .classify import dialect_marker
+
     notes = []
     body, transcript = deprompt(code)
     if transcript or body != code:
         notes.append("deprompted")
+    else:
+        body, transcript = strip_echo(code)
+        if transcript:
+            notes.append("echo-stripped")
     role = role_of(body)
+    dialect = dialect_marker(body)
+    if dialect:
+        return Prepared(code=body, role="noise", transcript=transcript, notes=notes + ["dialect:" + dialect])
+    if role == "script":
+        free = free_reads(body, siblings)
+        if free:
+            return Prepared(code=body, role="noise", transcript=transcript, notes=notes + ["fragment:" + ",".join(free[:5])])
     if role == "function":
         notes.append("function-file")
     fixture = input_fixture(body) if role == "script" else []
@@ -154,7 +254,7 @@ class Normalized:
 
 def normalize(code: str) -> Normalized:
     p = prepare(code)
-    return Normalized(code=p.code, kind=p.role, expected_stdout=p.transcript if "deprompted" in p.notes else None,
+    return Normalized(code=p.code, kind=p.role, expected_stdout=p.transcript if p.transcript else None,
                       stdin_fixture=p.input_lines or None, notes=p.notes)
 
 
@@ -165,9 +265,19 @@ def results_path():
 
 
 def noise_rate(records, source: str = "rosetta") -> float:
-    """Share of a source's script entries whose outcome is ``corpus-noise``."""
+    """Residual noise: share of a source's script entries that preprocessing passed on as runnable
+    but whose run still failed for a sample reason (``corpus-noise`` found only at run time).
+
+    Entries preprocessing itself sets aside (``role == "noise"``: dialect, fragment) are
+    de-noised, not residual; they are counted by :func:`filtered_rate`.
+    """
     rows = [r for r in records if r.get("source") == source and r.get("kind") == "script"]
-    return sum(r.get("category") == "corpus-noise" for r in rows) / max(1, len(rows))
+    return sum(r.get("category") == "corpus-noise" and r.get("role") != "noise" for r in rows) / max(1, len(rows))
+
+
+def filtered_rate(records, source: str = "rosetta") -> float:
+    rows = [r for r in records if r.get("source") == source and r.get("kind") == "script"]
+    return sum(r.get("role") == "noise" for r in rows) / max(1, len(rows))
 
 
 def pilot_noise_rate(path=None) -> float:

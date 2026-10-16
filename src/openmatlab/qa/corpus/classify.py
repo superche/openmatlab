@@ -102,7 +102,8 @@ _DIALECT_SYNTAX = [
     (re.compile(r"!=|!\s*[A-Za-z(]"), "octave-not"),
     (re.compile(r"\bunwind_protect\b|\bdo\b\s*$|\buntil\b", re.M), "octave-block"),
     (re.compile(r"\bprintf\s*\(|\bputs\s*\(|\bfdisp\s*\("), "octave-io"),
-    (re.compile(r"^\s*//", re.M), "scilab-comment"),
+    (re.compile(r"^\s*//|\s//\s", re.M), "scilab-comment"),
+    (re.compile("[\u2018\u2019\u201c\u201d]"), "smart-quotes"),
     (re.compile(r"\bmprintf\b|\bdeff\b|\bendfunction\b"), "scilab"),
 ]
 _PROSE = re.compile(r"^\s*(ans|[A-Za-z_]\w*)\s*=\s*$|^\s*Columns? \d+|^\s*Output:|^\s*Result:|^\s*(The|This|Sample|Example) \w+",
@@ -120,7 +121,7 @@ def _without_strings(code: str) -> str:
     out = []
     for ln in code.splitlines():
         ln = re.sub(r'"[^"\n]*"', '""', ln)
-        ln = re.sub(r"(?<![\w)\]}.'])'[^'\n]*'", "''", ln)
+        ln = re.sub(r"(?<![\w)\]}.'])'(?:[^'\n]|'')*'", "''", ln)
         if not ln.lstrip().startswith("#"):
             ln = re.sub(r"%.*$", "", ln)
         out.append(ln)

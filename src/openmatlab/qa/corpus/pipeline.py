@@ -61,7 +61,7 @@ class _Job:
                 drv.write_text(f"addpath('{here}');\n" + e.call.replace("{root}", self._root()) + "\n", encoding="utf-8")
                 target = drv
             else:
-                p = prepare(raw) if e.source == "rosetta" else None
+                p = prepare(raw, self.siblings) if e.source == "rosetta" else None
                 code = p.code if p else raw
                 role = (p.role if p else ("script" if e.kind == "script" else "function"))
                 if e.kind == "octave-tests":
@@ -73,6 +73,10 @@ class _Job:
                     if fname and not (stage / f"{fname}.m").exists() and fname != _fn_name(code):
                         (stage / f"{fname}.m").write_text(body, encoding="utf-8")
             rec.update(role=role, notes=notes)
+            if role == "noise":  # set aside by preprocessing (dialect, fragment): not run, not in pass rates
+                rec.update(t0="n/a", t1="n/a", status="n/a", category="corpus-noise", key=notes[-1].split(":")[0],
+                           message=notes[-1][:MSG_CAP])
+                return rec
             if role in ("script", "driver"):
                 r = run_one(target, timeout=timeout, name=e.id, input_lines=inputs).to_json()
                 rec["t1"] = r["status"]
