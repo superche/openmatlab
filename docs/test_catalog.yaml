@@ -1693,6 +1693,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.table_join_group
+    kind: unit
+    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts (Epic #696)
+    features: [libs.table_join_group]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_table_join_group.py
+    status: active
+    env: unit
+
+  - id: tc.table_join_group_bdd
+    kind: bdd
+    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts Gherkin scenarios (Epic #696)
+    features: [libs.table_join_group]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_table_join_group_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
