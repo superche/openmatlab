@@ -546,6 +546,14 @@ features:
     notes: "typed row-key matching, key-sorted inner/outer joins with per-type missing fill and MergeKeys, findgroups/splitapply, groupsummary/groupcounts; T06, T07 (Epic #696). Residual #742: IncludeEmptyGroups, bins, KeepOneCopy"
     tests: [tests/unit/test_table_join_group.py, tests/bdd/test_table_join_group_bdd.py]
 
+  - id: host.variable_editor
+    layer: host
+    name: Variable editor panel
+    status: done
+    depends_on: [host.workbench.workspace_browser]
+    notes: "Variables region: numeric/char/cell/struct/table grid, cell edit writes back via MATLAB indexed assignment (Epic #702)"
+    tests: [tests/unit/test_variable_editor.py, tests/bdd/test_variable_editor_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
