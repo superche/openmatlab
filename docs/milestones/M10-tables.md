@@ -64,4 +64,4 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **9 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)), T06, T07 (Epic #696, [design](../design/EPIC-696-joins-grouping.md)). Next: T-E7 (#697, p2 cuttable) timetable, interleaved with D-E6 (#703).
+M10 opened 2026-10-16. **9 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)), T06, T07 (Epic #696, [design](../design/EPIC-696-joins-grouping.md)). Next: T-E7 (#697, p2 cuttable) timetable (all M11 criteria are met).

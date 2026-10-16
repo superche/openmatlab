@@ -19,5 +19,5 @@ CRITERIA = {
     "D07": ("m11_d07_error_stop", "p1", [700], "met"),
     "D08": ("m11_d08_workbench_debug_ui", "p0", [701], "met"),
     "D09": ("m11_d09_variable_editor", "p1", [702], "met"),
-    "D10": ("m11_d10_workbench_workflows", "p1", [703], "pending"),
+    "D10": ("m11_d10_workbench_workflows", "p1", [703], "met"),
 }
