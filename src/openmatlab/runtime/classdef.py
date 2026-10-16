@@ -17,6 +17,7 @@ First principles:
 
 from __future__ import annotations
 
+from pathlib import Path
 import contextvars
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -207,9 +208,27 @@ class ClassInfo:
         self.getters: Dict[str, MethodInfo] = {}
         self.setters: Dict[str, MethodInfo] = {}
         defs = []
-        for m in node.methods:
+        methods = list(node.methods)
+        folder = Path(path).parent if path else None
+        if folder is not None and folder.name == "@" + self.short:  # class folder (#766)
+            from openmatlab.lang.classdef_parser import MethodDecl
+            from openmatlab.runtime.functions import parse_mfile
+
+            have = {m.defn.name for m in methods}
+            for f in sorted(folder.iterdir()):
+                if f.suffix not in (".m", ".M") or f.stem == self.short or f.stem in have or not f.is_file():
+                    continue
+                try:
+                    defn = parse_mfile(f)
+                except (ValueError, Exception):
+                    continue  # a broken method file fails when called, not at class load
+                methods.append(MethodDecl(defn, dict(node.signatures.get(defn.name, {}))))
+                path_of = getattr(self, "_method_files", {})
+                path_of[defn.name] = f
+                self._method_files = path_of
+        for m in methods:
             fn = MFileCallable(defn=m.defn, numerics=getattr(resolver, '_numerics', None), plots=getattr(resolver, '_plots', None),
-                               resolver=resolver, source_path=path,
+                               resolver=resolver, source_path=getattr(self, "_method_files", {}).get(m.defn.name, path),
                                qualname=None if m.attrs.get("_local") else f"{self.short}.{m.defn.name}")
             defs.append((m, fn))
             if m.attrs.get("_local"):
