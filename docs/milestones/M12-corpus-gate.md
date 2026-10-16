@@ -43,7 +43,7 @@ Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-ch
 | C07 | T2 self-check pass rate ≥ 75 % (locked at the proposal value: no T2 oracle existed in the first full run; C-E5 #765 builds it) | m12_c07_tier2 | p1 | #765 | pending |
 | C08 | T3 golden pass rate ≥ 70 % (locked at the proposal value: no T3 oracle existed in the first full run; C-E5 #765 builds it); every Octave-sourced golden links MATLAB docs | m12_c08_tier3 | p1 | #765 | pending |
 | C09 | `internal-crash` = 0 in the full run | m12_c09_no_crash | p0 | #766 | pending |
-| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764) |
+| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764; CI workflow install pending #833, residuals #832) |
 
 ## Threshold calibration
 
