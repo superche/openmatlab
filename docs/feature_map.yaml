@@ -626,6 +626,14 @@ features:
     notes: "M12 C09, Epic #766"
     tests: [tests/unit/test_corpus_crash_fixes.py]
 
+  - id: lang.endless_functions
+    layer: qa
+    name: Files whose functions omit end (body runs to next function or EOF)
+    status: done
+    depends_on: [qa.corpus_report]
+    notes: "M12 burn-down, Epic #766, corpus #794"
+    tests: [tests/unit/test_endless_functions.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
