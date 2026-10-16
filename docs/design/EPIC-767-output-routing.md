@@ -29,4 +29,4 @@ MATLAB behaviour (public docs, "Command Window"): output of `fprintf(1,…)`, `d
 | `isatty`/`encoding` lookups on the proxy | Delegated to the original stream |
 | Debugger `K>>` output | Already on `debugger.out` = Command Window buffer; unchanged |
 
-Residuals: stderr text is not coloured red in the tk Command Window; filed as an issue.
+Residuals: stderr text is not coloured red in the tk Command Window; filed as #776.
