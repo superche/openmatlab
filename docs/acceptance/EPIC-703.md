@@ -16,7 +16,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M11 criterion D10 is **met**. Epic #703 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #703 on 2026-10-16 (Asia/Shanghai); M11 criterion D10 is **met**. Milestone/11 is closed.
 
 D10 is met on the headless Workbench model: `%%` sections, Run Section and Run and Advance, run with breakpoints, the error hyperlink (file and line of the top frame, opened in the Editor) and Command History re-run. The tk chrome (toolstrip buttons, Ctrl+Enter, clickable `Error in` lines, Command History list) is driven by `test_tk_workflow_chrome` under a display.
 

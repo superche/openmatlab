@@ -16,7 +16,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M10 criterion T10 is **met**. Epic #697 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #697 on 2026-10-16 (Asia/Shanghai); M10 criterion T10 is **met**. Milestone/10 is closed.
 
 T10 is met: `timetable` construction and display, time subscripts (datetime, `timerange`, `withtol`), `table2timetable`/`timetable2table`, `retime` and `synchronize` with aggregation and fill methods, and `lag`. Errors are MATLAB-style.
 

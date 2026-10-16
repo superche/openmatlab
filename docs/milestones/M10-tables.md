@@ -64,4 +64,26 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **10 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)), T06, T07 (Epic #696, [design](../design/EPIC-696-joins-grouping.md)), T10 (Epic #697, [design](../design/EPIC-697-timetable.md)). Next: M10 exit review (all criteria met).
+M10 opened 2026-10-16. **10 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)), T06, T07 (Epic #696, [design](../design/EPIC-696-joins-grouping.md)), T10 (Epic #697, [design](../design/EPIC-697-timetable.md)). Next: closed (see Close-out).
+
+
+## Close-out (2026-10-16)
+
+**Status: closed.** Shaw accepted every epic (#691–#697) on 2026-10-16 (Asia/Shanghai), and the GitHub milestone is closed.
+
+- **Criteria:** 10 / 10 met (T01–T10), with 0 xfails on `main`.
+- **Open p0 issues:** none.
+- **Doc drift / CI:** D10 E2E capture merged (#759); `main` CI green through tip `70f2933`.
+- **Acceptance:** `docs/acceptance/EPIC-691.md` … `EPIC-697.md`.
+
+**Residuals left on closed milestone/10** (p2; not re-homed):
+
+| Issue | Pri | Topic |
+|---|---|---|
+| #709 | p2 | T-E1 residual (preallocation, nested tables, display fidelity, …) |
+| #717 | p2 | T-E2 residual (N-D categorical, Protected concat, summary layout, …) |
+| #721 | p2 | T-E4 residual (import options, encodings, spreadsheets, …) |
+| #733 | p2 | T-E5 residual (dateshift edge cases, calendarDuration Format, …) |
+| #738 | p2 | T-E3 residual (grouped varfun/rowfun, summary layout, …) |
+| #742 | p2 | T-E6 residual (join options, IncludeEmptyGroups, …) |
+| #755 | p2 | T-E7 residual (calendar retime, spline/pchip, more verbs, …) |

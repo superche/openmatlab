@@ -62,4 +62,26 @@ Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser 
 
 ## Progress snapshot
 
-M11 opened 2026-10-16. **10 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)); D08 (Epic #701, [design](../design/EPIC-701-debug-ui.md)); D06, D07 (Epic #700, [design](../design/EPIC-700-condition-stops.md)); D09 (Epic #702, [design](../design/EPIC-702-variable-editor.md)); D10 (Epic #703, [design](../design/EPIC-703-workbench-workflows.md)). Next: T-E7 (#697) timetable (M10).
+M11 opened 2026-10-16. **10 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)); D08 (Epic #701, [design](../design/EPIC-701-debug-ui.md)); D06, D07 (Epic #700, [design](../design/EPIC-700-condition-stops.md)); D09 (Epic #702, [design](../design/EPIC-702-variable-editor.md)); D10 (Epic #703, [design](../design/EPIC-703-workbench-workflows.md)). Next: closed (see Close-out).
+
+
+## Close-out (2026-10-16)
+
+**Status: closed.** Shaw accepted every epic (#698–#703) on 2026-10-16 (Asia/Shanghai), and the GitHub milestone is closed.
+
+- **Criteria:** 10 / 10 met (D01–D10), with 0 xfails on `main`.
+- **Open p0 issues:** none.
+- **Doc drift / CI:** D10 recorded E2E at `demos/workbench/showcase_d10_debugger_workflows.mp4` (#759); `main` CI green through tip `70f2933`.
+- **Acceptance:** `docs/acceptance/EPIC-698.md` … `EPIC-703.md`.
+
+**Residuals left on closed milestone/11** (p2; not re-homed):
+
+| Issue | Pri | Topic |
+|---|---|---|
+| #705 | p2 | D-E1 residual (Error using header, nested/anonymous frame names, …) |
+| #713 | p2 | D-E2 residual (end-line stops, anonymous breakpoints, …) |
+| #725 | p2 | D-E4 residual (Pause button, conditional gutter breakpoints, …) |
+| #729 | p2 | D-E3 residual (naninf granularity, input() in Workbench, …) |
+| #747 | p2 | D-E5 residual (struct/object editing, insert/delete rows, …) |
+| #751 | p2 | D-E6 residual (section-relative error lines, cell-mode highlight, …) |
+| #760 | p2 | Workbench fprintf/disp → Command Window (not terminal stdout) |
