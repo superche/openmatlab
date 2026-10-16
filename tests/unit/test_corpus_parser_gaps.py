@@ -32,3 +32,8 @@ def test_anon_body_with_unary_minus_in_cell(capsys):
 def test_juxtaposed_handles_in_cell(capsys):
     assert _out(capsys, "c = {@(x)sin(x) @(x)cos(2*x)}; disp(numel(c))").strip() == "2"
     assert _out(capsys, "disp([1 -2])").split() == ["1", "-2"]
+
+
+def test_for_over_cell_columns(capsys):
+    out = _out(capsys, "for f = {'a','bb'}, fprintf('%s %s|', class(f), f{1}); end")
+    assert out == "cell a|cell bb|"

@@ -2128,6 +2128,7 @@ class Evaluator:
     def _eval_for(self, stmt: ast.ForStmt) -> Value:
         import numpy as np
         from openmatlab.numerics.ndarray_value import NDArrayValue
+        from openmatlab.runtime.cell_value import CellValue
 
         value = self.eval_expr(stmt.iterable)
         if getattr(value, "is_string", False):  # columns of a string array (#459)
@@ -2140,6 +2141,9 @@ class Evaluator:
 
             pos = _se.positions(value).backend_buffer()
             items = [_se.from_positions(value, pos[:, [k]]) for k in range(pos.shape[1])]
+        elif isinstance(value, CellValue):  # each iteration is one column of the cell (#766)
+            r, c = value.shape
+            items = [CellValue(rows=tuple((value.rows[i][k],) for i in range(r))) for k in range(c)] if r else []
         elif getattr(value, "issparse", False):  # columns stay sparse (#488)
             from openmatlab.numerics import sparse as _sp
 
