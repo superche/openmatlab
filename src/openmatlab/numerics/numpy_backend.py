@@ -382,6 +382,12 @@ class NumPyArrayBackend:
     def _linear_index(self, data: Any, ind: Any) -> Array:
         """Single subscript: column-major linear index (1-based)."""
         np = self._np
+        if getattr(ind, "size", 0) == 1 and not np.iscomplexobj(ind):  # fast scalar read (#797)
+            arr = np.asarray(data)
+            kf = float(np.asarray(ind).reshape(-1)[0])
+            if kf == int(kf) and 1 <= kf <= arr.size:
+                el = arr[np.unravel_index(int(kf) - 1, arr.shape, order="F")]
+                return NDArrayValue(_narrow(np, np.asarray(el).astype(_keep_dt(np, arr)).reshape(1, 1)))
         flat_idx = np.asarray(ind, dtype=np.float64)
         if np.any(flat_idx != np.floor(flat_idx)) or np.any(flat_idx < 1):
             raise NumericsError("index: subscripts must be positive integers")
@@ -498,6 +504,16 @@ class NumPyArrayBackend:
                 return NDArrayValue(kept.reshape(-1, 1))  # column (incl. 0x1)
             return NDArrayValue(kept.reshape(1, -1))  # row vector or matrix → 1xN
 
+        if len(indices) == 1 and vbuf.size == 1:
+            # fast path (#797): in-bounds scalar A(k) = v without the flat round trip
+            ib = np.asarray(_as_nd(indices[0]).backend_buffer())
+            if ib.size == 1 and ib.dtype != np.bool_ and not np.iscomplexobj(ib) and data.size:
+                kf = float(ib.reshape(-1)[0])
+                if kf == int(kf) and 1 <= kf <= data.size:
+                    if np.shares_memory(data, aa.backend_buffer()):
+                        data = data.copy()
+                    data[np.unravel_index(int(kf) - 1, data.shape, order="F")] = vbuf.reshape(-1)[0]
+                    return NDArrayValue(_narrow(np, data))
         if len(indices) == 1:
             ind_a = _as_nd(indices[0])
             flat = np.asarray(data, order="F").reshape(-1, order="F").copy()

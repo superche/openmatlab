@@ -550,9 +550,10 @@ class Evaluator:
                 old = self.workspace.get(t.id)
             except KeyError:
                 old = None
-        out = self._eval_array_assign(stmt)
         if not getattr(old, "is_graphics_handle", False):
-            return out
+            old = None  # hold no extra reference: lets x(k) = v store in place (#797)
+            return self._eval_array_assign(stmt)
+        out = self._eval_array_assign(stmt)
         new = self.workspace.get(t.id)
         if getattr(new, "is_graphics_handle", False):
             return out
@@ -626,6 +627,8 @@ class Evaluator:
             rhs = self._require_array(rhs_val, "array assign")
         if len(idxs) > 1 and rhs.numel() > 0:
             idxs = self._fill_empty_colons(list(stmt.target.indices), idxs, rhs)
+        if not is_char and arr_a is arr and _inplace_scalar_assign(self.workspace, name, arr, idxs, rhs):
+            return rhs
         try:
             new_arr = self.numerics.set_index(arr_a, idxs, rhs)
         except Exception as exc:  # NumericsError
@@ -2458,3 +2461,42 @@ def _prod(xs) -> int:
     for x in xs:
         out *= int(x)
     return out
+
+
+def _inplace_scalar_assign(ws, name, arr, idxs, rhs) -> bool:
+    """x(k) = scalar in place when nothing else can observe x's buffer (#797).
+
+    MATLAB values are copy-on-write; the evaluator normally copies the whole array on
+    every element store, which makes loops O(n^2). When the variable's NDArrayValue and
+    its ndarray are referenced only by the current frame (CPython reference counts),
+    no other variable, cell, struct, closure or view can see the change, so storing in
+    place is indistinguishable from the copy.
+    """
+    import sys as _sys
+    import numpy as _np
+    from openmatlab.numerics.ndarray_value import NDArrayValue as _ND
+
+    if type(arr) is not _ND or type(rhs) is not _ND or len(idxs) != 1 or type(idxs[0]) is not _ND:
+        return False
+    buf, rb, ib = arr._data, rhs._data, idxs[0]._data
+    if buf.dtype != _np.float64 or rb.dtype != _np.float64 or rb.size != 1 or ib.size != 1 \
+            or ib.dtype != _np.float64 or buf.base is not None or not buf.flags.writeable:
+        return False
+    frames, refs = getattr(ws, "_frames", None), getattr(ws, "_refs", None)
+    if not isinstance(frames, list) or not isinstance(refs, list) or not frames or not refs:
+        return False  # nested-function shared workspaces etc. take the copying path
+    frame = frames[-1]
+    if not isinstance(frame, dict) or refs[-1].get(name) is not None or frame.get(name) is not arr:
+        return False
+    # referrers: frame dict, caller's ``arr`` and ``arr_a``, our parameter, getrefcount's argument
+    if _sys.getrefcount(arr) > _INPLACE_ARR_REFS or _sys.getrefcount(buf) > _INPLACE_BUF_REFS:
+        return False
+    k = float(ib.reshape(-1)[0])
+    if not (k == k and k == int(k) and 1 <= k <= buf.size):
+        return False
+    buf[_np.unravel_index(int(k) - 1, buf.shape, order="F")] = rb.reshape(-1)[0]
+    return True
+
+
+_INPLACE_ARR_REFS = 5
+_INPLACE_BUF_REFS = 3

@@ -1962,3 +1962,12 @@ test_cases:
     impl: tests/unit/test_script_local_functions.py
     status: active
     env: unit
+
+  - id: tc.evaluator_perf_797
+    kind: unit
+    title: in-place element stores and scalar reads keep value semantics; double keeps complex (#797)
+    features: [runtime.evaluator]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_issue797_perf.py
+    status: active
+    env: unit
