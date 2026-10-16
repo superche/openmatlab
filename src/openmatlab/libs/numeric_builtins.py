@@ -963,6 +963,7 @@ def _cellfun(
     rows, cols = cell.shape
     if uniform:
         out = np.zeros((rows, cols), dtype=np.float64)
+        all_bool = True
         for i in range(rows):
             for j in range(cols):
                 results = fh.call([cell.get(i, j)], nargout=1)
@@ -971,10 +972,14 @@ def _cellfun(
                 r0 = results[0]
                 if not isinstance(r0, Array):
                     raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
-                buf = np.asarray(r0.backend_buffer(), dtype=np.float64)
+                raw = np.asarray(r0.backend_buffer())
+                all_bool = all_bool and raw.dtype == np.bool_
+                buf = np.asarray(raw, dtype=np.float64)
                 if buf.size != 1:
                     raise BuiltinError("cellfun: UniformOutput requires numeric scalar")
                 out[i, j] = float(buf.reshape(-1)[0])
+        if all_bool and rows * cols:  # logical results give a logical array (MATLAB, #766)
+            return (NDArrayValue(out != 0),)
         return (_wrap(out),)
     # UniformOutput false → cell of results
     grid = []
