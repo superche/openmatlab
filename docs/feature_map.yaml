@@ -562,6 +562,14 @@ features:
     notes: "fprintf/disp/warning/stderr writes from scripts, functions and builtins land in the Command Window of the evaluating thread, not the terminal (#760, Epic #767, M13 G09 first half)"
     tests: [tests/unit/test_workbench_output_routing.py, tests/bdd/test_workbench_output_routing_bdd.py]
 
+  - id: libs.graphics.handle_arrays
+    layer: libs
+    name: graphics handle arrays and MATLAB class names
+    status: done
+    depends_on: [libs.handle_graphics]
+    notes: "h(k)/[h1 h2]/h'/for/arrayfun keep handle arrays; class(h) full matlab.graphics.* name; h(k).Prop read/write, cs-list [h.Prop]; element-wise isvalid/isgraphics/delete; gobjects; 'Line with properties' display (Epic #768, M13 G01)"
+    tests: [tests/unit/test_epic768_handle_arrays.py, tests/bdd/test_graphics_handle_arrays_bdd.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows

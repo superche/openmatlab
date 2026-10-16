@@ -1747,6 +1747,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_handle_arrays
+    kind: unit
+    title: Graphics handle arrays and class names (Epic #768)
+    features: [libs.graphics.handle_arrays]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic768_handle_arrays.py
+    status: active
+    env: unit
+
+  - id: tc.graphics_handle_arrays_bdd
+    kind: bdd
+    title: Graphics handle arrays Gherkin scenarios (Epic #768)
+    features: [libs.graphics.handle_arrays]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_graphics_handle_arrays_bdd.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
