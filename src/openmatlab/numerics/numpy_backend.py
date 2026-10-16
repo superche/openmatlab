@@ -8,6 +8,15 @@ from openmatlab.numerics.ndarray_value import NDArrayValue
 from openmatlab.runtime.value import Array
 
 
+
+def _fit_mask(np, m, n):
+    """MATLAB logical subscripts: a shorter mask is padded with false; trailing false beyond n are ignored (#766)."""
+    if m.size < n:
+        return np.concatenate([m, np.zeros(n - m.size, dtype=bool)])
+    if m.size > n and not m[n:].any():
+        return m[:n]
+    return m
+
 class NumericsError(Exception):
     """Numeric / shape error at the ArrayBackend seam."""
 
@@ -291,7 +300,7 @@ class NumPyArrayBackend:
         np = self._np
         ind_a = _as_nd(ind)
         if self._is_logical(ind_a):
-            m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
+            m = _fit_mask(np, np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F"), dim_size)
             if m.size != dim_size:
                 raise NumericsError(
                     f"{label}: logical mask numel ({m.size}) != dimension ({dim_size})"
@@ -384,6 +393,10 @@ class NumPyArrayBackend:
         data_a = np.asarray(data)
         flat = data_a.reshape(-1, order="F")
         m = np.asarray(mask, dtype=bool).reshape(-1, order="F")
+        if m.size < flat.size or (m.size > flat.size and not m[flat.size:].any()):
+            m = _fit_mask(np, m, flat.size)  # A(L) keeps the shape of L only when sizes agree
+            if data_a.ndim == 2 and min(data_a.shape) != 1:
+                data_a = flat.reshape(-1, 1)
         if m.size != flat.size:
             raise NumericsError(
                 f"index: logical mask numel ({m.size}) != array numel ({flat.size})"
@@ -472,9 +485,9 @@ class NumPyArrayBackend:
             if vbuf.size == 0:
                 # A(i)=[] delete
                 if self._is_logical(ind_a):
-                    m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(
+                    m = _fit_mask(np, np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(
                         -1, order="F"
-                    )
+                    ), flat.size)
                     if m.size != flat.size:
                         raise NumericsError(
                             f"set_index: logical mask numel ({m.size}) != array numel ({flat.size})"
@@ -491,7 +504,7 @@ class NumPyArrayBackend:
                     drop = k - 1
                 return _delete_linear(flat, drop)
             if self._is_logical(ind_a):
-                m = np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F")
+                m = _fit_mask(np, np.asarray(ind_a.backend_buffer(), dtype=bool).reshape(-1, order="F"), flat.size)
                 if m.size != flat.size:
                     raise NumericsError(
                         f"set_index: logical mask numel ({m.size}) != array numel ({flat.size})"

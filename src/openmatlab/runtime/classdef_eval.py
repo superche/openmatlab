@@ -69,6 +69,13 @@ def call(ev, target_expr, arg_exprs: Optional[list], nargout: int = 1):
         if inner_names is None or not _class_rooted(ev, inner_names):
             return None
         base = ev.eval_expr(target_expr.target)
+        if cd.is_instance(base) and arg_exprs is None:
+            from openmatlab.runtime import classdef_subs as _cs, frames
+
+            m = _cs.overloaded(base, "subsref")  # Cls(...).prop on a subsref-overloading object (#766)
+            if m is not None:
+                with frames.calling(ev):
+                    return list(m([base, _cs.make_s([(".", target_expr.name)])], nargout=nargout))
         if cd.is_instance(base):
             return cd.dot_access(ev, base, target_expr.name, arg_exprs, nargout)
         return [ev._index_with_exprs(_field_of(ev, base, target_expr.name), arg_exprs) if arg_exprs is not None

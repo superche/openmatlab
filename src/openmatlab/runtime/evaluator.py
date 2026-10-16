@@ -1904,6 +1904,10 @@ class Evaluator:
         nd = max(p.ndim for p in parts)
         parts = [p.reshape(p.shape + (1,) * (nd - p.ndim)) for p in parts]
         keep = [d for d in range(nd) if d != axis]
+        if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1 and any(p.size for p in parts):
+            parts = [p for p in parts if p.size]  # empties of any size are dropped next to data (#766)
+        elif len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:  # only empties: the first one's size wins
+            parts = [p for p in parts if tuple(p.shape[d] for d in keep) == tuple(parts[0].shape[d] for d in keep)]
         if len({tuple(p.shape[d] for d in keep) for p in parts}) != 1:
             raise EvalError(self._CONCAT_ERR)
         return np.concatenate(parts, axis=axis)

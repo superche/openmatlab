@@ -136,6 +136,14 @@ def read_field(ev, expr: ast.FieldExpr):
         base = base.values[0]
     if (getattr(base, "is_object", False) or getattr(base, "is_graphics_handle", False)) and hasattr(base, "get_prop"):
         # obj.prop, s.obj.prop (M8, #569); graphics h.Prop (O-E6)
+        from openmatlab.runtime import classdef_subs as _cs
+
+        m = _cs.overloaded(base, "subsref")  # f().prop on a call result still goes through subsref (#766)
+        if m is not None:
+            from openmatlab.runtime import frames
+
+            with frames.calling(ev):
+                return m([base, _cs.make_s([(".", field_name(ev, expr))])], nargout=1)[0]
         return base.get_prop(field_name(ev, expr))
     if not is_struct(base):
         raise _err("Dot indexing is not supported for variables of this type.")
