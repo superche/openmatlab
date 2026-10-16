@@ -1,0 +1,13 @@
+{
+ "_doc": "M12 corpus sources (docs/milestones/M12-corpus-gate.md). policy=runtime: fetched into the local cache at run time, never committed. policy=vendor would allow committing with the licence file; no source is vendored today.",
+ "allowed_licenses": {"GFDL-1.2": "runtime", "GPL-3.0-or-later": "runtime", "BSD-2-Clause": "vendor", "BSD-3-Clause": "vendor", "MIT": "vendor"},
+ "sources": {
+  "rosetta": {"license": "GFDL-1.2", "policy": "runtime", "url": "https://rosettacode.org/wiki/Category:MATLAB", "pin": "per-entry page revid"},
+  "octave": {"license": "GPL-3.0-or-later", "policy": "runtime", "url": "https://github.com/gnu-octave/octave", "pin": "5208f34c2b13b447c68c956be2a0b1d67476a80d",
+             "dirs": ["general", "strings", "linear-algebra", "polynomial", "elfun", "specfun", "set", "special-matrix", "statistics", "time", "geometry", "miscellaneous"]},
+  "chebfun": {"license": "BSD-3-Clause", "policy": "runtime", "url": "https://github.com/chebfun/chebfun", "pin": "7574c77680d7e82b79626300bf255498271a72df",
+              "license_file": "LICENSE.txt"},
+  "matlab2tikz": {"license": "BSD-2-Clause", "policy": "runtime", "url": "https://github.com/matlab2tikz/matlab2tikz", "pin": "806c97d99f87f8a1e99a7c54e853c25c82aac301",
+                  "license_file": "LICENSE.md"}
+ }
+}

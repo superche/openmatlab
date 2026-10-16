@@ -586,6 +586,14 @@ features:
     notes: "openmatlab run FILE --timeout S --json [--parse-only]: one subprocess per script, fresh workdir/HOME, stdin /dev/null, MPLBACKEND=Agg, rlimits AS/CPU/FSIZE, process-group kill on timeout, verdict via side file (Epic #761, M12 C02)"
     tests: [tests/unit/test_corpus_runner.py, tests/bdd/test_corpus_runner_bdd.py]
 
+  - id: qa.corpus_manifest
+    layer: qa
+    name: Corpus manifest, runtime fetch and licence allow-list
+    status: done
+    depends_on: [qa.corpus_runner]
+    notes: "corpus/manifest.json (metadata only) + corpus/sources.json; python -m openmatlab.qa.corpus build/fetch/check; 1495 entries (1233 runnable) from Rosetta Code (GFDL, runtime), GNU Octave (GPL, runtime), chebfun (BSD-3), matlab2tikz (BSD-2); sha256-verified cache (Epic #762, M12 C01)"
+    tests: [tests/unit/test_corpus_manifest.py, tests/bdd/test_corpus_manifest_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

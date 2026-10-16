@@ -88,3 +88,6 @@ dist/
 !.env.example
 secrets/
 credentials/
+
+# M12 corpus cache (runtime-fetched; GPL/GFDL code must never be committed)
+corpus/cache/
