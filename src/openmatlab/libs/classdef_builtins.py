@@ -52,6 +52,11 @@ def _wrap_isequal(orig):
 
 def _wrap_isa(orig):
     def f(args, *, nargout=1):
+        if len(args) == 2 and getattr(args[0], "is_graphics_handle", False) and hasattr(args[1], "text"):  # (#768)
+            want = args[1].text
+            mine = args[0].matlab_class()
+            ok = want in (mine, "handle", "matlab.graphics.Graphics")
+            return (_b(ok),)
         if len(args) == 2 and cd.is_instance(args[0]):
             from openmatlab.runtime.char_value import CharValue
 

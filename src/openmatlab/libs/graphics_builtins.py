@@ -989,8 +989,12 @@ def _delete(ev, args, nargout):
         out = tuple(fn(list(args), nargout=nargout))
         return out if nargout else ()
     m = model(ev)
-    for o in _handles(m, args[0], "delete"):
-        m.delete(o)
+    for i in _arr(args[0], "delete").reshape(-1, order="F"):
+        o = m.objs.get(float(i))
+        if o is None:
+            raise _err("Invalid or deleted object.", "MATLAB:class:InvalidHandle")
+        if o.alive:  # deleting an already deleted handle is a no-op (MATLAB)
+            m.delete(o)
     return ()
 
 
