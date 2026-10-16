@@ -288,6 +288,8 @@ def _to_value(m: Model, o: GObj, key: str, val):
         return _h(o.parent.id) if o.parent is not None else NDArrayValue(np.zeros((0, 0)))
     if isinstance(val, str):
         return CharValue(val)
+    if isinstance(val, dict):
+        return _to_value(m, o, key, None)
     if isinstance(val, list) and val and all(isinstance(x, str) for x in val):
         return _cells([CharValue(x) for x in val]) if False else _row_cells(val)
     if val is None:
@@ -315,9 +317,18 @@ def _props_view(o: GObj) -> Dict[str, Any]:
     return d
 
 
+def _known(o: GObj) -> Dict[str, Any]:
+    from openmatlab.libs import chart_builtins
+
+    return chart_builtins.known(o)
+
+
 def _canon(o: GObj, name: str) -> str:
     view = _props_view(o)
     for k in view:
+        if k.lower() == name.lower():
+            return k
+    for k in _known(o):  # documented properties stored without behaviour (#772)
         if k.lower() == name.lower():
             return k
     raise _err(f"Unrecognized property {name} for class {CLASS_NAMES.get(o.type, o.type)}.", "MATLAB:class:InvalidProperty")
@@ -339,6 +350,8 @@ def _get_prop(m: Model, o: GObj, name: str):
     if o.type == "figure" and k == "CurrentAxes":
         a = getattr(o, "current_axes", None)
         return _h(a.id) if a is not None and a.alive else NDArrayValue(np.zeros((0, 0)))
+    if k not in o.props and k not in ("Children", "Parent"):
+        return _to_value(m, o, k, _known(o).get(k))
     return _to_value(m, o, k, o.props.get(k))
 
 

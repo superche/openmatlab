@@ -410,3 +410,8 @@ STATEMENT_ZERO |= {"figure", "close", "clf", "cla", "hold", "subplot", "plot", "
                    "title", "xlabel", "ylabel", "legend", "grid", "xlim", "ylim", "axis", "text", "set",
                    "saveas", "delete", "display", "rmpath", "path", "print",
                    "evalin", "assignin", "doc", "lookfor", "what"}
+# 2-D charts and annotations (Epic #772)
+STATEMENT_ZERO |= {"line", "loglog", "semilogx", "semilogy", "errorbar", "area", "stairs", "stem", "barh", "pie",
+                   "hist", "patch", "fill", "rectangle", "imagesc", "image", "pcolor", "contour", "contourf",
+                   "quiver", "spy", "polar", "polarplot", "rose", "compass", "plotyy", "colormap", "caxis",
+                   "clim", "colorbar", "zlabel", "box", "drawnow", "annotation", "axes"}
