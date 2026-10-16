@@ -160,7 +160,8 @@ def _shape_of(v: Value) -> tuple:
         return v.shape
     if isinstance(v, CellValue):
         return tuple(v.full_shape)
-    if getattr(v, "is_string", False) or getattr(v, "is_struct", False) or getattr(v, "is_enum_array", False):
+    if (getattr(v, "is_string", False) or getattr(v, "is_struct", False) or getattr(v, "is_enum_array", False)
+            or getattr(v, "is_table", False)):
         return tuple(v.shape)  # string arrays (#459), struct arrays (#506), enumeration arrays (M8 O-E5)
     if getattr(v, "issparse", False):
         return tuple(v.shape)  # compressed storage: no densify (#515)
@@ -1276,6 +1277,9 @@ _operator_builtins.register(BUILTINS)
 from openmatlab.libs import file_builtins as _file_builtins  # noqa: E402
 
 _file_builtins.register(BUILTINS)
+from openmatlab.libs import table_builtins as _table_builtins  # noqa: E402
+
+_table_builtins.register(BUILTINS)
 _shape_builtins.register_cell_shape(BUILTINS)
 
 

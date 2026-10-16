@@ -474,6 +474,14 @@ features:
     notes: "statement lines from the parser; frames per M-file function/script/class method; D01/D02 (Epic #698). Residual #705: builtin-named 'Error using', nested/anonymous frame names"
     tests: [tests/unit/test_callstack.py, tests/bdd/test_callstack_bdd.py]
 
+  - id: runtime.table_core
+    layer: runtime
+    name: table core — construction, Properties, indexing/assignment, concatenation, display
+    status: done
+    depends_on: [runtime.callstack]
+    notes: "own column store (no pandas); T01/T02 (Epic #691). Residual #709: Size/VariableTypes preallocation, nested tables, display fidelity"
+    tests: [tests/unit/test_table_core.py, tests/bdd/test_table_core_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment

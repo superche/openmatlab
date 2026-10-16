@@ -211,6 +211,10 @@ def try_ref(ev, expr, nargout=1):
     if st is None or not ev._name_bound(st[0]):
         return None
     obj = ev.workspace.get(st[0])
+    if getattr(obj, "native_subs", False):  # table (M10): Python-level indexing of the whole chain
+        from openmatlab.runtime import table_subs as ts
+
+        return [ts.ref(ev, obj, ts.levels(ev, obj, st[1]))]
     m = overloaded(obj, "subsref")
     if m is None:
         return None
@@ -226,6 +230,13 @@ def try_asgn(ev, target, value_expr) -> Optional[object]:
     if st is None or not ev._name_bound(st[0]):
         return None
     obj = ev.workspace.get(st[0])
+    if getattr(obj, "native_subs", False):
+        from openmatlab.runtime import table_subs as ts
+
+        val = ev.eval_expr(value_expr)
+        out = ts.asgn(ev, obj, ts.levels(ev, obj, st[1]), val)
+        ev.workspace.set(st[0], out)
+        return out
     m = overloaded(obj, "subsasgn")
     if m is None:
         return None
