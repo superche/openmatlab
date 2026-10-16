@@ -1711,6 +1711,10 @@ class Evaluator:
             return self._eval_short_circuit(expr)
         lv = self.eval_expr(expr.left)
         rv = self.eval_expr(expr.right)
+        if type(lv) is NDArrayValue and type(rv) is NDArrayValue and op in _FAST_SCALAR_OPS:
+            r = _fast_scalar_binop(op, lv._data, rv._data)
+            if r is not None:
+                return r
         if getattr(lv, "is_object", False) or getattr(rv, "is_object", False):  # (Epic #539)
             return self._object_binop(op, lv, rv)
 
@@ -2500,3 +2504,27 @@ def _inplace_scalar_assign(ws, name, arr, idxs, rhs) -> bool:
 
 _INPLACE_ARR_REFS = 5
 _INPLACE_BUF_REFS = 3
+
+
+import operator as _op
+import numpy as _np_fast
+
+_F64 = _np_fast.dtype(_np_fast.float64)
+_FAST_SCALAR_OPS = {"+": _op.add, "-": _op.sub, "*": _op.mul, ".*": _op.mul, "/": _op.truediv,
+                    "./": _op.truediv, "<": _op.lt, "<=": _op.le, ">": _op.gt, ">=": _op.ge,
+                    "==": _op.eq, "~=": _op.ne}
+
+
+def _fast_scalar_binop(op, a, b):
+    """1x1 double (op) 1x1 double in plain IEEE floats (#797); None means take the general path."""
+    if a.dtype is not _F64 and a.dtype != _F64 or b.dtype != _F64 or a.shape != (1, 1) or b.shape != (1, 1):
+        return None
+    x, y = a[0, 0].item(), b[0, 0].item()
+    if op in ("/", "./") and y == 0.0:
+        return None  # numpy's inf/nan rules
+    from openmatlab.numerics.ndarray_value import NDArrayValue
+
+    r = _FAST_SCALAR_OPS[op](x, y)
+    if type(r) is bool:
+        return NDArrayValue(_np_fast.array([[r]], dtype=_np_fast.bool_))
+    return NDArrayValue(_np_fast.array([[r]], dtype=_np_fast.float64))

@@ -10,6 +10,11 @@ from openmatlab.runtime.value import Array
 
 
 
+import numpy as _np_mod
+
+_FAST_READ_DT = (_np_mod.dtype(_np_mod.float64), _np_mod.dtype(_np_mod.bool_))
+
+
 def _keep_dt(np, buf):
     """Selection keeps the source class: logical stays logical (#766)."""
     return np.bool_ if np.asarray(buf).dtype == np.bool_ else _dt(np, buf)
@@ -157,6 +162,8 @@ class NumPyArrayBackend:
 
     def from_scalar(self, value: float) -> Array:
         """MATLAB-like scalar as 1×1."""
+        if type(value) is float:  # fast path (#797): same result as the general branch
+            return NDArrayValue(self._np.array([[value]], dtype=self._np.float64))
         return NDArrayValue(
             self._np.asarray([[value]], dtype=_dt(self._np, self._np.asarray(value)))
         )
@@ -382,10 +389,16 @@ class NumPyArrayBackend:
     def _linear_index(self, data: Any, ind: Any) -> Array:
         """Single subscript: column-major linear index (1-based)."""
         np = self._np
-        if getattr(ind, "size", 0) == 1 and not np.iscomplexobj(ind):  # fast scalar read (#797)
-            arr = np.asarray(data)
-            kf = float(np.asarray(ind).reshape(-1)[0])
+        if getattr(ind, "size", 0) == 1 and getattr(ind, "dtype", None) == np.float64:  # fast scalar read (#797)
+            arr = data if type(data) is np.ndarray else np.asarray(data)
+            kf = ind.item()
             if kf == int(kf) and 1 <= kf <= arr.size:
+                if arr.ndim == 2 and arr.dtype in _FAST_READ_DT:
+                    k = int(kf) - 1
+                    r = arr.shape[0]
+                    out = np.empty((1, 1), dtype=arr.dtype)
+                    out[0, 0] = arr[k % r, k // r]
+                    return NDArrayValue(out)
                 el = arr[np.unravel_index(int(kf) - 1, arr.shape, order="F")]
                 return NDArrayValue(_narrow(np, np.asarray(el).astype(_keep_dt(np, arr)).reshape(1, 1)))
         flat_idx = np.asarray(ind, dtype=np.float64)
