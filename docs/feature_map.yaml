@@ -550,7 +550,7 @@ features:
     layer: host
     name: Variable editor panel
     status: done
-    depends_on: [host.workbench]
+    depends_on: [host.workbench.workspace_browser]
     notes: "Variables region: numeric/char/cell/struct/table grid, cell edit writes back via MATLAB indexed assignment (Epic #702)"
     tests: [tests/unit/test_variable_editor.py, tests/bdd/test_variable_editor_bdd.py]
 

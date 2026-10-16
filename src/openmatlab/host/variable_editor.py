@@ -84,8 +84,12 @@ class VariableView:
             return "numeric"
         return "object"
 
-    def size(self) -> Tuple[int, int]:
-        """MATLAB size of the variable (rows, columns); a scalar struct shows as fields × 2."""
+    def size(self):
+        """MATLAB ``size`` of the grid as a 1×2 row vector ``[rows cols]`` (a scalar struct is fields × 2)."""
+        return np.array([list(self.rc())], dtype=float)
+
+    def rc(self) -> Tuple[int, int]:
+        """Grid shape as a Python ``(rows, cols)`` tuple."""
         v = self.value()
         k = self.kind()
         if k == "struct":
@@ -102,7 +106,7 @@ class VariableView:
             return list(v.names)
         if k == "struct":
             return ["Field", "Value"]
-        return [str(j + 1) for j in range(self.size()[1])]
+        return [str(j + 1) for j in range(self.rc()[1])]
 
     def row_headers(self) -> List[str]:
         v = self.value()
@@ -110,10 +114,10 @@ class VariableView:
             return list(v.rownames)
         if self.kind() == "struct":
             return list(v.fields)
-        return [str(i + 1) for i in range(self.size()[0])]
+        return [str(i + 1) for i in range(self.rc()[0])]
 
     def _check(self, r: int, c: int, *, grow: bool = False) -> None:
-        R, C = self.size()
+        R, C = self.rc()
         if r < 1 or c < 1 or int(r) != r or int(c) != c:
             raise VariableEditError("Row and column must be positive integers.")
         if not grow and (r > R or c > C):
@@ -150,7 +154,7 @@ class VariableView:
         return self.editor._with_ev(lambda ev: _elem_text(_ix2(ev, v, r, c)))
 
     def grid(self) -> List[List[str]]:
-        R, C = self.size()
+        R, C = self.rc()
         return [[self.cell(i + 1, j + 1) for j in range(C)] for i in range(R)]
 
     # -- writing -----------------------------------------------------------

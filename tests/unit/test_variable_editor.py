@@ -17,14 +17,14 @@ def wb(tmp_path):
 
 def test_numeric_read_edit_grow(wb):
     v = wb.variable_editor.open("A")
-    assert v.size() == (2, 2) and v.grid() == [["1", "2"], ["3", "4"]]
+    assert v.rc() == (2, 2) and v.grid() == [["1", "2"], ["3", "4"]]
     v.set_cell(3, 3, "9")
-    assert v.size() == (3, 3) and v.cell(3, 1) == "0"
+    assert v.rc() == (3, 3) and v.cell(3, 1) == "0"
 
 
 def test_nd_folds_pages(wb):
     v = wb.variable_editor.open("z")
-    assert v.size() == (2, 4)
+    assert v.rc() == (2, 4)
     v.set_cell(2, 4, "5")
     assert wb.eval_value("z(2,2,2)") == 5
 
