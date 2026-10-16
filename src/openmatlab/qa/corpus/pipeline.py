@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import manifest as M
-from .classify import classify
+from .classify import classify_features, features
 from .preprocess import prepare
 from .runner import DEFAULT_TIMEOUT, run_one
 
@@ -76,8 +76,9 @@ class _Job:
             else:
                 r = run_one(target, timeout=timeout, name=e.id, mode="parse").to_json()
                 rec["t0"], rec["t1"] = r["status"], "n/a"
-            cat, key = classify(r, code, self.siblings)
-            rec.update(category=cat, key=key, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
+            feats = features(code, self.siblings)
+            cat, key = classify_features(r, feats)
+            rec.update(category=cat, key=key, status=r["status"], run_kind=r["kind"], features=feats, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
                        elapsed=r["elapsed"])
             return rec
         finally:

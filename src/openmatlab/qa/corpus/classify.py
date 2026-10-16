@@ -140,8 +140,28 @@ def _assigned(code: str) -> set:
     return names
 
 
+def features(code: str, siblings: Iterable[str] = ()) -> dict:
+    """The code facts the rules use (identifiers and flags only, never code bodies).
+
+    Stored with each labelled failure so the classifier can be evaluated offline in CI.
+    """
+    clean = _without_strings(code)
+    return {
+        "dialect": dialect_marker(code),
+        "prose": bool(_PROSE.search(code)),
+        "interactive": bool(re.search(r"\b(input|keyboard|pause|waitforbuttonpress|ginput)\b", clean)),
+        "defined": sorted(_defined_functions(code)),
+        "assigned": sorted(_assigned(code)),
+        "siblings": sorted(set(siblings)),
+    }
+
+
 def classify(result: dict, code: str = "", siblings: Iterable[str] = ()) -> Tuple[str, str]:
     """Return ``(category, key)`` for one failed run; ``("pass", "")`` for a pass."""
+    return classify_features(result, features(code, siblings))
+
+
+def classify_features(result: dict, f: dict) -> Tuple[str, str]:
     status, kind = result.get("status", ""), result.get("kind", "")
     msg = result.get("message", "") or ""
     eid = result.get("error_id", "") or ""
@@ -150,26 +170,23 @@ def classify(result: dict, code: str = "", siblings: Iterable[str] = ()) -> Tupl
     if status == "crash" or kind == "internal" or "Traceback (most recent call last)" in (result.get("stderr") or ""):
         return "internal-crash", (msg.split(":", 1)[0] or "crash").strip()[:60]
     if status == "timeout":
-        if re.search(r"\b(input|keyboard|pause|waitforbuttonpress|ginput)\b", _without_strings(code)):
-            return "io-env", "interactive"
-        return "timeout", ""
+        return ("io-env", "interactive") if f["interactive"] else ("timeout", "")
     if kind == "output-limit":
         return "timeout", "output-limit"
-    dialect = dialect_marker(code)
+    dialect = f["dialect"]
     if kind == "parse":
         if dialect:
             return "corpus-noise", dialect
-        if _PROSE.search(code):
+        if f["prose"]:
             return "corpus-noise", "prose-or-output"
         m = re.search(r"(?:Unexpected token|got) (\w+)", msg) or re.search(r"Unexpected character '(.)'", msg)
         return "parse-error", (m.group(1) if m else msg[:40])
     if eid == "MATLAB:recursionLimit" or "recursion limit" in msg.lower():
         return "semantics-diff", "recursionLimit"
-    sib = set(siblings) | _defined_functions(code)
+    defined, assigned = set(f["defined"]), set(f["assigned"])
     m = _UNDEF.search(msg)
     if m:
         name = m.group(1)
-        is_var = bool(_UNDEF_VAR.match(msg))
         if name in DIALECT_FUNCS or (dialect and name in {"printf", "puts", "fdisp", "mprintf", "disp"}):
             return "corpus-noise", "dialect:" + name
         if name in _TOOLBOX_OF:
@@ -178,23 +195,20 @@ def classify(result: dict, code: str = "", siblings: Iterable[str] = ()) -> Tupl
             return "io-env", name
         if name in GRAPHICS_FUNCS:
             return "graphics", name
-        if name in sib and name not in _defined_functions(code):
+        if name in set(f["siblings"]) and name not in defined:
             return "corpus-noise", "missing-dependency"
-        if is_var:
-            if name in _assigned(code):
-                return "semantics-diff", "undefined-variable"
-            return "corpus-noise", "fragment"
-        if re.search(r"\b%s\s*=" % re.escape(name), code):
+        if name in assigned or name in defined:
             return "semantics-diff", "undefined-variable"
+        if _UNDEF_VAR.match(msg):
+            return "corpus-noise", "fragment"
         if name[:1].isupper() or re.search(r"[A-Z]", name[1:]) or "_" in name or re.search(r"\d", name):
             return "corpus-noise", "missing-dependency"  # camelCase/user-style helper published elsewhere
         return "missing-builtin", name
     if _IO_MSG.search(msg):
-        return "io-env", "file" if "input" not in msg else "input"
+        return "io-env", "input" if "input" in msg else "file"
     if dialect:
         return "corpus-noise", dialect
-    if re.search(r"graphics|axes|figure|handle|colormap|Line|Patch|Surface", msg) or eid.startswith("MATLAB:hg") \
-            or eid.startswith("MATLAB:graphics"):
+    if re.search(r"graphics|axes|figure|handle|colormap|Line|Patch|Surface", msg) or eid.startswith(("MATLAB:hg", "MATLAB:graphics")):
         m = re.search(r"\b(%s)\b" % "|".join(sorted(GRAPHICS_FUNCS, key=len, reverse=True)), msg)
         return "graphics", (m.group(1) if m else "property")
     key = re.sub(r"'[^']*'|\"[^\"]*\"|\d+", "_", msg).strip()[:60]

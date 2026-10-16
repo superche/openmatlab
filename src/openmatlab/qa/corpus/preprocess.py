@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 PROMPT = re.compile(r"^\s*(>>|octave:\d+>)\s?(.*)$")
 _OPEN = re.compile(r"^\s*(for|parfor|while|if|switch|try|function|do)\b")
@@ -139,3 +139,40 @@ def prepare(code: str) -> Prepared:
     if fixture:
         notes.append("input-fixture")
     return Prepared(code=body, role=role, transcript=transcript, input_lines=fixture, notes=notes)
+
+
+@dataclass
+class Normalized:
+    """``prepare`` result in the shape the corpus pipeline and the C03 criterion use."""
+
+    code: str
+    kind: str  # "script" | "function"
+    expected_stdout: Optional[str]  # transcript output (T3 golden candidate) or None
+    stdin_fixture: Optional[List[str]]  # answers for input()/keyboard, or None
+    notes: List[str]
+
+
+def normalize(code: str) -> Normalized:
+    p = prepare(code)
+    return Normalized(code=p.code, kind=p.role, expected_stdout=p.transcript if "deprompted" in p.notes else None,
+                      stdin_fixture=p.input_lines or None, notes=p.notes)
+
+
+def results_path():
+    from openmatlab.qa.paths import repo_root
+
+    return repo_root() / "docs" / "corpus" / "results.json"
+
+
+def noise_rate(records, source: str = "rosetta") -> float:
+    """Share of a source's script entries whose outcome is ``corpus-noise``."""
+    rows = [r for r in records if r.get("source") == source and r.get("kind") == "script"]
+    return sum(r.get("category") == "corpus-noise" for r in rows) / max(1, len(rows))
+
+
+def pilot_noise_rate(path=None) -> float:
+    """Noise rate of the Rosetta script set (the pilot population) in the committed full run."""
+    import json
+
+    doc = json.loads((path or results_path()).read_text(encoding="utf-8"))
+    return noise_rate(doc["records"])
