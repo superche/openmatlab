@@ -1,0 +1,201 @@
+"""Rule-based root-cause classifier for corpus failures (M12 C04, Epic #763).
+
+``classify(result, code, siblings)`` maps one failed run to ``(category, key)``:
+
+==================== ===============================================================
+``internal-crash``   Python exception or traceback inside OpenMATLAB (always p0)
+``timeout``          wall-clock budget exceeded
+``corpus-noise``     the sample is not a runnable MATLAB program (Octave/Scilab dialect,
+                     prose or output left in the code, fragment relying on undefined
+                     context, helper defined elsewhere); excluded from pass rates
+``toolbox:<tb>``     needs a MathWorks toolbox or third-party package
+``io-env``           files, network, OS, interactive input
+``graphics``         a graphics call is missing or fails (key = function)
+``missing-builtin``  a MATLAB base function is not implemented (key = name)
+``parse-error``      valid MATLAB that OpenMATLAB cannot parse (key = token)
+``semantics-diff``   valid MATLAB that runs differently (runtime error or T2/T3 mismatch)
+==================== ===============================================================
+
+Rules only (error id, message patterns, name lists); deterministic, no network, no LLM.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Iterable, Tuple
+
+CATEGORIES = ("internal-crash", "timeout", "corpus-noise", "toolbox", "io-env", "graphics",
+              "missing-builtin", "parse-error", "semantics-diff")
+EXCLUDED_ALWAYS = ("corpus-noise",)
+EXCLUDED_T1 = ("corpus-noise", "toolbox", "io-env")
+
+# Octave / Scilab / FreeMat functions that are not MATLAB: a script calling them is dialect noise.
+DIALECT_FUNCS = {
+    "printf", "puts", "fputs", "fdisp", "mprintf", "mfprintf", "scanf", "disp_", "endfunction", "columns",
+    "rows", "postpad", "prepad", "index", "rindex", "strvcat_", "do_string_escapes", "num2str_", "lookup",
+    "printf_", "ifelse", "merge", "fflush_", "stdout", "stderr", "nthargout", "print_usage", "inputname_",
+    "isargout", "validatestring_", "mat2str_", "typecast_", "sizemax", "idivide_", "deal_", "polyout",
+    "mtimes_", "getenv_", "kbhit", "usleep", "exist_", "sum_", "isrow_", "strjust_", "cellfun_",
+    "evalin_", "toc_", "tic_", "argv", "program_name", "OCTAVE_VERSION", "pkg", "graphics_toolkit",
+    "unwind_protect", "end_unwind_protect", "func2str_", "factor_", "primes_", "isprime_",
+}
+
+TOOLBOXES = {
+    "symbolic": {"sym", "syms", "vpa", "digits", "simplify", "subs", "symsum", "solve", "dsolve", "diff_sym",
+                 "expand", "factor_sym", "limit", "taylor", "int_sym", "symvar", "vpi", "pretty", "latex"},
+    "statistics": {"normrnd", "normpdf", "normcdf", "norminv", "binopdf", "binornd", "poissrnd", "unifrnd",
+                   "randsample", "pdist", "squareform", "linkage", "kmeans", "fitdist", "tabulate", "nanmean",
+                   "nanmax", "nanmin", "nansum", "prctile", "quantile", "iqr", "zscore", "ttest", "chi2gof",
+                   "geomean", "harmmean", "skewness", "kurtosis", "range", "mad", "exprnd", "randg"},
+    "image": {"imread_", "imshow", "imresize", "rgb2gray", "edge", "imfilter", "imrotate", "im2bw",
+              "bwlabel", "imerode", "imdilate", "fspecial", "imadjust", "imcrop", "imnoise", "medfilt2",
+              "regionprops", "padarray", "im2double", "im2uint8", "graythresh", "imbinarize", "imhist"},
+    "signal": {"butter", "cheby1", "filtfilt", "freqz", "hamming", "hann", "periodogram", "pwelch", "resample",
+               "xcorr", "findpeaks", "spectrogram", "chirp", "sawtooth", "square", "upsample", "downsample"},
+    "optimization": {"fminunc", "fmincon", "linprog", "intlinprog", "quadprog", "lsqnonlin", "lsqcurvefit",
+                     "optimoptions", "ga", "particleswarm", "fsolve"},
+    "communications": {"de2bi", "bi2de", "gf", "awgn", "randi_", "qammod", "pskmod"},
+    "fixed-point": {"fi", "numerictype", "fimath"},
+    "java": {"java", "javaObject", "javaMethod", "javaArray", "javaaddpath"},
+    "dotnet": {"NET", "System"},
+    "database": {"database", "fetch", "exec"},
+    "parallel": {"parpool", "gcp", "spmd", "labindex", "numlabs", "gpuArray", "gather"},
+    "mapping": {"geoshow", "worldmap", "distance", "deg2km", "km2deg"},
+}
+_TOOLBOX_OF = {f: tb for tb, fs in TOOLBOXES.items() for f in fs}
+
+IO_ENV_FUNCS = {"system", "dos", "unix", "urlread", "urlwrite", "webread", "webwrite", "websave", "ftp", "open",
+                "winopen", "web", "clipboard", "getenv", "setenv", "computer", "memory", "uigetfile", "uiputfile",
+                "inputdlg", "questdlg", "msgbox", "waitforbuttonpress", "ginput", "uiwait", "keyboard", "pause",
+                "tcpip", "udp", "serial", "audioread", "audiowrite", "sound", "soundsc", "audioplayer", "beep",
+                "actxserver", "dir", "ls", "cd", "delete", "imread", "imwrite", "VideoWriter", "VideoReader",
+                "xlsread", "xlswrite", "readtable_", "copyfile", "movefile", "mkdir", "rmdir", "license"}
+
+GRAPHICS_FUNCS = {
+    "plot", "plot3", "figure", "axes", "axis", "subplot", "hold", "line", "patch", "surf", "surface", "mesh",
+    "meshc", "surfc", "contour", "contourf", "contour3", "quiver", "quiver3", "bar", "bar3", "barh", "barh3",
+    "pie", "pie3", "hist", "histogram", "histogram2", "area", "fill", "fill3", "scatter", "scatter3", "stem",
+    "stairs", "errorbar", "polar", "polarplot", "rose", "compass", "feather", "image", "imagesc", "colormap",
+    "colorbar", "caxis", "clim", "shading", "lighting", "light", "material", "camlight", "view", "rotate3d",
+    "zoom", "pan", "rectangle", "annotation", "text", "title", "xlabel", "ylabel", "zlabel", "legend",
+    "grid", "box", "xlim", "ylim", "zlim", "drawnow", "getframe", "movie", "im2frame", "frame2im", "print",
+    "saveas", "savefig", "openfig", "gcf", "gca", "gco", "clf", "cla", "close", "set", "get_", "ishandle",
+    "isgraphics", "uicontrol", "uimenu", "uipanel", "uitable", "uifigure", "linkaxes", "daspect", "pbaspect",
+    "fplot", "ezplot", "ezsurf", "fsurf", "fmesh", "fcontour", "fimplicit", "loglog", "semilogx", "semilogy",
+    "yyaxis", "plotyy", "sphere", "cylinder", "ellipsoid", "peaks_", "waterfall", "ribbon", "slice",
+    "isosurface", "streamline", "comet", "comet3", "animatedline", "addpoints", "spy", "pcolor", "trisurf",
+    "trimesh", "triplot", "voronoi", "delaunay_", "hgtransform", "makehgtform", "copyobj", "findobj",
+    "allchild", "ancestor", "refresh", "rgbplot", "hsv2rgb_", "rgb2hsv_", "parula", "jet", "hot", "gray",
+    "bone", "copper", "pink", "lines", "turbo", "colororder", "ind2rgb", "image_", "imfinfo", "camva",
+    "campos", "camtarget", "camup", "camzoom", "camorbit", "axis_", "datetick", "ginput_", "gtext",
+    "histogram_", "heatmap", "wordcloud", "geoplot", "boxplot", "graph_plot", "colorbar_",
+}
+
+_UNDEF = re.compile(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)")
+_UNDEF_VAR = re.compile(r"^Undefined variable:?\s*'?([A-Za-z_]\w*)")
+_IO_MSG = re.compile(r"(fopen|file identifier|Unable to find or open|No such file|input: no more input|"
+                     r"Unable to read|cannot open|end of input|permission denied|network|URL)", re.I)
+_DIALECT_SYNTAX = [
+    (re.compile(r"^\s*#(?![{}])", re.M), "octave-comment"),
+    (re.compile(r"\bend(function|for|while|if|switch|_try_catch)\b"), "octave-end"),
+    (re.compile(r"(\+\+|--)\s*;|[^=!<>~]\b\s*(\+=|-=|\*=|/=)"), "octave-assign-op"),
+    (re.compile(r"!=|!\s*[A-Za-z(]"), "octave-not"),
+    (re.compile(r"\bunwind_protect\b|\bdo\b\s*$|\buntil\b", re.M), "octave-block"),
+    (re.compile(r"\bprintf\s*\(|\bputs\s*\(|\bfdisp\s*\("), "octave-io"),
+    (re.compile(r"^\s*//", re.M), "scilab-comment"),
+    (re.compile(r"\bmprintf\b|\bdeff\b|\bendfunction\b"), "scilab"),
+]
+_PROSE = re.compile(r"^\s*(ans|[A-Za-z_]\w*)\s*=\s*$|^\s*Columns? \d+|^\s*Output:|^\s*Result:|^\s*(The|This|Sample|Example) \w+",
+                    re.M)
+
+
+def dialect_marker(code: str) -> str:
+    for rx, key in _DIALECT_SYNTAX:
+        if rx.search(_without_strings(code)):
+            return key
+    return ""
+
+
+def _without_strings(code: str) -> str:
+    out = []
+    for ln in code.splitlines():
+        ln = re.sub(r'"[^"\n]*"', '""', ln)
+        ln = re.sub(r"(?<![\w)\]}.'])'[^'\n]*'", "''", ln)
+        if not ln.lstrip().startswith("#"):
+            ln = re.sub(r"%.*$", "", ln)
+        out.append(ln)
+    return "\n".join(out)
+
+
+def _defined_functions(code: str) -> set:
+    return set(re.findall(r"^\s*function\s+(?:\[[^\]]*\]\s*=\s*|\w+\s*=\s*)?([A-Za-z_]\w*)", code, re.M))
+
+
+def _assigned(code: str) -> set:
+    names = set(re.findall(r"^\s*([A-Za-z_]\w*)\s*(?:\([^=]*\))?\s*=(?!=)", code, re.M))
+    for grp in re.findall(r"^\s*\[([^\]]*)\]\s*=(?!=)", code, re.M):
+        names.update(re.findall(r"[A-Za-z_]\w*", grp))
+    names.update(re.findall(r"^\s*(?:for|parfor)\s*\(?\s*([A-Za-z_]\w*)\s*=", code, re.M))
+    names.update(re.findall(r"function\s+[^\n]*\(([^)]*)\)", code))
+    return names
+
+
+def classify(result: dict, code: str = "", siblings: Iterable[str] = ()) -> Tuple[str, str]:
+    """Return ``(category, key)`` for one failed run; ``("pass", "")`` for a pass."""
+    status, kind = result.get("status", ""), result.get("kind", "")
+    msg = result.get("message", "") or ""
+    eid = result.get("error_id", "") or ""
+    if status == "pass":
+        return "pass", ""
+    if status == "crash" or kind == "internal" or "Traceback (most recent call last)" in (result.get("stderr") or ""):
+        return "internal-crash", (msg.split(":", 1)[0] or "crash").strip()[:60]
+    if status == "timeout":
+        if re.search(r"\b(input|keyboard|pause|waitforbuttonpress|ginput)\b", _without_strings(code)):
+            return "io-env", "interactive"
+        return "timeout", ""
+    if kind == "output-limit":
+        return "timeout", "output-limit"
+    dialect = dialect_marker(code)
+    if kind == "parse":
+        if dialect:
+            return "corpus-noise", dialect
+        if _PROSE.search(code):
+            return "corpus-noise", "prose-or-output"
+        m = re.search(r"(?:Unexpected token|got) (\w+)", msg) or re.search(r"Unexpected character '(.)'", msg)
+        return "parse-error", (m.group(1) if m else msg[:40])
+    if eid == "MATLAB:recursionLimit" or "recursion limit" in msg.lower():
+        return "semantics-diff", "recursionLimit"
+    sib = set(siblings) | _defined_functions(code)
+    m = _UNDEF.search(msg)
+    if m:
+        name = m.group(1)
+        is_var = bool(_UNDEF_VAR.match(msg))
+        if name in DIALECT_FUNCS or (dialect and name in {"printf", "puts", "fdisp", "mprintf", "disp"}):
+            return "corpus-noise", "dialect:" + name
+        if name in _TOOLBOX_OF:
+            return "toolbox:" + _TOOLBOX_OF[name], name
+        if name in IO_ENV_FUNCS:
+            return "io-env", name
+        if name in GRAPHICS_FUNCS:
+            return "graphics", name
+        if name in sib and name not in _defined_functions(code):
+            return "corpus-noise", "missing-dependency"
+        if is_var:
+            if name in _assigned(code):
+                return "semantics-diff", "undefined-variable"
+            return "corpus-noise", "fragment"
+        if re.search(r"\b%s\s*=" % re.escape(name), code):
+            return "semantics-diff", "undefined-variable"
+        if name[:1].isupper() or re.search(r"[A-Z]", name[1:]) or "_" in name or re.search(r"\d", name):
+            return "corpus-noise", "missing-dependency"  # camelCase/user-style helper published elsewhere
+        return "missing-builtin", name
+    if _IO_MSG.search(msg):
+        return "io-env", "file" if "input" not in msg else "input"
+    if dialect:
+        return "corpus-noise", dialect
+    if re.search(r"graphics|axes|figure|handle|colormap|Line|Patch|Surface", msg) or eid.startswith("MATLAB:hg") \
+            or eid.startswith("MATLAB:graphics"):
+        m = re.search(r"\b(%s)\b" % "|".join(sorted(GRAPHICS_FUNCS, key=len, reverse=True)), msg)
+        return "graphics", (m.group(1) if m else "property")
+    key = re.sub(r"'[^']*'|\"[^\"]*\"|\d+", "_", msg).strip()[:60]
+    return "semantics-diff", key or eid or "error"
