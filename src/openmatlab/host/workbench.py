@@ -52,6 +52,8 @@ TOOLBAR_SPEC: Tuple[str, ...] = (
     "Open…",
     "Save",
     "Run",
+    "Run Section",
+    "Run and Advance",
 )
 
 LAYOUT_PRESETS: Tuple[str, ...] = ("default",)
@@ -167,11 +169,12 @@ class CommandWindow:
         self._last_error = (str(frames[0][0]), int(frames[0][2])) if frames else None
 
     def error_text(self, exc) -> str:
-        """MATLAB-style uncaught error text ("Error using f (line n)" + message); never a traceback."""
-        from openmatlab.runtime import errors
+        """Uncaught error text, same layout as the CLI: message, then one "Error in f (line N)" per
+        frame (the first is the error hyperlink); never a traceback."""
+        from openmatlab.runtime.errors import error_in_lines
 
         frames = tuple(getattr(exc, "mstack", None) or ())
-        return errors.report(str(exc), frames, basic=True) if frames else f"Error: {exc}"
+        return f"error: {exc}" + (("\n" + error_in_lines(frames)) if frames else "")
 
     def last_error_location(self) -> Optional[Tuple[str, int]]:
         """``(file, line)`` the last error's hyperlink points to, or ``None`` (M11 D-E6)."""
@@ -245,7 +248,7 @@ class EditorPanel:
         return "\n".join(self.text.split("\n")[a - 1:b])
 
     def set_cursor_line(self, line: int) -> None:
-        n = max(1, len(self.text.split("\n")))
+        n = max(1, len(self.text.rstrip("\n").split("\n")))
         self._cursor = min(max(1, int(line)), n)
 
     def cursor_line(self) -> int:
@@ -857,6 +860,12 @@ class Workbench:
         entry = ttk.Entry(cw_row, font=("Courier", 10))
         entry.pack(side="left", fill="x", expand=True, padx=4)
         hist_index = {"i": 0}
+        # Command History (M11 D-E6): double-click or Enter re-runs an entry
+        ttk.Label(cw_frame, text="Command History", font=("", 9, "bold")).pack(anchor="w")
+        hist_list = tk.Listbox(cw_frame, height=4, font=("Courier", 9))
+        hist_list.pack(fill="x")
+        # Error hyperlinks (M11 D-E6): "Error in f (line N)" lines open the file at that line
+        out.tag_configure("errlink", foreground="#0645ad", underline=True)
 
         # Right: Workspace + docked Figures (W14)
         right_split = ttk.Panedwindow(right, orient="vertical")
@@ -914,6 +923,7 @@ class Workbench:
                 txt = tk.Text(tab, wrap="none", font=("Courier", 10))
                 txt.pack(side="left", fill="both", expand=True)
                 txt.insert("1.0", panel.text)
+                txt.mark_set("insert", f"{panel.cursor_line()}.0")  # caret follows the model (D-E6)
                 txt.tag_configure("bp", background="#f6d0d0")
                 txt.tag_configure("cur", background="#fff2a8")
                 txt.bind("<F12>", lambda _e, w=txt: _toggle_bp(int(w.index("insert").split(".")[0])))
@@ -957,8 +967,13 @@ class Workbench:
             text = self.command_window._stream.getvalue()[_out_mark["n"]:]
             _out_mark["n"] = len(self.command_window._stream.getvalue())
             if text:
-                out.insert("end", text)
+                for ln in text.splitlines(keepends=True):
+                    out.insert("end", ln, ("errlink",) if ln.startswith("Error in ") else ())
                 out.see("end")
+            hist_list.delete(0, "end")
+            for h in self.command_window.history():
+                hist_list.insert("end", h)
+            hist_list.see("end")
             cf = self.debug.current_file()
             if cf is not None and cf.is_file():
                 self.documents.open_file(cf)
@@ -1157,6 +1172,52 @@ class Workbench:
             else:
                 _debug_action(lambda: self.debug.run(src))
 
+        def _sync_cursor() -> None:
+            w = _active_ed_text()
+            if w is not None:
+                self.editor.set_cursor_line(int(w.index("insert").split(".")[0]))
+
+        def ed_run_section(advance: bool = False) -> None:
+            _sync_editor_from_ui()
+            _sync_cursor()
+            out.insert("end", ">> (run section)\n")
+            _out_mark["n"] = len(self.command_window._stream.getvalue())
+            _debug_action(self.run_and_advance if advance else self.run_section)
+            w = _active_ed_text()
+            if w is not None and advance:
+                w.mark_set("insert", f"{self.editor.cursor_line()}.0")
+                w.see("insert")
+
+        def _follow_error_link(_event=None) -> None:
+            ed = self.open_error_link()
+            if ed is None:
+                return
+            _rebuild_editor_tabs()
+            w = _active_ed_text()
+            if w is not None:
+                w.mark_set("insert", f"{ed.cursor_line()}.0")
+                w.see("insert")
+                w.focus_set()
+
+        def hist_rerun(_event=None) -> None:
+            sel = hist_list.curselection()
+            if not sel:
+                return
+            line = hist_list.get(sel[0])
+            out.insert("end", f"{prompt_var.get()} {line}\n")
+            _out_mark["n"] = len(self.command_window._stream.getvalue())
+            if self.debug.is_paused():
+                self.command_window._history.append(line)
+                _debug_action(lambda: self.debug.send(line))
+            else:
+                _debug_action(lambda: self.debug.run(line))
+
+        out.tag_bind("errlink", "<Button-1>", _follow_error_link)
+        out.tag_bind("errlink", "<Enter>", lambda _e: out.configure(cursor="hand2"))
+        out.tag_bind("errlink", "<Leave>", lambda _e: out.configure(cursor=""))
+        hist_list.bind("<Double-1>", hist_rerun)
+        hist_list.bind("<Return>", hist_rerun)
+
         def on_eval(_event=None) -> None:
             line = entry.get().strip()
             if not line:
@@ -1236,6 +1297,10 @@ class Workbench:
         tool_btns["Open…"].configure(command=ed_open)
         tool_btns["Save"].configure(command=ed_save)
         tool_btns["Run"].configure(command=ed_run)
+        tool_btns["Run Section"].configure(command=ed_run_section)
+        tool_btns["Run and Advance"].configure(command=lambda: ed_run_section(advance=True))
+        root.bind_all("<Control-Return>", lambda _e: (ed_run_section(), "break")[1])
+        root.bind_all("<Control-Shift-Return>", lambda _e: (ed_run_section(advance=True), "break")[1])
         for label, fn in zip(self.debug_toolbar(), (self.debug.continue_, self.debug.step, self.debug.step_in,
                                                     self.debug.step_out, self.debug.quit)):
             dbg_btns[label].configure(command=lambda f=fn: _debug_action(f))
