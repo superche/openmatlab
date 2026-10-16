@@ -266,7 +266,11 @@ def _assign(ev, cur, steps, rhs, depth):
         args = ev._object_index_args(cur, arg)
         if not rest:
             return cur.assign(args, rhs)
-        elem = cur.index(args)
+        try:
+            elem = cur.index(args)
+        except Exception:  # growing an object array through obj(k).p = v is not supported yet
+            raise _err(f"Indexed assignment is not supported for objects of class '{cur.matlab_class()}' "
+                       "in this release.") from None
         if elem.numel() != 1:
             raise _err("Scalar object required for this assignment.")
         return cur.assign(args, _assign(ev, elem, rest, rhs, depth + 1))
