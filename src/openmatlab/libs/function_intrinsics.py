@@ -293,6 +293,10 @@ from openmatlab.libs import chart_builtins as _cb  # noqa: E402  (M13 G-E5 #772)
 
 INTRINSICS.update(_cb.INTRINSICS)
 
+from openmatlab.libs import graphics_query as _gq  # noqa: E402  (M13 G-E2 #769)
+
+INTRINSICS.update(_gq.INTRINSICS)
+
 from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
 
 INTRINSICS.update(_gl.INTRINSICS)
