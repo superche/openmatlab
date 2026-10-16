@@ -37,7 +37,7 @@ Language criteria (D01–D07) are `.m` scripts over real function files in a `te
 | D07 | `dbstop if caught error [ID]`, `if error`, `if warning`, `if naninf`; pause at the faulting line with the stack intact | m11_d07_error_stop | p1 | #700 | met (Epic #700; residual #729) |
 | D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | met (Epic #701; residual #725) |
 | D09 | Variable editor: open numeric/char/cell/struct/table from Workspace, edit a cell and write back | m11_d09_variable_editor | p1 | #702 | met (Epic #702; residual #747) |
-| D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture | m11_d10_workbench_workflows | p1 | #703 | met (Epic #703; residual #751) |
+| D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture ([video](../../demos/workbench/showcase_d10_debugger_workflows.mp4)) | m11_d10_workbench_workflows | p1 | #703 | met (Epic #703; residual #751) |
 
 ## Epics (approved order, interleaved with M10)
 
