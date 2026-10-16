@@ -64,4 +64,4 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **4 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)). Next: D-E4 (#701) Workbench debug UI, then T-E3 (#693) / T-E5 (#695).
+M10 opened 2026-10-16. **4 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)). Next: T-E3 (#693) / T-E5 (#695), interleaved with D-E3 (#700).

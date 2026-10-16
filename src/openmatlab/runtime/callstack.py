@@ -31,6 +31,12 @@ def entering(frame: Frame):
         yield frame
     finally:
         _STACK.reset(token)
+    from openmatlab.runtime import debugger
+
+    if debugger.ON:  # normal return only (not reached while an error unwinds)
+        d = debugger.active()
+        if d is not None:
+            d.on_return()
 
 
 def snapshot() -> tuple:

@@ -35,7 +35,7 @@ Language criteria (D01–D07) are `.m` scripts over real function files in a `te
 | D05 | Paused-frame evaluation, `dbup`/`dbdown`, `who`/`exist`/`evalin('caller')` respect the active frame, assignments take effect on resume | m11_d05_paused_workspace | p1 | #699 (#611) | met (Epic #699; residual #713) |
 | D06 | `input`, `input(prompt,'s')`, empty input, `keyboard` + `dbcont` | m11_d06_keyboard_input | p1 | #700 (#577) | pending |
 | D07 | `dbstop if caught error [ID]`, `if error`, `if warning`, `if naninf`; pause at the faulting line with the stack intact | m11_d07_error_stop | p1 | #700 | pending |
-| D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | pending |
+| D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | met (Epic #701; residual #725) |
 | D09 | Variable editor: open numeric/char/cell/struct/table from Workspace, edit a cell and write back | m11_d09_variable_editor | p1 | #702 | pending |
 | D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture | m11_d10_workbench_workflows | p1 | #703 | pending |
 
@@ -62,4 +62,4 @@ Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser 
 
 ## Progress snapshot
 
-M11 opened 2026-10-16. **5 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)). Next: T-E2 (#692) / T-E4 (#694), then D-E4 (#701).
+M11 opened 2026-10-16. **6 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)); D08 (Epic #701, [design](../design/EPIC-701-debug-ui.md)). Next: D-E3 (#700) keyboard/input/condition stops, then T-E3 (#693) / T-E5 (#695).
