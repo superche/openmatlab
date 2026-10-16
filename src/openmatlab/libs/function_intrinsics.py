@@ -297,6 +297,10 @@ from openmatlab.libs import frame_help_intrinsics as _fh  # noqa: E402
 
 INTRINSICS.update(_fh.INTRINSICS)
 
+from openmatlab.libs import debug_builtins as _dbgb  # noqa: E402  (M11 D-E2 #699)
+
+INTRINSICS.update(_dbgb.INTRINSICS)
+
 from openmatlab.runtime import classdef_subs as _cs  # noqa: E402  (O-E4 #621)
 
 INTRINSICS.update(_cs.INTRINSICS)

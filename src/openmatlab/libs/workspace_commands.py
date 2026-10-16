@@ -402,6 +402,7 @@ INTRINSICS = {
 }
 # statement forms that print instead of binding ans (MATLAB)
 STATEMENT_ZERO = {"clear", "clearvars", "who", "whos", "format", "clc", "help", "cd", "dir", "ls", "eval", "save", "load", "fprintf"}
+STATEMENT_ZERO |= {"dbstop", "dbclear", "dbstatus", "dbcont", "dbstep", "dbquit", "dbup", "dbdown"}  # M11 D-E2
 COMMAND_ONLY = {"which": _which_cmd}
 
 # graphics calls as statements: no display, no ans (Epic #537)

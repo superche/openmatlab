@@ -38,6 +38,9 @@ class Session:
     graphics: Optional[Any] = None
 
     def __post_init__(self) -> None:
+        from openmatlab.runtime.debugger import Debugger
+
+        self.debugger = Debugger()  # breakpoints / pause state for this session (M11 D-E2)
         self.functions.path = self.path
         if self.graphics is not None and isinstance(self.plots, StubPlotSurface):
             self.plots = HostPlotSurface(self.graphics)

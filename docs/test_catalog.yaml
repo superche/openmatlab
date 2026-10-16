@@ -1270,6 +1270,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.debugger
+    kind: unit
+    title: debug engine (Epic #699)
+    features: [runtime.debugger]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_debugger.py
+    status: active
+    env: unit
+
+  - id: tc.debugger_bdd
+    kind: bdd
+    title: debug engine Gherkin scenarios (Epic #699)
+    features: [runtime.debugger]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_debugger_bdd.py
+    status: active
+    env: unit
+
   - id: tc.frames_help
     kind: unit
     title: caller/base workspaces and help browsing (Epic #610)

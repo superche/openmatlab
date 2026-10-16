@@ -8,6 +8,7 @@ from openmatlab.lang import ast_nodes as ast
 from openmatlab.lang.parser import parse
 from openmatlab.numerics.backend import ArrayBackend
 from openmatlab.runtime import callstack as _callstack
+from openmatlab.runtime import debugger as _debugger
 from openmatlab.runtime.functions import FunctionResolver
 from openmatlab.runtime.value import Array, Value
 from openmatlab.runtime.workspace import Workspace
@@ -98,6 +99,10 @@ class Evaluator:
         fr = self._frame
         if fr is not None:
             fr.line = getattr(stmt, "_line", fr.line)
+            if _debugger.ON:  # breakpoints / stepping (M11 D-E2); one global read otherwise
+                d = _debugger.active()
+                if d is not None:
+                    d.on_statement(self, fr, stmt)
         try:
             value = self._exec_stmt(stmt)
         except (_BreakSignal, _ContinueSignal, _ReturnSignal):
