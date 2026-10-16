@@ -145,6 +145,17 @@ def _grid(fn, indexing):
     return f
 
 
+def _cat_skip_empty(cat, parts):
+    """Concatenate like ``[a, b]``: when the pieces disagree, empty ones (1x0, 0x1, ...) are ignored (#870)."""
+    try:
+        return cat(parts)
+    except ValueError:
+        kept = [p for p in parts if np.asarray(p).size]
+        if not kept or len(kept) == len(parts):
+            raise
+        return cat(kept)
+
+
 def _cell2mat(args, *, nargout=1):
     from openmatlab.runtime.char_value import CharValue
 
@@ -161,8 +172,8 @@ def _cell2mat(args, *, nargout=1):
         raise _err("cell2mat: all contents must be the same data type.", "MATLAB:cell2mat:MixedDataTypes")
     to = _codes if chars else (lambda x: _arr(x, "cell2mat"))
     try:
-        rows = [np.hstack([to(x) for x in row]) for row in g]
-        out = np.vstack(rows)
+        rows = [_cat_skip_empty(np.hstack, [to(x) for x in row]) for row in g]
+        out = _cat_skip_empty(np.vstack, rows)
     except ValueError:
         raise _err("Dimensions of arrays being concatenated are not consistent.", "MATLAB:catenate:dimensionMismatch") from None
     return (_from_codes(out) if chars else NDArrayValue(out),)
