@@ -141,8 +141,11 @@ class TimetableValue(TableValue):
                  dimnames=self.dimnames, description=self.description)
         d.update(kw)
         if d["nrows"] != self.nrows and "rowtimes" not in kw:
-            raise _err("Assignment that changes the number of timetable rows needs row times.",
-                       "MATLAB:timetable:RowTimesRequired")
+            t = days(self.rowtimes)
+            if d["nrows"] < self.nrows:
+                raise _err("Removing timetable rows must go through row selection.", "MATLAB:timetable:RowTimesRequired")
+            # rows grown by assignment get missing row times (NaT / NaN), as in MATLAB
+            d["rowtimes"] = like_times(self.rowtimes, np.concatenate([t, np.full(d["nrows"] - self.nrows, np.nan)]))
         return TimetableValue(**d)
 
     @property
@@ -210,7 +213,12 @@ class TimetableValue(TableValue):
                           description=self.description)
 
     def body_text(self) -> str:
-        return self.as_table().body_text()
+        from openmatlab.runtime.objects import DatetimeValue, default_datetime_format
+
+        rt = self.rowtimes
+        if isinstance(rt, DatetimeValue) and rt.fmt is None:  # one format for the whole column (MATLAB)
+            rt = DatetimeValue(rt.v, default_datetime_format(rt.v))
+        return TableValue([self.time_name] + self.names, [rt] + self.cols, self.nrows).body_text()
 
     def display_text(self) -> str:
         from openmatlab.host.display import _dims

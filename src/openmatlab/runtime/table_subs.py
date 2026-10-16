@@ -362,4 +362,12 @@ def _vcat(ev, items) -> TableValue:
         rn = [x for t in ts for x in t.rownames]
         if len(set(rn)) != len(rn):
             raise _err("Duplicate row name.", "MATLAB:table:DuplicateRowNames")
+    if getattr(first, "is_timetable", False):  # M10 T-E7: row times concatenate too
+        from openmatlab.runtime.timetable_value import days, like_times
+
+        if not all(getattr(t, "is_timetable", False) and type(t.rowtimes) is type(first.rowtimes) for t in ts):
+            raise _err("All inputs being vertically concatenated must be timetables with the same kind of row times.",
+                       "MATLAB:timetable:vertcat:InvalidInput")
+        rt = like_times(first.rowtimes, np.concatenate([days(t.rowtimes) for t in ts]))
+        return first.copy(cols=cols, nrows=sum(t.nrows for t in ts), rowtimes=rt)
     return first.copy(cols=cols, nrows=sum(t.nrows for t in ts), rownames=rn)

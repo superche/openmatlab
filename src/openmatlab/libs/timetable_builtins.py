@@ -80,7 +80,8 @@ def _timetable(args, *, nargout=1):
         if not data or not is_time(data[0]):
             raise _err("timetable: the first input must be a datetime or duration vector of row times, or "
                        "specify 'RowTimes'.", "MATLAB:timetable:NoTimeVector")
-        rt, tname = data[0], "Time"
+        # a workspace variable passed as row times names the time dimension (MATLAB)
+        rt, tname = data[0], (given[0] if given and given[0] else "Time")
         data, given = data[1:], given[1:]
     rt = _col_vec_times(rt, "timetable")
     default = [g if g else f"Var{k + 1}" for k, g in enumerate(given)]
