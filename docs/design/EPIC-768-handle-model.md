@@ -30,4 +30,4 @@ Graphics handles were plain doubles. Only a scalar returned straight from a grap
 | A probe sweep of 47 odd expressions (`h*2`, `sort(h)`, `unique(h)`, `repmat`, `properties(h)`, `num2str(h)`, ...) | No Python traceback |
 | Full test suite | Unchanged existing tests all pass |
 
-Residuals: `properties(h)`/`methods(h)` do not list graphics properties yet, and `get(h)` with no name on an array is still an error (MATLAB returns a struct array). Both are filed as an issue.
+Residuals: `properties(h)`/`methods(h)` do not list graphics properties yet, and `get(h)` with no name on an array is still an error (MATLAB returns a struct array). Both are filed as #851.
