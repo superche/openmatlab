@@ -151,8 +151,13 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
 
     out: List[Token] = []
     stack: List[TokenType] = []
+    anon: List[bool] = []  # parallel to stack: LPAREN opened an @(...) parameter list
+    anon_end = -1  # index in `out` of the `)` closing an anonymous-function header (#766)
     for tok in toks:
-        if (
+        after_anon = anon_end == len(out) - 1 and anon_end >= 0
+        if after_anon:
+            pass
+        elif (
             tok.type in (TokenType.LPAREN, TokenType.LBRACE)
             and stack
             and stack[-1] in (TokenType.LBRACKET, TokenType.LBRACE)
@@ -164,8 +169,13 @@ def _split_signed_matrix_elements(source: str, toks: List[Token]) -> List[Token]
             out.append(Token(TokenType.COMMA, ",", tok.line, tok.column))
         if tok.type in (TokenType.LBRACKET, TokenType.LPAREN, TokenType.LBRACE):
             stack.append(tok.type)
+            anon.append(tok.type == TokenType.LPAREN and bool(out) and out[-1].type == TokenType.AT)
         elif tok.type in (TokenType.RBRACKET, TokenType.RPAREN, TokenType.RBRACE) and stack:
             stack.pop()
+            if anon.pop():
+                anon_end = len(out)
+        elif after_anon:
+            pass
         elif (
             tok.type in (TokenType.PLUS, TokenType.MINUS)
             and stack
