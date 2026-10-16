@@ -871,13 +871,21 @@ class Evaluator:
                 v = self._require_array(self.eval_expr(aexpr), label)
             finally:
                 self._end_stack.pop()
-            buf = np.asarray(v.backend_buffer(), dtype=np.float64).reshape(-1)
+            raw = np.asarray(v.backend_buffer())
+            limit = linear_numel if linear_numel is not None else dim_size
+            if raw.dtype == np.bool_:  # logical mask (#766)
+                m = raw.reshape(-1, order="F")
+                if m.size > limit and m[limit:].any():
+                    raise EvalError(f"{label}: index {int(np.flatnonzero(m)[-1]) + 1} exceeds {limit}")
+                self._cell_idx_shape = (int(np.count_nonzero(m)), 1)
+                return [int(k) for k in np.flatnonzero(m)]
+            self._cell_idx_shape = tuple(int(d) for d in raw.shape) if raw.ndim == 2 else (raw.size, 1)
+            buf = np.asarray(raw, dtype=np.float64).reshape(-1, order="F")
             if buf.size == 0:
                 return []
             if np.any(buf != np.floor(buf)) or np.any(buf < 1):
                 raise EvalError(f"{label}: indices must be positive integers")
             out = []
-            limit = linear_numel if linear_numel is not None else dim_size
             for x in buf:
                 k = int(x)
                 if k > limit:
@@ -1222,6 +1230,8 @@ class Evaluator:
             ri, cj = self._cell_subscript_lists(cell, idxs, "cell () index")
             # linear positions → column cell of 1×1 contents wrappers? MATLAB: c(1:2) is 1×2 or 2×1 subcell of cells
             # Each selected element stays as cell content inside the subarray
+            # NOTE: MATLAB keeps a row cell's orientation here; changing it conflicts with
+            # tests/unit/test_epic30_cells.py (reported to Shaw, #766)
             if len(ri) == 1:
                 return CellValue(rows=((cell.get(ri[0], cj[0]),),))
             return CellValue(rows=tuple((cell.get(i, j),) for i, j in zip(ri, cj)))
@@ -2013,8 +2023,8 @@ class Evaluator:
                     if hasattr(v, "numel") and v.numel() == 0 and v.shape == (0, 0):
                         continue  # [] ignored
                     v = CellValue(rows=((v,),))
-                if v.shape == (0, 0):
-                    continue
+                if 0 in v.shape:
+                    continue  # empty cells of any size are dropped next to data (MATLAB, #766)
                 parts.append(v)
             if not parts:
                 continue

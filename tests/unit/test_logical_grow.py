@@ -25,3 +25,9 @@ def test_logical_class_kept():
 def test_mask_read_out_of_range_still_errors():
     rc, out = run("x = 1:2; y = x(logical([0 0 1]))")
     assert rc != 0 and "Traceback" not in out, out
+
+
+def test_cell_logical_mask_and_empty_cells_in_concat():
+    rc, out = run("c = {1, 2, 3}; d = c(logical([1 0 1])); disp(numel(d)); disp(d{2}); "
+                  "e = [cell(1,0), {4}, cell(0,1)]; disp(size(e)); x = c{logical([0 1 0])}; disp(x)")
+    assert rc == 0 and out.split("\n") == ["2", "3", "   1   1", "2"], out
