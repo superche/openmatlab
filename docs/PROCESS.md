@@ -85,7 +85,7 @@ opens or updates an Issue (with labels + milestone) before or as it acts.
 
 Track multi-epic roadmaps with **GitHub Milestones** (not a second tracker).
 
-States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Core backlog **open**. M3 Domain toolboxes closed 2026-10-16 at 7/7; M8 Object system closed 2026-10-16 at 10/10.
+States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Core backlog, /10 Tables and data types (M10) and /11 Debugger and Workbench (M11) **open** (M10/M11 approved 2026-10-16, interleaved, led by D-E1). M3 Domain toolboxes closed 2026-10-16 at 7/7; M8 Object system closed 2026-10-16 at 10/10.
 
 | Milestone | Intent |
 |-----------|--------|
@@ -98,6 +98,8 @@ States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /9 Cor
 | **Domain toolboxes** | Rich domain libraries / heavier graphics beyond core parity (prefer community plugins on the host contract; after conformance gate). Doc: [`milestones/M3-domain-toolboxes.md`](milestones/M3-domain-toolboxes.md); manifest `tests/conformance/m3_manifest.py`. Closed 2026-10-16 at 7/7 |
 | **Object system** | `classdef` OOP (value/handle classes, properties, methods, packages, enumerations, events, overloading) plus object-shaped residuals. GitHub milestone/8. Doc: [`milestones/M8-object-system.md`](milestones/M8-object-system.md); manifest `tests/conformance/m8_manifest.py`. Closed 2026-10-16 at 10/10 |
 | **Core backlog** | Core-language p1/p2 residuals not tied to an active criterion; promoted into a milestone criterion when prioritized. GitHub milestone/9 |
+| **Tables and data types** | `table`, `categorical`, `readtable`/`writetable`, joins/grouping, datetime arrays, `timetable` (p2). GitHub milestone/10. Doc: [`milestones/M10-tables.md`](milestones/M10-tables.md); manifest `tests/conformance/m10_manifest.py`. Epics #691–#697 |
+| **Debugger and Workbench** | `MException.stack`/`dbstack`, breakpoints/stepping, `keyboard`/`input`, Workbench debug UI, variable editor, workflows. GitHub milestone/11. Doc: [`milestones/M11-debugger-workbench.md`](milestones/M11-debugger-workbench.md); manifest `tests/conformance/m11_manifest.py`. Epics #698–#703 |
 
 **Rules**
 

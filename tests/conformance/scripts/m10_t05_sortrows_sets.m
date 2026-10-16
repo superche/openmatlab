@@ -1,0 +1,24 @@
+% M10 T05 - sortrows on tables, sets on categorical/string/table
+T = table([3;1;2;1], {'c';'a';'b';'d'}, 'VariableNames', {'n','s'});
+S = sortrows(T, 'n');
+o1 = S.n';
+o2 = strcmp(S.s{1}, 'a');
+S2 = sortrows(T, 'n', 'descend');
+o3 = S2.n(1);
+S3 = sortrows(T, {'n','s'}, {'ascend','descend'});
+o4 = strcmp(S3.s{1}, 'd');
+o5 = issortedrows(S, 'n');
+o6 = issortedrows(T, 'n');
+c = categorical({'b','a','b'});
+u = unique(c);
+o7 = numel(u);
+o8 = strcmp(char(u(1)), 'a');
+cs = sort(c);
+o9 = strcmp(char(cs(3)), 'b');
+o10 = ismember(c, 'b');
+str = ["x","y","x"];
+o11 = numel(unique(str));
+U = unique(table([1;1;2], [5;5;6]));
+o12 = height(U);
+[tf, loc] = ismember(table(2, 6), table([1;2], [5;6]));
+o13 = [tf loc];

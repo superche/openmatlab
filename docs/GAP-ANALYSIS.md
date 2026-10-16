@@ -14,6 +14,8 @@ Priority reflects impact on a typical user:
 
 ## Summary
 
+> **M10 and M11 opened (2026-10-16, approved by Shaw).** [Tables and data types](https://github.com/superche/openmatlab/milestone/10) (`docs/milestones/M10-tables.md`, T01–T10, epics #691–#697) and [Debugger and Workbench](https://github.com/superche/openmatlab/milestone/11) (`docs/milestones/M11-debugger-workbench.md`, D01–D10, epics #698–#703), interleaved and led by D-E1. They reference (do not move) #565 #577 #585 #602 #611 #665 #673.
+>
 > **M8 and M3 closed (2026-10-16).** M8 Object system 10/10 (epics #618–#624); M3 Domain toolboxes 7/7 (epics #625–#631). p2 residuals stay on the closed milestones (M8: #593 #602 #636 #645 #653 #669 #673 #677; M3: #581 #649 #657 #661 #665 #681 #685).
 >
 > **M7 closed (2026-10-13), 11/11 criteria (C11 adds `evalin`/`assignin`/`doc`/`lookfor`/`what`).** The residual issues were re-homed:
@@ -69,7 +71,7 @@ Priority reflects impact on a typical user:
 | Cells / functional | `cellfun arrayfun structfun` incl. `'UniformOutput'` | **present** | `"cellfun(@(x) x*2, {1,2}, 'UniformOutput', false)"` → {2,4} | — | — |
 | Cells / functional | `containers.Map` | **present** | delivered in M7 (Epic #539); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-DATA-TYPES |
 | Structs | structs / struct arrays (M2 C18) | **present** | `"s=struct('a',{1,2}); numel(s)"` → 2 | — | — |
-| Tables etc. | `table timetable categorical` | **missing** | missing: `table` `timetable` `categorical` | p2 | E-DATA-TYPES (new milestone) |
+| Tables etc. | `table timetable categorical` | **missing** | missing: `table` `timetable` `categorical` | p1 | [M10 Tables and data types](https://github.com/superche/openmatlab/milestone/10) (T01–T10) |
 | Date / time | `datetime duration seconds datenum datestr clock now` | **present** | delivered in M7 (Epic #539); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-DATA-TYPES |
 | Performance tooling | `tic toc pause cputime` | **present** | delivered in M7 (Epic #534); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-CORE-MATH |
 | Errors / exceptions | `try/catch` | **present** | delivered in M7 (Epic #530); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-ERRORS |
@@ -85,14 +87,14 @@ Priority reflects impact on a typical user:
 | File I/O | `fopen fclose fgetl fgets fread fwrite fscanf textscan fileread dir` | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | File I/O | `save load` (.mat) | **present** | delivered in M7 (Epic #533); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-FILE-IO |
 | Data import/export | `readmatrix writematrix csvread csvwrite dlmread dlmwrite readtable writetable jsonencode jsondecode` | **partial** | `readmatrix writematrix csvread csvwrite dlmread dlmwrite` present (Epic #533); `jsonencode jsondecode` and dlmwrite `-append`/offsets delivered in M3-E5 (#629); residual #665; `readtable writetable` wait for tables (verified 2026-10-13) | p2 | M3-DATA-IO |
-| File I/O | `input keyboard` | **partial** | delivered in M7 (Epic #533); still missing: `input` `keyboard` → #577 (verified 2026-10-13) | p2 | E-FILE-IO |
+| File I/O | `input keyboard` | **partial** | delivered in M7 (Epic #533); still missing: `input` `keyboard` → #577 (verified 2026-10-13) | p2 | E-FILE-IO; M11 D06 (Epic #700) |
 | Graphics | `plot` (2-D line, figures region in Workbench) | **present** | delivered in M7 (Epic #537); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-GRAPHICS-CORE |
 | Graphics | `figure hold subplot title xlabel ylabel legend grid axis xlim ylim gca gcf set get close saveas print` | **present** | delivered in M7 (Epic #537); all listed names resolve and are covered by the M7 conformance/unit tests (verified 2026-10-13) | — | E-GRAPHICS-CORE |
 | Graphics | `bar scatter histogram pie area stairs stem errorbar semilogx semilogy loglog` | **partial** | delivered in M7 (Epic #537); still missing: `pie` `area` `stairs` `stem` `errorbar` `semilogx` `semilogy` `loglog` → #593 (verified 2026-10-13) | p1 | E-GRAPHICS-CORE |
 | Graphics | `surf mesh contour plot3 imagesc colorbar colormap text line patch fill` | **missing** | missing: `surf` `mesh` `contour` `plot3` `imagesc` `colorbar` `colormap` `text` `line` `patch` `fill` | p2 | M3-SCI-GRAPHICS |
 | App / Workbench | Command window, editor (tabs), workspace browser, current folder, figures (M6) | **partial** | `openmatlab workbench --help`; feature_map `host.workbench.*` all `partial`; editor note "no LSP/debugger" | — | — |
 | App / Workbench | `help doc lookfor what who whos clc clear format pwd cd ls rmpath path` | **present** | delivered in M7 (Epic #532; `evalin`/`doc`/`lookfor`/`what` added by Epic #610, C11); verified 2026-10-13 | — | E-COMMAND-SYNTAX |
-| App / Workbench | Debugger (breakpoints, dbstop/dbstep), variable editor, help browser | **missing** | feature_map: no `debugger`/`variable_editor` feature id; `host.workbench.editor` notes "no LSP/debugger" | p2 | M6 follow-up (Workbench) |
+| App / Workbench | Debugger (breakpoints, dbstop/dbstep), variable editor, help browser | **missing** | feature_map: no `debugger`/`variable_editor` feature id; `host.workbench.editor` notes "no LSP/debugger" | p1 | [M11 Debugger and Workbench](https://github.com/superche/openmatlab/milestone/11) (D03–D10) |
 | Octave extensions | `x++`, `do ... until` | **missing** | `"x = 3; x++"` → `Unexpected token EOF` | p2 | non-goal (MATLAB first) |
 
 ## Proposed grouping

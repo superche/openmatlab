@@ -1,0 +1,2 @@
+global HIT_D03; HIT_D03(end+1) = x;
+dbcont

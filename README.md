@@ -14,7 +14,7 @@ Closed milestones: Workbench MVP (M1), Octave-breadth (M2, 19/19 criteria), Doma
 closed 2026-10-16; `docs/milestones/M3-domain-toolboxes.md`), Plugin host (M4), Domain business-conformance (M5),
 MATLAB-aligned Workbench (M6), MATLAB core language & I/O (M7, 11/11 criteria, closed 2026-10-13;
 `docs/milestones/M7-core-language-io.md`), Object system (M8, 10/10 criteria, closed 2026-10-16;
-`docs/milestones/M8-object-system.md`). Open: Core backlog (gaps in `docs/GAP-ANALYSIS.md`). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
+`docs/milestones/M8-object-system.md`). Open: Tables and data types (M10, `docs/milestones/M10-tables.md`), Debugger and Workbench (M11, `docs/milestones/M11-debugger-workbench.md`), Core backlog (gaps in `docs/GAP-ANALYSIS.md`). Works today: matrix REPL (`-e` / bare), NumPy arrays, control
 flow, scripts and `.m` functions, cells, `addpath`/`which`, handle graphics (figure/axes/get/set, hold, subplot, saveas), try/catch, varargin, file I/O and save/load, containers.Map, datetime, `classdef` OOP, community plugin host
 (`openmatlab plugins`), Desktop-style workbench (`openmatlab workbench`). Language is a
 **matrix+procedural MVP**, not full MATLAB.
@@ -48,7 +48,7 @@ QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.ya
 4. Plot MVP — **done** (Epic #1); interactive policy — **done** (Epic #2)
 5. Functions / path / scripts / control flow / cells — **done** (Workbench MVP + M2 exit)
 6. Plugin host, domain conformance gate, MATLAB-aligned Workbench — **done** (M4–M6)
-7. MATLAB core language & I/O — **done** (M7); Domain toolboxes — **done** (M3); Object system — **done** (M8); next: Core backlog
+7. MATLAB core language & I/O — **done** (M7); Domain toolboxes — **done** (M3); Object system — **done** (M8); next: Tables and data types (M10) and Debugger and Workbench (M11), interleaved
 8. Simulink-class — *out of scope near-term*
 
 ### License
@@ -64,7 +64,7 @@ MIT © Shaw Che / superche, 2026
 
 ### 状态（v0.0.2+ — 后 MVP 工作台）
 
-已关闭里程碑：M1 Workbench MVP、M2 Octave-breadth（19/19 准则）、M3 领域工具箱（7/7 准则，2026-10-16 关闭）、M4 插件宿主、M5 领域业务一致性、M6 MATLAB 对齐工作台、M7 MATLAB 核心语言与 I/O（11/11 准则，2026-10-13 关闭）、M8 对象系统（10/10 准则，2026-10-16 关闭）；开放：核心待办（见 `docs/GAP-ANALYSIS.md`）。已可用：矩阵 REPL、NumPy、控制流、脚本与 `.m` 函数、cell、`addpath`/`which`、句柄图形（figure/axes/get/set、hold、subplot、saveas）、try/catch、varargin、文件 I/O 与 save/load、containers.Map、datetime、`classdef` OOP、社区插件宿主、`openmatlab workbench`。语言仍是 **矩阵+过程式 MVP**，不是完整 MATLAB。详见 `docs/ARCHITECTURE.md` 与 `docs/acceptance/`。
+已关闭里程碑：M1 Workbench MVP、M2 Octave-breadth（19/19 准则）、M3 领域工具箱（7/7 准则，2026-10-16 关闭）、M4 插件宿主、M5 领域业务一致性、M6 MATLAB 对齐工作台、M7 MATLAB 核心语言与 I/O（11/11 准则，2026-10-13 关闭）、M8 对象系统（10/10 准则，2026-10-16 关闭）；开放：表格与数据类型（M10）、调试器与工作台（M11）、核心待办（见 `docs/GAP-ANALYSIS.md`）。已可用：矩阵 REPL、NumPy、控制流、脚本与 `.m` 函数、cell、`addpath`/`which`、句柄图形（figure/axes/get/set、hold、subplot、saveas）、try/catch、varargin、文件 I/O 与 save/load、containers.Map、datetime、`classdef` OOP、社区插件宿主、`openmatlab workbench`。语言仍是 **矩阵+过程式 MVP**，不是完整 MATLAB。详见 `docs/ARCHITECTURE.md` 与 `docs/acceptance/`。
 
 ### 明确非目标
 

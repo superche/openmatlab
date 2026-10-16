@@ -6,6 +6,10 @@ MS = {
                doc="docs/milestones/M8-object-system.md", title="Object system (M8)", num=8, label="M8"),
     "m3": dict(manifest="tests/conformance/m3_manifest.py", test="tests/conformance/test_m3_conformance.py", fn="test_m3_criterion",
                doc="docs/milestones/M3-domain-toolboxes.md", title="Domain toolboxes (M3)", num=3, label="M3"),
+    "m10": dict(manifest="tests/conformance/m10_manifest.py", test="tests/conformance/test_m10_conformance.py", fn="test_m10_criterion",
+                doc="docs/milestones/M10-tables.md", title="Tables and data types (M10)", num=10, label="M10"),
+    "m11": dict(manifest="tests/conformance/m11_manifest.py", test="tests/conformance/test_m11_conformance.py", fn="test_m11_criterion",
+                doc="docs/milestones/M11-debugger-workbench.md", title="Debugger and Workbench (M11)", num=11, label="M11"),
 }
 
 

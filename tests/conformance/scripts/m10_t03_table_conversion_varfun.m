@@ -1,0 +1,27 @@
+% M10 T03 - conversions, head/tail, varfun/rowfun, variable management, summary
+T = table([1;2;3], [4;5;6], 'VariableNames', {'a','b'});
+c1 = reshape(table2array(T), 1, []);
+C = table2cell(T);
+c2 = C{2,2};
+s = table2struct(T);
+c3 = numel(s);
+c4 = s(3).a;
+c5 = height(head(T, 2));
+L = tail(T, 1);
+c6 = L.b;
+V = varfun(@sum, T);
+c7 = V.sum_a;
+c8 = strcmp(V.Properties.VariableNames{2}, 'sum_b');
+R = rowfun(@(x, y) x + y, T);
+c9 = R.Var1';
+T2 = removevars(T, 'a');
+c10 = width(T2);
+T3 = renamevars(T, 'a', 'alpha');
+c11 = T3.alpha(1);
+T4 = addvars(T, [7;8;9], 'NewVariableNames', 'c');
+c12 = T4.c(2);
+T5 = movevars(T, 'b', 'Before', 'a');
+c13 = strcmp(T5.Properties.VariableNames{1}, 'b');
+c14 = isempty(T(false(3,1), :));
+out = evalc('summary(T)');
+c15 = double(contains(out, 'a') && contains(out, 'Median'));
