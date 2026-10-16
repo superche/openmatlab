@@ -20,6 +20,7 @@ from openmatlab.runtime import callstack
 
 ON = False  # any session has breakpoints or a pending step: the hook is consulted
 _ACTIVE: contextvars.ContextVar = contextvars.ContextVar("openmatlab_debugger", default=None)
+TRY_DEPTH: contextvars.ContextVar = contextvars.ContextVar("openmatlab_try_depth", default=0)
 _ALL = weakref.WeakSet()  # every live Debugger, for ON recomputation (dead sessions drop out)
 
 
@@ -80,6 +81,55 @@ def statement_lines(stmts) -> list:
 
     walk(list(stmts))
     return sorted(out)
+
+
+def _wants(d, kind, ident):
+    ids = d.cond_stops.get(kind)
+    return ids is not None and ("" in ids or ident in ids)
+
+
+def on_error(ev, frame, exc):
+    """dbstop if error / if caught error [ID]: pause at the faulting line before unwinding."""
+    d = active()
+    if d is None or not d.cond_stops or getattr(exc, "_db_seen", False):
+        return
+    try:
+        exc._db_seen = True
+    except AttributeError:
+        return
+    kind = "caught error" if TRY_DEPTH.get() > 0 else "error"
+    if _wants(d, kind, getattr(exc, "identifier", "") or ""):
+        d._write(f"Error: {exc}\n" if kind == "error" else "")
+        d.pause(ev, frame, frame.line)
+
+
+def on_warning(ident: str):
+    """dbstop if warning [ID] (called after the warning is printed)."""
+    d = active()
+    if d is None or not _wants(d, "warning", ident or ""):
+        return
+    frame = callstack.top()
+    if frame is not None and getattr(frame, "ev", None) is not None:
+        d.pause(frame.ev, frame, frame.line)
+
+
+def on_value(ev, frame, value):
+    """dbstop if naninf: pause at the statement whose result holds NaN or Inf."""
+    d = active()
+    if d is None or "naninf" not in d.cond_stops or value is None or getattr(value, "is_object", False):
+        return
+    buf = getattr(value, "backend_buffer", None)
+    if buf is None or getattr(value, "is_string", False) or hasattr(value, "text"):
+        return
+    import numpy as np
+
+    try:
+        a = np.asarray(buf())
+        bad = a.dtype.kind in "fc" and a.size > 0 and not bool(np.all(np.isfinite(a)))
+    except Exception:
+        return
+    if bad:
+        d.pause(ev, frame, frame.line)
 
 
 class Debugger:
@@ -188,15 +238,37 @@ class Debugger:
         except EOFError:
             return None
 
-    def pause(self, ev, frame, line):
+    def pause(self, ev, frame, line, announce: bool = True):
         st = PauseState(self, ev, frame, line)
         self.paused.append(st)
         try:
-            src = _source_line(frame.file, line)
-            self._write(f"{line}   {src}\n" if src is not None else f"{line}\n")
+            if announce:
+                src = _source_line(frame.file, line) if frame is not None else None
+                self._write(f"{line}   {src}\n" if src is not None else f"{line}\n")
             st.loop()
         finally:
             self.paused.pop()
+
+    def keyboard(self, ev):
+        """keyboard: K>> at the current line; dbcont resumes, dbquit stops the run."""
+        frame = callstack.top()
+        self.pause(ev, frame, frame.line if frame is not None else 0, announce=False)
+
+    def read_input(self, prompt: str) -> Optional[str]:
+        """One line for input(): the queued lines, the Workbench, or the console."""
+        self._write(prompt)
+        if self.inputs:
+            line = self.inputs.popleft()
+        elif self.read_line is not None:
+            line = self.read_line(prompt)
+        else:
+            try:
+                return input()
+            except (EOFError, OSError):  # closed or captured stdin: end of input
+                return None
+        if line is not None:
+            self._write(line + "\n")
+        return line
 
 
 class PauseState:

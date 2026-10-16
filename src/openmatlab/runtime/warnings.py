@@ -13,6 +13,10 @@ def emit(msg: str, ident: str = "") -> None:
     _state["last_id"] = ident
     if _state["enabled"] and ident not in _state["off_ids"]:
         print(f"Warning: {msg}", file=sys.stderr)
+        from openmatlab.runtime import debugger
+
+        if debugger.ON:  # dbstop if warning (M11 D-E3)
+            debugger.on_warning(ident)
 
 
 def set_enabled(on: bool) -> None:
