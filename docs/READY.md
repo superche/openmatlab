@@ -5,7 +5,7 @@ See [`PROCESS.md`](PROCESS.md), [`QA.md`](QA.md), [`CONTRIBUTING.md`](../CONTRIB
 
 ## Verdict
 
-**READY — public repo; CI live; branch protection on.** Milestones 1/2/3/4/5/6/7/8/10/11 closed (M10 Tables and M11 Debugger closed 2026-10-16; M3 Domain toolboxes and M8 Object system closed 2026-10-16; M7 closed 2026-10-13). Open: Core backlog.
+**READY — public repo; CI live; branch protection on.** Milestones 1/2/3/4/5/6/7/8/10/11 closed (M10 Tables and M11 Debugger closed 2026-10-16; M3 Domain toolboxes and M8 Object system closed 2026-10-16; M7 closed 2026-10-13). Open: Core backlog, M12 Real-script compatibility gate, M13 Graphics completion.
 
 - **Visibility:** PUBLIC — https://github.com/superche/openmatlab
 - **CI:** `.github/workflows/ci.yml` active; required check `test` green on `main`
@@ -58,7 +58,7 @@ pytest -m "unit or bdd" --cov=openmatlab --cov-fail-under=60
 
 ## Next phase entry
 
-M7, M8 and M3 are closed. M7 close-out: `docs/milestones/M7-core-language-io.md`. M8 close-out (10/10, epics #618–#624 accepted 2026-10-16): `docs/milestones/M8-object-system.md`. M3 close-out (7/7, epics #625–#631 accepted 2026-10-16): `docs/milestones/M3-domain-toolboxes.md`. p2 residuals remain on the closed M3/M8 milestones. Open roadmap: [Core backlog](https://github.com/superche/openmatlab/milestone/9). M10 Tables and M11 Debugger closed 2026-10-16 (see `docs/milestones/M10-tables.md`, `docs/milestones/M11-debugger-workbench.md`); p2 residuals remain on those closed milestones.
+M7, M8 and M3 are closed. M7 close-out: `docs/milestones/M7-core-language-io.md`. M8 close-out (10/10, epics #618–#624 accepted 2026-10-16): `docs/milestones/M8-object-system.md`. M3 close-out (7/7, epics #625–#631 accepted 2026-10-16): `docs/milestones/M3-domain-toolboxes.md`. p2 residuals remain on the closed M3/M8 milestones. Open roadmap: [Core backlog](https://github.com/superche/openmatlab/milestone/9), [M12 Real-script compatibility gate](https://github.com/superche/openmatlab/milestone/12) (`docs/milestones/M12-corpus-gate.md`), [M13 Graphics completion](https://github.com/superche/openmatlab/milestone/13) (`docs/milestones/M13-graphics.md`). M10 Tables and M11 Debugger closed 2026-10-16 (see `docs/milestones/M10-tables.md`, `docs/milestones/M11-debugger-workbench.md`); p2 residuals remain on those closed milestones.
 
 | Item | URL / command |
 |------|----------------|
