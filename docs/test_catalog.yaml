@@ -1729,6 +1729,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.workbench_workflows
+    kind: unit
+    title: Workbench workflows (Epic #703)
+    features: [host.workbench.workflows]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_workbench_workflows.py
+    status: active
+    env: unit
+
+  - id: tc.workbench_workflows_bdd
+    kind: bdd
+    title: Workbench workflows Gherkin scenarios (Epic #703)
+    features: [host.workbench.workflows]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_workbench_workflows_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

@@ -37,7 +37,7 @@ Language criteria (D01–D07) are `.m` scripts over real function files in a `te
 | D07 | `dbstop if caught error [ID]`, `if error`, `if warning`, `if naninf`; pause at the faulting line with the stack intact | m11_d07_error_stop | p1 | #700 | met (Epic #700; residual #729) |
 | D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | met (Epic #701; residual #725) |
 | D09 | Variable editor: open numeric/char/cell/struct/table from Workspace, edit a cell and write back | m11_d09_variable_editor | p1 | #702 | met (Epic #702; residual #747) |
-| D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture | m11_d10_workbench_workflows | p1 | #703 | pending |
+| D10 | Workflows: `%%` sections, Run Section, Run and Advance, run with breakpoints, error link → file at line, Command History re-run; recorded E2E capture | m11_d10_workbench_workflows | p1 | #703 | met (Epic #703; residual #751) |
 
 ## Epics (approved order, interleaved with M10)
 
@@ -62,4 +62,4 @@ Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser 
 
 ## Progress snapshot
 
-M11 opened 2026-10-16. **9 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)); D08 (Epic #701, [design](../design/EPIC-701-debug-ui.md)); D06, D07 (Epic #700, [design](../design/EPIC-700-condition-stops.md)); D09 (Epic #702, [design](../design/EPIC-702-variable-editor.md)). Next: D-E6 (#703) Workbench workflows and T-E7 (#697) timetable.
+M11 opened 2026-10-16. **10 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)); D08 (Epic #701, [design](../design/EPIC-701-debug-ui.md)); D06, D07 (Epic #700, [design](../design/EPIC-700-condition-stops.md)); D09 (Epic #702, [design](../design/EPIC-702-variable-editor.md)); D10 (Epic #703, [design](../design/EPIC-703-workbench-workflows.md)). Next: T-E7 (#697) timetable (M10).
