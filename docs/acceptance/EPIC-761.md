@@ -12,7 +12,7 @@
 | Tip | SHA | Notes |
 |-----|-----|-------|
 | Functional tip | `ffea4e4efd056b16272a59c9bff3383dc722b3d8` | Squash merge of feature PR [#782](https://github.com/superche/openmatlab/pull/782) |
-| Evidence merge tip | _recorded by follow-up sync PR_ | Squash merge of this acceptance PR |
+| Evidence merge tip | `ee493543baf4fa898f1d78b34be12b4f8f9af152` | Squash merge of [#783](https://github.com/superche/openmatlab/pull/783); re-run from here or `main` |
 
 ## Verdict
 
