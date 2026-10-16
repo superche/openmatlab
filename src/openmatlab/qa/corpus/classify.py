@@ -47,7 +47,7 @@ TOOLBOXES = {
                    "randsample", "pdist", "squareform", "linkage", "kmeans", "fitdist", "tabulate", "nanmean",
                    "nanmax", "nanmin", "nansum", "prctile", "quantile", "iqr", "zscore", "ttest", "chi2gof",
                    "geomean", "harmmean", "skewness", "kurtosis", "range", "mad", "exprnd", "randg"},
-    "image": {"imread_", "imshow", "imresize", "rgb2gray", "edge", "imfilter", "imrotate", "im2bw",
+    "image": {"imresize", "rgb2gray", "edge", "imfilter", "imrotate", "im2bw",
               "bwlabel", "imerode", "imdilate", "fspecial", "imadjust", "imcrop", "imnoise", "medfilt2",
               "regionprops", "padarray", "im2double", "im2uint8", "graythresh", "imbinarize", "imhist"},
     "signal": {"butter", "cheby1", "filtfilt", "freqz", "hamming", "hann", "periodogram", "pwelch", "resample",
@@ -56,7 +56,7 @@ TOOLBOXES = {
                      "optimoptions", "ga", "particleswarm", "fsolve"},
     "communications": {"de2bi", "bi2de", "gf", "awgn", "randi_", "qammod", "pskmod"},
     "fixed-point": {"fi", "numerictype", "fimath"},
-    "java": {"java", "javaObject", "javaMethod", "javaArray", "javaaddpath"},
+    "java": {"com", "java", "javaObject", "javaMethod", "javaArray", "javaaddpath"},
     "dotnet": {"NET", "System"},
     "database": {"database", "fetch", "exec"},
     "parallel": {"parpool", "gcp", "spmd", "labindex", "numlabs", "gpuArray", "gather"},
@@ -64,12 +64,12 @@ TOOLBOXES = {
 }
 _TOOLBOX_OF = {f: tb for tb, fs in TOOLBOXES.items() for f in fs}
 
+# Only functions whose effect needs something the sandbox withholds (shell, network, GUI dialogs,
+# devices). A missing base function that merely touches files (getenv, mkdir, dir...) is missing-builtin.
 IO_ENV_FUNCS = {"system", "dos", "unix", "urlread", "urlwrite", "webread", "webwrite", "websave", "ftp", "open",
-                "winopen", "web", "clipboard", "getenv", "setenv", "computer", "memory", "uigetfile", "uiputfile",
-                "inputdlg", "questdlg", "msgbox", "waitforbuttonpress", "ginput", "uiwait", "keyboard", "pause",
-                "tcpip", "udp", "serial", "audioread", "audiowrite", "sound", "soundsc", "audioplayer", "beep",
-                "actxserver", "dir", "ls", "cd", "delete", "imread", "imwrite", "VideoWriter", "VideoReader",
-                "xlsread", "xlswrite", "readtable_", "copyfile", "movefile", "mkdir", "rmdir", "license"}
+                "winopen", "web", "clipboard", "uigetfile", "uiputfile", "inputdlg", "questdlg", "msgbox",
+                "waitforbuttonpress", "uiwait", "tcpip", "udp", "serial", "audiorecorder", "sound", "soundsc",
+                "audioplayer", "beep", "actxserver", "listdlg", "errordlg", "warndlg", "helpdlg"}
 
 GRAPHICS_FUNCS = {
     "plot", "plot3", "figure", "axes", "axis", "subplot", "hold", "line", "patch", "surf", "surface", "mesh",
@@ -88,7 +88,7 @@ GRAPHICS_FUNCS = {
     "allchild", "ancestor", "refresh", "rgbplot", "hsv2rgb_", "rgb2hsv_", "parula", "jet", "hot", "gray",
     "bone", "copper", "pink", "lines", "turbo", "colororder", "ind2rgb", "image_", "imfinfo", "camva",
     "campos", "camtarget", "camup", "camzoom", "camorbit", "axis_", "datetick", "ginput_", "gtext",
-    "histogram_", "heatmap", "wordcloud", "geoplot", "boxplot", "graph_plot", "colorbar_",
+    "histogram_", "heatmap", "imshow", "wordcloud", "geoplot", "boxplot", "graph_plot", "colorbar_",
 }
 
 _UNDEF = re.compile(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)")
@@ -164,6 +164,7 @@ def classify(result: dict, code: str = "", siblings: Iterable[str] = ()) -> Tupl
 
 
 def classify_features(result: dict, f: dict) -> Tuple[str, str]:
+    """Rules over a run result and :func:`features`; see the module docstring for the categories."""
     status, kind = result.get("status", ""), result.get("kind", "")
     msg = result.get("message", "") or ""
     eid = result.get("error_id", "") or ""
@@ -206,7 +207,8 @@ def classify_features(result: dict, f: dict) -> Tuple[str, str]:
             return "semantics-diff", "undefined-variable"
         if _UNDEF_VAR.match(msg):
             return "corpus-noise", "fragment"
-        if name[:1].isupper() or re.search(r"[A-Z]", name[1:]) or "_" in name or re.search(r"\d", name):
+        x2y = re.fullmatch(r"[a-z]+2[a-z]+", name)  # dec2base, num2cell: MATLAB naming, not a user helper
+        if name[:1].isupper() or re.search(r"[A-Z]", name[1:]) or "_" in name or (re.search(r"\d", name) and not x2y):
             return "corpus-noise", "missing-dependency"  # camelCase/user-style helper published elsewhere
         return "missing-builtin", name
     if _IO_MSG.search(msg):
@@ -218,3 +220,28 @@ def classify_features(result: dict, f: dict) -> Tuple[str, str]:
         return "graphics", (m.group(1) if m else "property")
     key = re.sub(r"'[^']*'|\"[^\"]*\"|\d+", "_", msg).strip()[:60]
     return "semantics-diff", key or eid or "error"
+
+
+def top(category: str) -> str:
+    return category.split(":", 1)[0]
+
+
+class LabelStats:
+    def __init__(self, rows):
+        self.rows = rows  # (id, label, predicted)
+        self.n = len(rows)
+        self.correct = sum(top(p) == top(lab) for _i, lab, p in rows)
+        self.accuracy = self.correct / max(1, self.n)
+        crashes = [(lab, p) for _i, lab, p in rows if lab == "internal-crash"]
+        self.crash_recall = sum(p == "internal-crash" for _l, p in crashes) / max(1, len(crashes)) if crashes else 0.0
+        self.errors = [(i, lab, p) for i, lab, p in rows if top(p) != top(lab)]
+
+
+def evaluate_labelled_set(path=None) -> LabelStats:
+    """Score the classifier on ``corpus/labels.json`` (offline: stored results + features)."""
+    import json
+
+    from .manifest import corpus_dir
+
+    doc = json.loads((path or corpus_dir() / "labels.json").read_text(encoding="utf-8"))
+    return LabelStats([(x["id"], x["label"], classify_features(x["result"], x["features"])[0]) for x in doc["labels"]])

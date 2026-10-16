@@ -98,3 +98,32 @@ def test_missing_dependency_from_sibling():
 
 def test_pass_is_pass():
     assert C.classify({"status": "pass"}) == ("pass", "")
+
+
+def test_labelled_set_scores():
+    s = C.evaluate_labelled_set()
+    assert s.n >= 60 and s.accuracy >= 0.90 and s.crash_recall == 1.0
+
+
+def test_labelled_features_match_cache():
+    """The stored features are what the pipeline derives today (skipped without the corpus cache)."""
+    import json
+
+    from openmatlab.qa.corpus import manifest as M
+    from openmatlab.qa.corpus.pipeline import jobs_for
+
+    m = M.load()
+    labels = json.loads((M.corpus_dir() / "labels.json").read_text())["labels"]
+    jobs = {j.e.id: j for j in jobs_for(m)}
+    checked = 0
+    for x in labels:
+        j = jobs.get(x["id"])
+        f = M.cache_dir() / j.e.file if j else None
+        if not f or not f.is_file() or j.e.call:
+            continue
+        code = P.prepare(f.read_text(encoding="utf-8", errors="replace"), j.siblings).code
+        got = C.features(code, j.siblings)
+        assert {k: got[k] for k in ("dialect", "defined", "siblings")} == {k: x["features"][k] for k in ("dialect", "defined", "siblings")}, x["id"]
+        checked += 1
+    if not checked:
+        pytest.skip("corpus cache not present")
