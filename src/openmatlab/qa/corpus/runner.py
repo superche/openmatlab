@@ -90,6 +90,11 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
     try:
         target = work / src.name
         shutil.copyfile(src, target)
+        if (src.parent / "private").is_dir():  # the driver sees its folder's private functions (#766)
+            try:
+                (work / "private").symlink_to(src.parent / "private", target_is_directory=True)
+            except OSError:
+                shutil.copytree(src.parent / "private", work / "private")
         result = work / ".openmatlab-result.json"
         env = _env(work, result)
         if input_lines:
