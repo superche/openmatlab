@@ -33,7 +33,7 @@ Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-ch
 | # | Criterion | Script | Priority | Epic | Status |
 |---|-----------|--------|----------|------|--------|
 | C01 | Corpus manifest ≥ 300 runnable entries from ≥ 4 sources, each with licence/URL/revid/sha256; CI licence allow-list; no GPL/GFDL code bodies in the repo | m12_c01_corpus_manifest | p0 | #762 | pending |
-| C02 | Runner: subprocess sandbox, timeout, stdin isolation, JSON results; one hang/crash does not affect others; full CI run ≤ 15 min | m12_c02_runner_isolation | p0 | #761 | pending |
+| C02 | Runner: subprocess sandbox, timeout, stdin isolation, JSON results; one hang/crash does not affect others; full CI run ≤ 15 min | m12_c02_runner_isolation | p0 | #761 | met (Epic #761; residual #780) |
 | C03 | Deterministic preprocessing (transcript de-prompting, function-file detection, `input` fixtures) with unit tests; pilot noise rate 46 % → ≤ 10 % | m12_c03_preprocess | p0 | #763 | pending |
 | C04 | Classifier: ≥ 90 % category accuracy on ≥ 60 hand-labelled failures; `internal-crash` recall 100 % | m12_c04_classifier | p0 | #763 | pending |
 | C05 | T0 parse pass rate ≥ 98 % (proposal; locked after first full run) | m12_c05_tier0 | p0 | #766 | pending |
@@ -60,4 +60,4 @@ Byte-exact comparison with MATLAB output; making toolbox-dependent scripts pass 
 
 ## Progress snapshot
 
-M12 opened 2026-10-16. **0 / 10** criteria met.
+M12 opened 2026-10-16. **1 / 10** criteria met: C02 (Epic #761, [design](../design/EPIC-761-corpus-runner.md)). Next: C-E2 #762 corpus fetch and manifest.

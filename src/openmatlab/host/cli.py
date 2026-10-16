@@ -171,6 +171,36 @@ def _eval_code(source: str) -> int:
         return 1
 
 
+def _cmd_run(args) -> int:
+    """openmatlab run FILE [--timeout S] [--json]: run one .m file in the corpus sandbox (M12 C02)."""
+    import json
+    from pathlib import Path
+
+    from openmatlab.qa.corpus.runner import run_one
+
+    paths = [Path(f) for f in args.files]
+    missing = [str(p) for p in paths if not p.is_file()]
+    if missing:
+        print(f"error: file not found: {', '.join(missing)}", file=sys.stderr)
+        return 2
+    results = [run_one(p, timeout=args.timeout, mode="parse" if args.parse_only else "run") for p in paths]
+    if args.json:
+        doc = [r.to_json() for r in results]
+        print(json.dumps(doc[0] if len(doc) == 1 else doc, indent=1))
+    else:
+        for r in results:
+            sys.stdout.write(r.stdout)
+            sys.stderr.write(r.stderr)
+            if r.status == "timeout":
+                print(f"error: {r.name}: {r.message}", file=sys.stderr)
+            elif r.status == "crash":
+                print(f"error: {r.name}: internal error: {r.message}", file=sys.stderr)
+            elif r.status == "error" and r.message and r.message not in r.stderr:
+                print(f"error: {r.message}", file=sys.stderr)
+    worst = {"pass": 0, "error": 1, "crash": 3, "timeout": 124}
+    return max(worst.get(r.status, 1) for r in results)
+
+
 def _run_repl() -> int:
     from openmatlab.host.repl import ReplSession
     from openmatlab.lang.lexer import LexerError
@@ -454,6 +484,13 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Auto-close tk workbench after MS milliseconds (scripted walkthrough)",
     )
     p_wb.set_defaults(func=_cmd_workbench)
+
+    p_run = sub.add_parser("run", help="Run .m files in a sandboxed subprocess (timeout, JSON result; M12 corpus runner)")
+    p_run.add_argument("files", nargs="+", metavar="FILE")
+    p_run.add_argument("--timeout", type=float, default=30.0, metavar="S", help="Per-file timeout in seconds (default 30)")
+    p_run.add_argument("--json", action="store_true", help="Print the result as JSON")
+    p_run.add_argument("--parse-only", action="store_true", help="Only parse (tier T0), do not execute")
+    p_run.set_defaults(func=_cmd_run)
 
 
 
