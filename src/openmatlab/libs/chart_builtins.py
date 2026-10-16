@@ -819,6 +819,7 @@ def _colorbar(ev, args, nargout):
     o.axes = a
     lab = m._text(o)
     o.props["Label"] = lab
+    o.props["Title"] = m._text(o)  # title(colorbar, ...) / get(hc, 'Title') (#771)
     m.objs[o.id] = o
     f.children.append(o)
     _apply(m, o, rest, "colorbar")
