@@ -78,7 +78,8 @@ KNOWN_PROPS: Dict[str, Dict[str, Any]] = {
                "PaperType": "usletter", "Pointer": "arrow", "IntegerHandle": "on", "FileName": "",
                "CurrentPoint": [0.0, 0.0], "RendererMode": "auto", "Clipping": "on"},
     "root": {"ShowHiddenHandles": "off", "ScreenSize": [1.0, 1.0, 1920.0, 1080.0], "Units": "pixels",
-             "ScreenPixelsPerInch": 96.0, "MonitorPositions": [1.0, 1.0, 1920.0, 1080.0], "Children": None},
+             "ScreenPixelsPerInch": 96.0, "RecursionLimit": 500.0, "PointerLocation": [0.0, 0.0],
+             "FixedWidthFontName": "Courier", "Format": "short", "FormatSpacing": "loose", "MonitorPositions": [1.0, 1.0, 1920.0, 1080.0], "Children": None},
     "axes": dict(_AXIS, **{"Units": "normalized", "Position": [0.13, 0.11, 0.775, 0.815],
                            "OuterPosition": [0.0, 0.0, 1.0, 1.0], "XAxisLocation": "bottom", "YAxisLocation": "left",
                            "ZLim": [-1.0, 1.0], "ZLimMode": "auto", "ZGrid": "off", "CLim": [0.0, 1.0],
@@ -100,7 +101,8 @@ KNOWN_PROPS: Dict[str, Dict[str, Any]] = {
     "bar": dict(_FACEISH, BarLayout="grouped", BarWidth=0.8, Horizontal="off"),
     "area": _FACEISH, "patch": _FACEISH, "surface": dict(_FACEISH, EdgeColor=[0.0, 0.0, 0.0], MeshStyle="both"),
     "rectangle": dict(_FACEISH, FaceColor="none", Curvature=[0.0, 0.0], Position=[0.0, 0.0, 1.0, 1.0]),
-    "image": {"CData": [], "XData": [], "YData": [], "CDataMapping": "direct", "AlphaData": 1.0},
+    "image": {"CData": [], "XData": [], "YData": [], "CDataMapping": "direct", "AlphaData": 1.0,
+              "AlphaDataMapping": "none", "Interpolation": "nearest"},
     "contour": dict(_FACEISH, LevelList=[], LevelStep=0.0, Fill="off", ShowText="off", LevelListMode="auto",
                     TextList=[], ZData=[]),
     "quiver": dict(_LINEISH, UData=[], VData=[], WData=[], AutoScale="on", AutoScaleFactor=0.9, MaxHeadSize=0.2,
@@ -119,14 +121,20 @@ KNOWN_PROPS: Dict[str, Dict[str, Any]] = {
     "colorbar": {"Location": "eastoutside", "Limits": [0.0, 1.0], "Ticks": [], "TickLabels": [],
                  "Label": None, "Units": "normalized", "Position": [0.83, 0.11, 0.04, 0.815], "Direction": "normal",
                  "FontSize": 9.0, "Color": [0.15, 0.15, 0.15], "TickLabelInterpreter": "tex", "Box": "on",
-                 "LineWidth": 0.5, "AxisLocation": "out", "TickDirection": "in"},
+                 "LineWidth": 0.5, "AxisLocation": "out", "TickDirection": "in", "XTick": [], "YTick": [],
+                 "XTickLabel": [], "YTickLabel": [], "YAxisLocation": "right", "XAxisLocation": "bottom",
+                 "TickLength": 0.01, "FontName": "Helvetica", "Visible": "on"},
 }
 for _t in ("arrowshape", "doubleendarrowshape", "lineshape", "textarrowshape", "textboxshape",
            "rectangleshape", "ellipseshape"):
     KNOWN_PROPS[_t] = dict(_TEXT, **{"X": [0.3, 0.4], "Y": [0.3, 0.4], "Units": "normalized",
                                      "Position": [0.3, 0.3, 0.1, 0.1], "LineStyle": "-", "LineWidth": 0.5,
                                      "HeadStyle": "vback2", "HeadLength": 10.0, "HeadWidth": 10.0,
-                                     "FaceColor": "none", "FitBoxToText": "off", "Color": [0.0, 0.0, 0.0]})
+                                     "FaceColor": "none", "FitBoxToText": "off", "Color": [0.0, 0.0, 0.0],
+                                     "TextEdgeColor": "none", "TextBackgroundColor": "none", "TextColor": [0.0, 0.0, 0.0],
+                                     "TextLineWidth": 0.5, "TextMargin": 2.0, "TextRotation": 0.0,
+                                     "Head1Style": "vback2", "Head2Style": "vback2", "Head1Length": 10.0,
+                                     "Head2Length": 10.0, "Head1Width": 10.0, "Head2Width": 10.0, "FaceAlpha": 1.0})
 
 
 def known(o: GObj) -> Dict[str, Any]:

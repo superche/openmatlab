@@ -306,6 +306,18 @@ class Evaluator:
             )
         raise EvalError(f"Unknown statement: {type(stmt)!r}")
 
+    def _intrinsic_callable(self, name):
+        from openmatlab.libs import function_intrinsics as _fi
+
+        f = _fi.INTRINSICS.get(name.lower()) if name == name.lower() else None
+        if f is None:
+            return None
+        ev = self
+
+        def call(args, nargout=1, _f=f):
+            return tuple(_f(ev, list(args), nargout))
+        return call
+
     def eval_expr(self, expr: ast.Expr) -> Value:
         if isinstance(expr, _SUBS_NODES):  # subsref overloads (O-E4)
             from openmatlab.runtime import classdef_subs as _cs
@@ -323,6 +335,8 @@ class Evaluator:
                 fn = self.functions.resolve(name)
             except Exception as e:
                 fn = self._dotted_callable(name) if "." in name else None
+                if fn is None and "." not in name:
+                    fn = self._intrinsic_callable(name)  # @ishandle, @isvarname, @findobj ... (#766)
                 if fn is None and not ("." not in name and name.lower() in
                                        getattr(self.functions, "_om_method_names", ())):
                     raise EvalError(f"function handle: undefined function '{name}'") from e
