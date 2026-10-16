@@ -254,6 +254,16 @@ def _assign(ev, cur, steps, rhs, depth):
         valid_field(name)
         child = cur.get(name) if cur.has(name) else None
         return cur.with_field(name, _assign(ev, child, rest, rhs, depth + 1))
+    if kind == "paren" and getattr(cur, "is_class_instance", False):  # obj(1).prop = v on a scalar object (#766)
+        vals = [ev.eval_expr(a) for a in arg]
+        try:
+            ones = all(np.all(np.asarray(v.backend_buffer()).reshape(-1) == 1) and v.numel() >= 1 for v in vals)
+        except Exception:
+            ones = False
+        if not ones:
+            raise _err(f"Indexed assignment is not supported for objects of class '{cur.matlab_class()}' "
+                       "in this release.")
+        return _assign(ev, cur, rest, rhs, depth + 1) if rest else rhs
     if kind == "paren":
         if is_struct(cur) or ((cur is None or _is_empty_double(cur)) and (rest or is_struct(rhs))):
             if not rest:
@@ -328,6 +338,11 @@ def _class_rooted_ref(ev, expr) -> bool:
 def expand(ev, expr) -> List:
     """Values of one element in a list context ([...], {...}, call args)."""
     if isinstance(expr, ast.FieldExpr) and not _class_rooted_ref(ev, expr):
+        from openmatlab.runtime import classdef_subs as _cs
+
+        r = _cs.try_ref(ev, expr)  # subsref overloads apply in list contexts too (#766)
+        if r is not None:
+            return list(r[:1])
         v = read_field(ev, expr)
         return list(v.values) if isinstance(v, CsList) else [v]
     v = ev.eval_expr(expr)

@@ -540,8 +540,9 @@ class ClassInstance:
     def index(self, args):
         if not args:
             return self
-        raise _err(f"Index exceeds the number of array elements. Index must not exceed 1.", "MATLAB:index:outOfBounds") \
-            if _is_index_one(args) is False else self
+        if _is_index_one(args):
+            return self
+        raise _err("Index exceeds the number of array elements. Index must not exceed 1.", "MATLAB:index:outOfBounds")
 
     def assign(self, args, value):
         raise _err(f"Indexed assignment is not supported for objects of class '{self.info.name}' in this release.",
@@ -646,7 +647,7 @@ def find_method_for_args(name: str, args: Sequence[Any]) -> Optional[MethodInfo]
             return _BuiltinObjMethod(a, name)
         if is_instance(a):
             m = a.info.find_method(name)
-            if m is not None and not m.static:
+            if m is not None and not m.static and m.name.lower() != m.owner.short.lower():  # not a constructor (#766)
                 return m
     return None
 
@@ -682,6 +683,8 @@ def dot_access(ev, base: ClassInstance, name: str, arg_exprs: Optional[list], na
     m = base.info.find_method(name)
     if m is not None:
         args = ev._eval_call_args(arg_exprs or [])
+        if m.static:  # obj.staticMethod(args) does not pass obj (#766)
+            return list(m(list(args), nargout=nargout))
         return list(m([base] + list(args), nargout=nargout))
     if base.info.is_handle and name in ("addlistener", "listener", "notify", "delete", "isvalid"):
         fn = ev.functions.resolve(name)  # obj.notify('Evt'), obj.addlistener(...) (O-E7)

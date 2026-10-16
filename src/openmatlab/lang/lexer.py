@@ -371,7 +371,7 @@ def _iter_tokens(source: str, state=None) -> Iterator[Token]:
                 "global": TokenType.KW_GLOBAL,
                 "persistent": TokenType.KW_PERSISTENT,
             }
-            typ = keywords.get(word.lower(), TokenType.IDENT)
+            typ = keywords.get(word, TokenType.IDENT)  # keywords are case-sensitive (#766)
             if typ == TokenType.IDENT and state is not None and state["start"] and _is_command(source, i):
                 import json
 

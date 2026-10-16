@@ -181,6 +181,52 @@ def _num2cell(args, *, nargout=1):
     return (_mk_cell([[NDArrayValue(np.array([[x]], dtype=b.dtype)) for x in row] for row in b]),)
 
 
+def _mat2cell(args, *, nargout=1):
+    """mat2cell(A, r, c[, ...]): split a 2-D array into blocks (#766)."""
+    if len(args) < 2:
+        raise _err("Not enough input arguments.", "MATLAB:minrhs")
+    v = args[0]
+    if _is_cell(v):
+        from openmatlab.runtime.cell_value import CellValue
+
+        grid = v.to_obj()
+        wrap = lambda b: CellValue.from_obj(b) if b.size else CellValue(rows=())
+    elif _is_char(v):
+        grid = _codes(v)
+        wrap = _from_codes
+    else:
+        grid = _arr(v, "mat2cell")
+        wrap = NDArrayValue
+    if grid.ndim > 2 or len(args) > 3:
+        trailing = [int(np.sum(_arr(a, "mat2cell"))) for a in args[3:]]
+        if grid.ndim > 2 or any(t != 1 for t in trailing):
+            raise _err("mat2cell: N-D input is not supported", "MATLAB:mat2cell:unsupported")
+    m, n = grid.shape
+    if grid.size == 0 and len(args) > 2:  # '' and [] are 0x0 here; accept any empty split (1x0 char, #766)
+        want = (int(np.sum(_arr(args[1], "mat2cell"))), int(np.sum(_arr(args[2], "mat2cell"))))
+        if want[0] * want[1] == 0:
+            grid = grid.reshape(want)
+            m, n = want
+
+    def sizes(a, total, dim):
+        d = [int(x) for x in _arr(a, "mat2cell").reshape(-1)]
+        if any(x < 0 for x in d) or sum(d) != total:
+            raise _err(f"Input arguments, D1 through D2, must sum to each dimension of the input matrix size, [{m} {n}].",
+                       "MATLAB:mat2cell:DimensionMismatch")
+        return d
+    rs = sizes(args[1], m, 1)
+    cs = sizes(args[2], n, 2) if len(args) > 2 else [n]
+    out, r0 = [], 0
+    for r in rs:
+        row, c0 = [], 0
+        for c in cs:
+            row.append(wrap(np.ascontiguousarray(grid[r0:r0 + r, c0:c0 + c])))
+            c0 += c
+        out.append(row)
+        r0 += r
+    return (_mk_cell(out),)
+
+
 def _iscellstr(args, *, nargout=1):
     v = args[0]
     ok = _is_cell(v) and all(_is_char(x) and len(x.rows) <= 1 for row in _cell_grid(v) for x in row)
@@ -633,7 +679,7 @@ def _sortrows(args, *, nargout=1):
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "repmat": _repmat, "logspace": _logspace, "meshgrid": _grid("meshgrid", "xy"),
-        "ndgrid": _grid("ndgrid", "ij"), "cell2mat": _cell2mat, "num2cell": _num2cell,
+        "ndgrid": _grid("ndgrid", "ij"), "cell2mat": _cell2mat, "num2cell": _num2cell, "mat2cell": _mat2cell,
         "iscellstr": _iscellstr, "rot90": _rot90, "tril": _tri("tril", np.tril), "triu": _tri("triu", np.triu),
         "diag": _diag, "blkdiag": _blkdiag, "sub2ind": _sub2ind, "ind2sub": _ind2sub, "isequaln": _isequaln,
         "union": _setop("union"), "intersect": _setop("intersect"), "setdiff": _setop("setdiff"),
