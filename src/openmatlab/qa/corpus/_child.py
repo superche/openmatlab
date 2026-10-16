@@ -30,9 +30,11 @@ def main(argv) -> int:
                 r.feed_input(open(fixture, encoding="utf-8").read().splitlines())
             r.run_line("addpath('%s');" % folder.replace("'", "''"))
             if mode == "parse":
+                from openmatlab.lang.classdef_parser import is_classdef_source, parse_classdef
                 from openmatlab.lang.parser import parse
 
-                parse(open(path, encoding="utf-8", errors="replace").read())
+                text = open(path, encoding="utf-8", errors="replace").read()
+                (parse_classdef if is_classdef_source(text) else parse)(text)  # classdef files are MATLAB too (#798)
             else:
                 r.run_line(f"run('{p}');")
         except (LexerError, ParseError) as exc:
