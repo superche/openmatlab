@@ -48,12 +48,17 @@ class _Job:
             rec.update(t0="missing", t1="missing", category="io-env", key="cache-missing", message="not in cache")
             return rec
         raw = src.read_text(encoding="utf-8", errors="replace")
+        if e.kind == "octave-tests":  # Octave %! blocks are T2/T3 material (C-E5 #765), not MATLAB files
+            rec.update(role="octave-tests", notes=[], t0="n/a", t1="n/a", status="n/a", category="deferred", key="C-E5",
+                       message="")
+            return rec
         stage = Path(tempfile.mkdtemp(prefix="omstage-"))
         try:
             if e.call:
                 code, role, notes, inputs = raw, "driver", [], None
                 drv = stage / ("drv_" + re.sub(r"\W", "_", e.id)[-50:] + ".m")
-                drv.write_text(e.call.replace("{root}", self._root()) + "\n", encoding="utf-8")
+                here = str(src.parent).replace("'", "''")
+                drv.write_text(f"addpath('{here}');\n" + e.call.replace("{root}", self._root()) + "\n", encoding="utf-8")
                 target = drv
             else:
                 p = prepare(raw) if e.source == "rosetta" else None
@@ -76,13 +81,25 @@ class _Job:
             else:
                 r = run_one(target, timeout=timeout, name=e.id, mode="parse").to_json()
                 rec["t0"], rec["t1"] = r["status"], "n/a"
-            feats = features(code, self.siblings)
+            feats = features(code, self.siblings, self._resolvable(r["message"]) if e.call else None)
             cat, key = classify_features(r, feats)
             rec.update(category=cat, key=key, status=r["status"], run_kind=r["kind"], features=feats, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
                        elapsed=r["elapsed"])
             return rec
         finally:
             shutil.rmtree(stage, ignore_errors=True)
+
+    def _resolvable(self, msg: str) -> dict:
+        m = re.search(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)", msg or "")
+        if not m:
+            return {}
+        hits = sorted(Path(self._root()).rglob(m.group(1) + ".m"))
+        if not hits:
+            return {}
+        parts = hits[0].parts
+        where = ("private" if "private" in parts else "class-folder" if any(p.startswith("@") for p in parts)
+                 else "package" if any(p.startswith("+") for p in parts) else "path")
+        return {m.group(1): where}
 
     def _root(self) -> str:
         # cache/<source>/<sha>/... : the checkout root is the first two path components

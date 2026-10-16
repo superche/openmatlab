@@ -22,7 +22,7 @@ Rules only (error id, message patterns, name lists); deterministic, no network, 
 from __future__ import annotations
 
 import re
-from typing import Iterable, Tuple
+from typing import Iterable, Optional, Tuple
 
 CATEGORIES = ("internal-crash", "timeout", "corpus-noise", "toolbox", "io-env", "graphics",
               "missing-builtin", "parse-error", "semantics-diff")
@@ -140,7 +140,7 @@ def _assigned(code: str) -> set:
     return names
 
 
-def features(code: str, siblings: Iterable[str] = ()) -> dict:
+def features(code: str, siblings: Iterable[str] = (), resolvable: Optional[dict] = None) -> dict:
     """The code facts the rules use (identifiers and flags only, never code bodies).
 
     Stored with each labelled failure so the classifier can be evaluated offline in CI.
@@ -153,6 +153,7 @@ def features(code: str, siblings: Iterable[str] = ()) -> dict:
         "defined": sorted(_defined_functions(code)),
         "assigned": sorted(_assigned(code)),
         "siblings": sorted(set(siblings)),
+        "resolvable": dict(sorted((resolvable or {}).items())),  # undefined name -> where its file sits
     }
 
 
@@ -180,7 +181,7 @@ def classify_features(result: dict, f: dict) -> Tuple[str, str]:
         if f["prose"]:
             return "corpus-noise", "prose-or-output"
         m = re.search(r"(?:Unexpected token|got) (\w+)", msg) or re.search(r"Unexpected character '(.)'", msg)
-        return "parse-error", (m.group(1) if m else msg[:40])
+        return "parse-error", (m.group(1) if m else re.sub(r"\s+at line \d+.*$", "", msg)[:60])
     if eid == "MATLAB:recursionLimit" or "recursion limit" in msg.lower():
         return "semantics-diff", "recursionLimit"
     defined, assigned = set(f["defined"]), set(f["assigned"])
@@ -195,6 +196,9 @@ def classify_features(result: dict, f: dict) -> Tuple[str, str]:
             return "io-env", name
         if name in GRAPHICS_FUNCS:
             return "graphics", name
+        where = f.get("resolvable", {}).get(name)
+        if where:  # the source tree ships the function, so OpenMATLAB failed to resolve it
+            return "semantics-diff", "function-resolution:" + where
         if name in set(f["siblings"]) and name not in defined:
             return "corpus-noise", "missing-dependency"
         if name in assigned or name in defined:
