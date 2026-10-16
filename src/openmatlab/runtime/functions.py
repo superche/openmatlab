@@ -200,7 +200,21 @@ def eval_script(script: Script, evaluator: Any) -> Optional[Value]:
     """Evaluate a script in the given evaluator's workspace (shared base WS).
 
     Local functions (#529) are visible to the script body, to each other and as
-    handles (``@name``) for the duration of the run."""
+    handles (``@name``) for the duration of the run. The script gets its own
+    call-stack frame (dbstack / MException.stack, #698)."""
+    from openmatlab.runtime import callstack as _cs
+
+    path = script.source_path
+    saved = evaluator._frame
+    with _cs.entering(_cs.Frame(str(Path(path).resolve()) if path else "", Path(path).stem if path else "")) as fr:
+        evaluator._frame = fr
+        try:
+            return _eval_script_body(script, evaluator)
+        finally:
+            evaluator._frame = saved
+
+
+def _eval_script_body(script: Script, evaluator: Any) -> Optional[Value]:
     if not script.local_functions:
         return evaluator.eval_program(list(script.body))
     outer = evaluator.functions
@@ -234,6 +248,8 @@ class MFileCallable:
     # For nested functions: (parent workspace getter, shared names).
     parent_ws: Any = None
     shared: Any = None
+    # MATLAB stack name override, e.g. "Class.method" for classdef methods (#698).
+    qualname: Optional[str] = None
 
     def __call__(
         self,
@@ -306,12 +322,19 @@ class MFileCallable:
         ev._return_ok += 1
         ev._nargs = (len(args), nargout)
         ev._persist_key = (str(self.source_path), self.defn.name)
+        from openmatlab.runtime import callstack as _cs
+
+        frame = _cs.Frame(str(self.source_path) if self.source_path else "",
+                          _cs.frame_name(self.source_path, self.defn.name, self.qualname),
+                          getattr(self.defn, "_line", 0))
+        ev._frame = frame
         try:
             try:
-                for stmt in self.defn.body:
-                    if isinstance(stmt, (FunctionDef, LocalFunction)):
-                        continue  # bound above as nested/local functions
-                    ev.eval_stmt(stmt)
+                with _cs.entering(frame):
+                    for stmt in self.defn.body:
+                        if isinstance(stmt, (FunctionDef, LocalFunction)):
+                            continue  # bound above as nested/local functions
+                        ev.eval_stmt(stmt)
             except _ReturnSignal:
                 pass  # early exit; collect assigned outputs below
             except _BreakSignal:

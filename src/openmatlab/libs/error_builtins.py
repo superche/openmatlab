@@ -96,7 +96,9 @@ def _rethrow(args, *, nargout=1):
     if getattr(args[0], "is_struct", False) and not getattr(args[0], "is_mexception", False):
         return _error(args)
     ident, msg = _as_me(args[0], "rethrow")
-    raise _eval_error(msg, ident)
+    exc = _eval_error(msg, ident)
+    exc.mstack = er.stack_frames(args[0].elems[0].get("stack"))  # rethrow keeps the original stack (MATLAB)
+    raise exc
 
 
 def _truthy(v) -> bool:
@@ -132,12 +134,25 @@ def _lasterr(args, *, nargout=1):
 
 
 def _getreport(args, *, nargout=1):
+    """getReport(ME[, 'extended'|'basic'][, 'hyperlinks', 'on'|'off'|'default']) (#698)."""
     from openmatlab.runtime.char_value import CharValue
 
     if not args:
         raise _eval_error("getReport: expected an MException")
     ident, msg = _as_me(args[0], "getReport")
-    return (CharValue(msg),)
+    opts = [_text(a, "getReport").lower() for a in args[1:]]
+    kind = "extended"
+    i = 0
+    while i < len(opts):
+        if opts[i] in ("extended", "basic"):
+            kind = opts[i]
+        elif opts[i] == "hyperlinks" and i + 1 < len(opts) and opts[i + 1] in ("on", "off", "default"):
+            i += 1  # text output never carries hyperlinks
+        else:
+            raise _eval_error(f"getReport: invalid option '{opts[i]}'", "MATLAB:MException:getReport:invalidOption")
+        i += 1
+    frames = er.stack_frames(args[0].elems[0].get("stack"))
+    return (CharValue(er.report(msg, frames, basic=kind == "basic")),)
 
 
 def _isstruct_fix(orig):

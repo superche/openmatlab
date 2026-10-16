@@ -28,8 +28,8 @@ Language criteria (D01–D07) are `.m` scripts over real function files in a `te
 
 | # | Criterion | Script | Priority | Epic | Status |
 |---|-----------|--------|----------|------|--------|
-| D01 | `MException.stack` file/name/line per frame (local functions, class methods), `getReport` basic/extended without hyperlinks, unthrown exception has 0×1 stack; uncaught errors print "Error in f (line N)" | m11_d01_exception_stack_report | p0 | #698 (#565) | pending |
-| D02 | `dbstack` struct and printed form, `dbstack(n)`, `'-completenames'`, `mfilename` | m11_d02_dbstack | p0 | #698 (#611) | pending |
+| D01 | `MException.stack` file/name/line per frame (local functions, class methods), `getReport` basic/extended without hyperlinks, unthrown exception has 0×1 stack; uncaught errors print "Error in f (line N)" | m11_d01_exception_stack_report | p0 | #698 (#565) | met (Epic #698; residual #705) |
+| D02 | `dbstack` struct and printed form, `dbstack(n)`, `'-completenames'`, `mfilename` | m11_d02_dbstack | p0 | #698 (#611) | met (Epic #698; residual #705) |
 | D03 | `dbstop in f at N` / `in f` / `if expr`, `dbclear` (line, all), `dbstatus`, pause when a breakpoint is hit | m11_d03_breakpoints | p0 | #699 | pending |
 | D04 | `dbstep`, `dbstep in`, `dbstep out`, `dbcont` with correct lines across loops and local functions; `K>>` prompt; `dbquit` | m11_d04_stepping | p0 | #699 | pending |
 | D05 | Paused-frame evaluation, `dbup`/`dbdown`, `who`/`exist`/`evalin('caller')` respect the active frame, assignments take effect on resume | m11_d05_paused_workspace | p1 | #699 (#611) | pending |
@@ -62,4 +62,4 @@ Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser 
 
 ## Progress snapshot
 
-M11 opened 2026-10-16. **0 / 10** criteria met.
+M11 opened 2026-10-16. **2 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)). Next: T-E1 (#691), then D-E2 (#699; pause-model design doc first).

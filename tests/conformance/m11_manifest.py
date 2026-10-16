@@ -10,8 +10,8 @@ from __future__ import annotations
 
 # id -> (script, priority, tracking issues, status)
 CRITERIA = {
-    "D01": ("m11_d01_exception_stack_report", "p0", [698, 565], "pending"),
-    "D02": ("m11_d02_dbstack", "p0", [698, 611], "pending"),
+    "D01": ("m11_d01_exception_stack_report", "p0", [698, 565], "met"),
+    "D02": ("m11_d02_dbstack", "p0", [698, 611], "met"),
     "D03": ("m11_d03_breakpoints", "p0", [699], "pending"),
     "D04": ("m11_d04_stepping", "p0", [699], "pending"),
     "D05": ("m11_d05_paused_workspace", "p1", [699, 611], "pending"),

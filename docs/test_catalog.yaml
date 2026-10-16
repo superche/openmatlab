@@ -1234,6 +1234,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.callstack
+    kind: unit
+    title: call stack, MException.stack, getReport, dbstack, mfilename (Epic #698)
+    features: [runtime.callstack]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_callstack.py
+    status: active
+    env: unit
+
+  - id: tc.callstack_bdd
+    kind: bdd
+    title: call stack Gherkin scenarios (Epic #698)
+    features: [runtime.callstack]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_callstack_bdd.py
+    status: active
+    env: unit
+
   - id: tc.frames_help
     kind: unit
     title: caller/base workspaces and help browsing (Epic #610)
