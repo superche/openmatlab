@@ -214,7 +214,8 @@ def _double(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         out = np.array([[float(ord(ch)) for ch in row] for row in v.rows]).reshape(r, c)
         return (NDArrayValue(out),)
     if isinstance(v, Array):
-        return (NDArrayValue(np.asarray(v.backend_buffer(), dtype=float)),)
+        b = np.asarray(v.backend_buffer())
+        return (NDArrayValue(np.asarray(b, dtype=complex if np.iscomplexobj(b) else float)),)  # keeps imag (#797)
     raise BuiltinError("double: conversion from this class is not possible")
 
 
