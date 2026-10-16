@@ -1783,6 +1783,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.corpus_runner
+    kind: unit
+    title: Sandboxed corpus runner (openmatlab run) (Epic #761)
+    features: [qa.corpus_runner]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_runner.py
+    status: active
+    env: unit
+
+  - id: tc.corpus_runner_bdd
+    kind: bdd
+    title: Sandboxed corpus runner (openmatlab run) Gherkin scenarios (Epic #761)
+    features: [qa.corpus_runner]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_corpus_runner_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)

@@ -578,6 +578,14 @@ features:
     notes: "timetable value, timerange/withtol subscripts, table2timetable/timetable2table, retime/synchronize, lag (Epic #697)"
     tests: [tests/unit/test_timetable.py, tests/bdd/test_timetable_bdd.py]
 
+  - id: qa.corpus_runner
+    layer: qa
+    name: Sandboxed corpus runner (openmatlab run)
+    status: done
+    depends_on: [host.repl]
+    notes: "openmatlab run FILE --timeout S --json [--parse-only]: one subprocess per script, fresh workdir/HOME, stdin /dev/null, MPLBACKEND=Agg, rlimits AS/CPU/FSIZE, process-group kill on timeout, verdict via side file (Epic #761, M12 C02)"
+    tests: [tests/unit/test_corpus_runner.py, tests/bdd/test_corpus_runner_bdd.py]
+
   - id: runtime.array_assign_range
     layer: runtime
     name: range / non-scalar indexed assignment
