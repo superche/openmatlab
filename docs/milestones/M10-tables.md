@@ -34,8 +34,8 @@ Pending scripts run as **strict xfail** and flip to `met` in the PR that makes t
 | T03 | `table2array`/`table2cell`/`table2struct`, `summary`, `head`/`tail`, `isempty`, `rowfun`/`varfun`, `removevars`/`renamevars`/`movevars`/`addvars` | m10_t03_table_conversion_varfun | p1 | #693 | met (Epic #693; residual #738) |
 | T04 | `categorical`: valueset/catnames/`Ordinal`, `categories`, `countcats`, `addcats`/`removecats`/`mergecats`/`renamecats`, comparisons, `<undefined>`/`isundefined`, table variable | m10_t04_categorical | p0 | #692 | met (Epic #692; residual #717) |
 | T05 | `sortrows(T,vars,dir)`, `issortedrows`, `sort`/`unique`/`ismember` on categorical, string and table | m10_t05_sortrows_sets | p1 | #693 (#585) | met (Epic #693; residual #738) |
-| T06 | `join`, `innerjoin`, `outerjoin` (`'Type'`, `'MergeKeys'`, `'Keys'`), key-mismatch errors | m10_t06_joins | p1 | #696 | pending |
-| T07 | `findgroups`, `splitapply`, `groupsummary` (mean/sum/min/max, multiple groups), `groupcounts` | m10_t07_grouping | p1 | #696 | pending |
+| T06 | `join`, `innerjoin`, `outerjoin` (`'Type'`, `'MergeKeys'`, `'Keys'`), key-mismatch errors | m10_t06_joins | p1 | #696 | met (Epic #696; residual #742) |
+| T07 | `findgroups`, `splitapply`, `groupsummary` (mean/sum/min/max, multiple groups), `groupcounts` | m10_t07_grouping | p1 | #696 | met (Epic #696; residual #742) |
 | T08 | `readtable`/`writetable` CSV/delimited round-trip (header, `'VariableNames'`, mixed columns, `'Delimiter'`, missing → NaN, datetime columns), `readcell`/`writecell` | m10_t08_readtable_writetable | p0 | #694 (#577) | met (Epic #694; residual #721) |
 | T09 | datetime arrays: column vectors, concatenation, NaT/`isnat`, `InputFormat`/`Format`, `dateshift`, `between`, `caldays`/`calmonths`, component assignment with rollover | m10_t09_datetime_arrays | p1 | #695 (#602, #673) | met (Epic #695; residual #733) |
 | T10 | `timetable`, `table2timetable`, `timerange`/`withtol`, `retime`, `synchronize`, `lag` | m10_t10_timetable | p2 (cuttable) | #697 | pending |
@@ -64,4 +64,4 @@ Spreadsheet (`.xlsx`), Parquet/HDF5 I/O; tall arrays, `datastore`, `dataset`; MA
 
 ## Progress snapshot
 
-M10 opened 2026-10-16. **7 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)). Next: T-E6 (#696) joins and grouping, interleaved with D-E5 (#702).
+M10 opened 2026-10-16. **9 / 10** criteria met: T01, T02 (Epic #691, [design](../design/EPIC-691-table-core.md)), T04 (Epic #692, [design](../design/EPIC-692-categorical.md)), T08 (Epic #694, [design](../design/EPIC-694-readtable.md)), T09 (Epic #695, [design](../design/EPIC-695-datetime-arrays.md)), T03, T05 (Epic #693, [design](../design/EPIC-693-table-utilities.md)), T06, T07 (Epic #696, [design](../design/EPIC-696-joins-grouping.md)). Next: T-E7 (#697, p2 cuttable) timetable, interleaved with D-E5 (#702).

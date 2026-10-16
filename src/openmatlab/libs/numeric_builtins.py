@@ -1327,3 +1327,6 @@ _datetime_arrays.register(BUILTINS)  # M10 T-E5 (#695)
 from openmatlab.libs import table_utils as _table_utils  # noqa: E402
 
 _table_utils.register(BUILTINS)  # M10 T-E3 (#693)
+from openmatlab.libs import table_join_group as _table_join_group  # noqa: E402
+
+_table_join_group.register(BUILTINS)  # M10 T-E6 (#696)
