@@ -1410,3 +1410,4 @@ _table_join_group.register(BUILTINS)  # M10 T-E6 (#696)
 from openmatlab.libs import timetable_builtins as _timetable_builtins  # noqa: E402
 
 _timetable_builtins.register(BUILTINS)  # M10 T-E7 (#697)
+__import__("openmatlab.libs.specfun_builtins", fromlist=["register"]).register(BUILTINS)
