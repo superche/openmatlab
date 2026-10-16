@@ -21,6 +21,7 @@ class Frame:
     file: str  # absolute path of the .m file ("" if unknown)
     name: str  # MATLAB stack name: f, f>local, Class.method
     line: int = 0
+    ev: object = None  # evaluator running this frame (paused-workspace access, D-E2)
 
 
 @contextlib.contextmanager

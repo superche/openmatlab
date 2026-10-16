@@ -208,6 +208,7 @@ def eval_script(script: Script, evaluator: Any) -> Optional[Value]:
     saved = evaluator._frame
     with _cs.entering(_cs.Frame(str(Path(path).resolve()) if path else "", Path(path).stem if path else "")) as fr:
         evaluator._frame = fr
+        fr.ev = evaluator
         try:
             return _eval_script_body(script, evaluator)
         finally:
@@ -328,6 +329,7 @@ class MFileCallable:
                           _cs.frame_name(self.source_path, self.defn.name, self.qualname),
                           getattr(self.defn, "_line", 0))
         ev._frame = frame
+        frame.ev = ev
         try:
             try:
                 with _cs.entering(frame):

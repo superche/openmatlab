@@ -30,9 +30,9 @@ Language criteria (D01–D07) are `.m` scripts over real function files in a `te
 |---|-----------|--------|----------|------|--------|
 | D01 | `MException.stack` file/name/line per frame (local functions, class methods), `getReport` basic/extended without hyperlinks, unthrown exception has 0×1 stack; uncaught errors print "Error in f (line N)" | m11_d01_exception_stack_report | p0 | #698 (#565) | met (Epic #698; residual #705) |
 | D02 | `dbstack` struct and printed form, `dbstack(n)`, `'-completenames'`, `mfilename` | m11_d02_dbstack | p0 | #698 (#611) | met (Epic #698; residual #705) |
-| D03 | `dbstop in f at N` / `in f` / `if expr`, `dbclear` (line, all), `dbstatus`, pause when a breakpoint is hit | m11_d03_breakpoints | p0 | #699 | pending |
-| D04 | `dbstep`, `dbstep in`, `dbstep out`, `dbcont` with correct lines across loops and local functions; `K>>` prompt; `dbquit` | m11_d04_stepping | p0 | #699 | pending |
-| D05 | Paused-frame evaluation, `dbup`/`dbdown`, `who`/`exist`/`evalin('caller')` respect the active frame, assignments take effect on resume | m11_d05_paused_workspace | p1 | #699 (#611) | pending |
+| D03 | `dbstop in f at N` / `in f` / `if expr`, `dbclear` (line, all), `dbstatus`, pause when a breakpoint is hit | m11_d03_breakpoints | p0 | #699 | met (Epic #699; residual #713) |
+| D04 | `dbstep`, `dbstep in`, `dbstep out`, `dbcont` with correct lines across loops and local functions; `K>>` prompt; `dbquit` | m11_d04_stepping | p0 | #699 | met (Epic #699; residual #713) |
+| D05 | Paused-frame evaluation, `dbup`/`dbdown`, `who`/`exist`/`evalin('caller')` respect the active frame, assignments take effect on resume | m11_d05_paused_workspace | p1 | #699 (#611) | met (Epic #699; residual #713) |
 | D06 | `input`, `input(prompt,'s')`, empty input, `keyboard` + `dbcont` | m11_d06_keyboard_input | p1 | #700 (#577) | pending |
 | D07 | `dbstop if caught error [ID]`, `if error`, `if warning`, `if naninf`; pause at the faulting line with the stack intact | m11_d07_error_stop | p1 | #700 | pending |
 | D08 | Workbench debug UI: gutter breakpoints ↔ `dbstop`/`dbclear`, current-line marker, Continue/Step/Step In/Step Out/Quit, stack selector rebinding Workspace | m11_d08_workbench_debug_ui | p0 | #701 | pending |
@@ -62,4 +62,4 @@ Profiler, Code Analyzer/LSP, Live Editor, App Designer/`uifigure`, help browser 
 
 ## Progress snapshot
 
-M11 opened 2026-10-16. **2 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)). Next: T-E1 (#691), then D-E2 (#699; pause-model design doc first).
+M11 opened 2026-10-16. **5 / 10** criteria met: D01, D02 (Epic #698, [design](../design/EPIC-698-callstack.md)); D03, D04, D05 (Epic #699, [pause-model design](../design/EPIC-699-pause-model.md)). Next: T-E2 (#692) / T-E4 (#694), then D-E4 (#701).
