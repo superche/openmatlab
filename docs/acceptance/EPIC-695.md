@@ -75,7 +75,7 @@ $ pytest tests/conformance/test_m10_conformance.py --tb=no
 6 passed, 5 xfailed in 0.41s
 ```
 
-New cases: `tests/unit/test_datetime_arrays.py` (34), `tests/bdd/test_datetime_arrays_bdd.py` (4), M10 T09 conformance flipped to met.
+New cases: `tests/unit/test_datetime_arrays.py` (33), `tests/bdd/test_datetime_arrays_bdd.py` (4), M10 T09 conformance flipped to met.
 
 **Existing tests changed: none.**
 
