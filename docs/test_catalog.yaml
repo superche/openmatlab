@@ -1675,6 +1675,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.table_utils
+    kind: unit
+    title: table utilities — conversions, head/tail, varfun/rowfun, variable management, summary, sortrows/unique/ismember on tables (Epic #693)
+    features: [libs.table_utils]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_table_utils.py
+    status: active
+    env: unit
+
+  - id: tc.table_utils_bdd
+    kind: bdd
+    title: table utilities — conversions, head/tail, varfun/rowfun, variable management, summary, sortrows/unique/ismember on tables Gherkin scenarios (Epic #693)
+    features: [libs.table_utils]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/bdd/test_table_utils_bdd.py
+    status: active
+    env: unit
+
   - id: tc.script_local_functions
     kind: unit
     title: scripts with local functions run; no Python traceback (#529)
