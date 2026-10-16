@@ -198,7 +198,23 @@ class GraphicsHandle(NDArrayValue):
         n = self._data.size
         if n != 1:
             dims = "×".join(str(d) for d in self._data.shape)
-            return f"  {dims} {self.graphics_class()} array:" if n else f"  {dims} empty GraphicsPlaceholder array."
+            if not n:
+                return f"  {dims} empty GraphicsPlaceholder array."
+            lines = [f"  {dims} {self.graphics_class()} array:", ""]
+            for i in self.ids:
+                o = self._model.objs.get(i)
+                if o is None:
+                    lines.append("    GraphicsPlaceholder")
+                    continue
+                if not o.alive:
+                    lines.append("    handle to deleted object")
+                    continue
+                name = o.props.get("DisplayName") or o.props.get("Name") or o.props.get("String") or ""
+                name = name if isinstance(name, str) else ""
+                lines.append(f"    {CLASS_NAMES.get(o.type, o.type)}" + (f"    ({name})" if name else ""))
+            return "\n".join(lines)
+        if self.hid != self.hid:
+            return "  GraphicsPlaceholder with no properties."
         if not self._model.is_handle(self.hid):
             return f"  handle to deleted {self.graphics_class()}"
         o = self._obj()
@@ -989,6 +1005,20 @@ def _ishandle(ev, args, nargout):
     return (NDArrayValue(out),)
 
 
+def _gobjects(ev, args, nargout):
+    """gobjects(n) / gobjects(m,n,...): an array of GraphicsPlaceholder elements (NaN ids) (#768)."""
+    dims = [int(_arr(a, "gobjects").reshape(-1)[0]) if _arr(a, "gobjects").size == 1 else None for a in args]
+    if len(args) == 1 and _arr(args[0], "gobjects").size > 1:
+        dims = [int(x) for x in _arr(args[0], "gobjects").reshape(-1)]
+    if not dims:
+        dims = [1, 1]
+    elif len(dims) == 1:
+        dims = [dims[0], dims[0]]
+    if any(d is None for d in dims):
+        raise _err("gobjects: size arguments must be scalars.", "MATLAB:gobjects:InvalidSize")
+    return (GraphicsHandle(np.full([max(d, 0) for d in dims], np.nan), model(ev)),)
+
+
 def _wrap(fn):
     def call(ev, args, nargout):
         prev = _CUR["model"]
@@ -1011,8 +1041,8 @@ INTRINSICS = {k: _wrap(v) for k, v in {
     "scatter": _scatter, "histogram": _histogram, "title": _label("Title"), "xlabel": _label("XLabel"),
     "ylabel": _label("YLabel"), "legend": _legend, "grid": _grid, "xlim": _lim("XLim"), "ylim": _lim("YLim"),
     "axis": _axis, "text": _text_fn, "get": _get, "set": _set, "saveas": _saveas, "delete": _delete,
-    "ishandle": _ishandle, "isgraphics": _ishandle,
+    "ishandle": _ishandle, "isgraphics": _ishandle, "gobjects": _gobjects,
 }.items()}
 
 # called as statements these print nothing and do not set ans
-STATEMENT_ZERO = set(INTRINSICS) - {"gcf", "gca", "ishold", "get", "ishandle", "isgraphics"}
+STATEMENT_ZERO = set(INTRINSICS) - {"gcf", "gca", "ishold", "get", "ishandle", "isgraphics", "gobjects"}

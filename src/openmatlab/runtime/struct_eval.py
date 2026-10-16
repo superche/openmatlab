@@ -277,7 +277,8 @@ def _assign(ev, cur, steps, rhs, depth):
     if kind == "paren" and getattr(cur, "is_graphics_handle", False):  # h(k).Prop = v, h(k) = g (#768)
         if not rest:
             out = _temp_assign(ev, cur, "paren", arg, rhs, depth)
-            return cur.rewrap(out) if getattr(rhs, "is_graphics_handle", False) else out
+            keep = getattr(rhs, "is_graphics_handle", False) or (rhs.numel() == 0 and not getattr(rhs, "is_struct", False))
+            return cur.rewrap(out) if keep else out
         elem = _temp_read(ev, cur, "paren", arg, depth)
         if elem is None or not getattr(elem, "is_graphics_handle", False):
             raise _err("Index exceeds the number of array elements.")

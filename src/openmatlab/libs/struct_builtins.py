@@ -356,6 +356,8 @@ def _elements(v):
 
     if is_struct(v):
         return [v.element(k) for k in range(v.numel())], tuple(v.shape)
+    if getattr(v, "is_graphics_handle", False):  # arrayfun over graphics handles (#768)
+        return [v.rewrap(NDArrayValue(np.array([[i]]))) for i in v.ids], tuple(v.shape)
     if isinstance(v, CellValue):
         obj = v.to_obj()
         return ([CellValue.from_obj(np.array([[x]], dtype=object)) for x in obj.reshape(-1, order="F")],
