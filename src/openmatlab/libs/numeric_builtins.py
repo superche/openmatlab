@@ -1321,3 +1321,6 @@ _categorical_builtins.register(BUILTINS)  # M10 T-E2 (#692)
 from openmatlab.libs import table_io as _table_io  # noqa: E402
 
 _table_io.register(BUILTINS)  # M10 T-E4 (#694)
+from openmatlab.libs import datetime_arrays as _datetime_arrays  # noqa: E402
+
+_datetime_arrays.register(BUILTINS)  # M10 T-E5 (#695)
