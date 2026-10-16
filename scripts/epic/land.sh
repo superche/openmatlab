@@ -6,7 +6,7 @@ pr=$1
 br=$(gh pr view $pr --json headRefName -q .headRefName)
 for attempt in 1 2 3; do
   st=$(gh pr view $pr --json mergeStateStatus -q .mergeStateStatus)
-  if [ "$st" = "BEHIND" ] || [ "$st" = "DIRTY" ]; then gh pr update-branch $pr >/dev/null || exit 1; sleep 15; fi
+  if [ "$st" = "BEHIND" ] || [ "$st" = "DIRTY" ]; then gh api -X PUT repos/superche/openmatlab/pulls/$pr/update-branch >/dev/null || exit 1; sleep 15; fi
   gh pr checks $pr --watch --interval 10 >/dev/null 2>&1
   if gh pr checks $pr | grep -q fail; then echo "PR $pr CI FAIL"; exit 1; fi
   if gh pr merge $pr --squash --delete-branch >/dev/null 2>&1; then echo "PR $pr merged"; exit 0; fi
