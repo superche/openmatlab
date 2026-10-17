@@ -265,3 +265,13 @@ def test_two_and_three_dimensional():
     np.testing.assert_allclose(ev("r = integral3(@(x, y, z) x + y + z, 0, 1, 0, 2, 0, 3);"), [[18.0]], rtol=1e-8)
     np.testing.assert_allclose(ev("r = dblquad(@(x, y) x*y, 0, 1, 0, 2);"), [[1.0]], rtol=1e-6)
     np.testing.assert_allclose(ev("r = triplequad(@(x, y, z) x + 0*y*z, 0, 1, 0, 1, 0, 1);"), [[0.5]], rtol=1e-6)
+
+
+def test_linsolve_isstrprop_cplxpair_dsearchn():
+    np.testing.assert_allclose(ev("r = linsolve([2 0; 0 4], [2; 8]);"), [[1.0], [2.0]])
+    np.testing.assert_allclose(ev("[x, r] = linsolve([1 0 0; 0 1 0], [1; 2]);"), [[2]])
+    np.testing.assert_allclose(ev("o.TRANSA = true; r = linsolve([1 2; 0 1], [1; 4], o);"), [[1.0], [2.0]])
+    assert ev("r = isstrprop('a1 B', 'alpha');").tolist() == [[True, False, False, True]]
+    assert ev("r = isstrprop('a1 B', 'wspace');").tolist() == [[False, False, True, False]]
+    np.testing.assert_allclose(ev("r = cplxpair([3, 1+2i, 1-2i]);"), [[1 - 2j, 1 + 2j, 3]])
+    np.testing.assert_allclose(ev("r = dsearchn([0 0; 1 1; 5 5], [0.9 0.8; 4 4]);"), [[2], [3]])
