@@ -124,6 +124,7 @@ def _reducers():
         "movprod": np.prod,
         "movvar": var,
         "movstd": lambda w: np.sqrt(var(w)),
+        "movmad": lambda w: np.median(np.abs(w - np.median(w))) if w.size else np.nan,
     }
 
 

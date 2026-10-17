@@ -655,6 +655,240 @@ def _datevec(args, *, nargout=1):
     return tuple(_out(m[:, k].reshape(shape, order="F")) for k in range(6))[:nargout]
 
 
+def _isuniform(args, *, nargout=1):
+    _need(args, 1, "isuniform")
+    v = args[0]
+    a = _num(v, "isuniform").reshape(-1)
+    if a.size < 2 or (a.ndim and min(np.shape(np.asarray(v.backend_buffer() if not _is_text(v) else a))) > 1
+                      and np.asarray(v.backend_buffer()).ndim > 1 and sum(k > 1 for k in np.shape(v.backend_buffer())) > 1):
+        return (NDArrayValue(np.array([[False]])), _out(np.nan))[:max(1, nargout)]
+    d = np.diff(a)
+    if not np.all(np.isfinite(a)):
+        return (NDArrayValue(np.array([[False]])), _out(np.nan))[:max(1, nargout)]
+    is_int = v.matlab_class() in _INT_BITS or v.matlab_class() in ("logical", "char")
+    if is_int:
+        ok = bool(np.all(d == d[0]))
+    else:
+        tol = 4 * np.spacing(np.max(np.abs(a)).astype(np.float32 if v.matlab_class() == "single" else float))
+        ok = bool(np.all(np.abs(d - d[0]) <= tol)) if d[0] != 0 or np.all(d == 0) else False
+    step = float(d[0]) if ok else np.nan
+    return (NDArrayValue(np.array([[ok]])), _out(step))[:max(1, nargout)]
+
+
+def _vecnorm(args, *, nargout=1):
+    _need(args, 1, "vecnorm")
+    a = _num(args[0], "vecnorm")
+    p = float(_num(args[1], "vecnorm").reshape(-1)[0]) if len(args) > 1 else 2.0
+    if len(args) > 2:
+        ax = int(_num(args[2], "vecnorm").reshape(-1)[0]) - 1
+    else:
+        nz = [i for i, k in enumerate(a.shape) if k != 1]
+        ax = nz[0] if nz else 0
+    if ax >= a.ndim:
+        a = a.reshape(a.shape + (1,) * (ax + 1 - a.ndim))
+    if not p > 0:
+        raise _err("vecnorm: P must be positive.", "MATLAB:vecnorm:invalidP")
+    m = np.abs(a)
+    r = np.max(m, axis=ax, keepdims=True) if np.isinf(p) else np.sum(m ** p, axis=ax, keepdims=True) ** (1 / p)
+    return (_out(r),)
+
+
+def _pi_trig(fn, f):
+    def g(args, *, nargout=1):
+        _need(args, 1, fn)
+        a = _num(args[0], fn)
+        r = f(a)
+        return (_out(r.astype(np.float32) if args[0].matlab_class() == "single" else r),)
+    return g
+
+
+def _sinpi(a):
+    r = np.mod(a, 2.0)
+    out = np.sin(np.pi * r)
+    out = np.where(r == np.floor(r), 0.0, out)
+    out = np.where(r == 0.5, 1.0, np.where(r == 1.5, -1.0, out))
+    return np.where(np.isfinite(a), out, np.nan)
+
+
+def _cospi(a):
+    r = np.mod(a, 2.0)
+    out = np.cos(np.pi * r)
+    out = np.where((r == 0.5) | (r == 1.5), 0.0, out)
+    out = np.where(r == 0, 1.0, np.where(r == 1, -1.0, out))
+    return np.where(np.isfinite(a), out, np.nan)
+
+
+def _polyarea(args, *, nargout=1):
+    _need(args, 2, "polyarea")
+    x, y = _num(args[0], "polyarea"), _num(args[1], "polyarea")
+    if x.shape != y.shape:
+        raise _err("polyarea: X and Y must have the same shape.", "MATLAB:polyarea:XYSizeMismatch")
+    if len(args) > 2:
+        ax = int(_num(args[2], "polyarea").reshape(-1)[0]) - 1
+    else:
+        nz = [i for i, k in enumerate(x.shape) if k != 1]
+        ax = nz[0] if nz else 0
+    xr, yr = np.roll(x, -1, axis=ax), np.roll(y, -1, axis=ax)
+    return (_out(np.abs(np.sum(x * yr - xr * y, axis=ax, keepdims=True)) / 2),)
+
+
+def _pagetrans(conj):
+    def g(args, *, nargout=1):
+        _need(args, 1, "pagetranspose")
+        a = np.asarray(args[0].backend_buffer())
+        a = a.reshape(1, 1) if a.ndim == 0 else a
+        r = np.swapaxes(a, 0, 1)
+        return (NDArrayValue(np.conj(r) if conj else r),)
+    return g
+
+
+def _swapbytes(args, *, nargout=1):
+    _need(args, 1, "swapbytes")
+    a = np.asarray(args[0].backend_buffer())
+    if a.dtype == np.bool_ or a.dtype.kind not in "iuf":
+        raise _err("swapbytes: input must be a numeric array.", "MATLAB:swapbytes:invalidInput")
+    return (NDArrayValue(a.byteswap()),)
+
+
+def _computer(args, *, nargout=1):
+    import platform
+    import sys
+
+    mach = platform.machine().lower()
+    if sys.platform.startswith("linux"):
+        arch = "GLNXA64" if "64" in mach else "GLNX86"
+    elif sys.platform == "darwin":
+        arch = "MACA64" if mach in ("arm64", "aarch64") else "MACI64"
+    else:
+        arch = "PCWIN64"
+    if args and _is_text(args[0]) and args[0].text.lower() == "arch":
+        return (_cv(arch.lower().replace("glnxa64", "glnxa64")),)
+    outs = (_cv(arch), _out(float(2 ** 48 - 1)), _cv("L"))
+    return outs[:max(1, nargout)]
+
+
+def _rectint(args, *, nargout=1):
+    _need(args, 2, "rectint")
+    a, b = _num(args[0], "rectint"), _num(args[1], "rectint")
+    if a.shape[-1] != 4 or b.shape[-1] != 4:
+        raise _err("rectint: A and B must have 4 columns.", "MATLAB:rectint:invalidInput")
+    a, b = a.reshape(-1, 4), b.reshape(-1, 4)
+    ax0, ay0, ax1, ay1 = a[:, 0:1], a[:, 1:2], a[:, 0:1] + a[:, 2:3], a[:, 1:2] + a[:, 3:4]
+    bx0, by0, bx1, by1 = b[:, 0], b[:, 1], b[:, 0] + b[:, 2], b[:, 1] + b[:, 3]
+    w = np.clip(np.minimum(ax1, bx1) - np.maximum(ax0, bx0), 0, None)
+    h = np.clip(np.minimum(ay1, by1) - np.maximum(ay0, by0), 0, None)
+    return (_out(w * h),)
+
+
+def _subspace(args, *, nargout=1):
+    _need(args, 2, "subspace")
+    a, b = _num(args[0], "subspace"), _num(args[1], "subspace")
+    qa, _ = np.linalg.qr(a)
+    qb, _ = np.linalg.qr(b)
+    if qa.shape[1] < qb.shape[1]:
+        qa, qb = qb, qa
+    c = qb - qa @ (qa.conj().T @ qb)
+    sv = np.linalg.svd(c, compute_uv=False)
+    return (_out(float(np.arcsin(min(1.0, sv.max() if sv.size else 0.0)))),)
+
+
+def _tol_default(a):
+    return 1e-6 if a.dtype == np.float64 else 1e-4
+
+
+def _uniquetol(args, *, nargout=1):
+    _need(args, 1, "uniquetol")
+    single = args[0].matlab_class() == "single"
+    a = _num(args[0], "uniquetol")
+    rest = list(args[1:])
+    tol = 1e-4 if single else 1e-12
+    if rest and not _is_text(rest[0]):
+        tol = float(_num(rest.pop(0), "uniquetol").reshape(-1)[0])
+    byrows, datascale, outall = False, None, False
+    for i in range(0, len(rest) - 1, 2):
+        k = rest[i].text.lower() if _is_text(rest[i]) else ""
+        val = rest[i + 1]
+        if k == "byrows":
+            byrows = bool(_num(val, "uniquetol").reshape(-1)[0])
+        elif k == "datascale":
+            datascale = _num(val, "uniquetol").reshape(-1)
+        elif k == "outputallindices":
+            outall = bool(_num(val, "uniquetol").reshape(-1)[0])
+    if a.size == 0:
+        return (_out(a.reshape(0, 1) if not byrows else a), _out(np.zeros((0, 1))), _out(np.zeros((0, 1))))[:max(1, nargout)]
+    if byrows:
+        rows = a
+    else:
+        rows = a.reshape(-1, 1, order="F")
+    fin = rows[np.isfinite(rows)]
+    ds = datascale if datascale is not None else (np.max(np.abs(fin)) if fin.size else 1.0)
+    ds = np.broadcast_to(np.asarray(ds, float), (rows.shape[1],))
+    order = np.lexsort(rows.T[::-1])
+    keep, ia, ic = [], [], np.zeros(rows.shape[0], int)
+    for idx in order:
+        r = rows[idx]
+        if np.any(np.isnan(r)):
+            keep.append(r)
+            ia.append(idx)
+            ic[idx] = len(keep)
+            continue
+        hit = None
+        for j, (kr, ki) in enumerate(zip(keep, ia)):
+            if np.any(np.isnan(kr)):
+                continue
+            same = np.all((np.abs(kr - r) <= tol * ds) | (kr == r))
+            if same:
+                hit = j
+                break
+        if hit is None:
+            keep.append(r)
+            ia.append(idx)
+            ic[idx] = len(keep)
+        else:
+            ic[idx] = hit + 1
+    c = np.array(keep).reshape(len(keep), rows.shape[1])
+    if not byrows:
+        c = c.reshape(1, -1) if a.ndim == 2 and a.shape[0] == 1 else c.reshape(-1, 1)
+    if single:
+        c = c.astype(np.float32)
+    outs = (_out(c), _out(np.array(ia, float).reshape(-1, 1) + 1), _out(ic.astype(float).reshape(-1, 1)))
+    return outs[:max(1, nargout)]
+
+
+def _ismembertol(args, *, nargout=1):
+    _need(args, 2, "ismembertol")
+    a, b = _num(args[0], "ismembertol"), _num(args[1], "ismembertol")
+    rest = list(args[2:])
+    single = args[0].matlab_class() == "single" or args[1].matlab_class() == "single"
+    tol = 1e-4 if single else 1e-12
+    if rest and not _is_text(rest[0]):
+        tol = float(_num(rest.pop(0), "ismembertol").reshape(-1)[0])
+    byrows, datascale = False, None
+    for i in range(0, len(rest) - 1, 2):
+        k = rest[i].text.lower() if _is_text(rest[i]) else ""
+        if k == "byrows":
+            byrows = bool(_num(rest[i + 1], "ismembertol").reshape(-1)[0])
+        elif k == "datascale":
+            datascale = _num(rest[i + 1], "ismembertol").reshape(-1)
+    if byrows:
+        ar, br = a, b
+    else:
+        ar, br = a.reshape(-1, 1, order="F"), b.reshape(-1, 1, order="F")
+    allv = np.concatenate([ar.reshape(-1), br.reshape(-1)])
+    fin = allv[np.isfinite(allv)]
+    ds = datascale if datascale is not None else (np.max(np.abs(fin)) if fin.size else 1.0)
+    ds = np.broadcast_to(np.asarray(ds, float), (ar.shape[1] if ar.ndim > 1 else 1,))
+    lia = np.zeros(ar.shape[0], bool)
+    loc = np.zeros(ar.shape[0])
+    for i in range(ar.shape[0]):
+        for j in range(br.shape[0]):
+            if np.all((np.abs(ar[i] - br[j]) <= tol * ds) | (ar[i] == br[j])):
+                lia[i], loc[i] = True, j + 1
+                break
+    shape = a.shape if not byrows else (a.shape[0], 1)
+    return (NDArrayValue(lia.reshape(shape, order="F")), _out(loc.reshape(shape, order="F")))[:max(1, nargout)]
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "issymmetric": _issymmetric, "ishermitian": _ishermitian, "bandwidth": _bandwidth, "isbanded": _isbanded,
@@ -666,7 +900,11 @@ def register(builtins: Dict[str, Callable]) -> None:
         "mape": _pair_metric("mape", lambda a, b: 100 * np.abs((b - a) / b)),
         "cart2pol": _cart2pol, "pol2cart": _pol2cart, "cart2sph": _cart2sph, "sph2cart": _sph2cart,
         "bitcmp": _bitcmp, "bitset": _bitset, "eomday": _eomday,
-        "tensorprod": _tensorprod, "datevec": _datevec, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
+        "tensorprod": _tensorprod, "isuniform": _isuniform, "vecnorm": _vecnorm,
+        "sinpi": _pi_trig("sinpi", _sinpi), "cospi": _pi_trig("cospi", _cospi), "polyarea": _polyarea,
+        "pagetranspose": _pagetrans(False), "pagectranspose": _pagetrans(True), "swapbytes": _swapbytes,
+        "computer": _computer, "rectint": _rectint, "subspace": _subspace, "uniquetol": _uniquetol,
+        "ismembertol": _ismembertol, "datevec": _datevec, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
     }
     for k, v in table.items():
         builtins.setdefault(k, v)
