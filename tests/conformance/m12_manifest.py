@@ -16,7 +16,7 @@ CRITERIA = {
     "C04": ("m12_c04_classifier", "p0", [763], "met"),
     "C05": ("m12_c05_tier0", "p0", [766], "met"),
     "C06": ("m12_c06_tier1", "p0", [766], "met"),
-    "C07": ("m12_c07_tier2", "p1", [765], "pending"),
+    "C07": ("m12_c07_tier2", "p1", [765], "met"),
     "C08": ("m12_c08_tier3", "p1", [765], "pending"),
     "C09": ("m12_c09_no_crash", "p0", [766], "met"),
     "C10": ("m12_c10_report_triage", "p1", [764], "met"),

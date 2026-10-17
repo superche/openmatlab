@@ -1792,6 +1792,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.corpus_tier2
+    kind: unit
+    title: Corpus T2 self-check oracle and dialect exclusions (Epic #765)
+    features: [qa.corpus_tier2]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_selfcheck.py
+    status: active
+    env: unit
+
   - id: tc.graphics_plot3d
     kind: unit
     title: 3-D plotting, imshow and axes helpers (Epic #771)
