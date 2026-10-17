@@ -92,3 +92,8 @@ def test_t2_assert(code, ok):
     r.run_line(f"addpath('{S.T2LIB.as_posix()}');")
     r.run_line(f"try, {code}; ok__ = 1; catch, ok__ = 0; end")
     assert bool(r.session.workspace.get("ok__").backend_buffer().item()) is ok
+
+
+def test_paren_continuation_and_bug_tags():
+    assert S.octave_to_matlab("assert (f (1,\n 2), [1 2\n 3 4])") == "t2_assert (f (1, ...\n 2), [1 2\n 3 4])"
+    assert S.parse_blocks("%!test <*123>\n%! x = 1;").blocks[0].text.strip() == "x = 1;"

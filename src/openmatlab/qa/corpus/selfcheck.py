@@ -82,8 +82,8 @@ def parse_blocks(src: str) -> Parsed:
         if not line.startswith("%!"):
             continue
         m = _KW.match(line)
-        if m:
-            raw.append([m.group(1), m.group(2), []])
+        if m:  # a leading <*12345> / <12345> bug tag is metadata, not code
+            raw.append([m.group(1), re.sub(r"^\s*<[^>]*>", "", m.group(2)), []])
         elif raw:
             raw[-1][2].append(line[2:])
     blocks, funcs, skipped, shared, k = [], [], 0, [], 0
@@ -203,8 +203,34 @@ def _line(line: str) -> str:
     return s
 
 
+def _scan_brackets(line: str, stack: list) -> None:
+    q = None
+    for i, c in enumerate(line):
+        if q:
+            if c == q:
+                q = None
+        elif c == "'" and not (i and (line[i - 1].isalnum() or line[i - 1] in ")]}_.'")):
+            q = c
+        elif c == "%":
+            break
+        elif c in "([{":
+            stack.append(c)
+        elif c in ")]}" and stack:
+            stack.pop()
+
+
 def octave_to_matlab(code: str) -> str:
     """Best-effort runtime normalisation of Octave-only syntax in a test block to MATLAB."""
+    out, stack = [], []  # Octave continues a line inside an open (; MATLAB needs ... ([ and { rows stay rows)
+    for ln in _octave_lines(code):
+        if stack and stack[-1] == "(" and out and not out[-1].rstrip().endswith("..."):
+            out[-1] = out[-1] + " ..."
+        out.append(ln)
+        _scan_brackets(ln, stack)
+    return "\n".join(out)
+
+
+def _octave_lines(code: str) -> list:
     lines, in_block = [], False
     for line in code.splitlines():
         st = line.strip()
@@ -216,7 +242,7 @@ def octave_to_matlab(code: str) -> str:
             continue
         if not in_block:
             lines.append(re.sub(r"\bassert\b(?=\s*\()", "t2_assert", _line(line)))
-    return "\n".join(lines)
+    return lines
 
 
 def redact(msg: str) -> str:
