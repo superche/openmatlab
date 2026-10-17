@@ -12,7 +12,7 @@ from __future__ import annotations
 CRITERIA = {
     "G01": ("m13_g01_handle_arrays", "p0", [768, 673], "met"),
     "G02": ("m13_g02_findobj", "p0", [769, 593], "met"),
-    "G03": ("m13_g03_layout_axes", "p0", [770, 593], "pending"),
+    "G03": ("m13_g03_layout_axes", "p0", [770, 593], "met"),
     "G04": ("m13_g04_charts2d", "p1", [772, 593], "met"),
     "G05": ("m13_g05_colour_image", "p0", [771, 593], "pending"),
     "G06": ("m13_g06_3d", "p1", [771, 593], "met"),

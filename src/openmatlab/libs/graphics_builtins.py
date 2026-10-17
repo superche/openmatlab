@@ -1099,7 +1099,12 @@ def _ishandle(ev, args, nargout):
     if not hasattr(args[0], "backend_buffer") or _is_text(args[0]):
         return (NDArrayValue(np.array([[False]])),)
     a = _arr(args[0])
-    out = np.vectorize(lambda x: m.is_handle(x), otypes=[bool])(a) if a.size else np.zeros(a.shape, bool)
+    typ = args[1].text.lower() if len(args) > 1 and _is_text(args[1]) else None  # isgraphics(h, type) (#770)
+
+    def ok(x):
+        return m.is_handle(x) and (typ is None or m.get(x).type.lower() == typ)
+
+    out = np.vectorize(ok, otypes=[bool])(a) if a.size else np.zeros(a.shape, bool)
     return (NDArrayValue(out),)
 
 

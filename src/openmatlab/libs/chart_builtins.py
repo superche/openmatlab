@@ -235,6 +235,7 @@ def _logplot(xs, ys):
         out = gb.INTRINSICS["plot"](ev, args, 1)
         a = m.gca()
         a.props["XScale"], a.props["YScale"] = xs or a.props.get("XScale", "linear"), ys or a.props.get("YScale", "linear")
+        m.autoscale(a)  # auto limits follow the scale (#770)
         gb._render(m, a)
         return out if nargout else ()
     return f
