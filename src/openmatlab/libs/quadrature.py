@@ -313,29 +313,29 @@ def _cast(q, cls):
     return q
 
 
-def _quadgk(args, *, nargout=1):
+def _quadgk(args, *, nargout=1, fn="quadgk"):
     if len(args) < 3:
         raise _err("Not enough input arguments.", "MATLAB:minrhs")
-    fh = _handle(args[0], "quadgk")
-    a, b = _scalar(args[1], "quadgk"), _scalar(args[2], "quadgk")
-    opts = _opts(args, 3, "quadgk", ("abstol", "reltol", "waypoints", "maxintervalcount", "arrayvalued", "trace"))
-    cls = _result_class(args[1], args[2])
+    fh = _handle(args[0], fn)
+    a, b = _scalar(args[1], fn), _scalar(args[2], fn)
+    opts = _opts(args, 3, fn, ("abstol", "reltol", "waypoints", "maxintervalcount", "arrayvalued", "trace"))
+    cls = _result_class(args[1], args[2], *([opts["waypoints"]] if "waypoints" in opts else []))
     abstol = _num_opt(opts, "abstol", 1e-5 if cls is np.float32 else 1e-10)
     reltol = _num_opt(opts, "reltol", 1e-4 if cls is np.float32 else 1e-6)
     maxint = int(_num_opt(opts, "maxintervalcount", 650))
     wp = _arr(opts["waypoints"]).reshape(-1).tolist() if "waypoints" in opts else []
     if wp and (np.isinf(np.real(a)) or np.isinf(np.real(b))):
-        raise _err("quadgk: waypoints are not allowed with infinite limits.", "MATLAB:quadgk:invalidWaypoints")
+        raise _err(f"{fn}: waypoints are not allowed with infinite limits.", f"MATLAB:{fn}:invalidWaypoints")
     if _flag_opt(opts, "arrayvalued", False):
         shape = _probe_shape(fh, a, b)
         q, err, _, ok = integrate1(_array_caller(fh, [None]), a, b, abstol, reltol, wp, maxint,
                                    array_shape=(int(np.prod(shape)),))
         q = np.asarray(q).reshape(shape)
     else:
-        q, err, _, ok = integrate1(_vec_caller(fh, "quadgk"), a, b, abstol, reltol, wp, maxint)
+        q, err, _, ok = integrate1(_vec_caller(fh, fn), a, b, abstol, reltol, wp, maxint)
     if not ok:
         _warn(f"Reached the limit on the maximum number of intervals in use. Approximate bound on error is {err:.1e}.",
-              "MATLAB:quadgk:MaxIntervalCountReached")
+              f"MATLAB:{fn}:MaxIntervalCountReached")
     return [_val(_cast(q, cls)), _val(_cast(err, cls))][:max(1, nargout)]
 
 
@@ -402,12 +402,6 @@ def _quadl(args, *, nargout=1):
                    + 0.155071987336585 * (y[2] + y[10]) + 0.188821573960182 * (y[3] + y[9])
                    + 0.199773405226859 * (y[4] + y[8]) + 0.224926465333340 * (y[5] + y[7])
                    + 0.242611071901408 * y[6])
-        s = np.sign(is_) or 1.0
-        erri1, erri2 = abs(i1 - is_), abs(i2 - is_)
-        r = erri1 / erri2 if erri2 != 0 else 1.0
-        tol_ = tol / np.finfo(float).eps if 0 < r < 1 else tol
-        is_ = s * abs(is_) * tol_ / np.finfo(float).eps if False else is_
-        scale = abs(is_) if is_ != 0 else (b - a)
         depth = [0]
 
         def rec(a, b, fa, fb):
@@ -418,7 +412,7 @@ def _quadl(args, *, nargout=1):
             fmll, fml, fm, fmr, fmrr = f(np.array([mll, ml, m, mr, mrr]))
             i2 = h / 6 * (fa + fb + 5 * (fml + fmr))
             i1 = h / 1470 * (77 * (fa + fb) + 432 * (fmll + fmrr) + 625 * (fml + fmr) + 672 * fm)
-            if abs(i1 - i2) <= tol * scale or mll <= a or b <= mrr or depth[0] > 10000:
+            if abs(i1 - i2) <= tol or is_ + (i1 - i2) == is_ or mll <= a or b <= mrr or depth[0] > 10000:
                 return i1
             return (rec(a, mll, fa, fmll) + rec(mll, ml, fmll, fml) + rec(ml, m, fml, fm) + rec(m, mr, fm, fmr)
                     + rec(mr, mrr, fmr, fmrr) + rec(mrr, b, fmrr, fb))
@@ -547,6 +541,7 @@ def _bad_size(fn):
 
 def register(builtins: Dict[str, Callable]) -> None:
     builtins["quadgk"] = _quadgk
+    builtins["integral"] = lambda args, *, nargout=1: _quadgk(args, nargout=nargout, fn="integral")
     builtins["quadl"] = _quadl
     builtins["quadv"] = _quadv
     builtins["quad2d"] = _integralN("quad2d", 2)

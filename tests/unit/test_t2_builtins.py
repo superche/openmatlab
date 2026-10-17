@@ -239,3 +239,29 @@ def test_unary_minus_and_complex_keep_signed_zero():
     assert np.signbit(ev("r = -0;")).all()
     assert np.signbit(ev("r = complex(1, -0);").imag).all()
     assert ev("r = 1/-0;").item() == -np.inf
+
+
+def test_quadgk_and_integral():
+    np.testing.assert_allclose(ev("r = quadgk(@(x) 1./sqrt(x), 0, 1);"), [[2.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadgk(@(x) exp(-x.^2), -Inf, Inf);"), [[np.sqrt(np.pi)]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = integral(@(x) 1./(x.^2 + 1), 0, Inf);"), [[np.pi / 2]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadgk(@(z) 1./z, 1, 1, 'Waypoints', [1i, -1, -1i]);"), [[2j * np.pi]],
+                               atol=1e-10)
+    np.testing.assert_allclose(ev("r = integral(@(x) [x, x.^2], 0, 1, 'ArrayValued', true);"), [[0.5, 1 / 3]],
+                               rtol=1e-10)
+    assert ev("r = integral(@sin, single(0), 1);").dtype == np.float32
+    assert ev("[q, r] = quadgk(@(x) x, 0, 1);").item() >= 0
+
+
+def test_quadl_quadv():
+    np.testing.assert_allclose(ev("r = quadl(@(x) x.^3, 0, 2);"), [[4.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadl(@(x, c) c*x, 0, 1, [], [], 4);"), [[2.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadv(@(x) [x; 2*x], 0, 1);"), [[0.5], [1.0]], rtol=1e-8)
+
+
+def test_two_and_three_dimensional():
+    np.testing.assert_allclose(ev("r = integral2(@(x, y) x.*y, 0, 1, 0, @(x) x);"), [[1 / 8]], rtol=1e-8)
+    np.testing.assert_allclose(ev("r = quad2d(@(x, y) 1./(x + y), 0, 1, 0, 1);"), [[2 * np.log(2)]], rtol=1e-6)
+    np.testing.assert_allclose(ev("r = integral3(@(x, y, z) x + y + z, 0, 1, 0, 2, 0, 3);"), [[18.0]], rtol=1e-8)
+    np.testing.assert_allclose(ev("r = dblquad(@(x, y) x*y, 0, 1, 0, 2);"), [[1.0]], rtol=1e-6)
+    np.testing.assert_allclose(ev("r = triplequad(@(x, y, z) x + 0*y*z, 0, 1, 0, 1, 0, 1);"), [[0.5]], rtol=1e-6)

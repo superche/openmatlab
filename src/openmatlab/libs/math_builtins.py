@@ -1226,69 +1226,6 @@ def _fminsearch(args, *, nargout=1):
     return (_out(simplex[k].reshape(shape)), _out(fv[k]))
 
 
-def _integral(args, *, nargout=1):
-    fh = args[0]
-    a, b = _s(args[1], "integral"), _s(args[2], "integral")
-    opts = {}
-    i = 3
-    while i + 1 < len(args):
-        opts[_txt(args[i]).lower()] = _s(args[i + 1], "integral")
-        i += 2
-    abstol, reltol = opts.get("abstol", 1e-10), opts.get("reltol", 1e-6)
-    sign = 1.0
-    if a > b:
-        a, b, sign = b, a, -1.0
-    if a == b:
-        return (_out(0.0),)
-    # map infinite ranges with x = t / (1 - t^2)
-    if np.isinf(a) or np.isinf(b):
-        def g(t):
-            x = t / (1 - t ** 2)
-            return _call(fh, x).reshape(-1) * (1 + t ** 2) / (1 - t ** 2) ** 2
-        lo = -1.0 if np.isinf(a) else a / (0.5 + np.sqrt(0.25 + a * a)) if a != 0 else 0.0
-        hi = 1.0 if np.isinf(b) else b / (0.5 + np.sqrt(0.25 + b * b)) if b != 0 else 0.0
-        lo, hi = lo + (1e-12 if np.isinf(a) else 0), hi - (1e-12 if np.isinf(b) else 0)
-        func, A, B = g, lo, hi
-    else:
-        func, A, B = (lambda x: _call(fh, x).reshape(-1)), a, b
-    # 15-point Gauss-Kronrod, adaptive bisection
-    xgk = np.array([0.991455371120813, 0.949107912342759, 0.864864423359769, 0.741531185599394,
-                    0.586087235467691, 0.405845151377397, 0.207784955007898, 0.0])
-    wgk = np.array([0.022935322010529, 0.063092092629979, 0.104790010322250, 0.140653259715525,
-                    0.169004726639267, 0.190350578064785, 0.204432940075298, 0.209482141084728])
-    wg = np.array([0.129484966168870, 0.279705391489277, 0.381830050505119, 0.417959183673469])
-    nodes = np.concatenate([-xgk[:-1], xgk[::-1]])
-    wk = np.concatenate([wgk[:-1], wgk[::-1]])
-    gi = [1, 3, 5, 7, 9, 11, 13]  # Gauss nodes inside the Kronrod set
-    wgf = np.array([wg[0], wg[1], wg[2], wg[3], wg[2], wg[1], wg[0]])
-
-    def seg(lo, hi):
-        c, h = (lo + hi) / 2, (hi - lo) / 2
-        fx = np.asarray(func(c + h * nodes), dtype=float).reshape(-1)
-        if fx.size != nodes.size:
-            raise _err("integral: the integrand must accept and return arrays (use .* ./ .^).", "MATLAB:integral:FxNotSameSizeAsX")
-        k = h * np.dot(wk, fx)
-        g = h * np.dot(wgf, fx[gi])
-        return k, abs(k - g)
-
-    stack = [(A, B)]
-    total, err_total, evals = 0.0, 0.0, 0
-    pending = [(A, B) + seg(A, B)]
-    while pending and evals < 10000:
-        lo, hi, val, err = pending.pop()
-        evals += 1
-        if err <= max(abstol, reltol * abs(val)) * (hi - lo) / (B - A) or (hi - lo) < 1e-12 * (B - A):
-            total += val
-            err_total += err
-            continue
-        mid = (lo + hi) / 2
-        pending.append((lo, mid) + seg(lo, mid))
-        pending.append((mid, hi) + seg(mid, hi))
-    for lo, hi, val, err in pending:
-        total += val
-    return (_out(sign * total),)
-
-
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "fix": _unary("fix", _fix), "sign": _unary("sign", _sign), "isnan": _unary("isnan", _isnan),
@@ -1321,7 +1258,7 @@ def register(builtins: Dict[str, Callable]) -> None:
         "cross": _cross, "dot": _dot, "kron": _kron, "trapz": _trapz, "cumtrapz": _cumtrapz,
         "polyval": _polyval, "polyfit": _polyfit, "roots": _roots, "conv": _conv, "deconv": _deconv,
         "filter": _filter, "interp1": _interp1, "histcounts": _histcounts, "accumarray": _accumarray,
-        "fzero": _fzero, "fminsearch": _fminsearch, "integral": _integral,
+        "fzero": _fzero, "fminsearch": _fminsearch,
     }
     for k, v in table.items():
         builtins.setdefault(k, v)
