@@ -112,6 +112,7 @@ _DIALECT_SYNTAX = [
     (re.compile(r"^\s*//|\s//\s", re.M), "scilab-comment"),
     (re.compile("[\u2018\u2019\u201c\u201d]"), "smart-quotes"),
     (re.compile(r"\bmprintf\b|\bdeff\b|\bendfunction\b"), "scilab"),
+    (re.compile(r"[(,:]\s*\$\s*[),:]"), "scilab-dollar"),  # x(3:3:$): Scilab's last-index marker
 ]
 _PROSE = re.compile(r"^\s*(ans|[A-Za-z_]\w*)\s*=\s*$|^\s*Columns? \d+|^\s*Output:|^\s*Result:|^\s*(The|This|Sample|Example) \w+",
                     re.M)
