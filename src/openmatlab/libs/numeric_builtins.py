@@ -1424,3 +1424,4 @@ __import__("openmatlab.libs.quadrature", fromlist=["register"]).register(BUILTIN
 __import__("openmatlab.libs.t2_misc_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.norm_estimators", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.gridn", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
+__import__("openmatlab.libs.matfun", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down

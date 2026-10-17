@@ -906,28 +906,49 @@ def _kron(args, *, nargout=1):
 
 
 def _trapz_xy(args, fn):
+    """(spacing, Y, axis): trapz(Y), trapz(X, Y), trapz(Y, dim), trapz(X, Y, dim).
+
+    The spacing is moved onto axis 0 of ``moveaxis(Y, axis, 0)``: a scalar, a vector of
+    length size(Y, dim), or an array of Y's shape (X(i+1) - X(i) taken along dim).
+    """
+    if not args or len(args) > 3:
+        raise _err(f"{fn}: invalid number of input arguments.", "MATLAB:narginchk:notEnoughInputs" if not args else "MATLAB:TooManyInputs")
+    ax = None
     if len(args) == 1:
-        y = _f(args[0], fn)
-        x = None
+        x, y = None, _f(args[0], fn)
+    elif len(args) == 2 and _f(args[1], fn).size == 1:
+        x, y, ax = None, _f(args[0], fn), _dim_arg(_f(args[0], fn), args, 1, fn)
     else:
-        x, y = _vec(args[0], fn), _f(args[1], fn)
-    ax = _first_dim(y)
-    return x, y, ax
+        x, y = _f(args[0], fn), _f(args[1], fn)
+        if len(args) == 3:
+            ax = _dim_arg(y, args, 2, fn)
+    if ax is None:
+        ax = _first_dim(y)
+    y = np.moveaxis(_pad_axis(y, ax), ax, 0)
+    n = y.shape[0]
+    if x is None:
+        dx = np.ones((max(n - 1, 0),) + (1,) * (y.ndim - 1))
+    elif x.size == 1:
+        dx = np.full((max(n - 1, 0),) + (1,) * (y.ndim - 1), x.reshape(-1)[0])
+    elif 1 in x.shape and x.ndim == 2 and x.size == n:
+        dx = np.diff(x.reshape(-1)).reshape((-1,) + (1,) * (y.ndim - 1))
+    elif x.shape == np.moveaxis(y, 0, ax).shape:
+        dx = np.diff(np.moveaxis(_pad_axis(x, ax), ax, 0), axis=0)
+    else:
+        raise _err(f"{fn}: length of X and length of Y along DIM must match.", f"MATLAB:{fn}:LengthXMismatchY")
+    return dx, y, ax
 
 
 def _trapz(args, *, nargout=1):
-    x, y, ax = _trapz_xy(args, "trapz")
-    y = _pad_axis(y, ax)
-    r = np.trapezoid(y, x=x, axis=ax) if hasattr(np, "trapezoid") else np.trapz(y, x=x, axis=ax)
-    return (_out(np.expand_dims(r, ax)),)
+    dx, y, ax = _trapz_xy(args, "trapz")
+    r = np.sum((y[1:] + y[:-1]) / 2.0 * dx, axis=0, keepdims=True)
+    return (_out(np.moveaxis(r, 0, ax)),)
 
 
 def _cumtrapz(args, *, nargout=1):
-    x, y, ax = _trapz_xy(args, "cumtrapz")
-    y = np.moveaxis(_pad_axis(y, ax), ax, 0)
-    dx = np.diff(x) if x is not None else np.ones(y.shape[0] - 1)
-    seg = (y[1:] + y[:-1]) / 2.0 * dx.reshape((-1,) + (1,) * (y.ndim - 1))
-    r = np.concatenate([np.zeros((1,) + y.shape[1:]), np.cumsum(seg, axis=0)], axis=0)
+    dx, y, ax = _trapz_xy(args, "cumtrapz")
+    seg = (y[1:] + y[:-1]) / 2.0 * dx
+    r = np.concatenate([np.zeros((min(y.shape[0], 1),) + y.shape[1:]), np.cumsum(seg, axis=0)], axis=0)
     return (_out(np.moveaxis(r, 0, ax)),)
 
 

@@ -112,8 +112,10 @@ def _quantile_impl(name, scale):
 
 # -- moving-window statistics ------------------------------------------------------------
 def _reducers():
-    def var(w):
-        return np.var(w, ddof=1) if w.size > 1 else (0.0 if w.size == 1 else np.nan)
+    def var(w, norm=0):
+        if w.size == 1:
+            return 0.0
+        return np.var(w, ddof=0 if norm else 1) if w.size else np.nan
 
     return {
         "movmean": lambda w: np.mean(w) if w.size else np.nan,
@@ -123,7 +125,7 @@ def _reducers():
         "movmin": lambda w: np.min(w) if w.size else np.nan,
         "movprod": np.prod,
         "movvar": var,
-        "movstd": lambda w: np.sqrt(var(w)),
+        "movstd": lambda w, norm=0: np.sqrt(var(w, norm)),
         "movmad": lambda w: np.median(np.abs(w - np.median(w))) if w.size else np.nan,
     }
 
@@ -148,18 +150,28 @@ def _window(v, name):
 
 def _moving(name):
     red = _RED[name]
+    weighted = name in ("movvar", "movstd")  # movvar(A, k, w, dim): normalisation weight first
 
     def fn(args, *, nargout=1):
         if len(args) < 2:
             raise _err("Not enough input arguments.", "MATLAB:narginchk:notEnoughInputs")
         a = _arr(args[0], name)
         kb, kf = _window(args[1], name)
-        ax, endpoints, omit = None, "shrink", False
+        kraw = np.asarray(args[1].backend_buffer(), dtype=float).reshape(-1)
+        ax, endpoints, omit, norm, sp = None, "shrink", name in ("movmax", "movmin"), 0, None
         rest = list(args[2:])
+        npos = 0
         while rest:
             t = _text(rest[0])
             if t is None:
-                ax = _dim(rest[0], name)
+                if weighted and npos == 0:
+                    wv = np.asarray(rest[0].backend_buffer(), dtype=float).reshape(-1)
+                    if wv.size > 1 or (wv.size == 1 and wv[0] not in (0, 1)):
+                        raise _err("Normalization weight must be 0 or 1.", f"MATLAB:{name}:invalidWeight")
+                    norm = int(wv[0]) if wv.size else 0
+                else:
+                    ax = _dim(rest[0], name)
+                npos += 1
                 rest = rest[1:]
                 continue
             tl = t.lower()
@@ -176,6 +188,11 @@ def _moving(name):
                 else:
                     raise _err("Endpoints must be 'shrink', 'discard', 'fill' or a numeric scalar.", f"MATLAB:{name}:invalidEndpoints")
                 rest = rest[2:]
+            elif tl == "samplepoints" and len(rest) > 1:
+                sp = np.asarray(rest[1].backend_buffer(), dtype=float).reshape(-1)
+                if sp.size > 1 and np.any(np.diff(sp) <= 0):
+                    raise _err("Sample points must be sorted and contain unique elements.", f"MATLAB:{name}:SamplePointsNotSorted")
+                rest = rest[2:]
             else:
                 raise _err(f"Invalid option '{t}'.", f"MATLAB:{name}:invalidOption")
         if ax is None:
@@ -183,20 +200,33 @@ def _moving(name):
         a = _pad(a, ax)
         moved = np.moveaxis(a, ax, -1)
         n = moved.shape[-1]
+        if sp is not None and sp.size != n:
+            raise _err("Sample points must have the same length as the operating dimension.", f"MATLAB:{name}:SamplePointsLength")
+        if sp is not None:  # window [t - k/2, t + k/2) for scalar k, [t - kb, t + kf] for [kb kf]
+            if kraw.size == 1:
+                lo_t, hi_t, closed = sp - kraw[0] / 2, sp + kraw[0] / 2, False
+            else:
+                lo_t, hi_t, closed = sp - kraw[0], sp + kraw[1], True
+            spans = [(int(np.searchsorted(sp, lo_t[i], "left")),
+                      int(np.searchsorted(sp, hi_t[i], "right" if closed else "left")) - 1) for i in range(n)]
+            edge = [lo_t[i] < sp[0] or hi_t[i] > sp[-1] for i in range(n)]
+        else:
+            spans = [(i - kb, i + kf) for i in range(n)]
+            edge = [lo < 0 or hi >= n for lo, hi in spans]
         out = np.empty(moved.shape)
         for idx in np.ndindex(moved.shape[:-1]):
             row = moved[idx]
             for i in range(n):
-                lo, hi = i - kb, i + kf
-                if (lo < 0 or hi >= n) and endpoints != "shrink":
+                lo, hi = spans[i]
+                if edge[i] and endpoints != "shrink":
                     out[idx + (i,)] = np.nan if endpoints in ("fill", "discard") else endpoints
                     continue
                 w = row[max(lo, 0):min(hi, n - 1) + 1]
                 if omit:
                     w = w[~np.isnan(w)]
-                out[idx + (i,)] = red(w)
+                out[idx + (i,)] = red(w, norm) if weighted else red(w)
         if endpoints == "discard":
-            keep = [i for i in range(n) if i - kb >= 0 and i + kf < n]
+            keep = [i for i in range(n) if not edge[i]]
             out = out[..., keep]
         return [_nd(np.moveaxis(out, -1, ax))]
 
