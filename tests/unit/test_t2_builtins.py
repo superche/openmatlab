@@ -202,3 +202,22 @@ def test_mode_options_and_empties():
     np.testing.assert_array_equal(ev("r = mode([1 1; 2 2; 2 1], [1 2]);"), [[1]])
     assert np.isnan(ev("r = mode([]);")).all()
     assert ev("r = mode(int8([3 3 1]));").dtype == np.int8
+
+
+def test_var_weight_array_and_large_dims():
+    np.testing.assert_allclose(ev("r = var(3*magic(3), ones(3,3));"), [[42, 96, 42]])
+    np.testing.assert_allclose(ev("r = var(magic(3), [], [1 99]);"), [[7, 16, 7]])
+    np.testing.assert_array_equal(ev("r = var(ones(2,2,2), [], 99);"), np.zeros((2, 2, 2)))
+
+
+def test_cov_flags_weights_and_classes():
+    np.testing.assert_allclose(ev("r = cov([1 2 3 4 5], 1);"), [[2.0]])
+    assert ev("r = cov(5, 0);").item() == 0
+    np.testing.assert_allclose(ev("x = magic(3); x(3) = NaN; r = cov(x, 'omitrows');"),
+                               [[12.5, -10, -2.5], [-10, 8, 2], [-2.5, 2, 0.5]])
+    np.testing.assert_allclose(ev("x = magic(3); x(3) = NaN; r = cov(x, 'partialrows');"),
+                               [[12.5, -10, -2.5], [-10, 16, -8], [-2.5, -8, 7]])
+    assert ev("r = cov(5, single(0));").dtype == np.float64
+    assert ev("r = cov(single([1 2 4]));").dtype == np.float32
+    assert np.isnan(ev("r = cov([]);")).all()
+    assert ev("r = cov(ones(2, 0));").size == 0

@@ -483,6 +483,13 @@ def _mode(args, *, nargout=1):
 
 def _var_core(a, w, ax, omit):
     """(variance, mean) along ``ax``; ``w`` is 0, 1 or a weight vector."""
+    if isinstance(w, np.ndarray) and w.ndim >= 2 and w.size == a.size and w.size != a.shape[ax] and \
+            tuple(w.shape) + (1,) * (a.ndim - w.ndim) == tuple(a.shape) + (1,) * (w.ndim - a.ndim):
+        if np.any(w < 0):  # a weight array the same size as A (documented form)
+            raise _err("Weights must be non-negative and match the dimension length.", "MATLAB:var:invalidWgts")
+        a = _pad_axis(a, ax)
+        ww = w.reshape(a.shape)
+        return _var_weighted(a, ww, ax, omit)
     a = _pad_axis(a, ax)
     if isinstance(w, np.ndarray):
         wv = w.reshape(-1)
@@ -490,7 +497,12 @@ def _var_core(a, w, ax, omit):
             raise _err("Weights must be non-negative and match the dimension length.", "MATLAB:var:invalidWgts")
         shp = [1] * a.ndim
         shp[ax] = -1
-        ww = wv.reshape(shp)
+        return _var_weighted(a, wv.reshape(shp), ax, omit)
+    return _var_plain(a, w, ax, omit)
+
+
+def _var_weighted(a, ww, ax, omit):
+    if True:
         if omit:
             ww = np.where(np.isnan(a), 0.0, ww)
             a0 = np.where(np.isnan(a), 0.0, a)
@@ -500,6 +512,9 @@ def _var_core(a, w, ax, omit):
             sw = np.sum(ww, axis=ax, keepdims=True)
             mu = np.sum(ww * a0, axis=ax, keepdims=True) / sw
             return np.sum(ww * np.abs(a0 - mu) ** 2, axis=ax, keepdims=True) / sw, mu
+
+
+def _var_plain(a, w, ax, omit):
     if a.shape[ax] == 0:
         shp = list(a.shape)
         shp[ax] = 1
@@ -545,20 +560,33 @@ def _varstd(fn, root):
         shape_back = None
         if "all" in flags or (len(nums) > 1 and _arr(nums[1], fn).size > 1):
             dims = list(range(max(a.ndim, 2))) if "all" in flags else sorted({int(d) - 1 for d in _arr(nums[1], fn).reshape(-1)})
+            nd0 = max(a.ndim, 2)
+            dims = [d for d in dims if d < nd0] or [nd0]  # dimensions past ndims(A) are singleton
+            if isinstance(w, np.ndarray) and w.size == a.size and w.size > 1 and dims != [nd0]:
+                wa = w.reshape(a.shape + (1,) * (max(nd0, max(dims) + 1) - a.ndim))
+            else:
+                wa = None
             nd = max(a.ndim, max(dims) + 1)
             a = a.reshape(a.shape + (1,) * (nd - a.ndim))
             keep = [d for d in range(nd) if d not in dims]
             shape_back = [1 if d in dims else a.shape[d] for d in range(nd)]
             a = np.transpose(a, keep + dims).reshape([a.shape[d] for d in keep] + [-1], order="F")
             ax = a.ndim - 1
-            if isinstance(w, np.ndarray) and w.size != a.shape[ax]:
+            if wa is not None:
+                w = np.transpose(wa, keep + dims).reshape(a.shape, order="F")
+            if isinstance(w, np.ndarray) and w.size != a.shape[ax] and w.shape != a.shape:
                 raise _err("Weights must be non-negative and match the dimension length.", "MATLAB:var:invalidWgts")
         else:
             ax = int(_s(nums[1], fn)) - 1 if len(nums) > 1 else _first_dim(a)
             if a.size == 0 and len(nums) < 2 and a.shape == (0, 0):
                 nan = np.array([[np.nan]], dtype=np.float32 if single else float)
                 return (_out(nan), _out(nan))[:max(1, nargout)]
-        v, mu = _var_core(a, w, ax, "omitnan" in flags)
+        if shape_back is None and ax >= max(a.ndim, 2):  # singleton dimension past ndims(A)
+            if isinstance(w, np.ndarray) and w.size > 1:
+                raise _err("Weights must be non-negative and match the dimension length.", "MATLAB:var:invalidWgts")
+            v, mu = np.where(np.isnan(a), np.nan, 0.0) * (1 if not np.iscomplexobj(a) else 1), a
+        else:
+            v, mu = _var_core(a, w, ax, "omitnan" in flags)
         if shape_back is not None:
             v, mu = v.reshape(shape_back), mu.reshape(shape_back)
         r = np.sqrt(v) if root else v
@@ -569,21 +597,88 @@ def _varstd(fn, root):
 
 
 def _cov(args, *, nargout=1):
+    """cov(A), cov(A,B), cov(..., w), cov(..., nanflag) as documented."""
+    if not args:
+        raise _err("Not enough input arguments.", "MATLAB:minrhs")
+    flags = _flags(args)
+    bad = flags - {"includenan", "omitrows", "partialrows"}
+    if bad:
+        raise _err("cov: invalid option.", "MATLAB:cov:unknownFlag")
     nums = _nums(args)
     x = _f(nums[0], "cov")
     w = 0
-    if len(nums) == 3 or (len(nums) == 2 and _arr(nums[1], "cov").size == 1 and _arr(nums[0], "cov").size != 1):
-        w = int(_s(nums[-1], "cov"))
-        nums = nums[:-1]
+    if len(nums) == 3:
+        w = nums[2]
+        nums = nums[:2]
+    elif len(nums) == 2:
+        b = _arr(nums[1], "cov")
+        if b.size == 1 and float(np.real(b.reshape(-1)[0])) in (0.0, 1.0) and x.size >= 1 and \
+                (x.size == 1 or b.size != x.size):
+            w = nums[1]
+            nums = nums[:1]
+        elif b.size > 1 and x.ndim == 2 and min(x.shape) > 1 and b.size == x.shape[0] and b.ndim == 2 and min(b.shape) == 1 \
+                and x.size != b.size:
+            w = nums[1]
+            nums = nums[:1]
+    single = any(v.matlab_class() == "single" for v in nums)  # data inputs only; w does not set the class
     if len(nums) == 2:
         y = _f(nums[1], "cov")
+        if y.size != x.size:
+            raise _err("cov: X and Y must have the same number of elements.", "MATLAB:cov:XYlengthMismatch")
         x = np.column_stack([x.reshape(-1, order="F"), y.reshape(-1, order="F")])
-    elif x.shape[0] == 1:
-        x = x.reshape(-1, 1)
-    n = x.shape[0]
-    xc = x - x.mean(axis=0, keepdims=True)
-    den = n - 1 if (w == 0 and n > 1) else n
-    c = (xc.conj().T @ xc) / den
+    else:
+        if x.ndim > 2:
+            raise _err("cov: inputs must be 2-D.", "MATLAB:cov:InputDim")
+        if x.ndim == 2 and x.shape[0] == 1:
+            x = x.reshape(-1, 1)
+    wv = _arr(w, "cov").astype(float).reshape(-1) if not isinstance(w, int) else np.array([float(w)])
+    if wv.size == 1:
+        wflag = float(wv[0])
+        if wflag not in (0.0, 1.0):
+            raise _err("cov: W must be 0, 1, or a vector of weights.", "MATLAB:cov:invalidWgts")
+        wvec = None
+    else:
+        if wv.size != x.shape[0] or np.any(wv < 0):
+            raise _err("cov: W must be 0, 1, or a vector of weights.", "MATLAB:cov:invalidWgts")
+        wflag, wvec = 1.0, wv
+    if len(nums) == 1 and _arr(nums[0], "cov").shape == (0, 0):
+        c = np.array([[np.nan]])  # cov([]) is NaN
+        return (_out(c.astype(np.float32) if single else c),)
+    if x.shape[1] == 0:
+        return (_out(np.zeros((0, 0), dtype=np.float32 if single else float)),)
+
+    def one(xx, ww):
+        n = xx.shape[0]
+        if n == 0:
+            return np.full((xx.shape[1], xx.shape[1]), np.nan)
+        if ww is not None:
+            sw = ww.sum()
+            mu = (ww[:, None] * xx).sum(axis=0, keepdims=True) / sw
+            xc = xx - mu
+            return (xc.conj().T @ (ww[:, None] * xc)) / sw
+        xc = xx - xx.mean(axis=0, keepdims=True)
+        den = n - 1 if (wflag == 0 and n > 1) else n
+        return (xc.conj().T @ xc) / den
+
+    nanrow = np.isnan(x)
+    with np.errstate(all="ignore"):
+        if "omitrows" in flags:
+            keep = ~nanrow.any(axis=1)
+            c = one(x[keep], None if wvec is None else wvec[keep])
+        elif "partialrows" in flags:
+            m = x.shape[1]
+            c = np.empty((m, m), dtype=x.dtype)
+            for i in range(m):
+                for j in range(i, m):
+                    keep = ~(nanrow[:, i] | nanrow[:, j])
+                    sub = x[keep][:, [i, j]] if i != j else x[keep][:, [i]]
+                    cc = one(sub, None if wvec is None else wvec[keep])
+                    c[i, j] = cc[0, -1]
+                    c[j, i] = np.conj(cc[0, -1]) if i != j else cc[0, 0]
+        else:
+            c = one(x, wvec)
+    if single:
+        c = c.astype(np.complex64 if np.iscomplexobj(c) else np.float32)
     return (_out(c),)
 
 
