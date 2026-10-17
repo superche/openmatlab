@@ -42,7 +42,8 @@ OCTAVE_ONLY = frozenset("""accumdim asctime bincoeff bug_report center citation 
 ctime discrete_cdf discrete_inv discrete_pdf discrete_rnd duplication_matrix empirical_cdf empirical_inv empirical_pdf
 empirical_rnd gls housh index info is_leap_year isdefinite jupyter_notebook kendall list_primes ls_command meansq
 nthargout ols ostrsplit parseparams polyaffine polygcd polyout polyreduce postpad prepad ppjumps qzhess ranks rindex
-rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech compare_versions nthargout""".split())
+rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech compare_versions nthargout
+ppder ppint mpoles powerset strchr padecoef""".split())
 TOOLBOX_TESTS = {"statistics": frozenset("iqr kurtosis skewness mad moment prctile quantile range zscore corr corrcov".split()),
                  "phased": frozenset("rotx roty rotz".split()),
                  "symbolic": frozenset({"symvar"})}

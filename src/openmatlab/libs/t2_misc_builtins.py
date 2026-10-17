@@ -214,7 +214,39 @@ def _dsearchn(args, *, nargout=1):
     return (NDArrayValue(idx.reshape(-1, 1)), NDArrayValue(d.reshape(-1, 1)))[:max(1, nargout)]
 
 
+# ---- shiftdim ----------------------------------------------------------------------------------
+def _shiftdim(builtins):
+    def fn(args, *, nargout=1):
+        _need(args, 1, "shiftdim")
+        x = args[0]
+        sz = [int(v) for v in np.asarray(builtins["size"]([x], nargout=1)[0].backend_buffer()).reshape(-1)]
+        while len(sz) > 2 and sz[-1] == 1:
+            sz.pop()
+        if len(args) > 1:
+            n = int(round(float(_arr(args[1]).reshape(-1)[0])))
+        else:  # remove leading singleton dimensions
+            n = 0
+            while n < len(sz) - 1 and sz[n] == 1:
+                n += 1
+            if all(v == 1 for v in sz):
+                n = 0
+        if n > 0:
+            nd = len(sz)
+            k = n % nd
+            order = list(range(k + 1, nd + 1)) + list(range(1, k + 1))
+            y = builtins["permute"]([x, NDArrayValue(np.array([order], dtype=float))], nargout=1)[0]
+        elif n < 0:
+            newsz = [1] * (-n) + sz
+            y = builtins["reshape"]([x, NDArrayValue(np.array([newsz], dtype=float))], nargout=1)[0]
+        else:
+            y = x
+        return [y, NDArrayValue(np.array([[float(n)]]))][: max(1, nargout)]
+
+    return fn
+
+
 def register(builtins: Dict[str, Callable]) -> None:
+    builtins["shiftdim"] = _shiftdim(builtins)
     builtins["linsolve"] = _linsolve(builtins)
     builtins["isstrprop"] = _isstrprop
     builtins["cplxpair"] = _cplxpair

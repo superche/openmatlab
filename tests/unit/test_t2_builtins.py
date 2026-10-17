@@ -286,3 +286,14 @@ def test_gridded_interpolation():
     np.testing.assert_allclose(ev("r = interp2([1 2 3; 4 5 6; 7 8 9], 2.5, 1.5, 'cubic');"), [[4.0]])
     assert ev("r = interp2(magic(3));").shape == (5, 5)
     np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'spline');"), [[16.0]])
+
+
+def test_vector_valued_piecewise_polynomials():
+    np.testing.assert_allclose(ev("pp = mkpp([0 1 2], [1 0; 2 0; 1 1; 2 2], 2); r = ppval(pp, 1.5);"), [[1.5], [3.0]])
+    assert ev("pp = mkpp([0 1 2], [1 0; 2 0; 1 1; 2 2], 2); r = size(ppval(pp, [0.5 1.5]));").tolist() == [[2, 2]]
+    np.testing.assert_allclose(ev("x = 0:4; r = spline(x, [x; 2*x], 2.5);"), [[2.5], [5.0]], atol=1e-12)
+    np.testing.assert_allclose(ev("x = 0:4; r = pchip(x, [x; x.^2], x);"), [[0, 1, 2, 3, 4], [0, 1, 4, 9, 16]], atol=1e-12)
+    np.testing.assert_allclose(ev("x = 0:5; y = exp(1i*x); r = spline(x, y, x);"), [np.exp(1j * np.arange(6))], atol=1e-12)
+    np.testing.assert_allclose(ev("r = spline([0 1 2 3], [0 1 NaN 3], 2);"), [[2.0]], atol=1e-12)
+    assert ev("[~, n] = shiftdim(zeros(1, 1, 3)); r = n;").tolist() == [[2]]
+    assert ev("r = size(shiftdim(zeros(2, 3, 4), 1));").tolist() == [[3, 4, 2]]

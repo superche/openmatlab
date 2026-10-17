@@ -29,8 +29,20 @@ def _row(a):
     return np.asarray(a, dtype=float).reshape(-1)
 
 
+def _az(v):
+    """Values keeping complex data (spline/pchip/mkpp coefficients may be complex)."""
+    a = np.asarray(v.backend_buffer())
+    return a.astype(complex if np.iscomplexobj(a) else float)
+
+
+def _rowz(a):
+    a = np.asarray(a)
+    return a.astype(complex if np.iscomplexobj(a) else float).reshape(-1)
+
+
 def _out(a):
-    a = np.asarray(a, dtype=float)
+    a = np.asarray(a)
+    a = a.astype(complex if np.iscomplexobj(a) else float)
     return NDArrayValue(a.reshape(1, 1) if a.ndim == 0 else a)
 
 
@@ -42,7 +54,7 @@ def _text(v):
 
 
 def _sites(x, y, fn):
-    x, y = _row(x), _row(y)
+    x, y = _row(x), _rowz(y)
     if x.size < 2:
         raise _err("There should be at least two data points.", f"MATLAB:{fn}:NotEnoughPts")
     if np.any(np.diff(x) <= 0):
@@ -52,6 +64,13 @@ def _sites(x, y, fn):
         x = x[o]
         if y.size == x.size:
             y = y[o]
+        elif y.size == x.size + 2:  # end slopes stay with the ends; the values follow the sites
+            y = np.concatenate([y[:1], y[1:-1][o], y[-1:]])
+    if fn == "spline" and y.size == x.size and np.isnan(y).any():  # NaN data points are ignored
+        keep = ~np.isnan(y)
+        x, y = x[keep], y[keep]
+        if x.size < 2:
+            raise _err("There should be at least two data points.", "MATLAB:spline:NotEnoughPts")
     return x, y
 
 
@@ -82,7 +101,7 @@ def spline_coefs(x, y):
         s = np.array([np.polyval(np.polyder(c), xi - x[0]) for xi in x])
         return _hermite(x, y, s)
     A = np.zeros((n, n))
-    r = np.zeros(n)
+    r = np.zeros(n, dtype=np.result_type(y, float))
     for i in range(1, n - 1):
         A[i, i - 1], A[i, i], A[i, i + 1] = h[i], 2 * (h[i - 1] + h[i]), h[i - 1]
         r[i] = 3 * (h[i] * d[i - 1] + h[i - 1] * d[i])
@@ -139,35 +158,81 @@ def ppeval(breaks, coefs, q):
     return r.reshape(q.shape)
 
 
-def _pp_struct(breaks, coefs):
+def _pp_struct(breaks, coefs, dim=(1,)):
     from openmatlab.runtime.char_value import CharValue
     from openmatlab.runtime.struct_value import StructValue
 
+    dim = tuple(int(x) for x in dim) or (1,)
+    pieces = breaks.size - 1
     return StructValue.scalar([
         ("form", CharValue("pp")), ("breaks", _out(breaks.reshape(1, -1))), ("coefs", _out(coefs)),
-        ("pieces", _out(float(coefs.shape[0]))), ("order", _out(float(coefs.shape[1]))), ("dim", _out(1.0)),
+        ("pieces", _out(float(pieces))), ("order", _out(float(coefs.shape[1]))),
+        ("dim", _out(np.array(dim, dtype=float).reshape(1, -1))),
     ])
 
 
 def _pp_parts(v):
+    """(breaks, coefs as (prod(dim)*pieces)-by-order, dim)."""
     if not getattr(v, "is_struct", False):
         raise _err("The first input must be a piecewise polynomial structure.", "MATLAB:ppval:InvalidPP")
     try:
-        return _row(_a(v.get("breaks"))), np.atleast_2d(_a(v.get("coefs")))
+        b, c = _row(_a(v.get("breaks"))), np.atleast_2d(_az(v.get("coefs")))
+        dim = tuple(int(x) for x in _a(v.get("dim")).reshape(-1)) if v.has("dim") else (1,)
     except Exception:
         raise _err("The first input must be a piecewise polynomial structure.", "MATLAB:ppval:InvalidPP") from None
+    D = int(np.prod(dim))
+    return b, c.reshape(D * (b.size - 1), -1, order="F") if c.ndim != 2 else c, dim
+
+
+def pp_eval_nd(breaks, coefs, dim, q):
+    """ppval for D = prod(dim) components: value array of size [dim, size(q)] (documented)."""
+    D = int(np.prod(dim))
+    q = np.asarray(q, dtype=float)
+    flat = q.reshape(-1, order="F")
+    L = breaks.size - 1
+    idx = np.clip(np.searchsorted(breaks, flat, side="right") - 1, 0, L - 1)
+    t = flat - breaks[idx]
+    out = np.zeros((D, flat.size), dtype=np.result_type(coefs, float))
+    for j in range(D):
+        cj = coefs[j::D]
+        r = np.zeros(flat.size, dtype=out.dtype)
+        for m in range(cj.shape[1]):
+            r = r * t + cj[idx, m]
+        out[j] = np.where(np.isnan(flat), np.nan, r)
+    if D == 1 and len(dim) == 1:
+        return out.reshape(q.shape, order="F")
+    qshape = (flat.size,) if (q.ndim <= 2 and min(q.shape or (1,)) == 1) else q.shape
+    return out.reshape(tuple(dim) + tuple(qshape), order="F")
 
 
 def _fit(kind):
     def fn(args, *, nargout=1):
         if len(args) < 2:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
-        x, y = _sites(_a(args[0]), _a(args[1]), kind)
-        coefs = spline_coefs(x, y) if kind == "spline" else pchip_coefs(x, y)
+        Y = _az(args[1])
+        vector = Y.ndim == 2 and min(Y.shape) == 1
+        if vector:
+            x, y = _sites(_a(args[0]), Y, kind)
+            coefs, dim = (spline_coefs(x, y) if kind == "spline" else pchip_coefs(x, y)), (1,)
+        else:  # array-valued data: the last dimension runs along x (documented)
+            dim = Y.shape[:-1]
+            D = int(np.prod(dim))
+            Yf = Y.reshape(D, Y.shape[-1], order="F")
+            x = _row(_a(args[0]))
+            if np.any(np.diff(x) <= 0):
+                o = np.argsort(x, kind="stable")
+                if np.any(np.diff(x[o]) == 0):
+                    raise _err("The data sites should be distinct.", f"MATLAB:{kind}:RepeatedSites")
+                x = x[o]
+                if Yf.shape[1] == x.size:
+                    Yf = Yf[:, o]
+            parts = [spline_coefs(x, row) if kind == "spline" else pchip_coefs(x, row) for row in Yf]
+            coefs = np.empty((parts[0].shape[0] * D, parts[0].shape[1]), dtype=np.result_type(*parts))
+            for j, c in enumerate(parts):
+                coefs[j::D] = c
         if len(args) == 2:
-            return [_pp_struct(x, coefs)]
-        q = _a(args[2])
-        return [_out(ppeval(x, coefs, q))]
+            return [_pp_struct(x, coefs, dim)]
+        return [_out(pp_eval_nd(x, coefs, dim, _a(args[2])))]
 
     return fn
 
@@ -176,21 +241,25 @@ def _ppval(args, *, nargout=1):
     pp, xx = args[0], args[1]
     if not getattr(pp, "is_struct", False) and getattr(xx, "is_struct", False):
         pp, xx = xx, pp
-    b, c = _pp_parts(pp)
-    return [_out(ppeval(b, c, _a(xx)))]
+    b, c, dim = _pp_parts(pp)
+    return [_out(pp_eval_nd(b, c, dim, _a(xx)))]
 
 
 def _mkpp(args, *, nargout=1):
     b = _row(_a(args[0]))
-    c = _a(args[1])
-    pieces = b.size - 1
-    c = c.reshape(pieces, -1) if c.size % max(pieces, 1) == 0 else c
-    return [_pp_struct(b, c)]
+    c = _az(args[1])
+    dim = tuple(int(x) for x in _a(args[2]).reshape(-1)) if len(args) > 2 else (1,)
+    D, L = int(np.prod(dim)), b.size - 1
+    if L < 1 or c.size % (D * L):
+        raise _err("The number of coefficients does not match the breaks and dimension.", "MATLAB:mkpp:PPNumberMismatchCoeffs")
+    c = c.reshape(D * L, c.size // (D * L), order="F")  # column-major, as documented for [d, L, k] arrays
+    return [_pp_struct(b, c, dim)]
 
 
 def _unmkpp(args, *, nargout=1):
-    b, c = _pp_parts(args[0])
-    return [_out(b.reshape(1, -1)), _out(c), _out(float(c.shape[0])), _out(float(c.shape[1])), _out(1.0)][:max(1, nargout)]
+    b, c, dim = _pp_parts(args[0])
+    d = np.array(dim, dtype=float).reshape(1, -1)
+    return [_out(b.reshape(1, -1)), _out(c), _out(float(b.size - 1)), _out(float(c.shape[1])), _out(d)][:max(1, nargout)]
 
 
 METHODS = ("linear", "nearest", "next", "previous", "pchip", "cubic", "spline", "makima", "v5cubic")
