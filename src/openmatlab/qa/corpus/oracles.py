@@ -19,9 +19,14 @@
   interface) instead.
 
 **T3 (golden)** compares a script's stdout with the command-window output its author pasted
-under MATLAB ``>>`` prompts (the transcript that C03 de-prompting drops). Whitespace and
-blank lines are normalised and numbers compare with a relative tolerance of 1e-10; nothing
-else is forgiven. Transcripts under Octave prompts are **not** used as goldens (Octave output
+under MATLAB ``>>`` prompts (the transcript that C03 de-prompting drops). Normalisation, all
+of it fixed in advance: whitespace and blank lines; ``Columns N through M`` wrap headers (they
+depend on the terminal width); a sign separated from its number. Numbers compare with a
+relative tolerance of 1e-10, or, when both are printed with decimals at different precisions
+(the session's ``format`` is not part of the code), at the coarser of the two precisions.
+Integer and exponent displays get no rounding. Nothing else is forgiven: display-style
+differences (cell or struct layout) are failures. Scripts whose output depends on the clock,
+the random generator, typed input or the host (:data:`NONDETERMINISTIC`) have no golden. Transcripts under Octave prompts are **not** used as goldens (Octave output
 is a golden only with MATLAB documentation evidence, M12 C08), so the set of Octave-sourced
 goldens is empty by construction and every entry of it trivially carries a doc link.
 
@@ -120,6 +125,58 @@ def _dq_to_sq(code: str) -> Optional[str]:
     return "".join(out)
 
 
+def _paren_continuations(code: str) -> str:
+    """Octave continues a line inside ``( )`` implicitly; MATLAB needs ``...`` (brackets keep rows)."""
+    out, depth, q, i, n = [], [], "", 0, len(code)
+    while i < n:
+        ch = code[i]
+        if q:
+            out.append(ch)
+            if ch == q:
+                if i + 1 < n and code[i + 1] == q:
+                    out.append(code[i + 1])
+                    i += 1
+                else:
+                    q = ""
+            elif ch == "\n":
+                q = ""
+            i += 1
+            continue
+        if ch == "'" and not (i and (code[i - 1].isalnum() or code[i - 1] in ")]}'_.")):
+            q = "'"
+        elif ch == '"':
+            q = '"'
+        elif ch == "%":
+            j = code.find("\n", i)
+            j = n if j < 0 else j
+            out.append(code[i:j])
+            i = j
+            continue
+        elif ch in "([{":
+            depth.append(ch)
+        elif ch in ")]}" and depth:
+            depth.pop()
+        elif ch == "\n" and depth and depth[-1] == "(":
+            out.append(" ...")
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def parses(code: str) -> str:
+    """``""`` when OpenMATLAB's parser accepts ``code``, else the parse error message."""
+    from openmatlab.lang.lexer import LexerError
+    from openmatlab.lang.parser import ParseError, parse
+
+    try:
+        parse(code + "\n")
+    except (LexerError, ParseError) as exc:
+        return str(exc) or "parse error"
+    except Exception as exc:  # never let a parser bug stop the corpus run
+        return f"{type(exc).__name__}: {exc}"
+    return ""
+
+
 def block_dialect(code: str) -> str:
     """Why a translated block is Octave dialect, or ``""`` when it is MATLAB."""
     from .classify import _without_strings, dialect_marker
@@ -162,7 +219,7 @@ def _translate(code: str) -> Tuple[Optional[str], str]:
     if body is None:
         return None, "octave-dquote-escape"
     d = block_dialect(body)
-    return (None, d) if d else (body, "")
+    return (None, d) if d else (_paren_continuations(body), "")
 
 
 def octave_script(text: str) -> OctavePlan:
@@ -191,8 +248,9 @@ def octave_script(text: str) -> OctavePlan:
             init, d = _translate(rest) if rest.strip() else ("", "")
             lines.append("clearvars;")
             lines += [f"{v} = [];" for v in shared]
-            if init:
-                lines += ["try", _ASSERT_CALL.sub("omt2_assert(", init), "catch omt2_e", "end"]
+            init = _ASSERT_CALL.sub("omt2_assert(", init or "")
+            if init and not parses(init):  # an unparseable set-up leaves the shared names empty
+                lines += ["try", init, "catch omt2_e", "end"]
             continue
         if b.kind in SKIPPED_KINDS or b.kind not in SELF_CHECK_KINDS:
             skipped += 1
@@ -209,9 +267,14 @@ def octave_script(text: str) -> OctavePlan:
             aside.append(d)
             continue
         n += 1
+        body = _ASSERT_CALL.sub("omt2_assert(", body)
+        bad = parses(body)
+        if bad:  # valid-looking MATLAB the parser rejects: this block fails, the others still run
+            lines.append(f"omt2_mark({n}, 'omt2:parse', '{bad.replace(chr(39), chr(39) * 2)}');")
+            continue
         keep = ", ".join(f"'{v}'" for v in shared)
         lines.append(f"clearvars('-except', {keep});" if shared else "clearvars;")
-        lines += ["try", _ASSERT_CALL.sub("omt2_assert(", body), f"omt2_mark({n}, '', '');",
+        lines += ["try", body, f"omt2_mark({n}, '', '');",
                   "catch omt2_e", f"omt2_mark({n}, omt2_e.identifier, omt2_e.message);", "end"]
     return OctavePlan("\n".join(lines) + "\n", helpers, n, aside, skipped)
 
@@ -376,7 +439,11 @@ end
 
 # ---------------------------------------------------------------- T3 goldens
 
-_NUM = re.compile(r"^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$")
+_NUM = re.compile(r"^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?i?$")
+# Output that cannot be a golden: it depends on the clock, the random generator or typed input.
+NONDETERMINISTIC = re.compile(r"\b(rand|randn|randi|randperm|rng|clock|now|date|datestr|datetime|tic|toc|cputime|"
+                              r"input|keyboard|getenv|pwd|memory|version|ver|computer|tempname)\b")
+_WRAP = re.compile(r"^\s*Columns?\s+\d+(\s+(through|and|to)\s+\d+)?:?\s*$", re.M)
 
 
 def golden_source(notes: List[str], code: str) -> str:
@@ -387,20 +454,44 @@ def golden_source(notes: List[str], code: str) -> str:
     return "matlab" if prompts and all(p == ">>" for p in prompts) else ""
 
 
+def nondeterministic(code: str) -> str:
+    """The first clock/random/input call in ``code`` (outside strings and comments), or ``""``."""
+    from .classify import _without_strings
+
+    m = NONDETERMINISTIC.search(_without_strings(code))
+    return m.group(1) if m else ""
+
+
 def _tokens(text: str) -> List[str]:
+    text = _WRAP.sub("", text)  # column-wrap headers depend on the terminal width
+    text = re.sub(r"(?<![\w.)\]])([-+])\s+(?=[\d.])", r"\1", text)  # "- 6i" and "-6i" are one value
     return [t for t in re.split(r"\s+", text) if t]
 
 
+def _decimals(tok: str) -> Optional[int]:
+    m = re.match(r"^[-+]?\d*\.(\d*)$", tok.rstrip("i"))
+    return len(m.group(1)) if m else None
+
+
+def _num_equal(x: str, y: str) -> bool:
+    if x.endswith("i") != y.endswith("i"):
+        return False
+    fx, fy = float(x.rstrip("i")), float(y.rstrip("i"))
+    if abs(fx - fy) <= GOLDEN_RTOL * max(abs(fx), abs(fy)):
+        return True
+    dx, dy = _decimals(x), _decimals(y)
+    if dx is None or dy is None or "e" in (x + y).lower():
+        return False  # integer display or exponent: no rounding is forgiven
+    d = min(dx, dy)  # the session's `format` is not in the code: compare at the coarser precision
+    return d > 0 and abs(fx - fy) <= 0.5 * 10.0 ** -d * (1 + 1e-9)
+
+
 def golden_match(stdout: str, golden: str) -> Tuple[bool, str]:
-    """Token comparison with whitespace normalised; numbers within :data:`GOLDEN_RTOL` (relative)."""
+    """Token comparison (see the module docstring for the normalisation)."""
     a, b = _tokens(stdout or ""), _tokens(golden or "")
     for i, (x, y) in enumerate(zip(a, b)):
-        if x == y:
+        if x == y or (_NUM.match(x) and _NUM.match(y) and _num_equal(x, y)):
             continue
-        if _NUM.match(x) and _NUM.match(y):
-            fx, fy = float(x), float(y)
-            if abs(fx - fy) <= GOLDEN_RTOL * max(abs(fx), abs(fy)):
-                continue
         return False, f"token {i + 1} differs"
     if len(a) != len(b):
         return False, f"{len(a)} output tokens, golden has {len(b)}"

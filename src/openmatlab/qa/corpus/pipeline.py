@@ -92,7 +92,8 @@ class _Job:
                        elapsed=r["elapsed"])
             if e.kind == "selftest":  # the driver asserts all(pass(:)): its outcome is the self-check
                 rec["t2"] = rec["t1"]
-            if role == "script" and p is not None and p.transcript and O.golden_source(p.notes, raw) == "matlab":
+            if (role == "script" and p is not None and p.transcript and O.golden_source(p.notes, raw) == "matlab"
+                    and not O.nondeterministic(code)):
                 ok, why = O.golden_match(r["stdout"], p.transcript) if r["status"] == "pass" else (False, "T1 " + r["status"])
                 rec["t3"] = "pass" if ok else ("error" if r["status"] == "pass" else r["status"])
                 rec["oracle"] = "golden:matlab" + ("" if ok else "; " + why)
@@ -125,8 +126,9 @@ class _Job:
         else:
             t2 = "error"
             res = dict(r, status="error", kind="eval", error_id=eid, message=msg or f"{plan.applicable - done} blocks did not finish")
-        feats = features(raw)
-        feats["dialect"] = ""  # the Octave file is not run; set-aside blocks are already excluded
+        if eid == "omt2:parse":
+            res = dict(res, kind="parse")
+        feats = features(plan.script, set())  # the Octave file is not on the path: its function is OpenMATLAB's
         cat, key = classify_features(res, feats)
         rec.update(t2=t2, status=t2, category=cat, key=key, error_id=res.get("error_id", ""),
                    message=(res.get("message") or "")[:MSG_CAP], elapsed=r["elapsed"])

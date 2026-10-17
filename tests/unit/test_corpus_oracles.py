@@ -140,3 +140,22 @@ def test_t2_t3_rates_count_only_attempted_entries():
             {"id": "e", "t3": "pass", "category": "pass"}, {"id": "f", "t3": "timeout", "category": "timeout"}]
     assert report.rate_of(recs, "T2") == (1, 2)
     assert report.rate_of(recs, "T3") == (1, 2)
+
+
+@pytest.mark.parametrize("out,golden,ok", [
+    ("ans =\n    0.8415\n", "ans =\n   0.841470984807897\n", True),  # format long session
+    ("a =\n1 + 1i\n", "a =\n  1.000000000000000 + 1.000000000000000i\n", True),
+    ("ans =\n-4 + 10i\n", "ans =\n -4.000000000000000 +10.000000000000000i\n", True),
+    ("ans =\n3\n", "ans =\n   3.141512000000000\n", False),  # integer display: no rounding forgiven
+    ("ans =\n0.8416\n", "ans =\n   0.841470984807897\n", False),
+    ("ans =\n  Columns 1 through 2\n 1 2\n  Column 3\n 3\n", "ans =\n 1 2 3\n", True),
+    ("ans =\n1.0e+03\n", "ans =\n1.0001e+03\n", False),
+])
+def test_golden_match_precision_and_wrap(out, golden, ok):
+    assert O.golden_match(out, golden)[0] is ok
+
+
+@pytest.mark.parametrize("code,hit", [("x = rand(3)", "rand"), ("disp(date)", "date"), ("s = input('?')", "input"),
+                                      ("x = 'rand'; disp(x)", ""), ("% tic\nx = 1", ""), ("y = operand(2)", "")])
+def test_nondeterministic_scripts_have_no_golden(code, hit):
+    assert O.nondeterministic(code) == hit
