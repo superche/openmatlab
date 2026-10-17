@@ -1414,3 +1414,5 @@ _timetable_builtins.register(BUILTINS)  # M10 T-E7 (#697)
 __import__("openmatlab.libs.specfun_builtins", fromlist=["register"]).register(BUILTINS)
 __import__("openmatlab.libs.burndown_builtins", fromlist=["register"]).register(BUILTINS)  # #766 burn-down
 __import__("openmatlab.libs.t2_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
+__import__("openmatlab.libs.incgamma_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
+__import__("openmatlab.libs.gallery_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
