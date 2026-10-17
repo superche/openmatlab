@@ -5,8 +5,8 @@ Sources of self-checks (all fetched into the local cache, never committed):
 * **Octave** ``%!assert`` / ``%!test`` blocks (GPL-3.0-or-later, pinned). Each block is one T2
   record ``octave/<dir>/<name>#<k>``. Only pass/fail, the block's sha256, counts, an error
   identifier and a redacted message (digits and quoted text removed) are kept: block source
-  and expected values are never written to the results. ``%!shared`` initialisation runs
-  before every later block; ``%!function`` helpers are staged as function files. Other block
+  and expected values are never written to the results. ``%!shared`` variables are
+  initialised once per group and passed into and out of each block (as Octave does); ``%!function`` helpers are staged as function files. Other block
   kinds (``%!error``, ``%!warning``, ``%!testif``, ``%!xtest``, ``%!demo``, ``%!fail``) are
   counted as skipped. Octave-only syntax in a block is normalised to MATLAB at run time by
   :func:`octave_to_matlab` (``#`` comments, ``!``/``!=``, ``endif``-style keywords, ``"..."``
@@ -66,7 +66,9 @@ class Block:
     kind: str
     text: str  # code (for assert: the full ``assert ...`` call)
     index: int = 0
-    shared: List[str] = field(default_factory=list)  # %!shared code that precedes this block
+    shared: List[str] = field(default_factory=list)  # %!shared init code of this block's group
+    names: List[str] = field(default_factory=list)  # %!shared variable names (passed in and out, Octave-style)
+    group: int = 0  # %!shared group number (0 = none)
 
 
 @dataclass
@@ -86,11 +88,12 @@ def parse_blocks(src: str) -> Parsed:
             raw.append([m.group(1), re.sub(r"^\s*<[^>]*>", "", m.group(2)), []])
         elif raw:
             raw[-1][2].append(line[2:])
-    blocks, funcs, skipped, shared, k = [], [], 0, [], 0
+    blocks, funcs, skipped, shared, k, names, group = [], [], 0, [], 0, [], 0
     for kind, rest, body in raw:
         if kind == "shared":
             names = rest.split("#")[0].split("%")[0].replace(",", " ").split()
             shared = [f"{n} = [];" for n in names] + body
+            group += 1
         elif kind == "function":
             funcs.append("function" + rest + "\n" + "\n".join(body) + "\nend\n")
         elif kind == "endfunction":
@@ -98,7 +101,7 @@ def parse_blocks(src: str) -> Parsed:
         elif kind in COUNTED:
             k += 1
             text = ("assert" + rest + "\n" + "\n".join(body)) if kind == "assert" else (rest + "\n" + "\n".join(body))
-            blocks.append(Block(kind, text, k, list(shared)))
+            blocks.append(Block(kind, text, k, list(shared), list(names), group))
         else:
             skipped += 1
     return Parsed(blocks, funcs, skipped)
@@ -252,13 +255,21 @@ def redact(msg: str) -> str:
     return msg.splitlines()[0][:MSG_CAP] if msg else ""
 
 
-def _driver(n: int, out: Path) -> str:
+def _driver(blocks: List[Block], out: Path) -> str:
+    """Run each block in try/catch; shared variables flow from block to block like Octave's %!shared."""
     o = str(out).replace("'", "''")
-    lines = [f"fid__ = fopen('{o}', 'w');"]
-    for k in range(1, n + 1):
+    lines, group = [f"fid__ = fopen('{o}', 'w');"], 0
+    for b in blocks:
+        io = ", ".join(b.names)
+        lhs = f"[{io}] = " if b.names else ""
+        if b.group != group:
+            group = b.group
+            if b.names:
+                lines += ["try", f"  {lhs}t2sh_{group}();", "catch err__", "end"]
+        k = b.index
         lines += [f"fprintf(fid__, 'S {k}\\n');",
                   "try",
-                  f"  t2blk_{k}();",
+                  f"  {lhs}t2blk_{k}({io});",
                   f"  fprintf(fid__, 'P {k}\\n');",
                   "catch err__",
                   f"  fprintf(fid__, 'F {k} %s\\t%s\\n', err__.identifier, strrep(strrep(err__.message, char(10), ' '), char(13), ' '));",
@@ -283,8 +294,15 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
     stage = Path(tempfile.mkdtemp(prefix="omt2-"))
     try:
         for b in p.blocks:
-            body = octave_to_matlab("\n".join(b.shared) + "\n" + b.text)
-            (stage / f"t2blk_{b.index}.m").write_text(f"function t2blk_{b.index}()\n{body}\nend\n", encoding="utf-8")
+            io = ", ".join(b.names)
+            outs = f"[{io}] = " if b.names else ""
+            body = octave_to_matlab(b.text)
+            (stage / f"t2blk_{b.index}.m").write_text(f"function {outs}t2blk_{b.index}({io})\n{body}\nend\n",
+                                                     encoding="utf-8")
+            if b.names and not (stage / f"t2sh_{b.group}.m").exists():
+                init = octave_to_matlab("\n".join(b.shared))
+                (stage / f"t2sh_{b.group}.m").write_text(f"function [{io}] = t2sh_{b.group}()\n{init}\nend\n",
+                                                        encoding="utf-8")
         shutil.copyfile(T2LIB / "t2_assert.m", stage / "t2_assert.m")
         for f in p.functions:
             code = octave_to_matlab(f)
@@ -293,7 +311,7 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
                 (stage / f"{m.group(1)}.m").write_text(code, encoding="utf-8")
         outf = Path(tempfile.gettempdir()) / f"omt2-{uuid.uuid4().hex}.txt"
         drv = stage / "t2_driver.m"
-        drv.write_text(_driver(len(p.blocks), outf), encoding="utf-8")
+        drv.write_text(_driver(p.blocks, outf), encoding="utf-8")
         r = run_one(drv, timeout=timeout * 3, name=e.id).to_json()
         seen = {}
         if outf.is_file():
