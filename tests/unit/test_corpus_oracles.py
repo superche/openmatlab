@@ -159,3 +159,16 @@ def test_golden_match_precision_and_wrap(out, golden, ok):
                                       ("x = 'rand'; disp(x)", ""), ("% tic\nx = 1", ""), ("y = operand(2)", "")])
 def test_nondeterministic_scripts_have_no_golden(code, hit):
     assert O.nondeterministic(code) == hit
+
+
+def test_committed_goldens_are_matlab_transcripts_only():
+    """M12 C08: Octave-sourced goldens need MATLAB doc evidence; the oracle uses none, so all are MATLAB."""
+    r = report.load_results()
+    t3 = [x for x in r.records if x.get("t3") not in (None, "n/a")]
+    assert all(str(x.get("oracle", "")).startswith("golden:matlab") for x in t3)
+
+
+def test_committed_records_carry_no_corpus_text():
+    r = report.load_results()
+    for x in r.records:
+        assert len(str(x.get("oracle", ""))) < 80
