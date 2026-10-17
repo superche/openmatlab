@@ -63,6 +63,16 @@ def load_mfile(path: Path) -> FunctionDef | Script:
     return out
 
 
+def _structure_error(message: str) -> Exception:
+    """A malformed ``.m`` file is a user-visible MATLAB error, never an internal crash (M12 C09)."""
+    from openmatlab.runtime.evaluator import EvalError
+
+    class MFileStructureError(EvalError, ValueError):  # ValueError kept for existing callers
+        pass
+
+    return MFileStructureError(message, "MATLAB:m_invalid_file_structure")
+
+
 def _load_mfile_text(path: Path, text: str) -> FunctionDef | Script:
     from openmatlab.lang.classdef_parser import is_classdef_source
 
@@ -74,13 +84,13 @@ def _load_mfile_text(path: Path, text: str) -> FunctionDef | Script:
         # Script with local functions: all function blocks must come last (MATLAB).
         first = next(i for i, s in enumerate(stmts) if isinstance(s, FunctionDef))
         if any(not isinstance(s, FunctionDef) for s in stmts[first:]):
-            raise ValueError(
+            raise _structure_error(
                 f"Mixed function/script in {path.name}: local functions in a script must be defined at the end of the file"
             )
         return Script(body=tuple(stmts[:first]), source_path=path.resolve(), local_functions=tuple(funcs))
     if funcs:
         if any(not isinstance(s, FunctionDef) for s in stmts):
-            raise ValueError(f"Mixed function/script in {path.name}: statements after function definitions are not allowed")
+            raise _structure_error(f"Mixed function/script in {path.name}: statements after function definitions are not allowed")
         main = funcs[0]
         if len(funcs) > 1:
             # Local functions: carry them as trailing FunctionDefs of main.

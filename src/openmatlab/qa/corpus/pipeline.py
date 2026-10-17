@@ -122,6 +122,8 @@ def jobs_for(m: M.Manifest, cache: Optional[Path] = None, ids: Optional[set] = N
             f = cache / e.file
             if f.is_file():
                 body = f.read_text(encoding="utf-8", errors="replace")
+                if prepare(body).role != "function":  # a script with local functions is not a function file
+                    continue
                 pages.setdefault(_page(e), {})[_fn_name(body)] = body
     out = []
     for e in m.entries:
