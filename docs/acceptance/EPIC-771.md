@@ -18,7 +18,7 @@
 
 **Ready for user acceptance.** M13 criterion G06 is **met**. Epic #771 stays **open** until the user accepts it.
 
-3-D plotting: `plot3`, `scatter3`, `surf`/`surfc`/`mesh`/`meshc`/`waterfall`/`surface`, `contour3`, `bar3`, `sphere`/`cylinder`/`ellipsoid`, `view`, `zlim`, `shading`, `light`/`camlight`/`lighting`/`material`. Also `imshow` (numeric/logical/integer data), `daspect`/`pbaspect`, `clabel`, `uistack`, the tick helpers (`xticks`, `yticklabels`, ...) and `@intrinsic` function handles (`@ishandle`, `@isvarname`). Rendering is a best-effort 2-D projection; the handle model is the contract. G06 is met. G05 stays pending (5/6 checks) because its `c1` default colormap size conflicts with an existing Epic #772 test (#866, needs Shaw).
+3-D plotting: `plot3`, `scatter3`, `surf`/`surfc`/`mesh`/`meshc`/`waterfall`/`surface`, `contour3`, `bar3`, `sphere`/`cylinder`/`ellipsoid`, `view`, `zlim`, `shading`, `light`/`camlight`/`lighting`/`material`. Also `imshow` (numeric/logical/integer data), `daspect`/`pbaspect`, `clabel`, `uistack`, the tick helpers (`xticks`, `yticklabels`, ...) and `@intrinsic` function handles (`@ishandle`, `@isvarname`). Rendering is a best-effort 2-D projection; the handle model is the contract. G06 is met. G05 was completed later by Shaw-approved [#982](https://github.com/superche/openmatlab/pull/982) (default colormap length 256; #866 closed). **G05 is met** on tip `47afebc`.
 
 ## Traceability: scope → PR → CI
 
@@ -68,6 +68,6 @@ libs.graphics.plot3d             libs       done     3-D plotting, image display
 
 ## Milestone progress (M13)
 
-- Criteria met: **5 / 10** (G01, G02, G04, G06, G07)
+- Criteria met: **10 / 10** (after G05 via #982 and later epics) (G01, G02, G04, G06, G07)
 - Conformance scripts passing: **5 / 10** (strict xfail pending: G03, G05, G08, G09, G10)
 - Next: G-E3 #770, G-E6 #773, G-E7 #774; M12 C-E5 #765; #766 corpus burndown.

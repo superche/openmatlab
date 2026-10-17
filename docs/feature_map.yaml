@@ -613,7 +613,7 @@ features:
   - id: libs.graphics.figio
     layer: libs
     name: Figure files (own .fig format) and export (savefig, openfig, exportgraphics, print)
-    status: partial
+    status: done
     depends_on: [libs.graphics.properties]
     notes: "OpenMATLAB-own .fig (zipped JSON property tree, incompatible with MATLAB .fig; MATLAB .fig rejected): savefig/openfig ('new'/'reuse', visibility)/hgsave/hgload with zero property-tree diff; exportgraphics (png/jpg/tif/gif/pdf/eps/svg, Resolution, BackgroundColor, tight crop); print -dDEVICE -rN at the figure size. saveas .fig still unsupported (existing test; #979) (Epic #773, M13 G08)"
     tests: [tests/unit/test_epic773_figio.py]
