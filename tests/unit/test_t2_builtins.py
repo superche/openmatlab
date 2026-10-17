@@ -122,3 +122,22 @@ def test_incomplete_gamma_beta_expint():
     r = ev("r = expint(-1);")
     np.testing.assert_allclose(r, [[-1.8951178163559368 - 1j * math.pi]], rtol=1e-14)
     assert ev("r = gammainc(single(1), 2);").dtype == np.float32
+
+
+def test_gallery_families():
+    np.testing.assert_array_equal(ev("r = gallery('minij', 3);"), [[1, 1, 1], [1, 2, 2], [1, 2, 3]])
+    np.testing.assert_array_equal(ev("r = gallery('clement', 3);"), [[0, 1, 0], [2, 0, 2], [0, 1, 0]])
+    np.testing.assert_array_equal(ev("r = gallery('circul', [1 3 6]);"), [[1, 3, 6], [6, 1, 3], [3, 6, 1]])
+    np.testing.assert_allclose(ev("r = gallery('cauchy', 1:2);"), [[1 / 2, 1 / 3], [1 / 3, 1 / 4]])
+    np.testing.assert_array_equal(ev("r = gallery('fiedler', 3);"), [[0, 1, 2], [1, 0, 1], [2, 1, 0]])
+    np.testing.assert_array_equal(ev("r = gallery('tridiag', 3);"), [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])
+    assert ev("r = gallery('poisson', 3);").shape == (9, 9)
+    np.testing.assert_allclose(ev("A = gallery('invol', 4); r = A*A;"), np.eye(4), atol=1e-9)
+    np.testing.assert_allclose(ev("Q = gallery('orthog', 5, 2); r = Q*Q';"), np.eye(5), atol=1e-12)
+    np.testing.assert_allclose(ev("x = [3; 4]; [v, b] = gallery('house', x); r = (eye(2) - b*(v*v'))*x;"),
+                               [[-5], [0]], atol=1e-12)
+    np.testing.assert_allclose(ev("r = sum(gallery('chebspec', 5), 2);"), np.zeros((5, 1)), atol=1e-12)
+    assert ev("r = gallery('randsvd', [5 3]);").shape == (5, 3)
+    s = ReplSession()
+    s.run_line("try, gallery('nosuch', 3); r = 0; catch err, r = strcmp(err.identifier, 'MATLAB:gallery:unknownName'); end")
+    assert bool(np.asarray(s.session.workspace.get("r").backend_buffer()).item())
