@@ -198,7 +198,7 @@ def test_mode_options_and_empties():
     assert np.asarray(w.get("m").backend_buffer()).item() == 2
     assert np.asarray(w.get("f").backend_buffer()).item() == 2
     np.testing.assert_array_equal(np.asarray(w.get("c").get(0, 0).backend_buffer()), [[2], [3]])
-    np.testing.assert_array_equal(ev("r = mode(magic(3) > 4, 'all');"), [[False]])
+    np.testing.assert_array_equal(ev("r = mode(magic(3) > 4, 'all');"), [[True]])
     np.testing.assert_array_equal(ev("r = mode([1 1; 2 2; 2 1], [1 2]);"), [[1]])
     assert np.isnan(ev("r = mode([]);")).all()
     assert ev("r = mode(int8([3 3 1]));").dtype == np.int8
