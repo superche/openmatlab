@@ -1828,6 +1828,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_figio
+    kind: unit
+    title: Own .fig format, savefig/openfig round trip, exportgraphics and print (Epic #773)
+    features: [libs.graphics.figio]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic773_figio.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)

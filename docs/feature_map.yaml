@@ -610,6 +610,14 @@ features:
     notes: "auto XTick/YTick/ZTick and labels with modes, xtickangle/ytickangle/ztickangle, ax.XAxis/YAxis/ZAxis NumericRuler (Limits/TickValues/TickLabels/Direction/Exponent/TickLabelFormat; yyaxis 2x1), Units conversion of Position (figure/axes/legend/colorbar/text), title/label font multipliers, new documented properties (TickLabelInterpreter, GridColor/GridAlpha, Legend, MarkerIndices, CloseRequestFcn, callbacks), tex/latex/none rendering that never fails (Epic #771 follow-up, M13; residual #977)"
     tests: [tests/unit/test_epic771_properties.py]
 
+  - id: libs.graphics.figio
+    layer: libs
+    name: Figure files (own .fig format) and export (savefig, openfig, exportgraphics, print)
+    status: partial
+    depends_on: [libs.graphics.properties]
+    notes: "OpenMATLAB-own .fig (zipped JSON property tree, incompatible with MATLAB .fig; MATLAB .fig rejected): savefig/openfig ('new'/'reuse', visibility)/hgsave/hgload with zero property-tree diff; exportgraphics (png/jpg/tif/gif/pdf/eps/svg, Resolution, BackgroundColor, tight crop); print -dDEVICE -rN at the figure size. saveas .fig still unsupported (existing test; #979) (Epic #773, M13 G08)"
+    tests: [tests/unit/test_epic773_figio.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows
