@@ -393,6 +393,126 @@ def _string_map(s, f):
     return (type(s)(f(s.text)),)
 
 
+def _tensorprod(args, *, nargout=1):
+    _need(args, 2, "tensorprod")
+    a, b = _num(args[0], "tensorprod"), _num(args[1], "tensorprod")
+    rest, nda = list(args[2:]), None
+    for i in range(len(rest) - 1):
+        if _is_text(rest[i]) and rest[i].text.lower() == "numdimensionsa":
+            nda = int(_num(rest[i + 1], "tensorprod").reshape(-1)[0])
+            rest = rest[:i] + rest[i + 2:]
+            break
+    na = max(a.ndim, 2, nda or 0)
+    if rest and _is_text(rest[0]) and rest[0].text.lower() == "all":
+        if a.size != b.size or a.reshape(-1).shape != b.reshape(-1).shape:
+            raise _err("tensorprod: the sizes of A and B must match for 'all'.", "MATLAB:tensorprod:SizeMismatch")
+        return (_out(np.sum(a.reshape(-1, order="F") * b.reshape(-1, order="F"))),)
+    da = [int(x) - 1 for x in _num(rest[0], "tensorprod").reshape(-1)] if rest else []
+    db = [int(x) - 1 for x in _num(rest[1], "tensorprod").reshape(-1)] if len(rest) > 1 else list(da)
+    if len(da) != len(db) or any(x < 0 for x in da + db):
+        raise _err("tensorprod: dimA and dimB must have the same number of positive dimensions.",
+                   "MATLAB:tensorprod:DimMismatch")
+    na = max([na] + [x + 1 for x in da])
+    nb = max([b.ndim, 2] + [x + 1 for x in db])
+    a = a.reshape(a.shape + (1,) * (na - a.ndim))
+    b = b.reshape(b.shape + (1,) * (nb - b.ndim))
+    if any(a.shape[i] != b.shape[j] for i, j in zip(da, db)):
+        raise _err("tensorprod: contracted dimensions of A and B must have the same size.",
+                   "MATLAB:tensorprod:SizeMismatch")
+    r = np.tensordot(a, b, axes=(da, db)) if da else np.multiply.outer(a, b)
+    shape = list(r.shape)
+    while len(shape) > 2 and shape[-1] == 1:
+        shape.pop()
+    while len(shape) < 2:
+        shape.append(1)
+    return (_out(r.reshape(shape)),)
+
+
+def _prctile_along(x, p, ax):
+    """MATLAB-style percentile (midpoint positions, linear interpolation, clamped) along axis ``ax``."""
+    xs = np.sort(x, axis=ax)
+    n = xs.shape[ax]
+    pos = np.clip(n * p / 100.0 - 0.5, 0, n - 1)
+    lo = int(np.floor(pos))
+    hi = min(lo + 1, n - 1)
+    f = pos - lo
+    a, b = np.take(xs, [lo], axis=ax), np.take(xs, [hi], axis=ax)
+    return a + f * (b - a)
+
+
+def _normalize(args, *, nargout=1):
+    _need(args, 1, "normalize")
+    single = args[0].matlab_class() == "single"
+    a = _num(args[0], "normalize").astype(float)
+    rest = list(args[1:])
+    if rest and not _is_text(rest[0]):
+        dim = int(_num(rest.pop(0), "normalize").reshape(-1)[0]) - 1
+    else:
+        nz = [i for i, k in enumerate(a.shape) if k != 1]
+        dim = nz[0] if nz else 0
+    if dim >= a.ndim:
+        a = a.reshape(a.shape + (1,) * (dim + 1 - a.ndim))
+    method, center, scale = None, None, None
+    i = 0
+    while i < len(rest):
+        m = rest[i].text.lower() if _is_text(rest[i]) else ""
+        nxt = rest[i + 1] if i + 1 < len(rest) else None
+        opt = None
+        if nxt is not None and not (_is_text(nxt) and nxt.text.lower() in ("zscore", "norm", "scale", "range", "center", "medianiqr")):
+            opt = nxt.text.lower() if _is_text(nxt) else _num(nxt, "normalize")
+        if m in ("zscore", "norm", "range", "medianiqr"):
+            method = (m, opt)
+        elif m == "center":
+            center = opt if opt is not None else "mean"
+        elif m == "scale":
+            scale = opt if opt is not None else "std"
+        else:
+            raise _err(f"normalize: unknown method '{m}'.", "MATLAB:normalize:InvalidMethod")
+        i += 2 if opt is not None else 1
+    ax = dim
+    mean = lambda x: np.mean(x, axis=ax, keepdims=True)
+    med = lambda x: np.median(x, axis=ax, keepdims=True)
+    n = a.shape[ax]
+    std = lambda x: np.std(x, axis=ax, ddof=1 if n > 1 else 0, keepdims=True)
+    iqr = lambda x: _prctile_along(x, 75, ax) - _prctile_along(x, 25, ax)
+    mad = lambda x: med(np.abs(x - med(x)))
+
+    def stat(spec, kind):
+        if isinstance(spec, np.ndarray):
+            return spec
+        table = {"mean": mean, "median": med, "std": std, "mad": mad, "iqr": iqr,
+                 "first": lambda x: np.take(x, [0], axis=ax)}
+        if spec not in table:
+            raise _err(f"normalize: unknown {kind} option '{spec}'.", "MATLAB:normalize:InvalidOption")
+        return table[spec](a)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        if center is not None or scale is not None:
+            c = stat(center, "center") if center is not None else np.zeros((1,) * a.ndim)
+            sc = stat(scale, "scale") if scale is not None else np.ones((1,) * a.ndim)
+        elif method is None or method[0] == "zscore":
+            kind = method[1] if method and method[1] is not None else "std"
+            if kind == "robust":
+                c, sc = med(a), mad(a)
+            else:
+                c, sc = mean(a), std(a)
+        elif method[0] == "norm":
+            pv = float(np.asarray(method[1]).reshape(-1)[0]) if method[1] is not None else 2.0
+            c = np.zeros((1,) * a.ndim)
+            sc = np.max(np.abs(a), axis=ax, keepdims=True) if np.isinf(pv) else np.sum(np.abs(a) ** pv, axis=ax, keepdims=True) ** (1 / pv)
+        elif method[0] == "range":
+            lo_hi = np.asarray(method[1], dtype=float).reshape(-1) if method[1] is not None else np.array([0.0, 1.0])
+            mn, mx = np.min(a, axis=ax, keepdims=True), np.max(a, axis=ax, keepdims=True)
+            sc = (mx - mn) / (lo_hi[1] - lo_hi[0])
+            c = mn - lo_hi[0] * sc
+        else:  # medianiqr
+            c, sc = med(a), iqr(a)
+        z = (a - c) / sc
+    cast = (lambda x: _out(x.astype(np.float32))) if single else _out
+    outs = (cast(z), cast(np.broadcast_to(c, c.shape)), cast(np.broadcast_to(sc, sc.shape)))
+    return outs[:max(1, nargout)]
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "issymmetric": _issymmetric, "ishermitian": _ishermitian, "bandwidth": _bandwidth, "isbanded": _isbanded,
@@ -404,7 +524,7 @@ def register(builtins: Dict[str, Callable]) -> None:
         "mape": _pair_metric("mape", lambda a, b: 100 * np.abs((b - a) / b)),
         "cart2pol": _cart2pol, "pol2cart": _pol2cart, "cart2sph": _cart2sph, "sph2cart": _sph2cart,
         "bitcmp": _bitcmp, "bitset": _bitset, "eomday": _eomday,
-        "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
+        "tensorprod": _tensorprod, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
     }
     for k, v in table.items():
         builtins.setdefault(k, v)
