@@ -7,7 +7,8 @@
   "octave-identifier": "The block asserts an Octave-namespaced error identifier ('Octave:...'); MATLAB functions raise MATLAB-namespaced identifiers (component:mnemonic, https://www.mathworks.com/help/matlab/ref/mexception.html), so the assertion cannot hold in MATLAB.",
   "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values.",
   "narg-legacy-message": "MATLAB's legacy nargchk/nargoutchk return 'Not enough input arguments.' / 'Too many input arguments.' (identifiers MATLAB:nargchk:*), an empty matrix when valid (documented: https://www.mathworks.com/help/matlab/ref/nargchk.html); Octave returns lower-case messages, '' and Octave identifiers.",
-  "condest-syntax": "MATLAB condest takes a square matrix and an optional block size t only (documented: https://www.mathworks.com/help/matlab/ref/condest.html); Octave also accepts function handles for A and its inverse."
+  "condest-syntax": "MATLAB condest takes a square matrix and an optional block size t only (documented: https://www.mathworks.com/help/matlab/ref/condest.html); Octave also accepts function handles for A and its inverse.",
+  "movmad-method": "MATLAB movmad computes only the median absolute deviation and has no 'method' option (documented name-value arguments: Endpoints, SamplePoints, DataVariables, ReplaceValues; https://www.mathworks.com/help/matlab/ref/movmad.html); Octave accepts 'method','mean'|'median'."
  },
  "exclusions": [
   {
@@ -434,6 +435,86 @@
    "id": "octave/linear-algebra/condest#5",
    "sha256": "f8bcf9816c0b7341a7042ccb30116d01bc41c9b266c8bb2f71c3801236a6e1ee",
    "reason": "condest-syntax"
+  },
+  {
+   "id": "octave/statistics/movmad#1",
+   "sha256": "9a27cec4ada0c7f13c0312e64472b8f9fab76b890edf8a6a39db406d0d6fbd30",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#2",
+   "sha256": "b404cc15056a6cd2bd321b2c2fe358a4c99e2cfa644af153fe84e2740ae06061",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#3",
+   "sha256": "7e0d346d27b56a2764f08843ec492c277579eed7cf05a9c800b62dfdbad32cb4",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#4",
+   "sha256": "893dec61bf3a5ad197297c2ea4828bbe36bbcb8491b13a2b04dbb0313b53abb3",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#5",
+   "sha256": "985b50911961e1bc9334775962438c5b5c8aba3ca875eb30e8dad8eb1eca18c7",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#6",
+   "sha256": "1a1987784dca20222a6bfa79211cc10bef22ebc3de6fd43eb9ffc52330015efd",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#7",
+   "sha256": "ded5cf2a10ed5d68a78ab6d1c01181a4548866ed43b50d379dd8fc55ee9565cd",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#8",
+   "sha256": "bbafe2021f291ed11e421ca9c0f26c62c160a41268f4e015128640001179f62d",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#9",
+   "sha256": "85df7841ce1dd461c5034f1827a6f01e2f70a6d3d47851d479f9d8d51cb55a66",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#10",
+   "sha256": "4096052f65ed9126ce57f81d4678130f9beff12268a466ade5ec5eaeae044ee9",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#11",
+   "sha256": "d9ed822c72f38273b3924f38130d7f8af3e1b6ad5c7cd709feed9401820d4a4b",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#12",
+   "sha256": "839b847f4a17feed828166fea31115f868c75efddaee0139a91b3df296d496e5",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#13",
+   "sha256": "93af44200e890183b6c7af0b8b23f2ae84f76921c4476a341f494cb1daa40f0d",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#14",
+   "sha256": "3e81b605efa33ff5dcaf6b8b1ec0ccc4b0bf616f5d27d086bec18266c4d314d8",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#28",
+   "sha256": "c618df42afab1543b9c1a11cb11d940980db818e683c5d56bf264ce418f6a13b",
+   "reason": "movmad-method"
+  },
+  {
+   "id": "octave/statistics/movmad#29",
+   "sha256": "01c3e06768f411028dac0f7996c9781d50fedfcb64d93bc41a5cb98fcce1de60",
+   "reason": "movmad-method"
   }
  ]
 }
