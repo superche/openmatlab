@@ -80,10 +80,12 @@ def _cap(text: str) -> str:
 
 
 def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "run", name: Optional[str] = None,
-            input_lines: Optional[List[str]] = None) -> RunResult:
+            input_lines: Optional[List[str]] = None, collect: Optional[str] = None) -> RunResult:
     """Run one ``.m`` file in a sandboxed child; never raises for script failures.
 
     ``input_lines`` (M12 C03 fixtures) answer ``input``/``keyboard`` prompts in order.
+    ``collect`` names a file the script writes in its working folder (the T2 oracle's verdicts);
+    its text (capped like stdout) is returned in ``extra["collected"]``, also after a timeout.
     """
     src = Path(path).resolve()
     work = Path(tempfile.mkdtemp(prefix="omcorpus-"))
@@ -124,6 +126,8 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
         so, se = (_cap(f.read_bytes()[: OUTPUT_CAP + 1].decode("utf-8", "replace")) for f in (fo, fe))
         r = RunResult(name=name or src.name, path=str(src), status="pass", stdout=so, stderr=se, elapsed=elapsed,
                       returncode=proc.returncode)
+        if collect and (work / collect).is_file():
+            r.extra["collected"] = _cap((work / collect).read_bytes()[: OUTPUT_CAP + 1].decode("utf-8", "replace"))
         if timed_out or proc.returncode == -signal.SIGXCPU:  # wall-clock or CPU-time budget exceeded
             r.status, r.kind, r.message = "timeout", "timeout", (f"timed out after {timeout:g} s" if timed_out else f"CPU budget exceeded ({timeout:g} s)")
             return r

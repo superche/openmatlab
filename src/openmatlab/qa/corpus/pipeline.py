@@ -7,7 +7,9 @@ entry (no corpus code is stored: id, tiers, category, key, a truncated message):
 * Rosetta script blocks are preprocessed (:mod:`.preprocess`); function blocks from the same
   page are staged next to them under their function names, so a page's helpers resolve.
 * Entries with a ``call`` (chebfun self-tests, matlab2tikz ACID scenes) run that driver.
-* Octave ``%!`` test files are parse-only here; their oracles are C-E5 (#765).
+* Octave ``%!`` test files run their self-check blocks against OpenMATLAB's own functions (T2).
+* ``t2``/``t3`` come from :mod:`.oracles` (C-E5 #765): chebfun self-tests and Octave ``%!``
+  blocks are T2 self-checks; Rosetta transcripts under MATLAB ``>>`` prompts are T3 goldens.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import manifest as M
+from . import oracles as O
 from .classify import classify_features, features
 from .preprocess import prepare
 from .runner import DEFAULT_TIMEOUT, run_one
@@ -48,12 +51,10 @@ class _Job:
             rec.update(t0="missing", t1="missing", category="io-env", key="cache-missing", message="not in cache")
             return rec
         raw = src.read_text(encoding="utf-8", errors="replace")
-        if e.kind == "octave-tests":  # Octave %! blocks are T2/T3 material (C-E5 #765), not MATLAB files
-            rec.update(role="octave-tests", notes=[], t0="n/a", t1="n/a", status="n/a", category="deferred", key="C-E5",
-                       message="")
-            return rec
         stage = Path(tempfile.mkdtemp(prefix="omstage-"))
         try:
+            if e.kind == "octave-tests":  # Octave %! blocks: T2 self-checks against OpenMATLAB's functions
+                return self._octave(rec, raw, stage, timeout)
             if e.call:
                 code, role, notes, inputs = raw, "driver", [], None
                 drv = stage / ("drv_" + re.sub(r"\W", "_", e.id)[-50:] + ".m")
@@ -89,9 +90,47 @@ class _Job:
             cat, key = classify_features(r, feats)
             rec.update(category=cat, key=key, status=r["status"], run_kind=r["kind"], features=feats, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
                        elapsed=r["elapsed"])
+            if e.kind == "selftest":  # the driver asserts all(pass(:)): its outcome is the self-check
+                rec["t2"] = rec["t1"]
+            if role == "script" and p is not None and p.transcript and O.golden_source(p.notes, raw) == "matlab":
+                ok, why = O.golden_match(r["stdout"], p.transcript) if r["status"] == "pass" else (False, "T1 " + r["status"])
+                rec["t3"] = "pass" if ok else ("error" if r["status"] == "pass" else r["status"])
+                rec["oracle"] = "golden:matlab" + ("" if ok else "; " + why)
             return rec
         finally:
             shutil.rmtree(stage, ignore_errors=True)
+
+    def _octave(self, rec: dict, raw: str, stage: Path, timeout: float) -> dict:
+        plan = O.octave_script(raw)
+        rec.update(role="octave-tests", notes=sorted({"aside:" + a for a in plan.set_aside}), t0="n/a", t1="n/a")
+        if not plan.applicable:
+            why = (plan.set_aside or ["no-self-check"])[0]
+            rec.update(t2="n/a", status="n/a", category="corpus-noise", key=why.split(":")[0],
+                       message=f"no MATLAB self-check block ({len(plan.set_aside)} set aside, {plan.skipped} not self-checks)")
+            return rec
+        name = "omt2_" + re.sub(r"\W", "_", self.e.id)[-40:]
+        target = stage / f"{name}.m"
+        target.write_text(plan.script, encoding="utf-8")
+        for fname, body in plan.helpers.items():
+            (stage / fname).write_text(body, encoding="utf-8")
+        r = run_one(target, timeout=timeout, name=self.e.id, collect=O.RESULT_FILE).to_json()
+        passed, done, eid, msg = O.octave_verdict(r["extra"].get("collected", ""), plan.applicable)
+        rec["oracle"] = f"octave:{passed}/{plan.applicable}" + (f" ({len(plan.set_aside)} set aside)" if plan.set_aside else "")
+        if r["status"] in ("timeout", "crash"):
+            t2, res = r["status"], r
+        elif r["status"] == "error":  # the generated script itself failed outside a block
+            t2, res = "error", r
+        elif passed == plan.applicable:
+            t2, res = "pass", r
+        else:
+            t2 = "error"
+            res = dict(r, status="error", kind="eval", error_id=eid, message=msg or f"{plan.applicable - done} blocks did not finish")
+        feats = features(raw)
+        feats["dialect"] = ""  # the Octave file is not run; set-aside blocks are already excluded
+        cat, key = classify_features(res, feats)
+        rec.update(t2=t2, status=t2, category=cat, key=key, error_id=res.get("error_id", ""),
+                   message=(res.get("message") or "")[:MSG_CAP], elapsed=r["elapsed"])
+        return rec
 
     def _resolvable(self, msg: str) -> dict:
         m = re.search(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)", msg or "")
