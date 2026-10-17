@@ -316,8 +316,8 @@ def _get_prop(m, o: GObj, name: str):
         if tgt is None:
             own = _ruler_own(o.parent, o.axis, o.side) if o.side is None else o.props
             v = own.get(k, o.props.get(k, _RULER_OWN.get(k)))
-            if k == "Color" and v is None:
-                v = o.parent.props.get("YColor", [0.15, 0.15, 0.15])
+            if k == "Color" and v is None:  # yyaxis sides default to the first two ColorOrder colours
+                v = hm.COLOR_ORDER[0 if o.side == "left" else 1].tolist()
             if k == "MinorTickValues":
                 v = []
             return gb._to_value(m, o, k, v)
@@ -544,7 +544,7 @@ _GREEK = ("alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu
           "downarrow leftrightarrow Rightarrow Leftarrow forall exists in subset supset cup cap angle "
           "propto sim ldots varepsilon vartheta varphi varsigma").split()
 _TEX_TOKEN = re.compile(r"(\\(?:" + "|".join(sorted(_GREEK, key=len, reverse=True)) + r")(?![A-Za-z]))"
-                        r"|([\^_])(\{[^{}]*\}|.)"
+                        r"|([\^_])(\{[^{}]*\}|[^{])"
                         r"|(\\(?:bf|it|rm|sl)\b ?)|(\\color(?:\{[^{}]*\}|\[[^\]]*\]\{[^{}]*\}))|(\\fontsize\{[^{}]*\})"
                         r"|(\\fontname\{[^{}]*\})|(\$)")
 
@@ -751,6 +751,29 @@ def _tickangle(axis):
     return f
 
 
+def _text(ev, args, nargout):
+    """text(...) with 'Units' among the name-value pairs: x, y are already in those units (MATLAB)."""
+    args = list(args)
+    units = None
+    i = len(args) - 2
+    while i >= 0:
+        if _is_text(args[i]) and args[i].text.lower() == "units" and _is_text(args[i + 1]):
+            if units is None:
+                units = args[i + 1].text.lower()
+            del args[i:i + 2]
+        i -= 1
+    if units is None:
+        return cb._text_fn(ev, args, nargout)
+    if units not in _TEXT_UNITS:
+        raise _err(f"Invalid value for 'Units' property: '{units}'.", "MATLAB:datatypes:InvalidEnumValue")
+    m = gb.model(ev)
+    out = cb._text_fn(ev, args, 1)
+    for hid in np.ravel(np.asarray(out[0].backend_buffer(), dtype=float)):
+        m.get(float(hid)).props["Units"] = units
+    gb._render(m, m.get(float(np.ravel(np.asarray(out[0].backend_buffer()))[0])))
+    return out if nargout else ()
+
+
 INTRINSICS = {k: gb._wrap(v) for k, v in {
-    "xtickangle": _tickangle("X"), "ytickangle": _tickangle("Y"), "ztickangle": _tickangle("Z"),
+    "text": _text, "xtickangle": _tickangle("X"), "ytickangle": _tickangle("Y"), "ztickangle": _tickangle("Z"),
 }.items()}

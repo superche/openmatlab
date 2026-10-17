@@ -1819,6 +1819,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_properties
+    kind: unit
+    title: Axes, ruler, figure and text properties (Epic #771 follow-up)
+    features: [libs.graphics.properties]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic771_properties.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
