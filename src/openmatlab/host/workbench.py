@@ -1009,10 +1009,14 @@ class Workbench:
         ws_tree.pack(fill="both", expand=True)
 
         ttk.Label(fig_frame, text="Figures", font=("", 10, "bold")).pack(anchor="w")
-        fig_list = tk.Listbox(fig_frame, height=8)
-        fig_list.pack(fill="both", expand=True)
+        # Docked figures appear as image previews in this panel (M13 G09); undocked stay listed.
+        fig_nb = ttk.Notebook(fig_frame)
+        fig_nb.pack(fill="both", expand=True)
+        fig_list = tk.Listbox(fig_frame, height=4)
+        fig_list.pack(fill="x")
         fig_btns = ttk.Frame(fig_frame)
         fig_btns.pack(fill="x", pady=2)
+        _fig_photos: Dict[int, Any] = {}  # keep PhotoImage refs alive
 
         def _active_ed_text():
             if not ed_text_widgets:
@@ -1193,8 +1197,47 @@ class Workbench:
 
         def refresh_figs() -> None:
             fig_list.delete(0, "end")
-            for info in self.figures.list_figures():
-                fig_list.insert("end", f"{info.handle:g}  {info.title}" + ("  [docked]" if info.docked else ""))
+            for info in self.figures.list():
+                tag = "  [docked]" if info.docked else ""
+                focus = " *" if self.figures.focused() == info.number else ""
+                fig_list.insert("end", f"{info.number}  {info.title}{tag}{focus}")
+            # Rebuild docked-figure preview tabs (Agg → PNG → PhotoImage)
+            for tab in list(fig_nb.tabs()):
+                fig_nb.forget(tab)
+            _fig_photos.clear()
+            try:
+                from openmatlab.libs import figio
+                from PIL import Image, ImageTk
+                import io as _io
+                m = self.figures._model()
+            except Exception:
+                m = None
+                figio = None  # type: ignore
+            if m is not None and figio is not None:
+                for info in self.figures.docked():
+                    f = self.figures._model_figures().get(info.number)
+                    if f is None:
+                        continue
+                    try:
+                        import tempfile, os as _os
+                        fd, path = tempfile.mkstemp(suffix=".png")
+                        _os.close(fd)
+                        try:
+                            figio.render_to_file(m, f, path, "png", 72.0, background="white")
+                            im = Image.open(path).copy()
+                            im.thumbnail((280, 210))
+                            photo = ImageTk.PhotoImage(im)
+                        finally:
+                            try:
+                                _os.unlink(path)
+                            except OSError:
+                                pass
+                        _fig_photos[info.number] = photo
+                        page = ttk.Frame(fig_nb)
+                        ttk.Label(page, image=photo).pack(fill="both", expand=True)
+                        fig_nb.add(page, text=f"Fig {info.number}")
+                    except Exception:
+                        pass
 
         def path_go(_event=None) -> None:
             target = path_var.get().strip()
