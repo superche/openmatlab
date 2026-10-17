@@ -190,10 +190,10 @@ features:
   - id: host.workbench.figures
     layer: host
     name: Workbench figure management
-    status: partial
-    spec: docs/milestones/M-workbench-aligned.md
-    notes: "Epic #372; W06 met; W14 docked Figures region (#397)"
-    tests: [tests/unit/test_workbench.py]
+    status: done
+    spec: docs/milestones/M13-graphics.md
+    notes: "W06/W14 + M13 G09 (#774): WindowStyle docked figures in Figures panel with PNG previews; new figure takes focus; DefaultFigureWindowStyle"
+    tests: [tests/unit/test_workbench.py, tests/unit/test_epic774_docking_defaults.py]
 
   - id: lang.tokens_reserved
     layer: lang
@@ -617,6 +617,22 @@ features:
     depends_on: [libs.graphics.properties]
     notes: "OpenMATLAB-own .fig (zipped JSON property tree, incompatible with MATLAB .fig; MATLAB .fig rejected): savefig/openfig ('new'/'reuse', visibility)/hgsave/hgload with zero property-tree diff; exportgraphics (png/jpg/tif/gif/pdf/eps/svg, Resolution, BackgroundColor, tight crop); print -dDEVICE -rN at the figure size. saveas .fig still unsupported (existing test; #979) (Epic #773, M13 G08)"
     tests: [tests/unit/test_epic773_figio.py]
+  - id: libs.graphics.defaults
+    layer: libs
+    name: Default<Type><Prop> on root/figure/axes
+    status: done
+    spec: docs/design/EPIC-774-docking-snapshots.md
+    notes: "M13 G-E7 #774 / G-E4: nearest-ancestor Default* apply on create; factory/remove; titles ignore DefaultText*"
+    tests: [tests/unit/test_epic774_docking_defaults.py]
+
+  - id: qa.snapshots
+    layer: qa
+    name: Golden image snapshot infrastructure
+    status: done
+    spec: docs/design/EPIC-774-docking-snapshots.md
+    notes: "M13 G10 #774: ≥40 own PNG goldens, Agg/DejaVu/DPI pinned, ΔE≤1% or SSIM≥0.98"
+    tests: [tests/unit/test_epic774_snapshots.py, tests/conformance/test_m13_conformance.py]
+
 
   - id: host.workbench.workflows
     layer: host
