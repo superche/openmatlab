@@ -88,7 +88,32 @@ def _declared_count(ev, f, which):
     return -len(names) if names and names[-1] == var else len(names)
 
 
+def _legacy_chk(args, which):
+    """Legacy msg = nargchk/nargoutchk(minArgs, maxArgs, numArgs[, 'string'|'struct']) (documented, not recommended)."""
+    from openmatlab.runtime.char_value import CharValue
+    from openmatlab.runtime.struct_value import StructValue
+
+    lo, hi, n = (_scalar_int(a, which) for a in args[:3])
+    form = (getattr(args[3], "text", None) or "").lower() if len(args) > 3 else "string"
+    if form not in ("string", "struct"):
+        raise _err(f"{which}chk: the fourth argument must be 'string' or 'struct'.", f"MATLAB:{which}chk:invalidInput")
+    kind = "Inputs" if which == "nargin" else "Outputs"
+    word = "input" if which == "nargin" else "output"
+    msg, ident = "", ""
+    if n < lo:
+        msg, ident = f"Not enough {word} arguments.", f"MATLAB:{which}chk:notEnough{kind}"
+    elif n > hi:
+        msg, ident = f"Too many {word} arguments.", f"MATLAB:{which}chk:tooMany{kind}"
+    if form == "string":
+        return (CharValue(msg) if msg else NDArrayValue(np.zeros((0, 0))),)  # documented: empty matrix when valid
+    if not msg:  # no error: a 0-by-1 structure with fields message and identifier
+        return (StructValue.build((0, 1), ("message", "identifier"), ()),)
+    return (StructValue.scalar([("message", CharValue(msg)), ("identifier", CharValue(ident))]),)
+
+
 def _chk(ev, args, which):
+    if len(args) in (3, 4):
+        return _legacy_chk(args, which)
     if len(args) != 2:
         raise _err(f"{which}chk: expected (minArgs, maxArgs)")
     lo, hi = _scalar_int(args[0], which), _scalar_int(args[1], which)
@@ -268,6 +293,7 @@ INTRINSICS: Dict[str, Callable] = {
     "nargin": _nargin,
     "nargout": _nargout,
     "narginchk": lambda ev, a, n: _chk(ev, a, "nargin"),
+    "nargchk": lambda ev, a, n: _legacy_chk(a, "nargin") if len(a) in (3, 4) else _chk(ev, a, "nargin"),
     "nargoutchk": lambda ev, a, n: _chk(ev, a, "nargout"),
     "eval": _eval,
     "feval": _feval,

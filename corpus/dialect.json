@@ -5,7 +5,8 @@
   "median-class": "MATLAB median returns natively in the class of A and has no outtype argument (documented: https://www.mathworks.com/help/matlab/ref/double.median.html); Octave's 'default' outtype returns double for integer and logical input.",
   "var-dim-past-ndims": "MATLAB var returns an array of zeros the same size as A when dim > ndims(A) (documented: https://www.mathworks.com/help/matlab/ref/double.var.html, dim argument); Octave returns NaN for non-finite elements.",
   "octave-identifier": "The block asserts an Octave-namespaced error identifier ('Octave:...'); MATLAB functions raise MATLAB-namespaced identifiers (component:mnemonic, https://www.mathworks.com/help/matlab/ref/mexception.html), so the assertion cannot hold in MATLAB.",
-  "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values."
+  "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values.",
+  "narg-legacy-message": "MATLAB's legacy nargchk/nargoutchk return 'Not enough input arguments.' / 'Too many input arguments.' (identifiers MATLAB:nargchk:*), an empty matrix when valid (documented: https://www.mathworks.com/help/matlab/ref/nargchk.html); Octave returns lower-case messages, '' and Octave identifiers."
  },
  "exclusions": [
   {
@@ -347,6 +348,76 @@
    "id": "octave/strings/dec2base#25",
    "sha256": "e5ebe29b85bafa72d0f047481fd2e8e70a2c4b7f2b99051393149d9b7a3a24c5",
    "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#1",
+   "sha256": "a95504bb34237ee686f4b3ed0b983ddc19e66a32a59f7074afccfc7de2ab4421",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#2",
+   "sha256": "7aaa6f450e6a387a4d425c80d32f0ba130dcf0c3a803ff4fa48564229f80603a",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#3",
+   "sha256": "78c785bd101f7da7e61f5423fa86610a4dae248a95e517d90e02df999dae68dc",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#4",
+   "sha256": "5eaa92209d6e664c587ebd840df9f264f6f648eb49988ab8a82f788068df9485",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#5",
+   "sha256": "af4f5da9699dff74375c5b1bd05aedddc16bedfbe8a87570d32246509d451661",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#8",
+   "sha256": "e0b1d0f4411d6af6fbab4d05608ba7c8ef5ac5cf72b3868047908163fd143556",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargchk#9",
+   "sha256": "fd0f0dd4bc13d9abcd3469d61905fafa653fc7c2c3027983c89a63a121a980ab",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#1",
+   "sha256": "2609e922f0a6a1a9403b9aeb2005c1cd5fb24b0d77c471233d4c1e8f26593746",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#2",
+   "sha256": "d7f312a87c1706564d3cde484d066d00b1316da4a870a6f6a801c6695bd53774",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#3",
+   "sha256": "305d397ff4642c549df7e4e12326e0c45ac6273a29bb978c5bb6546d2db308b0",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#4",
+   "sha256": "10aa1e6353bd3b0b54f2c1f6b3f474a9f9887ed742d014650faa10b943d6d7b0",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#5",
+   "sha256": "d008004f88b9c29d47607b079edcf0b3df7d0871321a503e7ec6546d0043c004",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#8",
+   "sha256": "28a121a0e3623360f88a8636cd6ec43887fce91bd0659d8e88e5cafb450f5176",
+   "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/miscellaneous/nargoutchk#9",
+   "sha256": "1b5bea5fb8a52662b7b8aa1284dda5d804309bc67d3244fdc64ab773449f089a",
+   "reason": "narg-legacy-message"
   }
  ]
 }
