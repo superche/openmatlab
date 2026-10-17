@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-PROMPT = re.compile(r"^\s*(>>|octave:\d+>)\s?(.*)$")
+PROMPT = re.compile(r"^\s*(>>|octave:\d+>|>(?=\s))\s?(.*)$")  # MATLAB, numbered and bare Octave prompts
 _OPEN = re.compile(r"^\s*(for|parfor|while|if|switch|try|function|do)\b")
 _END = re.compile(r"(^|[\s;,])(end|endfor|endwhile|endif|endswitch|end_try_catch|endfunction|until)\b\s*[;,]?\s*(%.*)?$")
 _INPUT = re.compile(r"\binput\s*\(([^()]*(?:\([^()]*\))?[^()]*)\)")
@@ -66,23 +66,32 @@ def _depth_delta(line: str) -> int:
     return d
 
 
+def _bracket_delta(line: str) -> int:
+    """Net open ``[``/``{``/``(`` count outside strings and comments (multi-line literals)."""
+    s = re.sub(r"(?<![\w)\]}.'])'(?:[^'\n]|'')*'", "''", _strip_comment(line))
+    s = re.sub(r'"[^"\n]*"', '""', s)
+    return sum(s.count(c) for c in "[{(") - sum(s.count(c) for c in "]})")
+
+
 def deprompt(code: str) -> tuple[str, str]:
     """Return ``(code, transcript)``; unchanged when the text has no prompts."""
     lines = code.splitlines()
     if not any(PROMPT.match(ln) for ln in lines):
         return code, ""
     kept, dropped = [], []
-    depth, cont = 0, False
+    depth, cont, brackets = 0, False, 0
     for ln in lines:
         m = PROMPT.match(ln)
         if m:
             body = m.group(2)
             kept.append(body)
             depth = max(0, depth + _depth_delta(body))
+            brackets = max(0, _bracket_delta(body))
             cont = body.rstrip().endswith("...")
-        elif depth > 0 or cont:
+        elif depth > 0 or cont or brackets > 0:
             kept.append(ln)
             depth = max(0, depth + _depth_delta(ln))
+            brackets = max(0, brackets + _bracket_delta(ln))
             cont = ln.rstrip().endswith("...")
         else:
             dropped.append(ln)
