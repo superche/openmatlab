@@ -2007,3 +2007,22 @@ test_cases:
     impl: tests/unit/test_issue797_perf.py
     status: active
     env: unit
+
+  - id: tc.epic774_docking_defaults
+    kind: unit
+    title: "Workbench docked figures, focus and Default<Type><Prop> (Epic #774 G09)"
+    features: [host.workbench.figures, libs.graphics.defaults]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic774_docking_defaults.py
+    status: active
+    env: unit
+
+  - id: tc.epic774_snapshots
+    kind: unit
+    title: "Golden image snapshots >=40 scenes within tolerance (Epic #774 G10)"
+    features: [qa.snapshots]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic774_snapshots.py
+    status: active
+    env: unit
+

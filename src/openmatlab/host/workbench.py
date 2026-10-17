@@ -13,7 +13,7 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from openmatlab.host.display import ConsoleDisplay
 from openmatlab.host.repl import ReplSession
@@ -99,10 +99,13 @@ class FolderEntry:
 
 @dataclass
 class FigureInfo:
-    """One open figure (W06)."""
+    """One open figure (W06); ``docked`` figures live in the Figures panel (M13 G09, Epic #774)."""
 
     handle: float
     title: str
+    number: int = 0
+    docked: bool = False
+    visible: bool = True
 
 
 def _value_size_str(val: Value) -> str:
@@ -559,7 +562,53 @@ class FigureManager:
             raw = list_fn()
         else:
             raw = []
-        return [FigureInfo(handle=float(h), title=str(t)) for h, t in raw]
+        figs = self._model_figures()
+        out = []
+        for h, t in raw:
+            f = figs.get(int(float(h)))
+            props = f.props if f is not None else {}
+            out.append(FigureInfo(handle=float(h), title=str(t), number=int(float(h)),
+                                  docked=props.get("WindowStyle") == "docked",
+                                  visible=props.get("Visible", "on") != "off"))
+        return out
+
+    def _model(self):
+        return getattr(self.session.plots, "_gmodel", None)
+
+    def _model_figures(self) -> Dict[int, Any]:
+        m = self._model()
+        if m is None:
+            return {}
+        try:
+            m.sync_backend()
+        except Exception:  # noqa: BLE001 - a stale backend never breaks the panel
+            pass
+        return {int(f.id): f for f in m.figures()}
+
+    def list(self) -> List[FigureInfo]:
+        """Open figures in figure-number order (M13 G09)."""
+        return sorted(self.list_figures(), key=lambda i: i.number)
+
+    def docked(self) -> List[FigureInfo]:
+        """Figures shown in the Figures panel: ``WindowStyle`` is ``'docked'`` (MATLAB)."""
+        return [i for i in self.list() if i.docked]
+
+    def focused(self) -> Optional[int]:
+        """Number of the figure that has focus: the current figure (a new figure takes focus)."""
+        m = self._model()
+        if m is not None:
+            f = m.current_figure
+            if f is not None and f.alive:
+                return int(f.id)
+        figs = self.list()
+        return figs[-1].number if figs else None
+
+    def set_docked(self, handle: float, docked: bool = True) -> None:
+        """Dock or undock a figure (sets its ``WindowStyle``)."""
+        f = self._model_figures().get(int(float(handle)))
+        if f is None:
+            raise ValueError(f"FigureManager.set_docked: no open figure {handle:g}")
+        f.props["WindowStyle"] = "docked" if docked else "normal"
 
     def close(self, handle: Optional[float] = None) -> None:
         self.session.plots.close(handle)
@@ -569,6 +618,9 @@ class FigureManager:
         if not callable(focus_fn):
             raise NotImplementedError("FigureManager.focus: PlotSurface has no focus")
         focus_fn(handle)
+        f = self._model_figures().get(int(float(handle)))
+        if f is not None:  # focusing a figure makes it the current figure (gcf), as in MATLAB
+            self._model().current_figure = f
 
     def as_table(self) -> str:
         lines = [f"{'Handle':<10} Title"]
@@ -957,10 +1009,14 @@ class Workbench:
         ws_tree.pack(fill="both", expand=True)
 
         ttk.Label(fig_frame, text="Figures", font=("", 10, "bold")).pack(anchor="w")
-        fig_list = tk.Listbox(fig_frame, height=8)
-        fig_list.pack(fill="both", expand=True)
+        # Docked figures appear as image previews in this panel (M13 G09); undocked stay listed.
+        fig_nb = ttk.Notebook(fig_frame)
+        fig_nb.pack(fill="both", expand=True)
+        fig_list = tk.Listbox(fig_frame, height=4)
+        fig_list.pack(fill="x")
         fig_btns = ttk.Frame(fig_frame)
         fig_btns.pack(fill="x", pady=2)
+        _fig_photos: Dict[int, Any] = {}  # keep PhotoImage refs alive
 
         def _active_ed_text():
             if not ed_text_widgets:
@@ -1141,8 +1197,47 @@ class Workbench:
 
         def refresh_figs() -> None:
             fig_list.delete(0, "end")
-            for info in self.figures.list_figures():
-                fig_list.insert("end", f"{info.handle:g}  {info.title}")
+            for info in self.figures.list():
+                tag = "  [docked]" if info.docked else ""
+                focus = " *" if self.figures.focused() == info.number else ""
+                fig_list.insert("end", f"{info.number}  {info.title}{tag}{focus}")
+            # Rebuild docked-figure preview tabs (Agg → PNG → PhotoImage)
+            for tab in list(fig_nb.tabs()):
+                fig_nb.forget(tab)
+            _fig_photos.clear()
+            try:
+                from openmatlab.libs import figio
+                from PIL import Image, ImageTk
+                import io as _io
+                m = self.figures._model()
+            except Exception:
+                m = None
+                figio = None  # type: ignore
+            if m is not None and figio is not None:
+                for info in self.figures.docked():
+                    f = self.figures._model_figures().get(info.number)
+                    if f is None:
+                        continue
+                    try:
+                        import tempfile, os as _os
+                        fd, path = tempfile.mkstemp(suffix=".png")
+                        _os.close(fd)
+                        try:
+                            figio.render_to_file(m, f, path, "png", 72.0, background="white")
+                            im = Image.open(path).copy()
+                            im.thumbnail((280, 210))
+                            photo = ImageTk.PhotoImage(im)
+                        finally:
+                            try:
+                                _os.unlink(path)
+                            except OSError:
+                                pass
+                        _fig_photos[info.number] = photo
+                        page = ttk.Frame(fig_nb)
+                        ttk.Label(page, image=photo).pack(fill="both", expand=True)
+                        fig_nb.add(page, text=f"Fig {info.number}")
+                    except Exception:
+                        pass
 
         def path_go(_event=None) -> None:
             target = path_var.get().strip()

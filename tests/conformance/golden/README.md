@@ -8,3 +8,9 @@ Rules (see `docs/QA.md`):
 - Do **not** paste proprietary MATLAB outputs obtained via RE or license misuse
 - Optional Octave cross-check notes belong in the test docstring, not as
   silent pass criteria until tolerances are defined
+
+## snapshots/ (M13 G10, Epic #774)
+
+Own PNG renders of ≥ 40 named scenes, produced by `openmatlab.qa.snapshots.write_goldens()`.
+Compared with CIE76 ΔE (≤ 1 % of pixels with ΔE > 10) or SSIM ≥ 0.98. Backend Agg,
+DejaVu Sans, DPI 100. Never MathWorks screenshots.
