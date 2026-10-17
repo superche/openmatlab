@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.needs_numpy]
 def test_paren_slice_and_grow_and_multi_assign():
     s = Session.create_default()
     ReplSession(s).run_line("c = {1, 2, 3}; d = c(1:2);")
-    assert s.workspace.get("d").shape == (2, 1)
+    assert s.workspace.get("d").shape == (1, 2)  # MATLAB: row cell paren-slice stays 1xN (#766, Shaw)
     s = Session.create_default()
     ReplSession(s).run_line("c = {1, 2}; c(4) = {9};")
     assert s.workspace.get("c").shape == (1, 4)

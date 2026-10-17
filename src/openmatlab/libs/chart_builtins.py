@@ -709,7 +709,7 @@ def _colormap(ev, args, nargout):
     if rest:
         v = rest[0]
         if _is_text(v):
-            name, size = v.text.strip().lower(), 64
+            name, size = v.text.strip().lower(), 256
             call = re.fullmatch(r"(\w+)\s*\(\s*(\d+)\s*\)", name)  # the 'bone(16)' expression form
             if call:
                 name, size = call.group(1), int(call.group(2))
@@ -724,9 +724,11 @@ def _colormap(ev, args, nargout):
                 raise _err("Colormap must be an m-by-3 array of values in the range [0, 1].", "MATLAB:hg:ColorMapOutOfRange")
         f.props["Colormap"] = cm.tolist()
         gb._render(m, m.gca() if getattr(f, "current_axes", None) is None else f.current_axes)
-        return ()
+        if nargout == 0:
+            return ()
+        return (NDArrayValue(np.asarray(cm, float)),)  # map = colormap(...) returns the map (MATLAB)
     cm = f.props.get("Colormap")
-    return (NDArrayValue(np.asarray(cm, float) if cm is not None else _parula(64)),)
+    return (NDArrayValue(np.asarray(cm, float) if cm is not None else _parula(256)),)
 
 
 def _cmap(name, n):
@@ -781,14 +783,14 @@ CMAPS = ("parula", "jet", "gray", "hot", "cool", "spring", "summer", "autumn", "
 
 def _cmap_fn(name):
     def f(ev, args, nargout):
-        n = int(_vec(args[0], name)[0]) if args else 64
+        n = int(_vec(args[0], name)[0]) if args else 256
         n = max(n, 0)
         return (NDArrayValue(np.asarray(_cmap(name, n), float).reshape(n, 3)),)
     return f
 
 
 def _parula_fn(ev, args, nargout):
-    n = int(_vec(args[0], "parula")[0]) if args else 64
+    n = int(_vec(args[0], "parula")[0]) if args else 256
     return (NDArrayValue(_parula(max(n, 0)).reshape(max(n, 0), 3)),)
 
 

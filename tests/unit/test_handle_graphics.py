@@ -88,8 +88,12 @@ def test_saveas_png_and_unsupported_fig(tmp_path):
     p = str(tmp_path / "out.png")
     _run(f"plot(1:3); saveas(gcf, '{p}');")
     assert os.path.getsize(p) > 0
-    with pytest.raises(Exception, match="not supported"):
-        _run(f"plot(1:3); saveas(gcf, '{tmp_path / 'x.fig'}');")
+    # OpenMATLAB-own .fig via saveas (Shaw 2026-10-17, #979)
+    figp = tmp_path / "x.fig"
+    _run(f"plot(1:3); saveas(gcf, '{figp}');")
+    assert figp.is_file() and figp.stat().st_size > 0
+    with pytest.raises(Exception, match="unsupported format"):
+        _run(f"plot(1:3); saveas(gcf, '{tmp_path / 'x.xyz'}');")
 
 
 def test_statement_calls_do_not_set_ans_and_delete_file_still_works(tmp_path):

@@ -331,7 +331,7 @@ def _get_prop(m, o: GObj, name: str):
             if k == f"{ax}Tick":
                 return gb._to_value(m, o, k, tick_values(o, ax))
             if k == f"{ax}TickLabel":
-                return gb._row_cells(tick_labels(o, ax))
+                return gb._col_cells(tick_labels(o, ax))  # Nx1 (MATLAB, Shaw #977)
             if k in (f"{ax}Axis", f"{ax}Ruler"):
                 if ax == "Y" and o.props.get("_yyactive") is not None:
                     ids = [_ruler(m, o, "Y", "left").id, _ruler(m, o, "Y", "right").id]

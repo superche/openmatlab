@@ -66,7 +66,7 @@ def test_log_scales_and_documented_properties():
              "set(gcf, 'Units', 'normalized'); u = get(gcf, 'Units'); r = get(gca, 'YDir');")
     assert _t(s, "xs") == "log" and _v(s, "xt").tolist() == [[1, 10]] and _t(s, "xd") == "reverse"
     assert _t(s, "u") == "normalized" and _t(s, "r") == "normal"
-    assert s.workspace.get("xl").get(0, 1).text == "b"
+    assert s.workspace.get("xl").get(1, 0).text == "b"  # Nx1 (Shaw #977)
 
 
 def test_replace_plot_resets_axes_scale():
@@ -85,7 +85,8 @@ def test_colormaps_are_clean_room_tables():
     assert _v(s, "g").tolist() == [[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]]
     j = _v(s, "j")
     assert j.shape == (64, 3) and j.min() >= 0 and j.max() <= 1
-    assert _v(s, "m").shape == (64, 3) and _v(s, "c").tolist() == [[0, 10]]
+    # MATLAB default colormap length is 256 (Shaw 2026-10-17, #866)
+    assert _v(s, "m").shape == (256, 3) and _v(s, "c").tolist() == [[0, 10]]
 
 
 def test_axes_reparent_and_userdata():
