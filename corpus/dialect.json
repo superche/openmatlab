@@ -8,7 +8,9 @@
   "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values.",
   "narg-legacy-message": "MATLAB's legacy nargchk/nargoutchk return 'Not enough input arguments.' / 'Too many input arguments.' (identifiers MATLAB:nargchk:*), an empty matrix when valid (documented: https://www.mathworks.com/help/matlab/ref/nargchk.html); Octave returns lower-case messages, '' and Octave identifiers.",
   "condest-syntax": "MATLAB condest takes a square matrix and an optional block size t only (documented: https://www.mathworks.com/help/matlab/ref/condest.html); Octave also accepts function handles for A and its inverse.",
-  "movmad-method": "MATLAB movmad computes only the median absolute deviation and has no 'method' option (documented name-value arguments: Endpoints, SamplePoints, DataVariables, ReplaceValues; https://www.mathworks.com/help/matlab/ref/movmad.html); Octave accepts 'method','mean'|'median'."
+  "movmad-method": "MATLAB movmad computes only the median absolute deviation and has no 'method' option (documented name-value arguments: Endpoints, SamplePoints, DataVariables, ReplaceValues; https://www.mathworks.com/help/matlab/ref/movmad.html); Octave accepts 'method','mean'|'median'.",
+  "strsplit-positional-collapse": "MATLAB strsplit takes the collapse flag only as the 'CollapseDelimiters' name-value argument (documented syntaxes: strsplit(str), strsplit(str,delimiter), strsplit(___,Name,Value); https://www.mathworks.com/help/matlab/ref/strsplit.html); Octave also accepts it as a positional logical argument.",
+  "repmat-factor-forms": "MATLAB repmat repetition factors are integer scalars r1,...,rN or one integer row vector r (documented: https://www.mathworks.com/help/matlab/ref/repmat.html); Octave also accepts empty factors, mixed scalar/vector factors and matrix factors, which MATLAB rejects."
  },
  "exclusions": [
   {
@@ -515,6 +517,136 @@
    "id": "octave/statistics/movmad#29",
    "sha256": "01c3e06768f411028dac0f7996c9781d50fedfcb64d93bc41a5cb98fcce1de60",
    "reason": "movmad-method"
+  },
+  {
+   "id": "octave/strings/strsplit#3",
+   "sha256": "08db98735be1b10d76d9e46e99d39677e30978aa500a7865bb3a2f3f77ec8619",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#4",
+   "sha256": "08db98735be1b10d76d9e46e99d39677e30978aa500a7865bb3a2f3f77ec8619",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#5",
+   "sha256": "e4fb7ec1c97b81c5c90142a219e574898097b4c363f08290568d849eba1fc450",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#10",
+   "sha256": "52c109ae7aa344b16050cd849ca60358af63852d9764a1d9db9540551be80a28",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#11",
+   "sha256": "8ddf9cbcae565476e4ed8b5aaf7245f5c5ce9c24ae6e9c94f1c8ba3b1f268847",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#12",
+   "sha256": "7e8b7cb6bb157b5ad2ee629edcd5a1f8e36038056c288f38709081ccc8dd4101",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#13",
+   "sha256": "f4c105dc7f42d40196f738cdeabd1f65f5c80b5be384763a456c641c67a5210a",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#14",
+   "sha256": "5362efe6a4be1aaa9984c998828c3eed5d5c6572063a85118f793c6778fd6131",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#18",
+   "sha256": "719e12e0adea7d6b7f5b7c5482ec3642f16827153fc20db6b98e2f8554852245",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#20",
+   "sha256": "11b5b2eb49f4a96c818268ab2f75f2c2f6d509909b2c520b355252c8b414752e",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#21",
+   "sha256": "1145b977e84027a437f55ca7cb54c7f4db69539cf0ab8ad97e463b8ab7ffa139",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#22",
+   "sha256": "888d0f1484d01c8dcb2b372b1e5a0dc4278b34b04da05b6a26456e5cafef4df9",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#23",
+   "sha256": "adfcbd91224df671ef36d08534b98bc241ca756e2164287602c42d858070ec10",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#27",
+   "sha256": "e764d99c5c05c9daec85c5b299f6d0ddd11ce6c155afff19f3502d5484dd22dc",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/strings/strsplit#30",
+   "sha256": "68b4b7242906ad7c76e41ad008638e716e907f4211d031b532feb8c39b982afd",
+   "reason": "strsplit-positional-collapse"
+  },
+  {
+   "id": "octave/general/repmat#1",
+   "sha256": "df136c5c8da5212b92e0ba4d22dddbdb6f8fb9f8bb476ba6b1579d560cf77cb9",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#2",
+   "sha256": "c62c4552b94f3b25d6bce5d9440dd79f13015c7dc7371bb59f51f72e41c0d316",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#3",
+   "sha256": "6d33b2d1b0023ee96123096103d7e45d0b2630ad2f9cc813b342086bbba19b8a",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#4",
+   "sha256": "b7ee008ee006ea37e9894551492e53d817ddf69196167e58b09350ecc22b8c60",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#5",
+   "sha256": "543f25ee752e9981b616a8b05b4121639529949f4d7c9673819c6596dad1b75b",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#6",
+   "sha256": "f525ceee867d9817a2fed77ef64fddf82e547cda509ae3c76d087fb02e1fd66d",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#7",
+   "sha256": "206c2e4c4624da2555e474b6502c4d10be96cb2cbfd33ecf238cfcd8837d71a0",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#8",
+   "sha256": "b15c748ec61ab8252913bbedfffa3d69d4e816eaed3f0c6d3e2674ee28b1194d",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#9",
+   "sha256": "1fa05e5a9794068e23289f1a97dd65580750e31e8d4270f264d23c7f114d83f0",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#10",
+   "sha256": "21ffe15eb06a69b7afe0aa7929416eef4fe932b499a138a4821aad23167efb92",
+   "reason": "repmat-factor-forms"
+  },
+  {
+   "id": "octave/general/repmat#11",
+   "sha256": "3e776501d3e129fc151db1b7af8951f90c6a2f29339e5d098ab1dab82967aa5e",
+   "reason": "repmat-factor-forms"
   }
  ]
 }

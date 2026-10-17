@@ -105,7 +105,12 @@ def _strsplit(args, *, nargout=1):
     s = _text(args[0], "strsplit", "first input")
     rest = list(args[1:])
     delims = None
-    if rest and not (_is_text(rest[0]) and rest[0].text.lower() in ("collapsedelimiters", "delimitertype") and len(rest) % 2 == 0):
+    def _param(v):  # inputParser / validatestring: case-insensitive, unambiguous prefixes
+        t = v.text.lower() if _is_text(v) and len(v.rows) <= 1 else ""
+        hits = [n for n in ("collapsedelimiters", "delimitertype") if t and n.startswith(t)]
+        return hits[0] if len(hits) == 1 else None
+
+    if rest and not (_param(rest[0]) and len(rest) % 2 == 0):
         d = rest.pop(0)
         delims = _cellstrs(d, "strsplit") if _is_cell(d) else [_text(d, "strsplit", "delimiter")]
     collapse, regex = True, False
@@ -113,13 +118,17 @@ def _strsplit(args, *, nargout=1):
         if len(rest) < 2:
             raise _err("strsplit: parameter name/value pairs must come in pairs.", "MATLAB:strsplit:ParamValuePairs")
         k, v = rest.pop(0), rest.pop(0)
-        key = _text(k, "strsplit").lower()
+        key = _param(k)
         if key == "collapsedelimiters":
             collapse = bool(_scalar(v, "strsplit"))
         elif key == "delimitertype":
-            regex = _text(v, "strsplit").lower() == "regularexpression"
+            t = _text(v, "strsplit").lower()
+            hits = [n for n in ("regularexpression", "simple") if t and n.startswith(t)]
+            if len(hits) != 1:
+                raise _err(f"strsplit: DelimiterType must be 'RegularExpression' or 'Simple'.", "MATLAB:strsplit:InvalidDelimiterType")
+            regex = hits[0] == "regularexpression"
         else:
-            raise _err(f"strsplit: unknown parameter '{k.text}'.", "MATLAB:strsplit:UnknownParameter")
+            raise _err(f"strsplit: unknown parameter '{_text(k, 'strsplit')}'.", "MATLAB:strsplit:UnknownParameter")
     if delims is None:
         pats = [r"\s"]
     else:
