@@ -6,7 +6,8 @@
   "var-dim-past-ndims": "MATLAB var returns an array of zeros the same size as A when dim > ndims(A) (documented: https://www.mathworks.com/help/matlab/ref/double.var.html, dim argument); Octave returns NaN for non-finite elements.",
   "octave-identifier": "The block asserts an Octave-namespaced error identifier ('Octave:...'); MATLAB functions raise MATLAB-namespaced identifiers (component:mnemonic, https://www.mathworks.com/help/matlab/ref/mexception.html), so the assertion cannot hold in MATLAB.",
   "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values.",
-  "narg-legacy-message": "MATLAB's legacy nargchk/nargoutchk return 'Not enough input arguments.' / 'Too many input arguments.' (identifiers MATLAB:nargchk:*), an empty matrix when valid (documented: https://www.mathworks.com/help/matlab/ref/nargchk.html); Octave returns lower-case messages, '' and Octave identifiers."
+  "narg-legacy-message": "MATLAB's legacy nargchk/nargoutchk return 'Not enough input arguments.' / 'Too many input arguments.' (identifiers MATLAB:nargchk:*), an empty matrix when valid (documented: https://www.mathworks.com/help/matlab/ref/nargchk.html); Octave returns lower-case messages, '' and Octave identifiers.",
+  "condest-syntax": "MATLAB condest takes a square matrix and an optional block size t only (documented: https://www.mathworks.com/help/matlab/ref/condest.html); Octave also accepts function handles for A and its inverse."
  },
  "exclusions": [
   {
@@ -418,6 +419,21 @@
    "id": "octave/miscellaneous/nargoutchk#9",
    "sha256": "1b5bea5fb8a52662b7b8aa1284dda5d804309bc67d3244fdc64ab773449f089a",
    "reason": "narg-legacy-message"
+  },
+  {
+   "id": "octave/linear-algebra/condest#3",
+   "sha256": "7d3d989667593781021c3bfda650ff68bde6d8eaf336e25163294901458af4ad",
+   "reason": "condest-syntax"
+  },
+  {
+   "id": "octave/linear-algebra/condest#4",
+   "sha256": "c770f5d7e1b44878bafdeb4adce34d01349b9ad2aeb194082f93aa244298e024",
+   "reason": "condest-syntax"
+  },
+  {
+   "id": "octave/linear-algebra/condest#5",
+   "sha256": "f8bcf9816c0b7341a7042ccb30116d01bc41c9b266c8bb2f71c3801236a6e1ee",
+   "reason": "condest-syntax"
   }
  ]
 }

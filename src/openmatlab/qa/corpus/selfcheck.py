@@ -119,7 +119,7 @@ def parse_blocks(src: str) -> Parsed:
     return Parsed(blocks, funcs, skipped)
 
 
-_END = re.compile(r"\b(endif|endwhile|endfor|endfunction|endswitch|end_try_catch|end_unwind_protect|endparfor)\b")
+_END = re.compile(r"\b(endif|endwhile|endfor|endfunction|endswitch|end_try_catch|endparfor)\b")
 _OPEQ = re.compile(r"^(\s*)([A-Za-z_][\w.]*(?:\([^=]*\))?)\s*([-+*/])=(?!=)\s*(.+?)\s*(;?)\s*$")
 _ESC = {"n": "\n", "t": "\t", "\\": "\\", '"': '"', "'": "'", "r": "\r", "a": "\a", "0": "\0"}
 
@@ -214,8 +214,38 @@ def _line(line: str) -> str:
     m = _OPEQ.match(s)
     if m and m.group(4):
         s = f"{m.group(1)}{m.group(2)} = {m.group(2)} {m.group(3)} ({m.group(4)}){m.group(5)}"
+    s = _chain_assign(s)
     s = re.sub(r"^(\s*)unwind_protect\s*$", r"\1", s)
+    s = re.sub(r"^(\s*)end_unwind_protect\b", r"\1", s)  # the opening keyword is dropped, so is its end
     return s
+
+
+_CHAIN = re.compile(r"^(\s*)((?:[A-Za-z_]\w*\s*=(?!=)\s*){2,})(.*)$")
+
+
+def _chain_assign(s: str) -> str:
+    """Octave ``a = b = expr;`` -> ``b = expr; a = b;`` (the value is computed once)."""
+    m = _CHAIN.match(s)
+    if not m:
+        return s
+    names = [n.strip() for n in m.group(2).split("=") if n.strip()]
+    rest, depth, q = m.group(3), 0, None
+    for i, c in enumerate(rest):  # the expression ends at the first top-level ';'
+        if q:
+            q = None if c == q else q
+        elif c == "'" and not (i and (rest[i - 1].isalnum() or rest[i - 1] in ")]}_.'")):
+            q = c
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == ";" and depth == 0:
+            expr, tail = rest[:i], rest[i:]
+            break
+    else:
+        expr, tail = rest, ";"
+    stmts = [f"{names[-1]} = {expr.strip()};"] + [f"{a} = {b};" for a, b in zip(names[-2::-1], names[:0:-1])]
+    return m.group(1) + " ".join(stmts) + tail[1:]
 
 
 def _scan_brackets(line: str, stack: list) -> None:

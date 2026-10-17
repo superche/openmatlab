@@ -118,3 +118,13 @@ def test_committed_dialect_exclusions_carry_documented_reasons():
     for x in doc["exclusions"]:
         assert set(x) == {"id", "sha256", "reason"} and len(x["sha256"]) == 64
         assert "mathworks.com/help" in doc["reasons"][x["reason"]]
+
+
+def test_octave_chained_assignment_and_unwind_protect_normalise():
+    from openmatlab.qa.corpus.selfcheck import octave_to_matlab
+
+    assert octave_to_matlab("a = b = zeros (2);") == "b = zeros (2); a = b;"
+    assert octave_to_matlab("x = y = 1;  y = y + 2;") == "y = 1; x = y;  y = y + 2;"
+    assert octave_to_matlab("t = a == b;") == "t = a == b;"
+    got = octave_to_matlab("unwind_protect\n  x = 1;\nunwind_protect_cleanup\n  y = 2;\nend_unwind_protect")
+    assert "end" not in got.split() and "x = 1;" in got and "y = 2;" in got
