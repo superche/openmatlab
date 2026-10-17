@@ -79,3 +79,27 @@ def test_datevec():
     np.testing.assert_allclose(ev("r = datevec('06/01/2015 3:07:12.102 PM', 'mm/dd/yyyy HH:MM:SS.FFF PM');"),
                                [[2015, 6, 1, 15, 7, 12.102]])
     np.testing.assert_allclose(ev("[~, ~, r] = datevec([1 2; 3 4]);"), [[1, 2], [3, 4]])
+
+
+def test_batch3_misc():
+    assert bool(ev("r = isuniform(1:5);").item()) is True
+    assert bool(ev("r = isuniform([1 2 4]);").item()) is False
+    np.testing.assert_allclose(ev("r = vecnorm([3 4; 0 0]);"), [[3, 4]])
+    np.testing.assert_allclose(ev("r = vecnorm([3 4; 0 0], 2, 2);"), [[5], [0]])
+    np.testing.assert_array_equal(ev("r = sinpi([0 0.5 1 1.5]);"), [[0, 1, 0, -1]])
+    np.testing.assert_array_equal(ev("r = cospi([0 0.5 1 1.5]);"), [[1, 0, -1, 0]])
+    np.testing.assert_allclose(ev("r = polyarea([0 1 1 0], [0 0 1 1]);"), [[1]])
+    assert ev("r = pagetranspose(ones(2, 3, 4));").shape == (3, 2, 4)
+    assert ev("r = swapbytes(uint16(1));").item() == 256
+    np.testing.assert_allclose(ev("r = rectint([0 0 1 1], [0.5 0.5 1 1]);"), [[0.25]])
+    np.testing.assert_allclose(ev("r = subspace([1; 0], [0; 1]);"), [[np.pi / 2]])
+    np.testing.assert_allclose(ev("r = uniquetol([1 1+1e-14 2]);"), [[1, 2]])
+    np.testing.assert_array_equal(ev("r = ismembertol([1 2 3], [1+1e-14 3]);"), [[True, False, True]])
+    np.testing.assert_allclose(ev("r = movmad([1 2 4 8], 3);"), [[0.5, 1, 2, 2]])
+
+
+def test_mode_var_outputs():
+    np.testing.assert_allclose(ev("[m, f, c] = mode([1 2 2 3 3]); r = c{1};"), [[2], [3]])
+    np.testing.assert_allclose(ev("[v, r] = var([1 2 3 4]);"), [[2.5]])
+    np.testing.assert_allclose(ev("r = var([1 2; 3 4], 0, [1 2]);"), [[np.var([1, 2, 3, 4], ddof=1)]])
+    assert ev("r = median(single([1 2 3]));").dtype == np.float32
