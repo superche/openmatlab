@@ -409,7 +409,9 @@ def _complex(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
     if np.iscomplexobj(a) or np.iscomplexobj(b):
         raise BuiltinError("complex: input arguments must be real")
     try:
-        out = a + 1j * b
+        ra, rb = np.broadcast_arrays(np.asarray(a, dtype=float), np.asarray(b, dtype=float))
+        out = np.empty(ra.shape, dtype=np.complex128)
+        out.real, out.imag = ra, rb  # keeps signed zeros (a + 1j*b would not)
     except ValueError:
         raise BuiltinError("complex: input dimensions must agree") from None
     out = out.reshape(1, 1) if out.ndim == 0 else out
@@ -1417,3 +1419,4 @@ __import__("openmatlab.libs.t2_builtins", fromlist=["register"]).register(BUILTI
 __import__("openmatlab.libs.incgamma_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.gallery_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.stats_t2", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
+__import__("openmatlab.libs.trig_integrals", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down

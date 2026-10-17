@@ -428,7 +428,8 @@ class Evaluator:
                 if _sp.is_sparse(v):  # -S stays sparse (#451), natively (#516)
                     return _sp.SparseValue(v.store.neg())
                 z = self.numerics.from_scalar(0.0)
-                return self.numerics.sub(z, v)
+                r = self.numerics.sub(z, v)
+                return _negate_zeros(r, v)
             if expr.op == "~":
                 from openmatlab.numerics import sparse as _sp
 
@@ -2594,3 +2595,16 @@ def _fast_scalar_binop(op, a, b):
     if type(r) is bool:
         return NDArrayValue(_np_fast.array([[r]], dtype=_np_fast.bool_))
     return NDArrayValue(_np_fast.array([[r]], dtype=_np_fast.float64))
+
+
+def _negate_zeros(r, v):
+    """``-x`` for a floating x is exact negation, so ``-0`` is negative zero (``0 - x`` would give +0)."""
+    from openmatlab.numerics.ndarray_value import NDArrayValue as _ND
+
+    if type(r) is not _ND or type(v) is not _ND:
+        return r
+    vb = _np.asarray(v.backend_buffer())
+    rb = _np.asarray(r.backend_buffer())
+    if vb.dtype.kind not in "fc" or rb.dtype != vb.dtype or rb.shape != vb.shape or not _np.any(vb == 0):
+        return r
+    return _ND(_np.negative(vb))
