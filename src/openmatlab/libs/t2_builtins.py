@@ -117,6 +117,7 @@ def _tri_pred(fn, test):
 
 def _rescale(args, *, nargout=1):
     _need(args, 1, "rescale")
+    single = args[0].matlab_class() == "single"
     a = _num(args[0], "rescale").astype(float)
     pos = [v for v in args[1:] if not _is_text(v)]
     l, u = (float(_num(pos[0], "rescale").reshape(-1)[0]), float(_num(pos[1], "rescale").reshape(-1)[0])) if len(pos) >= 2 else (0.0, 1.0)
@@ -130,7 +131,7 @@ def _rescale(args, *, nargout=1):
         else:
             i += 1
     if a.size == 0:
-        return (_out(a),)
+        return (_out(a.astype(np.float32) if single else a),)
     lo = float(opts["inputmin"].reshape(-1)[0]) if "inputmin" in opts else np.min(a)
     hi = float(opts["inputmax"].reshape(-1)[0]) if "inputmax" in opts else np.max(a)
     x = np.clip(a, lo, hi)
@@ -139,64 +140,73 @@ def _rescale(args, *, nargout=1):
             r = np.full(a.shape, l)
         else:
             r = l + (x - lo) / (hi - lo) * (u - l)
-    return (_out(r),)
+    return (_out(r.astype(np.float32) if single else r),)
 
 
-def _dim_of(a, args, k):
+def _dims(a, args, k):
+    """Reduction dims (0-based tuple) from DIM / VECDIM / 'all' at args[k], default first non-singleton."""
+    if len(args) > k and _is_text(args[k]) and args[k].text.lower() == "all":
+        return tuple(range(max(a.ndim, 2)))
     if len(args) > k and not _is_text(args[k]):
         d = _num(args[k], "dim").reshape(-1)
-        if d.size == 1:
-            return int(d[0]) - 1, False
-    if len(args) > k and _is_text(args[k]) and args[k].text.lower() == "all":
-        return None, True
+        if d.size and np.all(d >= 1) and np.all(d == np.floor(d)):
+            return tuple(sorted(set(int(x) - 1 for x in d)))
+        raise _err("Dimension argument must be a positive integer scalar or a vector of unique positive integers.",
+                   "MATLAB:getdimarg:invalidDim")
     nz = [i for i, s in enumerate(a.shape) if s != 1]
-    return (nz[0] if nz else 0), False
+    return (nz[0] if nz else 0,)
 
 
-def _reduce(a, dim, allflag, f):
-    if allflag:
-        return np.asarray(f(a.reshape(-1, order="F"), 0)).reshape(1, 1)
-    if dim >= a.ndim:
-        return f(a[..., None], a.ndim)[..., 0] if False else f(np.expand_dims(a, -1), a.ndim)
-    return np.expand_dims(f(a, dim), dim)
+def _masked_mean(d, excl, dims):
+    nd = max(d.ndim, max(dims) + 1, 2)
+    d = d.reshape(d.shape + (1,) * (nd - d.ndim))
+    excl = excl.reshape(d.shape)
+    keep = np.where(excl, 0.0, 1.0)
+    vals = np.where(excl, 0.0, d)
+    n = keep.sum(axis=dims, keepdims=True)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return vals.sum(axis=dims, keepdims=True) / n
 
 
-def _strip_nan(args):
-    flag = "includenan"
-    rest = []
+def _flags(args):
+    fl, rest = set(), []
     for v in args:
-        if _is_text(v) and v.text.lower() in ("omitnan", "includenan", "omitmissing", "includemissing"):
-            flag = "omitnan" if v.text.lower().startswith("omit") else "includenan"
+        t = v.text.lower() if _is_text(v) else ""
+        if t in ("omitnan", "omitmissing", "includenan", "includemissing", "omitzero", "includezero"):
+            fl.add(t.replace("missing", "nan"))
         else:
             rest.append(v)
-    return rest, flag == "omitnan"
+    return rest, fl
 
 
 def _rms(args, *, nargout=1):
-    args, omit = _strip_nan(args)
+    args, fl = _flags(args)
     _need(args, 1, "rms")
     a = _num(args[0], "rms")
-    dim, allf = _dim_of(a, args, 1)
-    m = np.nanmean if omit else np.mean
-    if a.size == 0 and not allf and dim is not None and a.ndim == 2 and a.shape == (0, 0):
+    if a.shape == (0, 0) and len(args) == 1:
         return (_out(np.array([[np.nan]])),)
-    r = _reduce(np.abs(a) ** 2, dim, allf, lambda x, d: m(x, axis=d))
-    return (_out(np.sqrt(r)),)
+    sq = np.abs(a) ** 2
+    excl = np.isnan(sq) if "omitnan" in fl else np.zeros(sq.shape, bool)
+    return (_out(np.sqrt(_masked_mean(sq, excl, _dims(a, args, 1)))),)
 
 
-def _pair_metric(fn, f):
+def _pair_metric(fn, f, post=lambda r: r):
     def g(args, *, nargout=1):
-        args, omit = _strip_nan(args)
+        args, fl = _flags(args)
         _need(args, 2, fn)
         a, b = _num(args[0], fn), _num(args[1], fn)
         try:
-            d = f(a, b)
+            a, b = np.broadcast_arrays(a, b)
         except ValueError:
             raise _err("Arrays have incompatible sizes for this operation.", "MATLAB:sizeDimensionsMustMatch")
-        dim, allf = _dim_of(d, args, 2)
-        m = np.nanmean if omit else np.mean
-        return (_out(g.post(_reduce(d, dim, allf, lambda x, k: m(x, axis=k)))),)
-    g.post = (lambda r: np.sqrt(r)) if fn == "rmse" else (lambda r: r)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            d = f(a, b)
+        excl = np.zeros(d.shape, bool)
+        if "omitnan" in fl:
+            excl |= np.isnan(a) | np.isnan(b)
+        if "omitzero" in fl:
+            excl |= b == 0
+        return (_out(post(_masked_mean(d, excl, _dims(d, args, 2)))),)
     return g
 
 
@@ -390,8 +400,8 @@ def register(builtins: Dict[str, Callable]) -> None:
         "istril": _tri_pred("istril", lambda lo, up: up == 0),
         "istriu": _tri_pred("istriu", lambda lo, up: lo == 0),
         "rescale": _rescale, "rms": _rms,
-        "rmse": _pair_metric("rmse", lambda a, b: np.abs(a - b) ** 2),
-        "mape": _pair_metric("mape", lambda a, b: 100 * np.abs((a - b) / a)),
+        "rmse": _pair_metric("rmse", lambda a, b: np.abs(a - b) ** 2, np.sqrt),
+        "mape": _pair_metric("mape", lambda a, b: 100 * np.abs((b - a) / b)),
         "cart2pol": _cart2pol, "pol2cart": _pol2cart, "cart2sph": _cart2sph, "sph2cart": _sph2cart,
         "bitcmp": _bitcmp, "bitset": _bitset, "eomday": _eomday,
         "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
