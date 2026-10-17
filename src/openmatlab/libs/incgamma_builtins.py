@@ -95,8 +95,43 @@ def _gcf(a, x):
     return h
 
 
+def _log1pmx(t):
+    """log(1 + t) - t, accurate for small t."""
+    if abs(t) > 0.25:
+        return math.log1p(t) - t
+    s, term, k = 0.0, t, 1
+    while True:  # sum_{k>=2} (-1)^(k+1) t^k / k
+        term *= -t
+        k += 1
+        s += term / k
+        if abs(term / k) <= EPS * abs(s) or k > 400:
+            return s
+
+
+def _stirling_corr(a):
+    """log(Gamma(a + 1)) - (a + 1/2) log(a) + a - log(2 pi)/2 (DLMF 5.11.1)."""
+    r, p = 0.0, 1.0 / a
+    for c in (1 / 12, -1 / 360, 1 / 1260, -1 / 1680, 1 / 1188, -691 / 360360, 1 / 156, -3617 / 122400):
+        r += c * p
+        p /= a * a
+    return r
+
+
+def _pref(a, x):
+    """x^a exp(-x) / Gamma(a + 1) for x > 0."""
+    if a < 30:
+        if x < 700:
+            v = math.pow(x, a) * math.exp(-x) / math.gamma(a + 1.0)
+            if v != 0 and math.isfinite(v):
+                return v
+        return math.exp(a * math.log(x) - x - math.lgamma(a + 1.0))
+    return math.exp(a * _log1pmx((x - a) / a) - _stirling_corr(a)) / math.sqrt(2 * math.pi * a)
+
+
 def _logpref(a, x):
     """log(x^a exp(-x) / Gamma(a + 1))."""
+    if a >= 30:
+        return a * _log1pmx((x - a) / a) - _stirling_corr(a) - 0.5 * math.log(2 * math.pi * a)
     return a * math.log(x) - x - math.lgamma(a + 1.0)
 
 
@@ -107,9 +142,13 @@ def gammainc1(x, a, tail="lower"):
         raise _err("gammainc: A must be nonnegative.", "MATLAB:gammainc:NegativeArg")
     scaled = tail.startswith("scaled")
     upper = tail.endswith("upper")
+    if math.isinf(a):
+        if math.isinf(x):
+            return math.nan
+        return (1.0 if not upper else math.inf) if scaled else (1.0 if upper else 0.0)
     if x == 0:
         if scaled:
-            return 1.0 if not upper else (math.inf if a > 0 else math.inf)
+            return 1.0 if not upper else (math.inf if a > 0 else 0.0)
         return 1.0 if upper and a > 0 else (0.0 if a > 0 else (0.0 if upper else 1.0))
     if a == 0:
         if scaled:
@@ -119,12 +158,33 @@ def gammainc1(x, a, tail="lower"):
         if x > 0:
             return (0.0 if upper else 1.0) if not scaled else (0.0 if upper else math.inf)
         return math.nan
-    if x < 0:
-        lower_s = _gser(a, x)
-        if scaled:
-            return lower_s if not upper else _scaled_from(a, x, 1.0 - _lower_unscaled_neg(a, x, lower_s))
-        p = _lower_unscaled_neg(a, x, lower_s)
-        return 1.0 - p if upper else p
+    if a == 1:  # closed forms: P = 1 - exp(-x)
+        em1 = math.exp(x) - 1 if abs(x) >= 0.6931471805599453 else math.expm1(x)
+        return {"lower": 1 - math.exp(-x) if abs(x) >= 0.6931471805599453 else -math.expm1(-x),
+                "upper": math.exp(-x), "scaledlower": em1 / x, "scaledupper": 1 / x}[tail]
+    if x < 0:  # P = x^a / Gamma(a) * sum (-x)^n / (n! (a + n)): positive terms, no cancellation
+        t, term, tot, n = -x, 1.0, 1.0 / a, 0
+        while True:
+            n += 1
+            term *= t / n
+            inc = term / (a + n)
+            tot += inc
+            if inc <= EPS * tot or n > MAXIT:
+                break
+        mag = math.pow(t, a) / math.gamma(a) if a < 170 and t < 700 and math.pow(t, a) < 1e300 else \
+            math.exp(a * math.log(t) - math.lgamma(a))
+        xa = complex(-1.0) ** a * mag if a != math.floor(a) else (-1.0) ** int(a) * mag
+        p = xa * tot
+        if isinstance(p, complex) and p.imag == 0:
+            p = p.real
+        q = 1.0 - p
+        if not scaled:
+            return q if upper else p
+        inv = complex(x) ** (-a) * math.gamma(a + 1.0) * math.exp(x) if a != math.floor(a) else \
+            (math.gamma(a + 1.0) * math.exp(x) / math.pow(t, a) if a < 170 else
+             math.exp(x + math.lgamma(a + 1.0) - a * math.log(t))) * (-1.0) ** int(a)
+        r = (q if upper else p) * inv
+        return r.real if isinstance(r, complex) and abs(r.imag) <= EPS * abs(r) else r
     if x < a + 1.0:
         s = _gser(a, x)
         if scaled:
@@ -133,7 +193,7 @@ def gammainc1(x, a, tail="lower"):
             lp = _logpref(a, x)
             p = math.exp(lp) * s
             return (1.0 - p) * math.exp(-lp)
-        p = math.exp(_logpref(a, x)) * s
+        p = _pref(a, x) * s
         return 1.0 - p if upper else p
     h = _gcf(a, x)
     if scaled:
@@ -142,18 +202,8 @@ def gammainc1(x, a, tail="lower"):
         lp = _logpref(a, x)
         q = math.exp(lp) * a * h
         return (1.0 - q) * math.exp(-lp)
-    q = math.exp(_logpref(a, x)) * a * h
+    q = _pref(a, x) * a * h
     return q if upper else 1.0 - q
-
-
-def _lower_unscaled_neg(a, x, s):
-    pref = cmath.exp(a * cmath.log(complex(x)) - x - math.lgamma(a + 1.0))
-    v = pref * s
-    return v.real if abs(v.imag) <= EPS * max(1.0, abs(v)) else v
-
-
-def _scaled_from(a, x, q):
-    return q * cmath.exp(-(a * cmath.log(complex(x)) - x - math.lgamma(a + 1.0)))
 
 
 def _gammainc(args, *, nargout=1):
