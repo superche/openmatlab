@@ -25,6 +25,16 @@ OUTTYPES = ("default", "double", "native")
 NANFLAGS = {"includenan": False, "omitnan": True, "includemissing": False, "omitmissing": True}
 
 
+
+def _fsum(row: np.ndarray) -> float:
+    """Correctly rounded sum; NumPy's sum where fsum cannot (non-finite input or intermediate overflow)."""
+    if np.all(np.isfinite(row)):
+        try:
+            return math.fsum(row)
+        except OverflowError:
+            pass
+    return row.sum()
+
 def _parse(fn, args):
     a = args[0]
     from openmatlab.runtime.char_value import CharValue
@@ -152,7 +162,7 @@ def _mean(args, *, nargout=1):
         r = np.array(res, dtype=cls if not (np.dtype(cls).kind in "iu" and any(isinstance(v, float) for v in res)) else np.float64)
     else:
         f = flat.astype(np.complex128 if np.iscomplexobj(flat) else np.float64)
-        with np.errstate(invalid="ignore", divide="ignore"):
+        with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
             if omit:
                 m = ~np.isnan(f)
                 cnt = m.sum(axis=1)
@@ -160,7 +170,7 @@ def _mean(args, *, nargout=1):
             elif not f.shape[1]:
                 r = np.full(f.shape[0], np.nan)
             elif not np.iscomplexobj(f) and f.shape[0] <= 4096:  # correctly rounded sums (MATLAB-accurate)
-                r = np.array([math.fsum(row) if np.all(np.isfinite(row)) else row.sum() for row in f]) / f.shape[1]
+                r = np.array([_fsum(row) for row in f]) / f.shape[1]
             else:
                 r = f.sum(axis=1) / f.shape[1]
         if np.dtype(cls).kind in "fc":
