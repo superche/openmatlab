@@ -1801,6 +1801,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.graphics_layout
+    kind: unit
+    title: Axes layout, yyaxis, subplot geometry and nice limits (Epic #770)
+    features: [libs.graphics.layout]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_epic770_layout.py
+    status: active
+    env: unit
+
   - id: tc.workbench_workflows
     kind: unit
     title: Workbench workflows (Epic #703)
