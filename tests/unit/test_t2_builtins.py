@@ -174,3 +174,18 @@ def test_continuation_after_name_is_not_command_syntax():
     s = ReplSession()
     s.run_line("x = 1;\nassert ...\n  (x == 1, 'msg');\nr = 2;")
     assert np.asarray(s.session.workspace.get("r").backend_buffer()).item() == 2
+
+
+def test_mean_median_options():
+    np.testing.assert_allclose(ev("r = mean(magic(4), [1 2]);"), [[8.5]])
+    assert ev("r = mean(uint8([1 2 4]), 'native');").dtype == np.uint8
+    assert ev("r = mean(uint8([1 2 4]), 'native');").item() == 2
+    assert ev("r = mean(int64([intmin('int64') intmax('int64')-1]));").item() == -1.0
+    assert ev("r = mean(single([1 2]), 'double');").dtype == np.float64
+    np.testing.assert_allclose(ev("r = mean([1 NaN 3], 'omitnan');"), [[2]])
+    np.testing.assert_allclose(ev("r = mean([1 1; 7 9], 'Weights', [1; 3]);"), [[5.5, 7]])
+    assert np.isnan(ev("r = mean([]);")).all()
+    assert ev("r = median(int8([1 2]));").dtype == np.int8
+    assert ev("r = median(uint8([253 255]));").item() == 254
+    np.testing.assert_allclose(ev("r = median([3 1 NaN 2], 'omitnan');"), [[2]])
+    np.testing.assert_allclose(ev("r = median(magic(3), [1 99]);"), [[4, 5, 6]])
