@@ -517,7 +517,9 @@ def _num2str(args, *, nargout=1):
         integer = b.dtype == np.bool_ or np.issubdtype(b.dtype, np.integer) or (
             not np.iscomplexobj(b) and np.all(np.isfinite(b) == np.isfinite(b)) and
             np.all((b == np.floor(b)) | ~np.isfinite(b)))
-        one = (lambda v: _int_text(v)) if integer else (lambda v: _g(v, max(5, _digits(b) + 4)))
+        big = integer and b.dtype.kind == "f" and np.any(np.abs(b[np.isfinite(b)]) >= 1e15)
+        one = ((lambda v: _g(v, 15)) if big else (lambda v: _int_text(v))) if integer else \
+            (lambda v: _g(v, max(5, _digits(b) + 4)))
     if b.size != 1 and not np.iscomplexobj(b) and (len(args) == 2 or not integer):
         return (CharValue(rows=_num2str_float_matrix(b, prec if len(args) == 2 else None)),)
     cells = [[one(v) for v in row] for row in b.tolist()]
@@ -567,8 +569,8 @@ def _int_text(v) -> str:
 
 def _g(v, prec: int) -> str:
     if isinstance(v, complex):
-        im = f"{abs(v.imag):.{prec}g}"
-        return f"{v.real:.{prec}g}{'-' if v.imag < 0 else '+'}{im}i"
+        im = _g(abs(v.imag), prec) if v.imag == v.imag else "NaN"
+        return f"{_g(v.real, prec)}{'-' if v.imag < 0 else '+'}{im}i"
     fv = float(v)
     if fv != fv:
         return "NaN"
