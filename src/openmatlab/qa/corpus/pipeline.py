@@ -7,7 +7,7 @@ entry (no corpus code is stored: id, tiers, category, key, a truncated message):
 * Rosetta script blocks are preprocessed (:mod:`.preprocess`); function blocks from the same
   page are staged next to them under their function names, so a page's helpers resolve.
 * Entries with a ``call`` (chebfun self-tests, matlab2tikz ACID scenes) run that driver.
-* Octave ``%!`` test files are parse-only here; their oracles are C-E5 (#765).
+* Octave ``%!`` test files: their ``%!assert``/``%!test`` blocks are the T2 tier (:mod:`.selfcheck`, C-E5 #765).
 """
 
 from __future__ import annotations
@@ -23,9 +23,11 @@ from typing import Dict, List, Optional
 from . import manifest as M
 from .classify import classify_features, features
 from .preprocess import prepare
+from . import selfcheck
 from .runner import DEFAULT_TIMEOUT, run_one
 
 MSG_CAP = 240
+SELF_CHECKING = ("selftest", "acid-scene")  # chebfun tests assert all(pass); matlab2tikz ACID scenes
 
 
 def _fn_name(code: str) -> str:
@@ -134,8 +136,19 @@ def jobs_for(m: M.Manifest, cache: Optional[Path] = None, ids: Optional[set] = N
 
 
 def run_corpus(m: Optional[M.Manifest] = None, *, ids: Optional[set] = None, timeout: float = DEFAULT_TIMEOUT,
-               jobs: Optional[int] = None) -> List[dict]:
+               jobs: Optional[int] = None, t2: bool = True) -> List[dict]:
     m = m or M.load()
     js = jobs_for(m, ids=ids)
+
+    def one(j: _Job) -> List[dict]:
+        rec = j.run(timeout)
+        if j.e.kind in SELF_CHECKING:  # the entry's own assertions: T2 = T1 (C-E5 #765)
+            rec["t2"] = rec.get("t1", "n/a")
+        if j.e.kind != "octave-tests" or not t2:
+            return [rec]
+        blocks = selfcheck.run_octave_file(j.e, j.cache, timeout)
+        rec["t2_blocks"] = f"{sum(b['t2'] == 'pass' for b in blocks)}/{len(blocks)}"
+        return [rec] + blocks
+
     with ThreadPoolExecutor(max_workers=jobs or max(1, os.cpu_count() or 2)) as ex:
-        return list(ex.map(lambda j: j.run(timeout), js))
+        return [r for rs in ex.map(one, js) for r in rs]
