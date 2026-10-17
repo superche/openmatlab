@@ -466,6 +466,7 @@ def _mode(args, *, nargout=1):
 
 
 def _var_core(a, w, ax, omit):
+    """(variance, mean) along ``ax``; ``w`` is 0, 1 or a weight vector."""
     a = _pad_axis(a, ax)
     if isinstance(w, np.ndarray):
         wv = w.reshape(-1)
@@ -474,12 +475,19 @@ def _var_core(a, w, ax, omit):
         shp = [1] * a.ndim
         shp[ax] = -1
         ww = wv.reshape(shp)
-        mu = np.sum(ww * a, axis=ax, keepdims=True) / np.sum(ww)
-        return np.sum(ww * np.abs(a - mu) ** 2, axis=ax, keepdims=True) / np.sum(ww)
+        if omit:
+            ww = np.where(np.isnan(a), 0.0, ww)
+            a0 = np.where(np.isnan(a), 0.0, a)
+        else:
+            ww, a0 = np.broadcast_to(ww, a.shape), a
+        with np.errstate(all="ignore"):
+            sw = np.sum(ww, axis=ax, keepdims=True)
+            mu = np.sum(ww * a0, axis=ax, keepdims=True) / sw
+            return np.sum(ww * np.abs(a0 - mu) ** 2, axis=ax, keepdims=True) / sw, mu
     if a.shape[ax] == 0:
         shp = list(a.shape)
         shp[ax] = 1
-        return np.full(shp, np.nan)
+        return np.full(shp, np.nan), np.full(shp, np.nan)
     with np.errstate(all="ignore"):
         if omit:
             import warnings
@@ -489,19 +497,21 @@ def _var_core(a, w, ax, omit):
                 n = np.sum(~np.isnan(a), axis=ax, keepdims=True)
                 mu = np.nanmean(a, axis=ax, keepdims=True)
                 ss = np.nansum(np.abs(a - mu) ** 2, axis=ax, keepdims=True)
+                ss = np.where(n == 0, np.nan, ss)
         else:
             n = a.shape[ax]
             mu = np.mean(a, axis=ax, keepdims=True)
             ss = np.sum(np.abs(a - mu) ** 2, axis=ax, keepdims=True)
         den = n - 1 if w == 0 else n
         den = np.where(np.asarray(n) == 1, 1, den)  # one sample: variance 0 (MATLAB)
-        return ss / den
+        return ss / den, mu
 
 
 def _varstd(fn, root):
     def f(args, *, nargout=1):
         if not args:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
+        single = args[0].matlab_class() == "single"
         a = _f(args[0], fn)
         flags = _flags(args)
         nums = _nums(args[1:])
@@ -516,14 +526,29 @@ def _varstd(fn, root):
                     raise _err(f"{fn}: W must be 0, 1, or a vector of weights.", "MATLAB:var:invalidWgts")
             else:
                 w = wb.astype(float)
-        if "all" in flags:
-            a, ax = a.reshape(-1, 1, order="F"), 0
+        shape_back = None
+        if "all" in flags or (len(nums) > 1 and _arr(nums[1], fn).size > 1):
+            dims = list(range(max(a.ndim, 2))) if "all" in flags else sorted({int(d) - 1 for d in _arr(nums[1], fn).reshape(-1)})
+            nd = max(a.ndim, max(dims) + 1)
+            a = a.reshape(a.shape + (1,) * (nd - a.ndim))
+            keep = [d for d in range(nd) if d not in dims]
+            shape_back = [1 if d in dims else a.shape[d] for d in range(nd)]
+            a = np.transpose(a, keep + dims).reshape([a.shape[d] for d in keep] + [-1], order="F")
+            ax = a.ndim - 1
+            if isinstance(w, np.ndarray) and w.size != a.shape[ax]:
+                raise _err("Weights must be non-negative and match the dimension length.", "MATLAB:var:invalidWgts")
         else:
             ax = int(_s(nums[1], fn)) - 1 if len(nums) > 1 else _first_dim(a)
-        if a.size == 0 and len(nums) < 2:
-            return (_out(np.array([[np.nan]])),)
-        v = _var_core(a, w, ax, "omitnan" in flags)
-        return (_out(np.sqrt(v) if root else v),)
+            if a.size == 0 and len(nums) < 2 and a.shape == (0, 0):
+                nan = np.array([[np.nan]], dtype=np.float32 if single else float)
+                return (_out(nan), _out(nan))[:max(1, nargout)]
+        v, mu = _var_core(a, w, ax, "omitnan" in flags)
+        if shape_back is not None:
+            v, mu = v.reshape(shape_back), mu.reshape(shape_back)
+        r = np.sqrt(v) if root else v
+        if single:
+            r, mu = r.astype(np.complex64 if np.iscomplexobj(r) else np.float32), mu.astype(np.complex64 if np.iscomplexobj(mu) else np.float32)
+        return (_out(r), _out(mu))[:max(1, nargout)]
     return f
 
 
