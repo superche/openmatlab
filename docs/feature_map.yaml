@@ -594,6 +594,14 @@ features:
     notes: "plot3/scatter3/surf/surfc/mesh/meshc/waterfall/surface/contour3/bar3/sphere/cylinder/ellipsoid, view/zlim/shading/light/lighting/material, imshow, daspect/pbaspect, xticks/yticks/xticklabels..., uistack, clabel; @intrinsic function handles (Epic #771, M13 G06; G05 5/6)"
     tests: [tests/unit/test_epic771_colour_3d.py]
 
+  - id: libs.graphics.layout
+    layer: libs
+    name: Axes layout (tiledlayout, nexttile, yyaxis, subplot geometry, nice limits, axis modes)
+    status: done
+    depends_on: [libs.graphics.handle_arrays]
+    notes: "tiledlayout (grid/flow/vertical/horizontal, TileSpacing/Padding), nexttile (tile, span, layout arg), yyaxis left/right with per-side limits, subplot Position (own approximate grid) with overlap replace and 'Position' form, nice auto limits (1/2/5 x 10^k, log decades), axis equal/image/square/normal/ij/xy properties, isgraphics(h,type) (Epic #770, M13 G03)"
+    tests: [tests/unit/test_epic770_layout.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows

@@ -193,6 +193,11 @@ class Model:
             if self.current_figure is o:
                 figs = self.figures()
                 self.current_figure = figs[-1] if figs else None
+        elif o.type == "tiledlayout":  # its tiles are figure children that point at it (#770)
+            for c in [c for c in o.parent.children if getattr(c, "layout", None) is o]:
+                self._delete(c, render=False)
+            if render:
+                self.render(o.parent)
         elif o.type == "axes":
             f = o.parent
             if getattr(f, "current_axes", None) is o:
@@ -218,10 +223,18 @@ class Model:
 
     def prepare_axes_for_plot(self, a: GObj) -> None:
         if a.props["NextPlot"] == "replace":
+            side = a.props.get("_yyactive")
+            if side is not None:  # yyaxis: replace clears only the active side (#770)
+                for c in [c for c in a.children if c.props.get("_yside", "left") == side]:
+                    self._delete(c, render=False)
+                a.props["YLimMode"] = "auto"
+                return
             self._reset_axes(a)
 
     def add_child(self, a: GObj, typ: str, props: Dict[str, Any]) -> GObj:
         o = GObj(self._new_id(), typ, a, props)
+        if a.props.get("_yyactive") is not None:
+            o.props["_yside"] = a.props["_yyactive"]
         self.objs[o.id] = o
         a.children.append(o)
         self.autoscale(a)
@@ -282,11 +295,28 @@ class Model:
         return rng(xs), rng(ys)
 
     def autoscale(self, a: GObj) -> None:
+        side = a.props.get("_yyactive")
+        if side is not None:  # yyaxis: each side scales to its own children (#770)
+            store = a.props["_yy"]
+            kids = a.children
+            for s in ("left", "right"):
+                st = store[s] if s != side else {"YLimMode": a.props["YLimMode"]}
+                if st["YLimMode"] == "auto":
+                    a.children = [c for c in kids if c.props.get("_yside", "left") == s]
+                    lim = nice_limits(self.data_extent(a)[1], a.props.get("YScale"))
+                    a.children = kids
+                    if s == side:
+                        a.props["YLim"] = lim
+                    else:
+                        st["YLim"] = lim
+            if a.props["XLimMode"] == "auto":
+                a.props["XLim"] = nice_limits(self.data_extent(a)[0], a.props.get("XScale"))
+            return
         xl, yl = self.data_extent(a)
         if a.props["XLimMode"] == "auto":
-            a.props["XLim"] = xl
+            a.props["XLim"] = nice_limits(xl, a.props.get("XScale"))
         if a.props["YLimMode"] == "auto":
-            a.props["YLim"] = yl
+            a.props["YLim"] = nice_limits(yl, a.props.get("YScale"))
 
     # ------------------------------------------------------------ rendering
     def render(self, fig: Optional[GObj]) -> None:
@@ -295,6 +325,28 @@ class Model:
             return
         be.render_figure(int(fig.id), lambda mfig: draw_figure(self, fig, mfig))
         fig.props["_rendered"] = True
+
+
+def nice_limits(lim, scale=None):
+    """Auto axis limits rounded out to a tick step of 1, 2 or 5 x 10^k with at most 10 intervals (#770).
+
+    Our own rule (documented as approximate): MATLAB's exact tick-picking is not specified. Non-finite
+    data keep the data range; log axes round out to whole decades.
+    """
+    lo, hi = float(lim[0]), float(lim[1])
+    if not (np.isfinite(lo) and np.isfinite(hi)) or hi <= lo:
+        return [lo, hi]
+    if scale == "log":  # whole decades around positive data
+        return [10.0 ** np.floor(np.log10(lo)), 10.0 ** np.ceil(np.log10(hi))] if lo > 0 else [lo, hi]
+    e = np.floor(np.log10(hi - lo)) - 1
+    for k in range(4):
+        for m in (1.0, 2.0, 5.0):
+            step = m * 10.0 ** (e + k)
+            a = np.floor(lo / step + 1e-9) * step
+            b = np.ceil(hi / step - 1e-9) * step
+            if round((b - a) / step) <= 10:
+                return [float(np.round(a, 12)) + 0.0, float(np.round(b, 12)) + 0.0]
+    return [lo, hi]
 
 
 RESET_ON_REPLACE = {"XScale", "YScale", "XDir", "YDir", "CLim", "CLimMode", "XTick", "YTick", "XTickLabel",
@@ -313,10 +365,14 @@ def draw_figure(model: Model, fig: GObj, mfig) -> None:
         if a.type != "axes" or not a.alive:
             continue
         pos = getattr(a, "position", None)
-        ax = mfig.add_subplot(*pos) if pos else mfig.add_subplot(1, 1, 1)
+        ax = mfig.add_subplot(*pos) if pos else (mfig.add_axes(a.props["_rect"]) if a.props.get("_rect")
+                                                 else mfig.add_subplot(1, 1, 1))
+        base = ax
+        twin = base.twinx() if a.props.get("_yyactive") is not None else None
         for c in a.children:
             if not c.alive:
                 continue
+            ax = twin if twin is not None and c.props.get("_yside") == "right" else base
             p = c.props
             label = p.get("DisplayName") or None
             try:
@@ -342,12 +398,18 @@ def draw_figure(model: Model, fig: GObj, mfig) -> None:
                         pass
             except Exception:  # best-effort rendering never fails the script (#772)
                 pass
+        ax = base
+        if twin is not None:
+            side = a.props["_yyactive"]
+            right = a.props["YLim"] if side == "right" else a.props["_yy"]["right"]["YLim"]
+            left = a.props["YLim"] if side == "left" else a.props["_yy"]["left"]["YLim"]
+            twin.set_ylim(*right)
         ax.set_title(a.props["Title"].props["String"])
         ax.set_xlabel(a.props["XLabel"].props["String"])
         ax.set_ylabel(a.props["YLabel"].props["String"])
         ax.grid(a.props["XGrid"] == "on" or a.props["YGrid"] == "on")
         ax.set_xlim(*a.props["XLim"])
-        ax.set_ylim(*a.props["YLim"])
+        ax.set_ylim(*(left if twin is not None else a.props["YLim"]))
         if a.props.get("Visible") == "off":
             ax.set_axis_off()
         if POST_DRAW is not None:
