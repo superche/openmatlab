@@ -89,7 +89,3 @@ Deduplicated by `(category, key)`; filed as `corpus` issues.
 | `semantics-diff` | `MATLAB:dec2hex:InvalidInput` | 3 | `octave/strings/dec2hex#19` |
 | `semantics-diff` | `MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId` | 3 | `octave/general/interp1#101` |
 | `semantics-diff` | `MATLAB:isprime:InputNotPosInt` | 3 | `octave/specfun/isprime#6` |
-
-## Regressions (pass -> fail)
-
-None.
