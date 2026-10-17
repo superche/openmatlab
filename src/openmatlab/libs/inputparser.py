@@ -385,7 +385,8 @@ def _validateattributes(args, *, nargout=1):
             n = num(arg)
             if t == "size":
                 want = [None if np.isnan(x) else int(x) for x in n]
-                if len(want) != len(shape) or any(w is not None and w != s for w, s in zip(want, shape)):
+                have = tuple(shape) + (1,) * (len(want) - len(shape))  # size(A, k) is 1 past ndims(A)
+                if len(want) < len(shape) or any(w is not None and w != s for w, s in zip(want, have)):
                     fail("Size", "of size " + "x".join("N" if w is None else str(w) for w in want)
                          + " when it is actually size " + "x".join(str(s) for s in shape))
             elif t == "numel" and int(np.prod(shape)) != int(n[0]):
@@ -426,6 +427,10 @@ def _validateattributes(args, *, nargout=1):
             "column": ("Column", "a column vector", len(shape) == 2 and shape[1] == 1),
             "nonempty": ("Nonempty", "nonempty", int(np.prod(shape)) > 0),
             "2d": ("TwoD", "two-dimensional", len(shape) == 2),
+            "3d": ("ThreeD", "an array with three or fewer dimensions", len(shape) <= 3),
+            "scalartext": ("ScalarText", "a character row vector or string scalar",
+                           (A.matlab_class() == "char" and len(shape) == 2 and shape[0] <= 1)
+                           or (A.matlab_class() == "string" and int(np.prod(shape)) == 1)),
             "square": ("Square", "a square matrix", len(shape) == 2 and shape[0] == shape[1]),
             "nonsparse": ("Nonsparse", "nonsparse", not getattr(A, "issparse", False)),
             "diag": ("Diag", "diagonal", vals is not None and len(shape) == 2 and np.all(vals == np.diag(np.diag(vals)))),

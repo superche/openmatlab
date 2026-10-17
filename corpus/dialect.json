@@ -3,7 +3,9 @@
  "reasons": {
   "interp1-extrap": "MATLAB interp1 extrapolates by default for 'pchip', 'cubic' (= pchip), 'spline' and 'makima' (documented: https://www.mathworks.com/help/matlab/ref/interp1.html, extrapolation argument); Octave returns NA/NaN out of range.",
   "median-class": "MATLAB median returns natively in the class of A and has no outtype argument (documented: https://www.mathworks.com/help/matlab/ref/double.median.html); Octave's 'default' outtype returns double for integer and logical input.",
-  "var-dim-past-ndims": "MATLAB var returns an array of zeros the same size as A when dim > ndims(A) (documented: https://www.mathworks.com/help/matlab/ref/double.var.html, dim argument); Octave returns NaN for non-finite elements."
+  "var-dim-past-ndims": "MATLAB var returns an array of zeros the same size as A when dim > ndims(A) (documented: https://www.mathworks.com/help/matlab/ref/double.var.html, dim argument); Octave returns NaN for non-finite elements.",
+  "octave-identifier": "The block asserts an Octave-namespaced error identifier ('Octave:...'); MATLAB functions raise MATLAB-namespaced identifiers (component:mnemonic, https://www.mathworks.com/help/matlab/ref/mexception.html), so the assertion cannot hold in MATLAB.",
+  "dec2base-integer": "MATLAB dec2base accepts only nonnegative integer values and errors on a fractional part (documented: https://www.mathworks.com/help/matlab/ref/dec2base.html, D argument); Octave also converts fractional and negative values."
  },
  "exclusions": [
   {
@@ -55,6 +57,296 @@
    "id": "octave/statistics/var#102",
    "sha256": "4b0faff5f49b1a27c69c81f61bf9b40b70c56c5350ef4a5121ab96a250c37b77",
    "reason": "var-dim-past-ndims"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#3",
+   "sha256": "210907078fcaa7690ef041ccfeb8f45e88227f3a61d2275029c2a6e37ac382a5",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#4",
+   "sha256": "bd823270d872a503b1b54ca9e8366f66654f67efa58b4ff93af91d461e36ea3c",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#5",
+   "sha256": "1c510fbf7363abc7403ecbaf2ce4c86d8e49e6704d6cf9cf44612a2645e8c33f",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#6",
+   "sha256": "e8d26cff989b650d3eae3438195235474912a2c3bcc5a3facd14a53ba58bfcf6",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#7",
+   "sha256": "06b3e6494e6b0a59c94d23be5e8285b63716ccb93a14aedd78f03b5a6d4e1488",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#8",
+   "sha256": "f56c57edcc258bf94478ec3142159baee8673985b711a934f53785ab48ad91d8",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#9",
+   "sha256": "7560d13c164536717fc7ac5e44d80e782510f2cb9ceddfeac3033f297d45ef2c",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#10",
+   "sha256": "32c64391b92139dbe8cd573f782a7a3b7f9535ca7147fcb26ab0bd4a26fb677d",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#11",
+   "sha256": "59a2a176eeaa855ceb38d5d548c8f10749786297d8e38ca9bc1d7f5191d31c69",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#12",
+   "sha256": "1021c033796119a181d8df004a09b687ae9743fa8d04c4b37dabb467d9cb9593",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#13",
+   "sha256": "9a3e0cce5fe02ebb169774edaca1429548df0fcf8c4f1d9d97495dfc0e0e9629",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#14",
+   "sha256": "daec4207e0a9116ee13a675096902077f23b08a357f9bd3cbdfa016b926c6c35",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#15",
+   "sha256": "5e10fdf9b3eb0fb5adaed791019c8c0f37ba1c7b46eb5fa250e91c6e27838812",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#16",
+   "sha256": "36cf6d2765fb112008b68f1495afc766c4d806b238bd0ff14401579cfda4fd9d",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#17",
+   "sha256": "9f4c5069ee590b7811633e787d5f0131101358d3b75c67f1f21450caf503061a",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#18",
+   "sha256": "90219666b7454696e0b574cb610eb8467202708718deeb236386c58ad4e535b6",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#19",
+   "sha256": "6e50dc9786b50260f3f0f2ea533cee4c7deb689821e1f43880bd95937a9992bc",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#20",
+   "sha256": "d3e3d12d9e9737ea4c4bacbcab9885a07a6593376c5c9662b321146ea7482061",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#21",
+   "sha256": "df71739a9f70257cd7d367352b3f04dd79cd8db9d3ade0309121ea8ef2b71533",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#22",
+   "sha256": "9e110b45da55c139ce9c85f1bcfa1eb5177158aecd63a251a3a7b29f1c881c3e",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#23",
+   "sha256": "6a7100b77913aaf3a073b242baf93b9a03ca29a8a278968bf0a1db2a2843c4c9",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#24",
+   "sha256": "8ad0eba9cd5d1f137fd718d23a92fe8c03246e29148dfde8fd4bd4a55173abe4",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#25",
+   "sha256": "bdc348fc69227bfa1d311912f7e9f5e945dd7c10d116e7bfc330e06e3ce05504",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#26",
+   "sha256": "5cc519e3e211dbf81fe2afb2fdf271634d14049349e1975b330c3d8dbd31fea8",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#27",
+   "sha256": "0982a72cc9f06bb126205b8200ec2578cc82c989b37588492cd123dd89e4afd1",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#28",
+   "sha256": "9cda8d02b4fced5d005456827397ef6616a21aed97124c750821d28f0d4a731f",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#29",
+   "sha256": "1ff6c31b66a9bdd4348eb6e2017ecc4a7af798170e0b7e3cf582925ae286cdba",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#30",
+   "sha256": "2bc1ba3d1d79474b7b95ae16e547d23476df31045d3b7c6bcd06d6ac04b539e9",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#31",
+   "sha256": "e97b25192fe76f3ddb4ac596a85cd29ea2b78f84202b11f56553f142f20a42a4",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#32",
+   "sha256": "f61d0bb84af31593dcaac1b00b0354b3ef13099993f350b2183830d883c0f884",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#33",
+   "sha256": "14b8643682ef5cd41154ca73f942454ebf2f990a16ee3152d820065047c43fae",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#34",
+   "sha256": "2f537aa9c57c449940f9dcca771df8a93f698b91bd08b4f4dcfd87d31398f761",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#35",
+   "sha256": "cff5d2acbfe76a1dac0fedd06fba2017b5fdae364a5fad408c56238b38d1b91b",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/miscellaneous/validateattributes#36",
+   "sha256": "2d4af4ef0f82de3fdca1227e041a6480b4f7b761ba58879c21cedceab150bd17",
+   "reason": "octave-identifier"
+  },
+  {
+   "id": "octave/strings/dec2base#2",
+   "sha256": "26dd3292c07259322cbf8b5823b22295f89752701c380aae041048351f12929e",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#3",
+   "sha256": "4b7a8f11b0fe2e55ebd3bf2ac89112c5a85732557f8f93de65a3427aecbb960c",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#4",
+   "sha256": "d78d39b309324e81120f1cc270c6a5858c9a3ed4bff59a34daa684757dc526c5",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#5",
+   "sha256": "3116712efb047e87b8470a46485a6eea0c669a46c95b971b4405d5de9160144d",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#6",
+   "sha256": "c85bf8bf524a6490c52dc2bdadce4a55ddecad0e363576fe80e6686bfebbfe15",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#7",
+   "sha256": "948fce2b124c0fb762796dd28fd5059bfbcb801f3573c07b44d6f47dafa8db68",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#8",
+   "sha256": "428dd32fcebae4f279be90619936062e763e24915edaab780da5201994bb7d0d",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#9",
+   "sha256": "840335f739893cf50e06c4a6d3ad421759ea50c30fed02295735bf1a0e8ee43f",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#10",
+   "sha256": "7e58c2b596a018d9b80d935752bb397068e3e5bd6deed61ad01105fd3b7bc010",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#11",
+   "sha256": "e699484b8b6ad26a9ba058e5bbb235f72ba946052a686fc5cb2ad7011df50115",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#12",
+   "sha256": "b7fa2ee863e543d5284b075439bdffe52a077d8b1ad5dcbd61283ae1dda465eb",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#13",
+   "sha256": "d5f450009f9d0f4653f539476538762079a46cb3b24abbfa668580e85fc0c4b5",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#14",
+   "sha256": "d07861a5ddff0d1eb833e536c6e6383f36fd72a44169e40e39c1fd2c545fdefa",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#15",
+   "sha256": "494505868d7c1310ba56757f3c152fdddcdc51788942be236e5ba5970fba7af8",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#16",
+   "sha256": "3bca7707f626a9798631f1b54381190d8d1c59fe208f9710c189a27e07a7743c",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#17",
+   "sha256": "95a25521f875fb18eb23e8b64dd136dc0e66c4eb799aa3c95c5bd4a1fbc440aa",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#18",
+   "sha256": "8c5d15697dec57e299a0892afcdd0756c819f5c0076246c2cc099577ab0d914c",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#19",
+   "sha256": "11007f2720c44d4673d02e66d60c293a73dbd39a452bf14b916939560205478c",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#20",
+   "sha256": "c4242ccaec856f1f68f42b68d453173e1a379bc0e7446194b58eb1977d3a82d6",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#21",
+   "sha256": "1f610292eafdc4b3860c74e1a6578f68c365df07ea5ee5df0d9018dda46418a9",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#22",
+   "sha256": "aba4a3ef4ff946e60071b3e1e5da605d8aeeb3e01debbae28f29abfb1c4e3d62",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#23",
+   "sha256": "7e29d084937cb9a29b06dd5be1d166f1ae0a3560f5d0c7008b0443fc9c60dffd",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#24",
+   "sha256": "47475de42d0c7cf9e0524bd595eed178765727c9f232e2c3dada7123a0cfc708",
+   "reason": "dec2base-integer"
+  },
+  {
+   "id": "octave/strings/dec2base#25",
+   "sha256": "e5ebe29b85bafa72d0f047481fd2e8e70a2c4b7f2b99051393149d9b7a3a24c5",
+   "reason": "dec2base-integer"
   }
  ]
 }
