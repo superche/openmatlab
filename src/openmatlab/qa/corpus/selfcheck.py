@@ -21,6 +21,7 @@ Sources of self-checks (all fetched into the local cache, never committed):
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import tempfile
@@ -41,7 +42,8 @@ OCTAVE_ONLY = frozenset("""accumdim asctime bincoeff bug_report center citation 
 ctime discrete_cdf discrete_inv discrete_pdf discrete_rnd duplication_matrix empirical_cdf empirical_inv empirical_pdf
 empirical_rnd gls housh index info is_leap_year isdefinite jupyter_notebook kendall list_primes ls_command meansq
 nthargout ols ostrsplit parseparams polyaffine polygcd polyout polyreduce postpad prepad ppjumps qzhess ranks rindex
-rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech compare_versions nthargout""".split())
+rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech compare_versions nthargout
+ppder ppint mpoles powerset strchr padecoef""".split())
 TOOLBOX_TESTS = {"statistics": frozenset("iqr kurtosis skewness mad moment prctile quantile range zscore corr corrcov".split()),
                  "phased": frozenset("rotx roty rotz".split()),
                  "symbolic": frozenset({"symvar"})}
@@ -57,6 +59,15 @@ def excluded_category(name: str) -> str:
         if name in fs:
             return "toolbox:" + tb
     return "io-env" if name in ENV_TESTS else ""
+
+
+def dialect_exclusions(path: Path = None) -> dict:
+    """``{(block id, sha256): reason}`` from ``corpus/dialect.json``: blocks where documented MATLAB differs from Octave."""
+    f = path or M.corpus_dir() / "dialect.json"
+    if not f.is_file():
+        return {}
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    return {(x["id"], x["sha256"]): x["reason"] for x in doc.get("exclusions", [])}
 
 
 T2LIB = Path(__file__).with_name("t2lib")
@@ -109,7 +120,7 @@ def parse_blocks(src: str) -> Parsed:
     return Parsed(blocks, funcs, skipped)
 
 
-_END = re.compile(r"\b(endif|endwhile|endfor|endfunction|endswitch|end_try_catch|end_unwind_protect|endparfor)\b")
+_END = re.compile(r"\b(endif|endwhile|endfor|endfunction|endswitch|end_try_catch|endparfor)\b")
 _OPEQ = re.compile(r"^(\s*)([A-Za-z_][\w.]*(?:\([^=]*\))?)\s*([-+*/])=(?!=)\s*(.+?)\s*(;?)\s*$")
 _ESC = {"n": "\n", "t": "\t", "\\": "\\", '"': '"', "'": "'", "r": "\r", "a": "\a", "0": "\0"}
 
@@ -204,8 +215,38 @@ def _line(line: str) -> str:
     m = _OPEQ.match(s)
     if m and m.group(4):
         s = f"{m.group(1)}{m.group(2)} = {m.group(2)} {m.group(3)} ({m.group(4)}){m.group(5)}"
+    s = _chain_assign(s)
     s = re.sub(r"^(\s*)unwind_protect\s*$", r"\1", s)
+    s = re.sub(r"^(\s*)end_unwind_protect\b", r"\1", s)  # the opening keyword is dropped, so is its end
     return s
+
+
+_CHAIN = re.compile(r"^(\s*)((?:[A-Za-z_]\w*\s*=(?!=)\s*){2,})(.*)$")
+
+
+def _chain_assign(s: str) -> str:
+    """Octave ``a = b = expr;`` -> ``b = expr; a = b;`` (the value is computed once)."""
+    m = _CHAIN.match(s)
+    if not m:
+        return s
+    names = [n.strip() for n in m.group(2).split("=") if n.strip()]
+    rest, depth, q = m.group(3), 0, None
+    for i, c in enumerate(rest):  # the expression ends at the first top-level ';'
+        if q:
+            q = None if c == q else q
+        elif c == "'" and not (i and (rest[i - 1].isalnum() or rest[i - 1] in ")]}_.'")):
+            q = c
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == ";" and depth == 0:
+            expr, tail = rest[:i], rest[i:]
+            break
+    else:
+        expr, tail = rest, ";"
+    stmts = [f"{names[-1]} = {expr.strip()};"] + [f"{a} = {b};" for a, b in zip(names[-2::-1], names[:0:-1])]
+    return m.group(1) + " ".join(stmts) + tail[1:]
 
 
 def _scan_brackets(line: str, stack: list) -> None:
@@ -323,11 +364,15 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
                 if len(parts) >= 2 and parts[1].isdigit():
                     seen[int(parts[1])] = (parts[0], parts[2] if len(parts) > 2 else "")
             outf.unlink()
-        recs = []
+        recs, dialect = [], dialect_exclusions()
         for b in p.blocks:
             st, rest = seen.get(b.index, ("", ""))
             rec = dict(base, id=f"{e.id}#{b.index}", role=b.kind, sha256=M.sha256(b.text))
-            if st == "P":
+            reason = dialect.get((rec["id"], rec["sha256"]))
+            if reason:  # MATLAB-documented behaviour differs from Octave's: outside the rate, never a pass
+                rec.update(t2="n/a", status="n/a", category="toolbox:octave-only", key="dialect:" + reason,
+                           notes=["dialect:" + reason])
+            elif st == "P":
                 rec.update(t2="pass", status="pass", category="pass", key="")
             elif st == "F":
                 eid, _, msg = rest.partition("\t")

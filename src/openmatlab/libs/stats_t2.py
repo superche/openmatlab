@@ -154,8 +154,8 @@ def _mean(args, *, nargout=1):
         res = []
         for row in flat:
             vals = [int(v) for v in row]
-            if not vals:
-                res.append(np.nan)
+            if not vals:  # NaN in the class of A (documented: class(M) = class(A)); integers saturate NaN to 0
+                res.append(0 if np.dtype(cls).kind in "iu" else np.nan)
                 continue
             fr = Fraction(sum(vals), len(vals))
             res.append(_saturate(_round_half_away(fr), x.dtype) if np.dtype(cls).kind in "iu" else float(fr))
@@ -211,6 +211,8 @@ def _median(args, *, nargout=1):
     axes, whole = _axes(x, dims)
     cls = _result_class(x, outtype, "median")
     if x.ndim == 2 and x.shape == (0, 0) and dims is None:
+        if np.dtype(cls).kind in "iu":  # NaN cast to the integer class is 0
+            return (NDArrayValue(np.zeros((1, 1), dtype=cls)),)
         return (NDArrayValue(np.full((1, 1), np.nan, dtype=cls if np.dtype(cls).kind in "fc" else np.float64)),)
     if dims is not None and dims != "all" and all(a >= x.ndim for a in axes):
         return (NDArrayValue(x.astype(cls)),)
@@ -220,8 +222,8 @@ def _median(args, *, nargout=1):
     for row in flat:
         if integer:
             vals = sorted(int(v) for v in row)
-            if not vals:
-                res.append(np.nan)
+            if not vals:  # NaN in the class of A (documented: class(M) = class(A)); integers saturate NaN to 0
+                res.append(0 if np.dtype(cls).kind in "iu" else np.nan)
                 continue
             n = len(vals)
             fr = Fraction(vals[n // 2]) if n % 2 else Fraction(vals[n // 2 - 1] + vals[n // 2], 2)
@@ -310,7 +312,8 @@ def _mode(args, *, nargout=1):
     objs = np.empty(len(cs), dtype=object)
     for i, c in enumerate(cs):
         objs[i] = c
-    C = CellValue.from_obj(_unframe(objs, keep, out_shape, full)) if len(cs) else CellValue(rows=())
+    C = CellValue.from_obj(_unframe(objs, keep, out_shape, full)) if len(cs) else \
+        CellValue.from_obj(np.empty(M.shape, dtype=object))  # C has the size of M
     return (NDArrayValue(np.ascontiguousarray(M)), NDArrayValue(np.ascontiguousarray(F)), C)[:max(1, nargout)]
 
 def _is_plain(v):

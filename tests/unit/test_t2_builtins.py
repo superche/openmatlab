@@ -239,3 +239,61 @@ def test_unary_minus_and_complex_keep_signed_zero():
     assert np.signbit(ev("r = -0;")).all()
     assert np.signbit(ev("r = complex(1, -0);").imag).all()
     assert ev("r = 1/-0;").item() == -np.inf
+
+
+def test_quadgk_and_integral():
+    np.testing.assert_allclose(ev("r = quadgk(@(x) 1./sqrt(x), 0, 1);"), [[2.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadgk(@(x) exp(-x.^2), -Inf, Inf);"), [[np.sqrt(np.pi)]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = integral(@(x) 1./(x.^2 + 1), 0, Inf);"), [[np.pi / 2]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadgk(@(z) 1./z, 1, 1, 'Waypoints', [1i, -1, -1i]);"), [[2j * np.pi]],
+                               atol=1e-10)
+    np.testing.assert_allclose(ev("r = integral(@(x) [x, x.^2], 0, 1, 'ArrayValued', true);"), [[0.5, 1 / 3]],
+                               rtol=1e-10)
+    assert ev("r = integral(@sin, single(0), 1);").dtype == np.float32
+    assert ev("[q, r] = quadgk(@(x) x, 0, 1);").item() >= 0
+
+
+def test_quadl_quadv():
+    np.testing.assert_allclose(ev("r = quadl(@(x) x.^3, 0, 2);"), [[4.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadl(@(x, c) c*x, 0, 1, [], [], 4);"), [[2.0]], rtol=1e-10)
+    np.testing.assert_allclose(ev("r = quadv(@(x) [x; 2*x], 0, 1);"), [[0.5], [1.0]], rtol=1e-8)
+
+
+def test_two_and_three_dimensional():
+    np.testing.assert_allclose(ev("r = integral2(@(x, y) x.*y, 0, 1, 0, @(x) x);"), [[1 / 8]], rtol=1e-8)
+    np.testing.assert_allclose(ev("r = quad2d(@(x, y) 1./(x + y), 0, 1, 0, 1);"), [[2 * np.log(2)]], rtol=1e-6)
+    np.testing.assert_allclose(ev("r = integral3(@(x, y, z) x + y + z, 0, 1, 0, 2, 0, 3);"), [[18.0]], rtol=1e-8)
+    np.testing.assert_allclose(ev("r = dblquad(@(x, y) x*y, 0, 1, 0, 2);"), [[1.0]], rtol=1e-6)
+    np.testing.assert_allclose(ev("r = triplequad(@(x, y, z) x + 0*y*z, 0, 1, 0, 1, 0, 1);"), [[0.5]], rtol=1e-6)
+
+
+def test_linsolve_isstrprop_cplxpair_dsearchn():
+    np.testing.assert_allclose(ev("r = linsolve([2 0; 0 4], [2; 8]);"), [[1.0], [2.0]])
+    np.testing.assert_allclose(ev("[x, r] = linsolve([1 0 0; 0 1 0], [1; 2]);"), [[2]])
+    np.testing.assert_allclose(ev("o.TRANSA = true; r = linsolve([1 2; 0 1], [1; 4], o);"), [[1.0], [2.0]])
+    assert ev("r = isstrprop('a1 B', 'alpha');").tolist() == [[True, False, False, True]]
+    assert ev("r = isstrprop('a1 B', 'wspace');").tolist() == [[False, False, True, False]]
+    np.testing.assert_allclose(ev("r = cplxpair([3, 1+2i, 1-2i]);"), [[1 - 2j, 1 + 2j, 3]])
+    np.testing.assert_allclose(ev("r = dsearchn([0 0; 1 1; 5 5], [0.9 0.8; 4 4]);"), [[2], [3]])
+
+
+def test_gridded_interpolation():
+    np.testing.assert_allclose(ev("[x, y, z] = ndgrid(0:2); r = interpn(x, y, z, x + y + z, [.5 1.5], [.5 1.5], [.5 1.5]);"),
+                               [[1.5, 4.5]])
+    np.testing.assert_allclose(ev("r = interpn([1 2; 3 4], 1.5, 1.5);"), [[2.5]])
+    np.testing.assert_allclose(ev("V = reshape(1:27, 3, 3, 3); r = interp3(V, 2, 1, 1);"), [[4.0]])
+    np.testing.assert_allclose(ev("r = interp2([1 2 3; 4 5 6; 7 8 9], 2.5, 1.5, 'spline');"), [[4.0]])
+    np.testing.assert_allclose(ev("r = interp2([1 2 3; 4 5 6; 7 8 9], 2.5, 1.5, 'cubic');"), [[4.0]])
+    assert ev("r = interp2(magic(3));").shape == (5, 5)
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'spline');"), [[16.0]])
+
+
+def test_vector_valued_piecewise_polynomials():
+    np.testing.assert_allclose(ev("pp = mkpp([0 1 2], [1 0; 2 0; 1 1; 2 2], 2); r = ppval(pp, 1.5);"), [[1.5], [3.0]])
+    assert ev("pp = mkpp([0 1 2], [1 0; 2 0; 1 1; 2 2], 2); r = size(ppval(pp, [0.5 1.5]));").tolist() == [[2, 2]]
+    np.testing.assert_allclose(ev("x = 0:4; r = spline(x, [x; 2*x], 2.5);"), [[2.5], [5.0]], atol=1e-12)
+    np.testing.assert_allclose(ev("x = 0:4; r = pchip(x, [x; x.^2], x);"), [[0, 1, 2, 3, 4], [0, 1, 4, 9, 16]], atol=1e-12)
+    np.testing.assert_allclose(ev("x = 0:5; y = exp(1i*x); r = spline(x, y, x);"), [np.exp(1j * np.arange(6))], atol=1e-12)
+    np.testing.assert_allclose(ev("r = spline([0 1 2 3], [0 1 NaN 3], 2);"), [[2.0]], atol=1e-12)
+    assert ev("[~, n] = shiftdim(zeros(1, 1, 3)); r = n;").tolist() == [[2]]
+    assert ev("r = size(shiftdim(zeros(2, 3, 4), 1));").tolist() == [[3, 4, 2]]

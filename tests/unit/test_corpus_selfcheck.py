@@ -97,3 +97,34 @@ def test_t2_assert(code, ok):
 def test_paren_continuation_and_bug_tags():
     assert S.octave_to_matlab("assert (f (1,\n 2), [1 2\n 3 4])") == "t2_assert (f (1, ...\n 2), [1 2\n 3 4])"
     assert S.parse_blocks("%!test <*123>\n%! x = 1;").blocks[0].text.strip() == "x = 1;"
+
+
+def test_dialect_exclusions_are_keyed_by_id_and_hash(tmp_path):
+    from openmatlab.qa.corpus.selfcheck import dialect_exclusions
+
+    f = tmp_path / "dialect.json"
+    f.write_text('{"exclusions": [{"id": "octave/x/y#1", "sha256": "ab", "reason": "r"}]}', encoding="utf-8")
+    got = dialect_exclusions(f)
+    assert got == {("octave/x/y#1", "ab"): "r"}
+    assert dialect_exclusions(tmp_path / "missing.json") == {}
+
+
+def test_committed_dialect_exclusions_carry_documented_reasons():
+    import json
+
+    from openmatlab.qa.corpus import manifest as M
+
+    doc = json.loads((M.corpus_dir() / "dialect.json").read_text(encoding="utf-8"))
+    for x in doc["exclusions"]:
+        assert set(x) == {"id", "sha256", "reason"} and len(x["sha256"]) == 64
+        assert "mathworks.com/help" in doc["reasons"][x["reason"]]
+
+
+def test_octave_chained_assignment_and_unwind_protect_normalise():
+    from openmatlab.qa.corpus.selfcheck import octave_to_matlab
+
+    assert octave_to_matlab("a = b = zeros (2);") == "b = zeros (2); a = b;"
+    assert octave_to_matlab("x = y = 1;  y = y + 2;") == "y = 1; x = y;  y = y + 2;"
+    assert octave_to_matlab("t = a == b;") == "t = a == b;"
+    got = octave_to_matlab("unwind_protect\n  x = 1;\nunwind_protect_cleanup\n  y = 2;\nend_unwind_protect")
+    assert "end" not in got.split() and "x = 1;" in got and "y = 2;" in got
