@@ -670,3 +670,36 @@ def register(builtins: Dict[str, Callable]) -> None:
     }
     for k, v in table.items():
         builtins.setdefault(k, v)
+    for k in SINGLE_PROPAGATING:  # MATLAB: single in -> single out
+        if k in builtins:
+            builtins[k] = _single_propagating(builtins[k])
+
+
+SINGLE_PROPAGATING = ("median", "cov", "corrcoef", "trapz", "cumtrapz", "norm", "conv", "deconv", "filter",
+                      "polyval", "polyfit", "interp1")
+
+
+def _is_single(v):
+    try:
+        return v.matlab_class() == "single"
+    except Exception:
+        return False
+
+
+def _single_propagating(fn):
+    def g(args, *, nargout=1):
+        outs = fn(args, nargout=nargout)
+        if not any(_is_single(a) for a in args):
+            return outs
+        res = []
+        for o in outs:
+            if isinstance(o, NDArrayValue):
+                b = np.asarray(o.backend_buffer())
+                if b.dtype == np.float64:
+                    o = NDArrayValue(b.astype(np.float32))
+                elif b.dtype == np.complex128:
+                    o = NDArrayValue(b.astype(np.complex64))
+            res.append(o)
+        return tuple(res)
+    g.__wrapped__ = fn
+    return g
