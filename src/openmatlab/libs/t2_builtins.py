@@ -889,6 +889,45 @@ def _ismembertol(args, *, nargout=1):
     return (NDArrayValue(lia.reshape(shape, order="F")), _out(loc.reshape(shape, order="F")))[:max(1, nargout)]
 
 
+
+_ADD_UNITS = {"day": 1.0, "week": 7.0, "hour": 1 / 24, "minute": 1 / 1440, "second": 1 / 86400,
+              "millisecond": 1 / 86400000}
+
+
+def _add_months(dn, q):
+    import datetime
+
+    whole = math.floor(dn)
+    frac = dn - whole
+    d = datetime.date.fromordinal(int(whole) - 366)
+    m = d.year * 12 + d.month - 1 + int(q)
+    y, mo = divmod(m, 12)
+    last = (datetime.date(y + (mo == 11), (mo + 1) % 12 + 1, 1) - datetime.timedelta(days=1)).day
+    return datetime.date(y, mo + 1, min(d.day, last)).toordinal() + 366 + frac
+
+
+def _addtodate(args, *, nargout=1):
+    if len(args) < 3:
+        raise _err("Not enough input arguments.", "MATLAB:minrhs")
+    if not _is_text(args[2]) or len(args[2].rows) != 1:
+        raise _err("addtodate: F must be a single character string.", "MATLAB:addtodate:InvalidDateField")
+    unit = args[2].text.lower()
+    r, q = _num(args[0], "addtodate"), _num(args[1], "addtodate")
+    if r.size != 1 and q.size != 1 and r.size != q.size:
+        raise _err("addtodate: R and Q must be the same size or scalars.", "MATLAB:addtodate:InvalidQuantity")
+    shape = q.shape if r.size == 1 else r.shape
+    rr, qq = np.broadcast_to(r.reshape(-1), (max(r.size, q.size),)), np.broadcast_to(q.reshape(-1), (max(r.size, q.size),))
+    if unit in ("year", "month"):
+        k = 12 if unit == "year" else 1
+        if np.any(qq != np.round(qq)):
+            raise _err("addtodate: Q must be an integer for years and months.", "MATLAB:addtodate:NonIntegerQuantity")
+        out = np.array([_add_months(float(a), int(b) * k) for a, b in zip(rr, qq)])
+    elif unit in _ADD_UNITS:
+        out = rr + qq * _ADD_UNITS[unit]
+    else:
+        raise _err(f"addtodate: Invalid time unit: {args[2].text}", "MATLAB:addtodate:InvalidDateField")
+    return (_out(out.reshape(shape)),)
+
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "issymmetric": _issymmetric, "ishermitian": _ishermitian, "bandwidth": _bandwidth, "isbanded": _isbanded,
@@ -903,7 +942,7 @@ def register(builtins: Dict[str, Callable]) -> None:
         "tensorprod": _tensorprod, "isuniform": _isuniform, "vecnorm": _vecnorm,
         "sinpi": _pi_trig("sinpi", _sinpi), "cospi": _pi_trig("cospi", _cospi), "polyarea": _polyarea,
         "pagetranspose": _pagetrans(False), "pagectranspose": _pagetrans(True), "swapbytes": _swapbytes,
-        "computer": _computer, "rectint": _rectint, "subspace": _subspace, "uniquetol": _uniquetol,
+        "computer": _computer, "addtodate": _addtodate, "rectint": _rectint, "subspace": _subspace, "uniquetol": _uniquetol,
         "ismembertol": _ismembertol, "datevec": _datevec, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
     }
     for k, v in table.items():

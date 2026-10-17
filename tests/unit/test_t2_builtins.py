@@ -141,3 +141,16 @@ def test_gallery_families():
     s = ReplSession()
     s.run_line("try, gallery('nosuch', 3); r = 0; catch err, r = strcmp(err.identifier, 'MATLAB:gallery:unknownName'); end")
     assert bool(np.asarray(s.session.workspace.get("r").backend_buffer()).item())
+
+
+def test_dec2bin_dec2hex_negative_and_addtodate():
+    s = ReplSession()
+    s.run_line("a = dec2bin(-3); b = dec2hex(-129); c = dec2bin([1 -4]); d = dec2bin(2.9);")
+    w = s.session.workspace
+    assert w.get("a").text == "11111101"
+    assert w.get("b").text == "FF7F"
+    assert list(w.get("c").rows) == ["00000001", "11111100"]
+    assert w.get("d").text == "10"
+    np.testing.assert_allclose(ev("d = datenum(2008, 1, 1); r = addtodate(d, [1 13], 'month') - d;"), [[31, 397]])
+    np.testing.assert_allclose(ev("r = addtodate(datenum(2020, 3, 31), -1, 'month') - datenum(2020, 2, 29);"), [[0]])
+    np.testing.assert_allclose(ev("r = addtodate(10, 6, 'hour');"), [[10.25]])

@@ -386,10 +386,40 @@ def _digits_matrix(vals, base, ndig, fn):
     return [s.rjust(w, "0") for s in out]
 
 
+def _twos(raw, base, ndig, fn):
+    """dec2bin/dec2hex: non-integers truncate; negatives are two's complement in the smallest of
+    8/16/32/64 bits that holds them (documented MATLAB behaviour since R2020a)."""
+    ints = []
+    for v in raw:
+        if isinstance(v, float):
+            if not math.isfinite(v):
+                raise _err(f"{fn}: D must be finite.", f"MATLAB:{fn}:InvalidInput")
+            v = int(v)  # truncation toward zero
+        ints.append(int(v))
+    strs = []
+    for v in ints:
+        if v < 0:
+            w = next((b for b in (8, 16, 32, 64) if v >= -(1 << (b - 1))), 64)
+            v = max(v, -(1 << 63)) + (1 << w)
+        strs.append(np.base_repr(v, base) if v else "0")
+    width = max(max(len(t) for t in strs), ndig)
+    return [t.rjust(width, "0") for t in strs]
+
+
 def _dec2base(fn, base):
     def f(args, *, nargout=1):
         if not args:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
+        buf = getattr(args[0], "backend_buffer", None)
+        raw = np.asarray(buf()) if buf is not None and not _is_text(args[0]) else None
+        if raw is not None and np.iscomplexobj(raw):
+            raise _err(f"{fn}: input must be real.", f"MATLAB:{fn}:InvalidInput")
+        if raw is not None and raw.size and (raw.dtype.kind in "iu" or np.any(raw < 0) or np.any(raw != np.trunc(raw))):
+            ndig = int(_scalar(args[1], fn)) if len(args) > 1 else 0
+            flat = raw.reshape(-1, order="F")
+            vals = [int(x) for x in flat] if raw.dtype.kind in "iu" else [float(x) for x in flat.astype(float)]
+            rows = _twos(vals, base, ndig, fn)
+            return (_cv(rows[0]) if len(rows) == 1 else _cv(rows=rows),)
         vals = _num(args[0], fn).astype(float).reshape(-1, order="F").tolist()
         ndig = int(_scalar(args[1], fn)) if len(args) > 1 else 0
         if not vals:
