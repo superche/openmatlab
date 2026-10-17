@@ -221,3 +221,21 @@ def test_cov_flags_weights_and_classes():
     assert ev("r = cov(single([1 2 4]));").dtype == np.float32
     assert np.isnan(ev("r = cov([]);")).all()
     assert ev("r = cov(ones(2, 0));").size == 0
+
+
+def test_sinint_cosint():
+    np.testing.assert_allclose(ev("r = sinint([1 pi 300]);"), [[0.946083070367183, 1.851937051982466, 1.57088108821375]],
+                               rtol=1e-14)
+    np.testing.assert_allclose(ev("r = cosint([1 pi 300]);"), [[0.337403922900968, 0.0736679120464255, -0.00333219991859211]],
+                               rtol=1e-13)
+    np.testing.assert_allclose(ev("r = cosint(-1);"), [[0.337403922900968 + np.pi * 1j]], rtol=1e-14)
+    np.testing.assert_allclose(ev("r = sinint(20i);"), [[1.2807826332028294e7j]], rtol=1e-14)
+    assert ev("r = cosint(0);").item() == -np.inf
+    assert ev("r = cosint(-0);").item() == complex(-np.inf, np.pi)
+    assert ev("r = sinint(single(1));").dtype == np.float32
+
+
+def test_unary_minus_and_complex_keep_signed_zero():
+    assert np.signbit(ev("r = -0;")).all()
+    assert np.signbit(ev("r = complex(1, -0);").imag).all()
+    assert ev("r = 1/-0;").item() == -np.inf
