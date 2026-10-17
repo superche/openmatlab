@@ -154,3 +154,23 @@ def test_dec2bin_dec2hex_negative_and_addtodate():
     np.testing.assert_allclose(ev("d = datenum(2008, 1, 1); r = addtodate(d, [1 13], 'month') - d;"), [[31, 397]])
     np.testing.assert_allclose(ev("r = addtodate(datenum(2020, 3, 31), -1, 'month') - datenum(2020, 2, 29);"), [[0]])
     np.testing.assert_allclose(ev("r = addtodate(10, 6, 'hour');"), [[10.25]])
+
+
+def test_interp1_matrix_methods_pp():
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [10 20; 20 40; 30 60], [1.5 2.5]);"), [[15, 30], [25, 50]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'linear', 'extrap');"), [[14]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'linear', 0);"), [[0]])
+    assert np.isnan(ev("r = interp1([1 2 3], [1 4 9], 4);")).all()
+    np.testing.assert_allclose(ev("r = interp1([1 2 3 4], [1 8 27 64], 5, 'spline');"), [[125]], rtol=1e-12)
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [5 6 7], [1.2 2.6], '*nearest');"), [[5, 7]])
+    np.testing.assert_allclose(ev("r = interp1([3 2 1], [9 4 1], 1.5);"), [[2.5]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 2 3] + 1i, 2.5);"), [[2.5 + 1j]])
+    np.testing.assert_allclose(ev("r = ppval(interp1([1 2 3], [1 4 9], 'linear', 'pp'), 2.5);"), [[6.5]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3 4 5], [1 2 3 4 5], 2.5, 'makima');"), [[2.5]], rtol=1e-12)
+
+
+def test_continuation_after_name_is_not_command_syntax():
+    np.testing.assert_allclose(ev("r = max ...\n  (3, 4);"), [[4]])
+    s = ReplSession()
+    s.run_line("x = 1;\nassert ...\n  (x == 1, 'msg');\nr = 2;")
+    assert np.asarray(s.session.workspace.get("r").backend_buffer()).item() == 2

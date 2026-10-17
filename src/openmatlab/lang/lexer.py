@@ -104,6 +104,13 @@ def _is_command(source: str, i: int) -> bool:
     j = i
     while j < n and source[j] in " \t":
         j += 1
+    while source.startswith("...", j):  # `f ...` + newline: a continuation, decided by the next line
+        nl = source.find("\n", j)
+        if nl < 0:
+            return False
+        j = nl + 1
+        while j < n and source[j] in " \t":
+            j += 1
     if j >= n:
         return False
     c = source[j]

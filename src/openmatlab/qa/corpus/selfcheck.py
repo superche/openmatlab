@@ -246,7 +246,7 @@ def _octave_lines(code: str) -> list:
             in_block = False
             continue
         if not in_block:
-            lines.append(re.sub(r"\bassert\b(?=\s*\()", "t2_assert", _line(line)))
+            lines.append(re.sub(r"\bassert\b(?=\s*(?:\(|\.\.\.))", "t2_assert", _line(line)))
     return lines
 
 
