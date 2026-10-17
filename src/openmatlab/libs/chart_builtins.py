@@ -13,6 +13,7 @@ them run, and ``get`` returns the stored value or the documented default.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List
 
 import numpy as np
@@ -707,12 +708,15 @@ def _colormap(ev, args, nargout):
     if rest:
         v = rest[0]
         if _is_text(v):
-            name = v.text.lower()
+            name, size = v.text.strip().lower(), 64
+            call = re.fullmatch(r"(\w+)\s*\(\s*(\d+)\s*\)", name)  # the 'bone(16)' expression form
+            if call:
+                name, size = call.group(1), int(call.group(2))
             if name == "default":
                 name = "parula"
             if name not in CMAPS:
                 raise _err(f"colormap: unknown colormap '{v.text}'.", "MATLAB:colormap:InvalidName")
-            cm = _cmap(name, 64)
+            cm = _cmap(name, size)
         else:
             cm = np.asarray(_arr(v, "colormap"), float)
             if cm.ndim != 2 or cm.shape[1] != 3 or np.any(cm < 0) or np.any(cm > 1):
