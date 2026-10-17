@@ -136,7 +136,7 @@ class _Job:
         feats = features(plan.script, set())  # the Octave file is not on the path: its function is OpenMATLAB's
         cat, key = classify_features(res, feats)
         m = re.search(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)", res.get("message") or "")
-        if m and m.group(1) == subject and cat in ("corpus-noise", "semantics-diff"):
+        if m and m.group(1) == subject and cat in ("corpus-noise", "semantics-diff", "missing-builtin"):
             cat, key = "missing-builtin", subject  # the MATLAB function under test is not implemented
             if subject in O.SUBJECT_TOOLBOX:
                 cat = "toolbox:" + O.SUBJECT_TOOLBOX[subject]

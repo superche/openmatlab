@@ -62,7 +62,7 @@ OCTAVE_ONLY = {
     "time", "strftime", "strptime", "asctime", "ctime", "is_leap_year", "cstrcat", "strchr", "strtrunc", "untabify",
     "center", "meansq", "ranks", "runlength", "run_count", "spearman", "kendall", "statistics", "list_primes",
     "commutation_matrix", "duplication_matrix", "vech", "housh", "qzhess", "polyaffine", "polyreduce", "polygcd",
-    "ppjumps", "padecoef", "splinefit", "gls", "ols", "rotdim", "parseparams", "bincoeff",
+    "ppjumps", "padecoef", "splinefit", "gls", "ols", "rotdim", "parseparams", "bincoeff", "polyout",
     "discrete_cdf", "discrete_inv", "discrete_pdf", "discrete_rnd", "empirical_cdf", "empirical_inv",
     "empirical_pdf", "empirical_rnd",
 }
