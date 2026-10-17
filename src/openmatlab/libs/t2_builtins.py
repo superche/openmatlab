@@ -10,7 +10,9 @@ only); no MATLAB or Octave source was consulted.
 
 from __future__ import annotations
 
+import math
 import os
+import re
 from typing import Callable, Dict
 
 import numpy as np
@@ -513,6 +515,146 @@ def _normalize(args, *, nargout=1):
     return outs[:max(1, nargout)]
 
 
+def _civil(z):
+    """(y, m, d) from days since 1970-01-01, proleptic Gregorian (any integer)."""
+    z = z + 719468
+    era = z // 146097  # Python floors already
+    doe = z - era * 146097
+    yoe = (doe - doe // 1460 + doe // 36524 - doe // 146096) // 365
+    y = yoe + era * 400
+    doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+    mp = (5 * doy + 2) // 153
+    d = doy - (153 * mp + 2) // 5 + 1
+    m = mp + 3 if mp < 10 else mp - 9
+    return y + (m <= 2), m, d
+
+
+def _vec_of(dn):
+    if not np.isfinite(dn):
+        return [np.nan] * 6
+    day = math.floor(dn)
+    secs = round((dn - day) * 86400.0, 6)
+    if secs >= 86400:
+        day, secs = day + 1, secs - 86400
+    y, m, d = _civil(int(day) - 719529)
+    h = int(secs // 3600)
+    mi = int((secs - 3600 * h) // 60)
+    sec = round(secs - 3600 * h - 60 * mi, 6)
+    return [float(y), float(m), float(d), float(h), float(mi), sec]
+
+
+_MON = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+_FMT_TOKENS = [("yyyy", r"(?P<y>[-+]?\d{1,4})"), ("yy", r"(?P<yy>\d{2})"), ("mmmm", r"(?P<mon>[A-Za-z]+)"),
+               ("mmm", r"(?P<mon>[A-Za-z]{3})"), ("mm", r"(?P<m>\d{1,2})"), ("dddd", r"[A-Za-z]+"),
+               ("ddd", r"[A-Za-z]{3}"), ("dd", r"(?P<d>\d{1,2})"), ("HH", r"(?P<H>\d{1,2})"),
+               ("MM", r"(?P<M>\d{1,2})"), ("SS", r"(?P<S>\d{1,2})"), ("FFF", r"(?P<F>\d{1,3})"),
+               ("AM", r"(?P<P>[AaPp][Mm])"), ("PM", r"(?P<P>[AaPp][Mm])")]
+_STD_FORMATS = ["dd-mmm-yyyy HH:MM:SS", "dd-mmm-yyyy", "mm/dd/yy", "mm/dd", "HH:MM:SS", "HH:MM:SS PM", "HH:MM",
+                "HH:MM PM", "mm/dd/yyyy", "mmm.dd,yyyy HH:MM:SS", "mmm.dd,yyyy", "yyyy/mm/dd", "yyyy-mm-dd",
+                "yyyy-mm-dd HH:MM:SS", "yyyy-mm-ddTHH:MM:SS", "yyyy-mm-ddTHH:MM:SS.FFF", "yyyy-mm", "yyyy",
+                "yyyymmddTHHMMSS", "dd-mmm-yyyy HH:MM", "mmmyy", "dd mmm yyyy", "dd mmm yyyy HH:MM:SS",
+                "mmm dd yyyy HH:MM:SS", "mmm dd yyyy", "dd.mmm.yyyy HH:MM:SS", "dd.mmm.yyyy", "mmm.dd.yyyy HH:MM:SS",
+                "mmm.dd.yyyy", "mm/dd/yyyy HH:MM", "mm/dd/yyyy HH:MM:SS", "yyyy/mm/dd HH:MM:SS", "yyyy/mm/dd HH:MM",
+                "yyyy-mm-dd HH:MM", "mmm-dd-yyyy HH:MM:SS", "mmm-dd-yyyy"]
+
+
+def _fmt_regex(fmt):
+    out, i = [], 0
+    while i < len(fmt):
+        for tok, rx in _FMT_TOKENS:
+            if fmt.startswith(tok, i):
+                out.append(rx)
+                i += len(tok)
+                break
+        else:
+            out.append(re.escape(fmt[i]))
+            i += 1
+    rx = "".join(out)
+    seen = set()  # a group name may only appear once
+    def dedupe(m):
+        n = m.group(1)
+        if n in seen:
+            return "(?:"
+        seen.add(n)
+        return m.group(0)
+    return re.compile(r"^\s*" + re.sub(r"\(\?P<(\w+)>", dedupe, rx) + r"\s*$")
+
+
+def _parse_with(text, fmt, prefix=False):
+    rx = _fmt_regex(fmt)
+    m = re.compile(rx.pattern[:-len(r"\s*$")]).match(text) if prefix else rx.match(text)
+    if not m:
+        return None
+    g = {k: v for k, v in m.groupdict().items() if v is not None}
+    now_y = float(_dt_now().year)
+    has_date = any(k in g for k in ("y", "yy", "mon", "m", "d"))
+    y = float(g["y"]) if "y" in g else (2000.0 + float(g["yy"]) if "yy" in g and float(g["yy"]) < 50 else
+                                        1900.0 + float(g["yy"]) if "yy" in g else now_y)
+    if "mon" in g:
+        k = g["mon"][:3].lower()
+        if k not in _MON:
+            return None
+        mo = float(_MON.index(k) + 1)
+    else:
+        mo = float(g["m"]) if "m" in g else 1.0
+    if "d" in g:
+        d = float(g["d"])
+    elif "y" in g and "m" not in g and "mon" not in g:
+        d = 0.0 if fmt == "yyyy" else 1.0
+    else:
+        d = 1.0
+    if not has_date:
+        y, mo, d = now_y, 1.0, 1.0
+    h = float(g.get("H", 0))
+    if "P" in g:
+        if h > 12:
+            return None
+        h = h % 12 + (12 if g["P"].lower() == "pm" else 0)
+    sec = float(g.get("S", 0)) + (float("0." + g["F"]) if "F" in g else 0.0)
+    if mo < 1 or mo > 12 or d > 31 or h > 24 or float(g.get("M", 0)) > 59 or sec >= 61:
+        return None
+    return [y, mo, d, h, float(g.get("M", 0)), round(sec, 6)]
+
+
+def _dt_now():
+    import datetime as _dt
+
+    return _dt.datetime.now()
+
+
+def _parse_date(text, fmt=None):
+    t = text.strip()
+    if t.endswith("Z"):
+        t = t[:-1]
+    for f in ([fmt] if fmt else _STD_FORMATS):
+        v = _parse_with(t, f, prefix=bool(fmt))
+        if v is not None:
+            return v
+    raise _err(f"datevec: none of the standard formats match the DATE string.", "MATLAB:datevec:Inputs")
+
+
+def _datevec(args, *, nargout=1):
+    _need(args, 1, "datevec")
+    v = args[0]
+    fmt = args[1].text if len(args) > 1 and _is_text(args[1]) else None
+    if _is_text(v) or _is_cell(v):
+        texts = [x.text for x in _flat_cell(v)] if _is_cell(v) else ([r for r in v.rows] if v.rows else [""])
+        rows = [_parse_date(t, fmt) for t in texts]
+        shape = (len(rows), 1)
+    else:
+        if type(v).__name__ == "DatetimeValue":
+            a = np.asarray(v.v, dtype=float)
+        else:
+            a = np.asarray(v.backend_buffer(), dtype=float)
+        a = a.reshape(1, 1) if a.ndim == 0 else a
+        shape = a.shape
+        rows = [_vec_of(float(x)) for x in a.reshape(-1, order="F")]
+    m = np.array(rows, dtype=float).reshape(-1, 6) if rows else np.zeros((0, 6))
+    if nargout <= 1:
+        return (_out(m),)
+    return tuple(_out(m[:, k].reshape(shape, order="F")) for k in range(6))[:nargout]
+
+
 def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "issymmetric": _issymmetric, "ishermitian": _ishermitian, "bandwidth": _bandwidth, "isbanded": _isbanded,
@@ -524,7 +666,7 @@ def register(builtins: Dict[str, Callable]) -> None:
         "mape": _pair_metric("mape", lambda a, b: 100 * np.abs((b - a) / b)),
         "cart2pol": _cart2pol, "pol2cart": _pol2cart, "cart2sph": _cart2sph, "sph2cart": _sph2cart,
         "bitcmp": _bitcmp, "bitset": _bitset, "eomday": _eomday,
-        "tensorprod": _tensorprod, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
+        "tensorprod": _tensorprod, "datevec": _datevec, "normalize": _normalize, "filesep": _filesep, "pathsep": _pathsep, "erase": _erase,
     }
     for k, v in table.items():
         builtins.setdefault(k, v)
