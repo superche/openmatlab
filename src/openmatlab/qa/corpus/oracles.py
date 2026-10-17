@@ -49,17 +49,27 @@ SELF_CHECK_KINDS = ("assert", "test")
 SKIPPED_KINDS = ("error", "warning", "fail", "testif", "xtest", "demo")
 # Octave-only functions and values seen in %! blocks (no MATLAB base equivalent): a block using
 # one is Octave dialect. Kept short and explicit; anything else that is missing counts as a failure.
-OCTAVE_ONLY = {"columns", "rows", "postpad", "prepad", "print_usage", "nthargout", "isargout", "lookup", "merge",
-               "ifelse", "fail", "NA", "isna", "sizeof", "vec", "printf", "puts", "fputs", "fdisp", "index", "rindex",
-               "do_string_escapes", "undo_string_escapes", "program_name", "OCTAVE_VERSION", "pkg", "ostrsplit",
-               "validatestring_", "isargout", "inputname_", "typecast_", "numel_", "common_size", "sizemax",
-               "unwind_protect", "end_unwind_protect", "endfunction", "print_empty_dimensions", "output_precision",
-               "save_precision", "struct_levels_to_print", "split_long_rows", "fixed_point_format", "page_screen_output",
-               "isguirunning", "have_window_system", "compare_versions", "ispc_", "nproc", "getpid", "argn",
-               "mlock", "munlock", "mislocked", "exist_", "warning_ids", "lasterror", "rethrow_", "evalc_",
-               "isdeployed_", "dbstack_", "inputParser_", "func2str_", "str2func_", "isvarname_", "toc_", "cputime_",
-               "bitshift_", "bincoeff", "nchoosek_", "primes_", "isprime_", "sign_", "mat2str_", "int2str_", "toascii",
-               "lower_", "blanks_", "deblank_", "regexptranslate_", "strvcat_", "substr", "strtok_", "validatestring"}
+OCTAVE_ONLY = {
+    # syntax-level and environment functions
+    "columns", "rows", "postpad", "prepad", "print_usage", "nthargout", "isargout", "lookup", "merge", "ifelse",
+    "fail", "NA", "isna", "sizeof", "vec", "printf", "puts", "fputs", "fdisp", "index", "rindex", "substr",
+    "do_string_escapes", "undo_string_escapes", "program_name", "OCTAVE_VERSION", "OCTAVE_HOME", "pkg", "ostrsplit",
+    "common_size", "sizemax", "unwind_protect", "end_unwind_protect", "endfunction", "print_empty_dimensions",
+    "output_precision", "save_precision", "struct_levels_to_print", "split_long_rows", "fixed_point_format",
+    "page_screen_output", "isguirunning", "have_window_system", "compare_versions", "nproc", "getpid", "argn",
+    "toascii", "is_function_handle", "resize", "isdefinite",
+    # Octave-only library functions whose own %! tests are in the corpus
+    "time", "strftime", "strptime", "asctime", "ctime", "is_leap_year", "cstrcat", "strchr", "strtrunc", "untabify",
+    "center", "meansq", "ranks", "runlength", "run_count", "spearman", "kendall", "statistics", "list_primes",
+    "commutation_matrix", "duplication_matrix", "vech", "housh", "qzhess", "polyaffine", "polyreduce", "polygcd",
+    "ppjumps", "padecoef", "splinefit", "gls", "ols", "rotdim", "parseparams", "bincoeff",
+    "discrete_cdf", "discrete_inv", "discrete_pdf", "discrete_rnd", "empirical_cdf", "empirical_inv",
+    "empirical_pdf", "empirical_rnd",
+}
+
+# MATLAB functions that live in a toolbox, not base MATLAB, whose Octave tests are in the corpus.
+SUBJECT_TOOLBOX = {"sinint": "symbolic", "cosint": "symbolic", "rotx": "phased", "roty": "phased", "rotz": "phased",
+                   "corr": "statistics", "corrcov": "statistics", "moment": "statistics"}
 
 
 @dataclass
@@ -244,7 +254,9 @@ def octave_script(text: str) -> OctavePlan:
             continue
         if b.kind == "shared":
             head, _, rest = b.code.partition("\n")
-            shared = [v for v in re.findall(r"[A-Za-z_]\w*", head)]
+            from .preprocess import _KEYWORDS
+
+            shared = [v for v in re.findall(r"[A-Za-z_]\w*", re.split(r"[#%]", head)[0]) if v not in _KEYWORDS]
             init, d = _translate(rest) if rest.strip() else ("", "")
             lines.append("clearvars;")
             lines += [f"{v} = [];" for v in shared]

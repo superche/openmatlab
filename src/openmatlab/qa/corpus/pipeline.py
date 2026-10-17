@@ -93,7 +93,7 @@ class _Job:
             if e.kind == "selftest":  # the driver asserts all(pass(:)): its outcome is the self-check
                 rec["t2"] = rec["t1"]
             if (role == "script" and p is not None and p.transcript and O.golden_source(p.notes, raw) == "matlab"
-                    and not O.nondeterministic(code)):
+                    and not O.nondeterministic("\n".join([code, *self.siblings.values()]))):
                 ok, why = O.golden_match(r["stdout"], p.transcript) if r["status"] == "pass" else (False, "T1 " + r["status"])
                 rec["t3"] = "pass" if ok else ("error" if r["status"] == "pass" else r["status"])
                 rec["oracle"] = "golden:matlab" + ("" if ok else "; " + why)
@@ -104,6 +104,11 @@ class _Job:
     def _octave(self, rec: dict, raw: str, stage: Path, timeout: float) -> dict:
         plan = O.octave_script(raw)
         rec.update(role="octave-tests", notes=sorted({"aside:" + a for a in plan.set_aside}), t0="n/a", t1="n/a")
+        subject = self.e.id.rsplit("/", 1)[-1]
+        if subject in O.OCTAVE_ONLY:  # an Octave-only function: its tests say nothing about MATLAB
+            rec.update(t2="n/a", status="n/a", category="corpus-noise", key="dialect:octave-only-function",
+                       message=f"{subject} is not a MATLAB function")
+            return rec
         if not plan.applicable:
             why = (plan.set_aside or ["no-self-check"])[0]
             rec.update(t2="n/a", status="n/a", category="corpus-noise", key=why.split(":")[0],
@@ -130,6 +135,11 @@ class _Job:
             res = dict(res, kind="parse")
         feats = features(plan.script, set())  # the Octave file is not on the path: its function is OpenMATLAB's
         cat, key = classify_features(res, feats)
+        m = re.search(r"Undefined (?:function or variable|function|variable)[^:']*[:']\s*'?([A-Za-z_]\w*)", res.get("message") or "")
+        if m and m.group(1) == subject and cat in ("corpus-noise", "semantics-diff"):
+            cat, key = "missing-builtin", subject  # the MATLAB function under test is not implemented
+            if subject in O.SUBJECT_TOOLBOX:
+                cat = "toolbox:" + O.SUBJECT_TOOLBOX[subject]
         rec.update(t2=t2, status=t2, category=cat, key=key, error_id=res.get("error_id", ""),
                    message=(res.get("message") or "")[:MSG_CAP], elapsed=r["elapsed"])
         return rec
