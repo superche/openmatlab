@@ -363,14 +363,20 @@ def _axis(v):
 
 
 def _interp2(args, *, nargout=1):
-    method, extrap = "linear", np.nan
+    method, extrap, given = "linear", np.nan, False
     nums = list(args)
     if nums and _text(nums[-1]) is None and len(nums) in (4, 7) and _text(nums[-2]) is not None:
-        extrap = float(_a(nums[-1]).reshape(-1)[0])
+        extrap, given = float(_a(nums[-1]).reshape(-1)[0]), True
         nums = nums[:-1]
     if nums and _text(nums[-1]) is not None:
         method = _text(nums.pop()).lower()
-    if len(nums) == 3:
+    if len(nums) in (1, 2) and (len(nums) == 1 or _a(nums[1]).size == 1):  # interp2(Z) / interp2(Z, k): refined grid
+        Z = _a(nums[0])
+        k = int(_a(nums[1]).reshape(-1)[0]) if len(nums) == 2 else 1
+        xg, yg = np.arange(1, Z.shape[1] + 1, dtype=float), np.arange(1, Z.shape[0] + 1, dtype=float)
+        Xq, Yq = np.meshgrid(np.linspace(1, Z.shape[1], (Z.shape[1] - 1) * 2 ** k + 1),
+                             np.linspace(1, Z.shape[0], (Z.shape[0] - 1) * 2 ** k + 1))
+    elif len(nums) == 3:
         Z = _a(nums[0])
         xg, yg = np.arange(1, Z.shape[1] + 1, dtype=float), np.arange(1, Z.shape[0] + 1, dtype=float)
         Xq, Yq = _a(nums[1]), _a(nums[2])
@@ -409,8 +415,14 @@ def _interp2(args, *, nargout=1):
         j, ty = cell(yg, ys)
         i1, j1 = np.minimum(i + 1, xg.size - 1), np.minimum(j + 1, yg.size - 1)
         r = (Z[j, i] * (1 - tx) * (1 - ty) + Z[j, i1] * tx * (1 - ty) + Z[j1, i] * (1 - tx) * ty + Z[j1, i1] * tx * ty)
+    elif method in ("pchip", "cubic", "spline", "makima"):
+        from .gridn import interp_points
+
+        r = interp_points([yg, xg], Z, [yq, xq], method, extrap if given else None)
+        if not given and method in ("spline", "makima"):  # documented: these extrapolate by default
+            out = np.isnan(xq) | np.isnan(yq)
     else:
-        raise _err(f"interp2: method '{method}' is not supported yet.", "MATLAB:interp2:unsupportedMethod")
+        raise _err(f"interp2: unknown method '{method}'.", "MATLAB:interp2:unsupportedMethod")
     r = np.where(out, extrap, r)
     return [_out(r.reshape(Xq.shape))]
 

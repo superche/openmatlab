@@ -275,3 +275,14 @@ def test_linsolve_isstrprop_cplxpair_dsearchn():
     assert ev("r = isstrprop('a1 B', 'wspace');").tolist() == [[False, False, True, False]]
     np.testing.assert_allclose(ev("r = cplxpair([3, 1+2i, 1-2i]);"), [[1 - 2j, 1 + 2j, 3]])
     np.testing.assert_allclose(ev("r = dsearchn([0 0; 1 1; 5 5], [0.9 0.8; 4 4]);"), [[2], [3]])
+
+
+def test_gridded_interpolation():
+    np.testing.assert_allclose(ev("[x, y, z] = ndgrid(0:2); r = interpn(x, y, z, x + y + z, [.5 1.5], [.5 1.5], [.5 1.5]);"),
+                               [[1.5, 4.5]])
+    np.testing.assert_allclose(ev("r = interpn([1 2; 3 4], 1.5, 1.5);"), [[2.5]])
+    np.testing.assert_allclose(ev("V = reshape(1:27, 3, 3, 3); r = interp3(V, 2, 1, 1);"), [[4.0]])
+    np.testing.assert_allclose(ev("r = interp2([1 2 3; 4 5 6; 7 8 9], 2.5, 1.5, 'spline');"), [[5.5]])
+    np.testing.assert_allclose(ev("r = interp2([1 2 3; 4 5 6; 7 8 9], 2.5, 1.5, 'cubic');"), [[5.5]])
+    assert ev("r = interp2(magic(3));").shape == (5, 5)
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'spline');"), [[16.0]])
