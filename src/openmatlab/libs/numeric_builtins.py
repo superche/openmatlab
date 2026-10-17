@@ -1416,3 +1416,4 @@ __import__("openmatlab.libs.burndown_builtins", fromlist=["register"]).register(
 __import__("openmatlab.libs.t2_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.incgamma_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.gallery_builtins", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
+__import__("openmatlab.libs.stats_t2", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down

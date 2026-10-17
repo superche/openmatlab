@@ -2009,12 +2009,26 @@ class Evaluator:
         if native is not None:
             return native  # [S F; ...] in compressed storage (#517)
 
+        int_dt = next(
+            (p.dtype for r in rows for v in r
+             for p in [np.asarray(v.backend_buffer())] if np.issubdtype(p.dtype, np.integer)),
+            None,
+        )
         bufs = []
         for r in rows:
             parts = []
             for v in r:
                 b = np.asarray(self._require_array(v, "matrix").backend_buffer())
                 b = b.reshape(1, 1) if b.ndim == 0 else (b.reshape(1, -1) if b.ndim == 1 else b)
+                if int_dt is not None and b.dtype != int_dt:  # convert per part: no detour through double (#765)
+                    from openmatlab.numerics.intclass import saturate
+
+                    if np.issubdtype(b.dtype, np.integer):
+                        info = np.iinfo(int_dt)
+                        b = np.array([min(max(int(x), int(info.min)), int(info.max)) for x in b.reshape(-1)],
+                                     dtype=int_dt).reshape(b.shape)
+                    elif not np.iscomplexobj(b):
+                        b = saturate(np.asarray(b, dtype=np.float64), int_dt)
                 if b.shape != (0, 0):  # [] is ignored in concatenation
                     parts.append(b)
             if not parts:
@@ -2023,16 +2037,12 @@ class Evaluator:
         if not bufs:
             return self.numerics.from_nested([])
         out = self._cat_nd(bufs, axis=0)
-        int_dt = next(
-            (p.dtype for r in rows for v in r
-             for p in [np.asarray(v.backend_buffer())] if np.issubdtype(p.dtype, np.integer)),
-            None,
-        )
         if int_dt is not None:
             # MATLAB: concatenating with integers yields the leftmost integer class
             from openmatlab.numerics.intclass import saturate
 
-            out = saturate(np.asarray(out, dtype=np.float64), int_dt)
+            if out.dtype != int_dt:
+                out = saturate(np.asarray(out, dtype=np.float64), int_dt)
         elif out.dtype != np.bool_ and not np.iscomplexobj(out):
             out = out.astype(np.float64)
         if int_dt is None and any(

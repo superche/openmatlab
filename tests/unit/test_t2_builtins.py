@@ -141,3 +141,51 @@ def test_gallery_families():
     s = ReplSession()
     s.run_line("try, gallery('nosuch', 3); r = 0; catch err, r = strcmp(err.identifier, 'MATLAB:gallery:unknownName'); end")
     assert bool(np.asarray(s.session.workspace.get("r").backend_buffer()).item())
+
+
+def test_dec2bin_dec2hex_negative_and_addtodate():
+    s = ReplSession()
+    s.run_line("a = dec2bin(-3); b = dec2hex(-129); c = dec2bin([1 -4]); d = dec2bin(2.9);")
+    w = s.session.workspace
+    assert w.get("a").text == "11111101"
+    assert w.get("b").text == "FF7F"
+    assert list(w.get("c").rows) == ["00000001", "11111100"]
+    assert w.get("d").text == "10"
+    np.testing.assert_allclose(ev("d = datenum(2008, 1, 1); r = addtodate(d, [1 13], 'month') - d;"), [[31, 397]])
+    np.testing.assert_allclose(ev("r = addtodate(datenum(2020, 3, 31), -1, 'month') - datenum(2020, 2, 29);"), [[0]])
+    np.testing.assert_allclose(ev("r = addtodate(10, 6, 'hour');"), [[10.25]])
+
+
+def test_interp1_matrix_methods_pp():
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [10 20; 20 40; 30 60], [1.5 2.5]);"), [[15, 30], [25, 50]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'linear', 'extrap');"), [[14]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 4 9], 4, 'linear', 0);"), [[0]])
+    assert np.isnan(ev("r = interp1([1 2 3], [1 4 9], 4);")).all()
+    np.testing.assert_allclose(ev("r = interp1([1 2 3 4], [1 8 27 64], 5, 'spline');"), [[125]], rtol=1e-12)
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [5 6 7], [1.2 2.6], '*nearest');"), [[5, 7]])
+    np.testing.assert_allclose(ev("r = interp1([3 2 1], [9 4 1], 1.5);"), [[2.5]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3], [1 2 3] + 1i, 2.5);"), [[2.5 + 1j]])
+    np.testing.assert_allclose(ev("r = ppval(interp1([1 2 3], [1 4 9], 'linear', 'pp'), 2.5);"), [[6.5]])
+    np.testing.assert_allclose(ev("r = interp1([1 2 3 4 5], [1 2 3 4 5], 2.5, 'makima');"), [[2.5]], rtol=1e-12)
+
+
+def test_continuation_after_name_is_not_command_syntax():
+    np.testing.assert_allclose(ev("r = max ...\n  (3, 4);"), [[4]])
+    s = ReplSession()
+    s.run_line("x = 1;\nassert ...\n  (x == 1, 'msg');\nr = 2;")
+    assert np.asarray(s.session.workspace.get("r").backend_buffer()).item() == 2
+
+
+def test_mean_median_options():
+    np.testing.assert_allclose(ev("r = mean(magic(4), [1 2]);"), [[8.5]])
+    assert ev("r = mean(uint8([1 2 4]), 'native');").dtype == np.uint8
+    assert ev("r = mean(uint8([1 2 4]), 'native');").item() == 2
+    assert ev("r = mean(int64([intmin('int64') intmax('int64')-1]));").item() == -1.0
+    assert ev("r = mean(single([1 2]), 'double');").dtype == np.float64
+    np.testing.assert_allclose(ev("r = mean([1 NaN 3], 'omitnan');"), [[2]])
+    np.testing.assert_allclose(ev("r = mean([1 1; 7 9], 'Weights', [1; 3]);"), [[5.5, 7]])
+    assert np.isnan(ev("r = mean([]);")).all()
+    assert ev("r = median(int8([1 2]));").dtype == np.int8
+    assert ev("r = median(uint8([253 255]));").item() == 254
+    np.testing.assert_allclose(ev("r = median([3 1 NaN 2], 'omitnan');"), [[2]])
+    np.testing.assert_allclose(ev("r = median(magic(3), [1 99]);"), [[4, 5, 6]])

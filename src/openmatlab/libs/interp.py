@@ -193,31 +193,166 @@ def _unmkpp(args, *, nargout=1):
     return [_out(b.reshape(1, -1)), _out(c), _out(float(c.shape[0])), _out(float(c.shape[1])), _out(1.0)][:max(1, nargout)]
 
 
-def _wrap_interp1(core):
-    def fn(args, *, nargout=1):
-        texts = [(_text(a) or "").lower() for a in args if _text(a) is not None]
-        method = next((t for t in texts if t in ("spline", "pchip", "cubic")), None)
-        if method is None:
-            return core(args, nargout=nargout)
-        nums = [a for a in args if _text(a) is None]
-        if len(nums) == 2:
-            y = _row(_a(nums[0]))
-            x, q = np.arange(1, y.size + 1, dtype=float), _a(nums[1])
-            extra = []
-        else:
-            x, y, q = _row(_a(nums[0])), _row(_a(nums[1])), _a(nums[2])
-            extra = nums[3:]
-        x, y = _sites(x, y, "interp1")
-        if x.size != y.size:
-            raise _err("The grid vectors must contain unique points and match Y.", "MATLAB:interp1:YInvalidNumRows")
-        coefs = spline_coefs(x, y) if method == "spline" else pchip_coefs(x, y)
-        r = ppeval(x, coefs, q)
-        if extra:  # explicit extrapolation value
-            ev = float(_a(extra[0]).reshape(-1)[0])
-            r = np.where((q < x[0]) | (q > x[-1]), ev, r)
-        return [_out(r)]
+METHODS = ("linear", "nearest", "next", "previous", "pchip", "cubic", "spline", "makima", "v5cubic")
 
-    return fn
+
+def makima_coefs(x, y):
+    h = np.diff(x)
+    d = np.diff(y) / h
+    n = x.size
+    if n == 2:
+        return _hermite(x, y, np.full(2, d[0]))
+    de = np.concatenate([[3 * d[0] - 2 * d[1], 2 * d[0] - d[1]], d, [2 * d[-1] - d[-2], 3 * d[-1] - 2 * d[-2]]])
+    s = np.empty(n)
+    for i in range(n):  # slope at x_i uses de[i .. i+3] (two extended deltas each side)
+        dm2, dm1, d0, d1 = de[i], de[i + 1], de[i + 2], de[i + 3]
+        w1 = abs(d1 - d0) + abs(d1 + d0) / 2
+        w2 = abs(dm1 - dm2) + abs(dm1 + dm2) / 2
+        s[i] = (dm1 + d0) / 2 if w1 + w2 == 0 else (w1 * dm1 + w2 * d0) / (w1 + w2)
+    return _hermite(x, y, s)
+
+
+def _coefs(method, x, y):
+    if method == "spline":
+        return spline_coefs(x, y)
+    if method == "makima":
+        return makima_coefs(x, y)
+    return pchip_coefs(x, y)
+
+
+def _interp_col(method, x, y, q, extrap):
+    """One real column y(x) at query points q (flat); out-of-range entries are handled by the caller
+    unless ``extrap``."""
+    n = x.size
+    if method in ("pchip", "cubic", "v5cubic", "spline", "makima"):
+        if n < 2:
+            raise _err("There should be at least two data points.", "MATLAB:interp1:NotEnoughPts")
+        return ppeval(x, _coefs("pchip" if method in ("cubic", "v5cubic") else method, x, y), q)
+    if method == "linear":
+        i = np.clip(np.searchsorted(x, q, side="right") - 1, 0, n - 2)
+        t = (q - x[i]) / (x[i + 1] - x[i])
+        r = y[i] + t * (y[i + 1] - y[i])
+        return np.where(q == x[i + 1], y[i + 1], r)
+    if method == "nearest":
+        i = np.clip(np.searchsorted(x, q), 1, n - 1)
+        return y[np.where(q - x[i - 1] < x[i] - q, i - 1, i)]  # ties round up (MATLAB)
+    if method == "previous":
+        i = np.searchsorted(x, q, side="right") - 1
+        return np.where(i >= 0, y[np.clip(i, 0, n - 1)], y[0] if extrap else np.nan)
+    i = np.searchsorted(x, q, side="left")  # next
+    return np.where(i < n, y[np.clip(i, 0, n - 1)], y[-1] if extrap else np.nan)
+
+
+def _pp_linear_like(method, x, y):
+    if method == "linear":
+        return x, np.column_stack([np.diff(y) / np.diff(x), y[:-1]])
+    if method == "nearest":
+        mid = (x[:-1] + x[1:]) / 2
+        return np.concatenate([[x[0]], mid, [x[-1]]]), y.reshape(-1, 1)
+    if method == "previous":
+        return x, y[:-1].reshape(-1, 1)
+    return x, y[1:].reshape(-1, 1)
+
+
+def _interp1(args, *, nargout=1):
+    """interp1 (MATLAB documented behaviour): vector or matrix V (interpolated along columns), methods
+    linear/nearest/next/previous/pchip/cubic/spline/makima, 'extrap' or a scalar extrapolation value,
+    and the legacy pp = interp1(x, v, method, 'pp') form."""
+    if len(args) < 2:
+        raise _err("Not enough input arguments.", "MATLAB:minrhs")
+    first_text = next((k for k, a in enumerate(args) if _text(a) is not None), len(args))
+    data, tail = list(args[:first_text]), list(args[first_text:])
+    method, extrap, ppform, extrapval = "linear", None, False, None
+    for a in tail:
+        t = _text(a)
+        if t is None:
+            extrapval = a
+            continue
+        t = t.lower().lstrip("*")
+        if t in METHODS:
+            method = t
+        elif t == "extrap":
+            extrap = True
+        elif t == "pp":
+            ppform = True
+        else:
+            raise _err(f"interp1: invalid method '{_text(a)}'.", "MATLAB:interp1:InvalidMethod")
+    if extrapval is not None:
+        ev = np.asarray(extrapval.backend_buffer())
+        if ev.size != 1:
+            raise _err("Extrapolation value must be a scalar.", "MATLAB:interp1:ExtrapNonScalar")
+        extrap, extrapval = False, ev.reshape(-1)[0]
+    if ppform:
+        if len(data) != 2:
+            raise _err("Wrong number of input arguments.", "MATLAB:interp1:nargin")
+        x, v = _row(_a(data[0])), _row(_a(data[1]))
+        o = np.argsort(x, kind="stable")
+        x, v = x[o], v[o]
+        if method in ("linear", "nearest", "next", "previous"):
+            b, c = _pp_linear_like(method, x, v)
+        else:
+            b, c = x, _coefs("pchip" if method in ("cubic", "v5cubic") else method, x, v)
+        return [_pp_struct(b, c)]
+    if len(data) == 2:
+        V, Xq = np.asarray(data[0].backend_buffer()), np.asarray(data[1].backend_buffer())
+        vec = V.ndim == 2 and min(V.shape) == 1
+        x = np.arange(1.0, (V.size if vec else V.shape[0]) + 1)
+    elif len(data) == 3:
+        x = np.asarray(data[0].backend_buffer())
+        V, Xq = np.asarray(data[1].backend_buffer()), np.asarray(data[2].backend_buffer())
+        if x.ndim > 2 or (x.ndim == 2 and min(x.shape) > 1):
+            raise _err("X must be a vector.", "MATLAB:interp1:Xvector")
+        x = x.reshape(-1).astype(float)
+        vec = V.ndim == 2 and min(V.shape) == 1 and V.size == x.size
+    else:
+        raise _err("Wrong number of input arguments.", "MATLAB:interp1:nargin")
+    if V.dtype.kind in "biu":
+        V = V.astype(float)
+    if Xq.dtype.kind not in "fc":
+        Xq = Xq.astype(float)
+    Y = V.reshape(-1, 1) if vec else V.reshape(V.shape[0], -1, order="F")
+    if Y.shape[0] != x.size:
+        raise _err("The grid vectors must contain unique points and match Y.", "MATLAB:interp1:YInvalidNumRows")
+    if x.size < 2:
+        raise _err("There should be at least two data points.", "MATLAB:interp1:NotEnoughPts")
+    if np.any(np.isnan(x)):
+        raise _err("NaN is not an appropriate value for X.", "MATLAB:interp1:NaNinX")
+    o = np.argsort(x, kind="stable")
+    x, Y = x[o], Y[o]
+    if np.any(np.diff(x) == 0):
+        raise _err("The grid vectors must contain unique points.", "MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId")
+    if extrap is None:
+        extrap = method in ("pchip", "cubic", "v5cubic", "spline", "makima") and extrapval is None
+    fill = np.nan if extrapval is None else extrapval
+    q = np.real(Xq).reshape(-1).astype(float)
+    nan_q = np.isnan(q)
+    qs = np.where(nan_q, x[0], q)
+    out_side = (q < x[0]) | (q > x[-1])
+    cplx = np.iscomplexobj(Y) or np.iscomplexobj(fill)
+    R = np.empty((q.size, Y.shape[1]), dtype=complex if cplx else float)
+    for k in range(Y.shape[1]):
+        col = Y[:, k]
+        parts = [np.real(col), np.imag(col)] if np.iscomplexobj(col) else [col.astype(float)]
+        vals = [_interp_col(method, x, p, qs, extrap) for p in parts]
+        r = vals[0] + 1j * vals[1] if len(vals) == 2 else vals[0]
+        if method == "linear" and extrap:
+            lo, hi = q < x[0], q > x[-1]
+            r = np.where(lo, col[0] + (q - x[0]) * (col[1] - col[0]) / (x[1] - x[0]), r)
+            r = np.where(hi, col[-1] + (q - x[-1]) * (col[-1] - col[-2]) / (x[-1] - x[-2]), r)
+        elif method == "nearest" and extrap:
+            r = np.where(q < x[0], col[0], np.where(q > x[-1], col[-1], r))
+        if not extrap:
+            r = np.where(out_side, fill, r)
+        R[:, k] = np.where(nan_q, np.nan, r)
+    if vec:
+        out = R[:, 0].reshape(Xq.shape)
+    else:
+        trail = V.shape[1:]
+        lead = (q.size,) if Xq.ndim == 2 and min(Xq.shape) == 1 else Xq.shape
+        out = R.reshape(lead + tuple(trail), order="F")
+    if np.iscomplexobj(out) and not np.any(np.imag(out)) and not np.iscomplexobj(V):
+        out = out.real
+    return [NDArrayValue(np.ascontiguousarray(out)) if out.ndim >= 2 else NDArrayValue(out.reshape(1, -1))]
 
 
 def _axis(v):
@@ -327,8 +462,7 @@ def register(builtins: Dict[str, Callable]) -> None:
     builtins["ppval"] = _ppval
     builtins["mkpp"] = _mkpp
     builtins["unmkpp"] = _unmkpp
-    if "interp1" in builtins:
-        builtins["interp1"] = _wrap_interp1(builtins["interp1"])
+    builtins["interp1"] = _interp1
     builtins["interp2"] = _interp2
     builtins["polyder"] = _polyder
     builtins["polyint"] = _polyint
