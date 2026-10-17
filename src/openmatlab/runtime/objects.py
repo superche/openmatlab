@@ -279,8 +279,10 @@ def datestr_format(dn, fmt=None):
     hh = (h % 12 or 12) if pm else h
     wd = int((math.floor(dn) - 2) % 7)
     toks = [("yyyy", f"{y:04d}"), ("yy", f"{y % 100:02d}"), ("mmmm", _dt.date(2000, mo, 1).strftime("%B")),
-            ("mmm", _MONTHS[mo - 1]), ("mm", f"{mo:02d}"), ("dddd", _dt.date(2000, 1, 2 + wd).strftime("%A")),
-            ("ddd", _DAYS[wd]), ("dd", f"{d:02d}"), ("HH", f"{hh:02d}"), ("MM", f"{mi:02d}"), ("SS", f"{int(s):02d}"),
+            ("mmm", _MONTHS[mo - 1]), ("mm", f"{mo:02d}"), ("m", _MONTHS[mo - 1][0]),
+            ("dddd", _dt.date(2000, 1, 2 + wd).strftime("%A")), ("ddd", _DAYS[wd]), ("dd", f"{d:02d}"),
+            ("d", _DAYS[wd][0]), ("QQ", f"Q{(mo - 1) // 3 + 1}"), ("YYYY", f"{y:04d}"), ("YY", f"{y % 100:02d}"),
+            ("HH", f"{hh:2d}" if pm else f"{hh:02d}"), ("MM", f"{mi:02d}"), ("SS", f"{int(s):02d}"),
             ("FFF", f"{int(round((s - int(s)) * 1000)):03d}"), ("AM", "AM" if h < 12 else "PM"), ("PM", "AM" if h < 12 else "PM")]
     out = ""
     i = 0
