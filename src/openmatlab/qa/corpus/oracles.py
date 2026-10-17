@@ -128,9 +128,12 @@ def block_dialect(code: str) -> str:
     if d:
         return d
     clean = _without_strings(code)
+    if "#" in clean:  # MATLAB uses '#' only inside text
+        return "octave-comment"
     if re.search(r"(?<![=<>~!])=(?!=)[^=;,\n]*?\b[A-Za-z_]\w*\s*=(?!=)", re.sub(r"\([^()]*\)|\{[^{}]*\}|\[[^\[\]]*\]", "", clean)):
         return "octave-chained-assign"
-    if re.search(r"[\w)\]}]\([^()\n]*\)\s*\(|\w\{[^{}\n]*\}\(|\]\s*\(|'\s*\(", clean):
+    if re.search(r"[)\]}]\(|\}\{", clean):  # f (x)(2), [1 2](1), c{1}(2): MATLAB indexes once per call
+
         return "octave-index-chain"
     if "**" in clean:
         return "octave-power"
