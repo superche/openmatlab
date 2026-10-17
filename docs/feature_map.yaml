@@ -666,6 +666,14 @@ features:
     notes: "M12 C09, Epic #766"
     tests: [tests/unit/test_corpus_crash_fixes.py]
 
+  - id: qa.corpus_tier2
+    layer: qa
+    name: Corpus T2 self-check oracle and dialect exclusions
+    status: done
+    depends_on: [qa.corpus_report]
+    notes: "M12 C07 met (Epic #765; T3/C08 pending Shaw): GNU Octave %!assert/%!test blocks run at run time (pass/fail, hashes and counts only; no Octave source or expected values committed), chebfun and matlab2tikz own checks; corpus/dialect.json excludes blocks where documented MATLAB differs from Octave (outside the rate, never a pass); full run T2 82.3 %"
+    tests: [tests/unit/test_corpus_selfcheck.py]
+
   - id: lang.endless_functions
     layer: qa
     name: Files whose functions omit end (body runs to next function or EOF)
