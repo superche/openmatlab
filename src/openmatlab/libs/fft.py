@@ -133,11 +133,17 @@ def _shift(inverse):
 
 
 def _nextpow2(args, *, nargout=1):
-    a = np.abs(_arr(args[0]).astype(float))
-    with np.errstate(divide="ignore"):
-        r = np.where(a == 0, 0.0, np.ceil(np.log2(np.where(a == 0, 1, a))))
-    r = np.where(np.isinf(a), np.inf, r)
-    return [NDArrayValue(np.asarray(r, dtype=float))]
+    """Smallest p with 2^p >= abs(x), exact (frexp / integer bit length); class of the input."""
+    a = np.asarray(args[0].backend_buffer())
+    if a.dtype.kind in "iu":
+        r = np.array([(abs(int(v)) - 1).bit_length() if v else 0 for v in a.reshape(-1)], dtype=a.dtype)
+        return [NDArrayValue(r.reshape(a.shape))]
+    x = np.abs(a.astype(np.float64) if a.dtype.kind in "b" else a)
+    m, e = np.frexp(np.where(np.isfinite(x), x, 1))
+    r = np.where(m == 0.5, e - 1, e).astype(np.float64)
+    r = np.where(x == 0, 0.0, r)
+    r = np.where(np.isinf(x), np.inf, np.where(np.isnan(x), np.nan, r))
+    return [NDArrayValue(np.asarray(r, dtype=np.float32 if a.dtype in (np.float32, np.complex64) else np.float64))]
 
 
 def register(builtins: Dict[str, Callable]) -> None:

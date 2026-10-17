@@ -250,6 +250,59 @@ def _median(args, *, nargout=1):
     return (NDArrayValue(np.ascontiguousarray(_unframe(r, keep, out_shape, full))),)
 
 
+
+def _mode_row(v):
+    """(mode, frequency, all modes) of one slice; NaN values are ignored (documented)."""
+    if v.dtype.kind in "fc":
+        v = v[~np.isnan(v)]
+    if v.size == 0:
+        return None, 0, v
+    vals, counts = np.unique(v, return_counts=True)
+    f = counts.max()
+    modes = vals[counts == f]
+    return modes[0], int(f), modes
+
+
+def _mode(args, *, nargout=1):
+    from openmatlab.runtime.cell_value import CellValue
+
+    x, dims, outtype, omit = _parse("mode", args)
+    nanv = np.array(np.nan).astype(x.dtype) if x.dtype.kind in "fc" else np.zeros((), x.dtype)
+    if x.ndim == 2 and x.shape == (0, 0) and dims is None:
+        m = np.full((1, 1), np.nan) if x.dtype.kind not in "fc" else np.full((1, 1), np.nan, dtype=x.dtype)
+        c = CellValue.from_obj(np.array([[NDArrayValue(np.zeros((0, 1), dtype=x.dtype if x.dtype.kind in "fc" else float))]], dtype=object))
+        return (NDArrayValue(m), NDArrayValue(np.zeros((1, 1))), c)[:max(1, nargout)]
+    axes, whole = _axes(x, dims)
+    if dims is not None and dims != "all" and all(a >= x.ndim for a in axes):
+        objs = np.empty(x.shape, dtype=object)
+        for ix in np.ndindex(*x.shape):
+            objs[ix] = NDArrayValue(x[ix].reshape(1, 1))
+        f = np.where(np.isnan(x), 0.0, 1.0) if x.dtype.kind in "fc" else np.ones(x.shape)
+        return (NDArrayValue(x.copy()), NDArrayValue(f), CellValue.from_obj(objs))[:max(1, nargout)]
+    flat, keep, out_shape, full = _frame(x, axes)
+    ms, fs, cs = [], [], []
+    for row in flat:
+        m, f, modes = _mode_row(row)
+        if m is None:
+            ms.append(np.nan)
+            fs.append(0.0)
+            cs.append(NDArrayValue(np.zeros((1, 0), dtype=x.dtype if x.dtype.kind in "fc" else float)))
+        else:
+            ms.append(m)
+            fs.append(float(f))
+            cs.append(NDArrayValue(np.asarray(modes, dtype=x.dtype).reshape(-1, 1)))
+    if any(isinstance(m, float) and np.isnan(m) for m in ms) and x.dtype.kind not in "fc":
+        mt = np.float64
+    else:
+        mt = x.dtype
+    M = _unframe(np.array(ms, dtype=mt), keep, out_shape, full)
+    F = _unframe(np.array(fs), keep, out_shape, full)
+    objs = np.empty(len(cs), dtype=object)
+    for i, c in enumerate(cs):
+        objs[i] = c
+    C = CellValue.from_obj(_unframe(objs, keep, out_shape, full)) if len(cs) else CellValue(rows=())
+    return (NDArrayValue(np.ascontiguousarray(M)), NDArrayValue(np.ascontiguousarray(F)), C)[:max(1, nargout)]
+
 def _is_plain(v):
     from openmatlab.runtime.char_value import CharValue
 
@@ -268,6 +321,6 @@ def _guard(new, old):
 
 
 def register(builtins: Dict[str, Callable]) -> None:
-    for name, fn in (("mean", _mean), ("median", _median)):
+    for name, fn in (("mean", _mean), ("median", _median), ("mode", _mode)):
         old = builtins.get(name)
         builtins[name] = _guard(fn, old) if old else fn

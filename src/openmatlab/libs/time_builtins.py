@@ -253,8 +253,11 @@ def _datenum(args, *, nargout=1):
     return (_num(np.vectorize(lambda *p: datenum_from_parts(*p))(*b)),)
 
 
-_FREE = {0: "dd-mmm-yyyy HH:MM:SS", 1: "dd-mmm-yyyy", 2: "mm/dd/yy", 13: "HH:MM:SS", 23: "mm/dd/yyyy",
-         29: "yyyy-mm-dd", 30: "yyyymmddTHHMMSS", 31: "yyyy-mm-dd HH:MM:SS"}
+_FREE = {0: "dd-mmm-yyyy HH:MM:SS", 1: "dd-mmm-yyyy", 2: "mm/dd/yy", 3: "mmm", 4: "m", 5: "mm", 6: "mm/dd",
+         7: "dd", 8: "ddd", 9: "d", 10: "yyyy", 11: "yy", 12: "mmmyy", 13: "HH:MM:SS", 14: "HH:MM:SS PM",
+         15: "HH:MM", 16: "HH:MM PM", 17: "QQ-YY", 18: "QQ", 19: "dd/mm", 20: "dd/mm/yy", 21: "mmm.dd,yyyy HH:MM:SS",
+         22: "mmm.dd,yyyy", 23: "mm/dd/yyyy", 24: "dd/mm/yyyy", 25: "yy/mm/dd", 26: "yyyy/mm/dd", 27: "QQ-YYYY",
+         28: "mmmyyyy", 29: "yyyy-mm-dd", 30: "yyyymmddTHHMMSS", 31: "yyyy-mm-dd HH:MM:SS"}  # documented table
 
 
 def _datestr(args, *, nargout=1):
