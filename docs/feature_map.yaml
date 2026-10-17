@@ -602,6 +602,14 @@ features:
     notes: "tiledlayout (grid/flow/vertical/horizontal, TileSpacing/Padding), nexttile (tile, span, layout arg), yyaxis left/right with per-side limits, subplot Position (own approximate grid) with overlap replace and 'Position' form, nice auto limits (1/2/5 x 10^k, log decades), axis equal/image/square/normal/ij/xy properties, isgraphics(h,type) (Epic #770, M13 G03)"
     tests: [tests/unit/test_epic770_layout.py]
 
+  - id: libs.graphics.properties
+    layer: libs
+    name: Axes, ruler, figure and text properties (ticks, NumericRuler, Units, fonts, interpreters)
+    status: done
+    depends_on: [libs.graphics.layout]
+    notes: "auto XTick/YTick/ZTick and labels with modes, xtickangle/ytickangle/ztickangle, ax.XAxis/YAxis/ZAxis NumericRuler (Limits/TickValues/TickLabels/Direction/Exponent/TickLabelFormat; yyaxis 2x1), Units conversion of Position (figure/axes/legend/colorbar/text), title/label font multipliers, new documented properties (TickLabelInterpreter, GridColor/GridAlpha, Legend, MarkerIndices, CloseRequestFcn, callbacks), tex/latex/none rendering that never fails (Epic #771 follow-up, M13; residual #977)"
+    tests: [tests/unit/test_epic771_properties.py]
+
   - id: host.workbench.workflows
     layer: host
     name: Workbench workflows
