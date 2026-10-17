@@ -10,7 +10,9 @@ Sources of self-checks (all fetched into the local cache, never committed):
   kinds (``%!error``, ``%!warning``, ``%!testif``, ``%!xtest``, ``%!demo``, ``%!fail``) are
   counted as skipped. Octave-only syntax in a block is normalised to MATLAB at run time by
   :func:`octave_to_matlab` (``#`` comments, ``!``/``!=``, ``endif``-style keywords, ``"..."``
-  char strings, ``x += y``, ``printf``).
+  char strings, ``x += y``, ``printf``), and Octave test vocabulary used *inside* test code
+  (``NA``, ``e``, ``I``, ``rows``, ``columns``, ``resize``, ``fail``) is provided by small own shims
+  in ``t2lib/`` that exist only on the harness path.
 * **chebfun** ``tests/`` (BSD-3-Clause): the driver asserts ``all(pass(:))`` of the test's
   own result vector, so T2 = T1 for ``selftest`` entries.
 * **matlab2tikz** bundled ACID test suite (BSD-2-Clause): a scene's own status, so T2 = T1
@@ -39,7 +41,7 @@ OCTAVE_ONLY = frozenset("""accumdim asctime bincoeff bug_report center citation 
 ctime discrete_cdf discrete_inv discrete_pdf discrete_rnd duplication_matrix empirical_cdf empirical_inv empirical_pdf
 empirical_rnd gls housh index info is_leap_year isdefinite jupyter_notebook kendall list_primes ls_command meansq
 nthargout ols ostrsplit parseparams polyaffine polygcd polyout polyreduce postpad prepad ppjumps qzhess ranks rindex
-rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech""".split())
+rotdim run_count runlength spearman splinefit statistics strtrunc substr untabify vech compare_versions""".split())
 TOOLBOX_TESTS = {"statistics": frozenset("iqr kurtosis skewness mad moment prctile quantile range zscore corr".split()),
                  "phased": frozenset("rotx roty rotz".split()),
                  "symbolic": frozenset({"symvar"})}
@@ -303,7 +305,8 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
                 init = octave_to_matlab("\n".join(b.shared))
                 (stage / f"t2sh_{b.group}.m").write_text(f"function [{io}] = t2sh_{b.group}()\n{init}\nend\n",
                                                         encoding="utf-8")
-        shutil.copyfile(T2LIB / "t2_assert.m", stage / "t2_assert.m")
+        for lib in T2LIB.glob("*.m"):  # t2_assert plus Octave test-vocabulary shims (NA, e, I, rows, ...)
+            shutil.copyfile(lib, stage / lib.name)
         for f in p.functions:
             code = octave_to_matlab(f)
             m = re.search(r"function\s+(?:\[[^\]]*\]\s*=\s*|\w+\s*=\s*)?([A-Za-z_]\w*)", code)

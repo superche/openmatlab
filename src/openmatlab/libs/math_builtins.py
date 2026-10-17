@@ -444,25 +444,41 @@ def _median(args, *, nargout=1):
 def _mode(args, *, nargout=1):
     a = _arr(args[0], "mode")
     nums = _nums(args[1:])
+    if a.shape == (0, 0) and not nums:
+        a = a.reshape(0, 1)
     ax = int(_s(nums[0], "mode")) - 1 if nums else _first_dim(a)
     a = _pad_axis(a, ax)
     moved = np.moveaxis(a, ax, -1)
-    flat = moved.reshape(-1, moved.shape[-1])
-    m, fq = [], []
+    shp = list(moved.shape[:-1]) + [1]
+    flat = moved.reshape(-1, moved.shape[-1]) if moved.size else np.zeros((int(np.prod(shp)), 0), a.dtype)
+    m, fq, cs = [], [], []
     for row in flat:
         r = row[~np.isnan(row)] if np.issubdtype(row.dtype, np.floating) else row
         if r.size == 0:
-            m.append(np.nan)
+            m.append(np.nan if not np.issubdtype(a.dtype, np.integer) else 0)
             fq.append(0.0)
+            cs.append(np.full((1, 1), np.nan, dtype=float if a.dtype == bool else a.dtype)
+                      if np.issubdtype(a.dtype, np.floating) or a.dtype == bool else np.zeros((0, 0), a.dtype))
             continue
         vals, cnt = np.unique(r, return_counts=True)
         k = int(np.argmax(cnt))  # unique sorts ascending: ties -> smallest (MATLAB)
         m.append(vals[k])
         fq.append(float(cnt[k]))
-    shp = list(moved.shape[:-1]) + [1]
-    M = np.moveaxis(np.array(m, dtype=a.dtype if a.dtype != bool else float).reshape(shp), -1, ax)
+        cs.append(vals[cnt == cnt[k]].reshape(-1, 1))
+    dt = a.dtype if a.dtype != bool else float
+    M = np.moveaxis(np.array(m, dtype=dt).reshape(shp), -1, ax)
     F = np.moveaxis(np.array(fq).reshape(shp), -1, ax)
-    return (_out(M) if not np.issubdtype(a.dtype, np.integer) else NDArrayValue(M), _out(F))
+    outs = [_out(M) if not np.issubdtype(a.dtype, np.integer) else NDArrayValue(M), _out(F)]
+    if nargout > 2:
+        from openmatlab.runtime.cell_value import CellValue
+
+        idx = np.moveaxis(np.arange(len(cs)).reshape(shp), -1, ax)
+        idx2 = idx.reshape(idx.shape[0], -1, order="F") if idx.ndim > 2 else idx
+        rows = tuple(tuple(_out(cs[int(idx2[i, j])]) if cs[int(idx2[i, j])].dtype.kind != "i" and
+                           cs[int(idx2[i, j])].dtype.kind != "u" else NDArrayValue(cs[int(idx2[i, j])])
+                           for j in range(idx2.shape[1])) for i in range(idx2.shape[0]))
+        outs.append(CellValue(rows=rows))
+    return tuple(outs[:max(1, nargout)])
 
 
 def _var_core(a, w, ax, omit):
