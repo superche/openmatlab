@@ -89,7 +89,3 @@ Deduplicated by `(category, key)`; filed as `corpus` issues.
 | `semantics-diff` | `Unable to allocate # TiB for an array with shape (#, #) and ` | 6 | `octave/general/isequal#100` |
 | `io-env` | `file` | 5 | `rosetta/CSV_data_manipulation/1` |
 | `semantics-diff` | `MATLAB:cell2mat:UnsupportedCellContent` | 5 | `octave/general/cell2mat#10` |
-
-## Regressions (pass -> fail)
-
-None.
