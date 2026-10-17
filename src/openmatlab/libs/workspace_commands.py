@@ -420,3 +420,5 @@ STATEMENT_ZERO |= {"plot3", "scatter3", "surf", "surfc", "mesh", "meshc", "water
                    "bar3", "sphere", "cylinder", "ellipsoid", "view", "zlim", "shading", "light", "camlight",
                    "lighting", "material", "imshow", "daspect", "pbaspect", "clabel", "uistack", "xticks",
                    "yticks", "zticks", "xticklabels", "yticklabels", "zticklabels"}
+# layout (Epic #770)
+STATEMENT_ZERO |= {"tiledlayout", "nexttile", "yyaxis"}

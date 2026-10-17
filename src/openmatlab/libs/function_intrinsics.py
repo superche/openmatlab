@@ -327,6 +327,10 @@ from openmatlab.libs import chart3d_builtins as _c3  # noqa: E402  (M13 G-E4 #77
 
 INTRINSICS.update(_c3.INTRINSICS)
 
+from openmatlab.libs import layout_builtins as _lay  # noqa: E402  (M13 G-E3 #770)
+
+INTRINSICS.update(_lay.INTRINSICS)
+
 from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
 
 INTRINSICS.update(_gl.INTRINSICS)
