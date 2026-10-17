@@ -906,29 +906,63 @@ def _kron(args, *, nargout=1):
 
 
 def _trapz_xy(args, fn):
-    if len(args) == 1:
-        y = _f(args[0], fn)
-        x = None
+    """trapz(Y), trapz(X,Y), trapz(...,dim): X is scalar spacing, a coordinate vector, or Y-sized."""
+    if not args or len(args) > 3:
+        raise _err(f"{fn}: wrong number of input arguments.", "MATLAB:narginchk:tooManyInputs" if args else "MATLAB:minrhs")
+    dim = None
+    if len(args) == 3:
+        x, y, dim = _f(args[0], fn), _f(args[1], fn), args[2]
+    elif len(args) == 2:
+        a0, a1 = _f(args[0], fn), _f(args[1], fn)
+        if a1.size == 1 and a0.size != 1:  # trapz(Y, dim)
+            x, y, dim = None, a0, args[1]
+        else:
+            x, y = a0, a1
     else:
-        x, y = _vec(args[0], fn), _f(args[1], fn)
-    ax = _first_dim(y)
-    return x, y, ax
+        x, y = None, _f(args[0], fn)
+    if dim is not None:
+        ax = int(_s(dim, fn)) - 1
+        if ax < 0:
+            raise _err(f"{fn}: DIM must be a positive integer.", "MATLAB:getdimarg:dimensionMustBePositiveInteger")
+    else:
+        ax = _first_dim(y)
+    y = _pad_axis(y, ax)
+    n = y.shape[ax]
+    if x is None:
+        sp = np.ones(max(n - 1, 0))
+    elif x.size == 1:
+        sp = np.full(max(n - 1, 0), float(np.real(x.reshape(-1)[0])) if not np.iscomplexobj(x) else x.reshape(-1)[0])
+    elif x.ndim <= 2 and min(x.shape) == 1 and x.size == n:
+        sp = np.diff(x.reshape(-1))
+    elif x.shape == y.shape or (x.ndim < y.ndim and x.shape + (1,) * (y.ndim - x.ndim) == y.shape):
+        sp = np.diff(x.reshape(y.shape), axis=ax)
+        return sp, y, ax
+    else:
+        raise _err(f"{fn}: length of X and length of Y along DIM must match.", "MATLAB:trapz:LengthXMismatch")
+    shp = [1] * y.ndim
+    shp[ax] = -1
+    return sp.reshape(shp), y, ax
+
+
+def _trapz_seg(args, fn):
+    sp, y, ax = _trapz_xy(args, fn)
+    n = y.shape[ax]
+    lo = np.take(y, range(0, n - 1), axis=ax)
+    hi = np.take(y, range(1, n), axis=ax)
+    return (lo + hi) / 2.0 * sp, y, ax
 
 
 def _trapz(args, *, nargout=1):
-    x, y, ax = _trapz_xy(args, "trapz")
-    y = _pad_axis(y, ax)
-    r = np.trapezoid(y, x=x, axis=ax) if hasattr(np, "trapezoid") else np.trapz(y, x=x, axis=ax)
-    return (_out(np.expand_dims(r, ax)),)
+    seg, y, ax = _trapz_seg(args, "trapz")
+    return (_out(np.sum(seg, axis=ax, keepdims=True)),)
 
 
 def _cumtrapz(args, *, nargout=1):
-    x, y, ax = _trapz_xy(args, "cumtrapz")
-    y = np.moveaxis(_pad_axis(y, ax), ax, 0)
-    dx = np.diff(x) if x is not None else np.ones(y.shape[0] - 1)
-    seg = (y[1:] + y[:-1]) / 2.0 * dx.reshape((-1,) + (1,) * (y.ndim - 1))
-    r = np.concatenate([np.zeros((1,) + y.shape[1:]), np.cumsum(seg, axis=0)], axis=0)
-    return (_out(np.moveaxis(r, 0, ax)),)
+    seg, y, ax = _trapz_seg(args, "cumtrapz")
+    zshape = list(y.shape)
+    zshape[ax] = min(1, y.shape[ax])
+    r = np.concatenate([np.zeros(zshape, dtype=seg.dtype), np.cumsum(seg, axis=ax)], axis=ax)
+    return (_out(r),)
 
 
 def _polyval(args, *, nargout=1):

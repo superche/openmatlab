@@ -103,6 +103,11 @@ def _repmat(args, *, nargout=1):
         if len(reps) > 2:
             raise _err("repmat: N-D cell replication is not supported", "MATLAB:repmat:unsupported")
         g = _cell_grid(v)
+        r, c = v.shape[0] * reps[0], v.shape[1] * reps[1]
+        if r * c == 0 and (r or c):  # documented empty results keep their size (1x0, 0x5, ...)
+            from openmatlab.runtime.cell_value import CellValue
+
+            return (CellValue(rows=((),) * r) if r else CellValue(rows=(), nd=(0, c)),)
         g = [row * reps[1] for row in g] * reps[0]
         return (_mk_cell(g),)
     if getattr(v, "is_struct", False):

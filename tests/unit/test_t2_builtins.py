@@ -239,3 +239,14 @@ def test_unary_minus_and_complex_keep_signed_zero():
     assert np.signbit(ev("r = -0;")).all()
     assert np.signbit(ev("r = complex(1, -0);").imag).all()
     assert ev("r = 1/-0;").item() == -np.inf
+
+
+def test_trapz_spacing_dim_and_cell_repmat_empties():
+    assert ev("r = trapz(0.5, 1:5);").item() == 6
+    np.testing.assert_allclose(ev("r = trapz([1:5; 1:5], 2);"), [[12], [12]])
+    np.testing.assert_allclose(ev("r = trapz(0:0.5:2, [(1:5)', (1:5)']);"), [[6, 6]])
+    np.testing.assert_allclose(ev("r = trapz(ones(1, 3), 1);"), [[0, 0, 0]])
+    np.testing.assert_allclose(ev("r = cumtrapz(2, [1 2 3]);"), [[0, 3, 8]])
+    np.testing.assert_allclose(ev("r = cumtrapz([1 2 3; 4 5 6], 2);"), [[0, 1.5, 4], [0, 4.5, 10]])
+    np.testing.assert_array_equal(ev("r = size(repmat({1}, [1 0]));"), [[1, 0]])
+    np.testing.assert_array_equal(ev("r = size(repmat({1}, [0 5]));"), [[0, 5]])
