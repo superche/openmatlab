@@ -13,7 +13,7 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from openmatlab.host.display import ConsoleDisplay
 from openmatlab.host.repl import ReplSession
@@ -99,10 +99,13 @@ class FolderEntry:
 
 @dataclass
 class FigureInfo:
-    """One open figure (W06)."""
+    """One open figure (W06); ``docked`` figures live in the Figures panel (M13 G09, Epic #774)."""
 
     handle: float
     title: str
+    number: int = 0
+    docked: bool = False
+    visible: bool = True
 
 
 def _value_size_str(val: Value) -> str:
@@ -559,7 +562,53 @@ class FigureManager:
             raw = list_fn()
         else:
             raw = []
-        return [FigureInfo(handle=float(h), title=str(t)) for h, t in raw]
+        figs = self._model_figures()
+        out = []
+        for h, t in raw:
+            f = figs.get(int(float(h)))
+            props = f.props if f is not None else {}
+            out.append(FigureInfo(handle=float(h), title=str(t), number=int(float(h)),
+                                  docked=props.get("WindowStyle") == "docked",
+                                  visible=props.get("Visible", "on") != "off"))
+        return out
+
+    def _model(self):
+        return getattr(self.session.plots, "_gmodel", None)
+
+    def _model_figures(self) -> Dict[int, Any]:
+        m = self._model()
+        if m is None:
+            return {}
+        try:
+            m.sync_backend()
+        except Exception:  # noqa: BLE001 - a stale backend never breaks the panel
+            pass
+        return {int(f.id): f for f in m.figures()}
+
+    def list(self) -> List[FigureInfo]:
+        """Open figures in figure-number order (M13 G09)."""
+        return sorted(self.list_figures(), key=lambda i: i.number)
+
+    def docked(self) -> List[FigureInfo]:
+        """Figures shown in the Figures panel: ``WindowStyle`` is ``'docked'`` (MATLAB)."""
+        return [i for i in self.list() if i.docked]
+
+    def focused(self) -> Optional[int]:
+        """Number of the figure that has focus: the current figure (a new figure takes focus)."""
+        m = self._model()
+        if m is not None:
+            f = m.current_figure
+            if f is not None and f.alive:
+                return int(f.id)
+        figs = self.list()
+        return figs[-1].number if figs else None
+
+    def set_docked(self, handle: float, docked: bool = True) -> None:
+        """Dock or undock a figure (sets its ``WindowStyle``)."""
+        f = self._model_figures().get(int(float(handle)))
+        if f is None:
+            raise ValueError(f"FigureManager.set_docked: no open figure {handle:g}")
+        f.props["WindowStyle"] = "docked" if docked else "normal"
 
     def close(self, handle: Optional[float] = None) -> None:
         self.session.plots.close(handle)
@@ -569,6 +618,9 @@ class FigureManager:
         if not callable(focus_fn):
             raise NotImplementedError("FigureManager.focus: PlotSurface has no focus")
         focus_fn(handle)
+        f = self._model_figures().get(int(float(handle)))
+        if f is not None:  # focusing a figure makes it the current figure (gcf), as in MATLAB
+            self._model().current_figure = f
 
     def as_table(self) -> str:
         lines = [f"{'Handle':<10} Title"]
@@ -1142,7 +1194,7 @@ class Workbench:
         def refresh_figs() -> None:
             fig_list.delete(0, "end")
             for info in self.figures.list_figures():
-                fig_list.insert("end", f"{info.handle:g}  {info.title}")
+                fig_list.insert("end", f"{info.handle:g}  {info.title}" + ("  [docked]" if info.docked else ""))
 
         def path_go(_event=None) -> None:
             target = path_var.get().strip()

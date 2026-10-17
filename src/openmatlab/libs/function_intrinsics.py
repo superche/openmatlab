@@ -334,6 +334,7 @@ INTRINSICS.update(_lay.INTRINSICS)
 from openmatlab.libs import axes_props as _axp  # noqa: E402  (M13 G-E4 #771 properties)
 
 INTRINSICS.update(_axp.INTRINSICS)
+from openmatlab.libs import graphics_defaults as _gdef  # noqa: E402,F401  (Default<Type><Prop>, #771/#774)
 
 from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
 
