@@ -310,6 +310,13 @@ def _row_cells(strs):
     return CellValue(rows=(tuple(_cv(s) for s in strs),))
 
 
+def _col_cells(strs):
+    """N-by-1 cell of character vectors (MATLAB XTickLabel / TickLabels)."""
+    from openmatlab.runtime.cell_value import CellValue
+
+    return CellValue(rows=tuple((_cv(s),) for s in strs))
+
+
 def _props_view(o: GObj) -> Dict[str, Any]:
     d = {k: v for k, v in o.props.items() if not k.startswith("_")}
     d["Children"] = None  # every graphics object has Children (empty for leaves)
@@ -1063,8 +1070,12 @@ def _saveas(ev, args, nargout):
         path = f"{path}.{fmt}"
     ext = (fmt or os.path.splitext(path)[1][1:]).lower()
     ext = {"jpg": "jpeg", "tif": "tiff"}.get(ext, ext)
+    if ext == "fig":
+        from openmatlab.libs import figio
+        figio.save_figures(m, [f], path)  # OpenMATLAB-own .fig (Shaw #979)
+        return ()
     if ext not in ("png", "jpeg", "pdf", "svg", "eps", "tiff"):
-        raise _err(f"saveas: unsupported format '{ext}' (.fig files are not supported).", "MATLAB:saveas:badFormat")
+        raise _err(f"saveas: unsupported format '{ext}'.", "MATLAB:saveas:badFormat")
     be = m.backend
     if be is None or not hasattr(be, "save_figure"):
         raise _err("saveas: no graphics backend available.", "MATLAB:saveas:noBackend")

@@ -39,15 +39,15 @@ def test_tick_modes_and_labels():
              "l1 = ax.XTickLabel; xlim([0 20]); t1 = xticks; ax.XTickMode = 'auto'; t2 = xticks; "
              "ax.YTickLabel = [1 2 3]; yl = ax.YTickLabel; ym = ax.YTickLabelMode;")
     assert _v(w, "t0").tolist() == [list(range(1, 11))] and _t(w, "m0") == "auto" and _t(w, "m1") == "manual"
-    assert [w.get("l1").get(0, j).text for j in range(3)] == ["1", "5", "10"]
+    assert [w.get("l1").get(j, 0).text for j in range(3)] == ["1", "5", "10"]  # Nx1 (Shaw #977)
     assert _v(w, "t1").tolist() == [[1, 5, 10]] and _v(w, "t2").tolist() == [list(range(0, 21, 2))]
-    assert [w.get("yl").get(0, j).text for j in range(3)] == ["1", "2", "3"] and _t(w, "ym") == "manual"
+    assert [w.get("yl").get(j, 0).text for j in range(3)] == ["1", "2", "3"] and _t(w, "ym") == "manual"  # Nx1
 
 
 def test_log_tick_labels_and_tickangle():
     w = _run("semilogy(1:10, logspace(0, 3, 10)); yl = yticklabels; xtickangle(45); r = xtickangle; "
              "ax = gca; rm = ax.XTickLabelRotationMode;")
-    assert [w.get("yl").get(0, j).text for j in range(4)] == ["10^{0}", "10^{1}", "10^{2}", "10^{3}"]
+    assert [w.get("yl").get(j, 0).text for j in range(4)] == ["10^{0}", "10^{1}", "10^{2}", "10^{3}"]  # Nx1
     assert _v(w, "r").item() == 45 and _t(w, "rm") == "manual"
 
 
@@ -57,8 +57,8 @@ def test_rulers_proxy_axes_properties():
              "ax.YAxis.TickLabelFormat = '%.1f'; yf = ax.YAxis.TickLabels; p = isequal(r.Parent, ax); "
              "lb = isequal(r.Label, ax.XLabel); ty = r.Type;")
     assert _t(w, "c") == "matlab.graphics.axis.decorator.NumericRuler" and _v(w, "xl").tolist() == [[0, 20]]
-    assert _t(w, "d") == "reverse" and w.get("yl").get(0, 10).text == "1"
-    assert w.get("yf").get(0, 0).text == "0.0" and _v(w, "p").item() and _v(w, "lb").item()
+    assert _t(w, "d") == "reverse" and w.get("yl").get(10, 0).text == "1"  # Nx1
+    assert w.get("yf").get(0, 0).text == "0.0" and _v(w, "p").item() and _v(w, "lb").item()  # (0,0) either shape
     assert _t(w, "ty") == "numericruler"
 
 

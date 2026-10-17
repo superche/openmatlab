@@ -60,7 +60,7 @@ def test_imshow_ticks_aspect_uistack():
              "yticklabels({'a','b'}); yl = yticklabels; daspect([1 2 1]); d = daspect; "
              "a = plot(1:3); hold on; b = plot(3:-1:1); uistack(a, 'top'); k = get(gca, 'Children'); top = isequal(k(1), a);")
     assert _t(s, "t") == "image" and _v(s, "xt").tolist() == [[1, 5, 10]]
-    assert s.workspace.get("yl").get(0, 1).text == "b" and _v(s, "d").tolist() == [[1, 2, 1]] and _v(s, "top").item()
+    assert s.workspace.get("yl").get(1, 0).text == "b"  # Nx1 (Shaw #977) and _v(s, "d").tolist() == [[1, 2, 1]] and _v(s, "top").item()
 
 
 def test_intrinsic_function_handles():

@@ -1364,10 +1364,11 @@ class Evaluator:
             ri, cj = self._cell_subscript_lists(cell, idxs, "cell () index")
             # linear positions → column cell of 1×1 contents wrappers? MATLAB: c(1:2) is 1×2 or 2×1 subcell of cells
             # Each selected element stays as cell content inside the subarray
-            # NOTE: MATLAB keeps a row cell's orientation here; changing it conflicts with
-            # tests/unit/test_epic30_cells.py (reported to Shaw, #766)
+            # MATLAB keeps a row cell's orientation (c={1,2,3}; c(1:2) -> 1x2). Shaw 2026-10-17.
             if len(ri) == 1:
                 return CellValue(rows=((cell.get(ri[0], cj[0]),),))
+            if cell.shape[0] == 1 and not self._is_bare_colon(idxs[0]):
+                return CellValue(rows=(tuple(cell.get(i, j) for i, j in zip(ri, cj)),))
             return CellValue(rows=tuple((cell.get(i, j),) for i, j in zip(ri, cj)))
         rows_i, cols_j = self._cell_subscript_lists(cell, idxs, "cell () index")
         grid = tuple(tuple(cell.get(i, j) for j in cols_j) for i in rows_i)
