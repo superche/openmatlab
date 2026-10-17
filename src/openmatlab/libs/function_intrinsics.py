@@ -339,6 +339,10 @@ from openmatlab.libs import gap_leftovers as _gl  # noqa: E402
 
 INTRINSICS.update(_gl.INTRINSICS)
 
+from openmatlab.libs import figio as _figio  # noqa: E402  (M13 G-E6 #773 .fig and export)
+
+INTRINSICS.update(_figio.INTRINSICS)
+
 from openmatlab.libs import frame_help_intrinsics as _fh  # noqa: E402
 
 INTRINSICS.update(_fh.INTRINSICS)

@@ -422,3 +422,5 @@ STATEMENT_ZERO |= {"plot3", "scatter3", "surf", "surfc", "mesh", "meshc", "water
                    "yticks", "zticks", "xticklabels", "yticklabels", "zticklabels"}
 # layout (Epic #770)
 STATEMENT_ZERO |= {"tiledlayout", "nexttile", "yyaxis"}
+# figure files and export (Epic #773)
+STATEMENT_ZERO |= {"savefig", "hgsave", "exportgraphics"}
