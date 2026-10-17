@@ -21,6 +21,7 @@ Sources of self-checks (all fetched into the local cache, never committed):
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import tempfile
@@ -57,6 +58,15 @@ def excluded_category(name: str) -> str:
         if name in fs:
             return "toolbox:" + tb
     return "io-env" if name in ENV_TESTS else ""
+
+
+def dialect_exclusions(path: Path = None) -> dict:
+    """``{(block id, sha256): reason}`` from ``corpus/dialect.json``: blocks where documented MATLAB differs from Octave."""
+    f = path or M.corpus_dir() / "dialect.json"
+    if not f.is_file():
+        return {}
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    return {(x["id"], x["sha256"]): x["reason"] for x in doc.get("exclusions", [])}
 
 
 T2LIB = Path(__file__).with_name("t2lib")
@@ -323,11 +333,15 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
                 if len(parts) >= 2 and parts[1].isdigit():
                     seen[int(parts[1])] = (parts[0], parts[2] if len(parts) > 2 else "")
             outf.unlink()
-        recs = []
+        recs, dialect = [], dialect_exclusions()
         for b in p.blocks:
             st, rest = seen.get(b.index, ("", ""))
             rec = dict(base, id=f"{e.id}#{b.index}", role=b.kind, sha256=M.sha256(b.text))
-            if st == "P":
+            reason = dialect.get((rec["id"], rec["sha256"]))
+            if reason:  # MATLAB-documented behaviour differs from Octave's: outside the rate, never a pass
+                rec.update(t2="n/a", status="n/a", category="toolbox:octave-only", key="dialect:" + reason,
+                           notes=["dialect:" + reason])
+            elif st == "P":
                 rec.update(t2="pass", status="pass", category="pass", key="")
             elif st == "F":
                 eid, _, msg = rest.partition("\t")

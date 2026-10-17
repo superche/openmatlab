@@ -1,0 +1,60 @@
+{
+ "_doc": "T2 dialect exclusions (M12 C07, #765): Octave test blocks whose expected behaviour differs from documented MATLAB behaviour. OpenMATLAB follows MATLAB; each block listed here is reported as category toolbox:octave-only, key dialect:<reason> and is outside the T2 rate (never a pass). Only block ids, sha256 hashes and our own reasons are stored: no Octave test source or expected values. An entry applies only while the block's hash matches.",
+ "reasons": {
+  "interp1-extrap": "MATLAB interp1 extrapolates by default for 'pchip', 'cubic' (= pchip), 'spline' and 'makima' (documented: https://www.mathworks.com/help/matlab/ref/interp1.html, extrapolation argument); Octave returns NA/NaN out of range.",
+  "median-class": "MATLAB median returns natively in the class of A and has no outtype argument (documented: https://www.mathworks.com/help/matlab/ref/double.median.html); Octave's 'default' outtype returns double for integer and logical input.",
+  "var-dim-past-ndims": "MATLAB var returns an array of zeros the same size as A when dim > ndims(A) (documented: https://www.mathworks.com/help/matlab/ref/double.var.html, dim argument); Octave returns NaN for non-finite elements."
+ },
+ "exclusions": [
+  {
+   "id": "octave/general/interp1#104",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/general/interp1#117",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/general/interp1#130",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/general/interp1#143",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/general/interp1#156",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/general/interp1#169",
+   "sha256": "180c8ff78c968cde62bcf118d0ff4eed6845b3d42cc27ab3b80b98bed394bf5c",
+   "reason": "interp1-extrap"
+  },
+  {
+   "id": "octave/statistics/median#13",
+   "sha256": "d630b832b8667c37306e379e4fc67d731a941ebc51a0a46e4ce2f98a9e4290c8",
+   "reason": "median-class"
+  },
+  {
+   "id": "octave/statistics/median#14",
+   "sha256": "ccd962835c6464fbcad4d84cabb7eb87fcd48698861b3d7705ac9057a88c03cb",
+   "reason": "median-class"
+  },
+  {
+   "id": "octave/statistics/median#148",
+   "sha256": "f6006af2a9a791bb9f4a9a5bf0c3f6d011bd5b2211b16b98da20da244e6b1461",
+   "reason": "median-class"
+  },
+  {
+   "id": "octave/statistics/var#102",
+   "sha256": "4b0faff5f49b1a27c69c81f61bf9b40b70c56c5350ef4a5121ab96a250c37b77",
+   "reason": "var-dim-past-ndims"
+  }
+ ]
+}

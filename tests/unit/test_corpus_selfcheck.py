@@ -97,3 +97,24 @@ def test_t2_assert(code, ok):
 def test_paren_continuation_and_bug_tags():
     assert S.octave_to_matlab("assert (f (1,\n 2), [1 2\n 3 4])") == "t2_assert (f (1, ...\n 2), [1 2\n 3 4])"
     assert S.parse_blocks("%!test <*123>\n%! x = 1;").blocks[0].text.strip() == "x = 1;"
+
+
+def test_dialect_exclusions_are_keyed_by_id_and_hash(tmp_path):
+    from openmatlab.qa.corpus.selfcheck import dialect_exclusions
+
+    f = tmp_path / "dialect.json"
+    f.write_text('{"exclusions": [{"id": "octave/x/y#1", "sha256": "ab", "reason": "r"}]}', encoding="utf-8")
+    got = dialect_exclusions(f)
+    assert got == {("octave/x/y#1", "ab"): "r"}
+    assert dialect_exclusions(tmp_path / "missing.json") == {}
+
+
+def test_committed_dialect_exclusions_carry_documented_reasons():
+    import json
+
+    from openmatlab.qa.corpus import manifest as M
+
+    doc = json.loads((M.corpus_dir() / "dialect.json").read_text(encoding="utf-8"))
+    for x in doc["exclusions"]:
+        assert set(x) == {"id", "sha256", "reason"} and len(x["sha256"]) == 64
+        assert "mathworks.com/help" in doc["reasons"][x["reason"]]
