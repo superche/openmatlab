@@ -952,7 +952,7 @@ def register(builtins: Dict[str, Callable]) -> None:
             builtins[k] = _single_propagating(builtins[k])
 
 
-SINGLE_PROPAGATING = ("median", "cov", "corrcoef", "trapz", "cumtrapz", "norm", "conv", "deconv", "filter",
+SINGLE_PROPAGATING = ("median", "corrcoef", "trapz", "cumtrapz", "norm", "conv", "deconv", "filter",
                       "polyval", "polyfit", "interp1")
 
 
