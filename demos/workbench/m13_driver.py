@@ -54,8 +54,7 @@ nexttile; yyaxis right; plot(4:-1:1, 'm-^'); title('yyaxis right');
 fprintf('tiledlayout class = %s\\n', class(t));
 """,
     "demo_figio.m": """% M13 G08 - savefig / openfig own .fig round-trip
-d = fullfile(pwd, '_m13_figio');
-if exist(d, 'dir') ~= 7, mkdir(d); end
+d = tempname; mkdir(d);
 f = figure; plot(1:6, 'LineWidth', 2, 'Tag', 'm13'); title('before savefig');
 p = fullfile(d, 'roundtrip.fig');
 savefig(f, p);

@@ -28,42 +28,57 @@ export TERM=xterm-256color
 clear
 echo "############################################################"
 echo "# OpenMATLAB M12 Corpus Gate showcase"
-echo "# Epic #765 · C07 T2 + C08 T3 (M12 10/10)"
+echo "# Epic #765 · C07 T2 + C08 T3 (M12 10/10 criteria met)"
 echo "############################################################"
-sleep 1.5
+sleep 3.5
 
 echo
-echo "=== 1 docs/corpus/REPORT.md — pass rates (T0/T1/T2/T3; C08 75.3 %) ==="
+echo "=== 1 docs/corpus/REPORT.md — pass rates by tier ==="
 echo ">> sed -n '1,25p' docs/corpus/REPORT.md"
+sleep 1.0
 sed -n '1,25p' docs/corpus/REPORT.md
-sleep 4.0
+echo
+echo "(C08 T3 golden = 75.3 % >= 70 % locked threshold; C07 T2 = 82.8 % >= 75 %)"
+sleep 14.0
 
 echo
-echo "=== 2 T3 golden sample (deprompted Rosetta Boolean_values/1) ==="
+echo "=== 2 T3 golden sample source (deprompted; corpus cache never committed) ==="
+echo ">> cat demos/corpus/samples/t3_Boolean_values_1.m"
+sleep 0.8
+cat demos/corpus/samples/t3_Boolean_values_1.m
+sleep 7.0
+
+echo
+echo "=== 3 Run T3 golden: rosetta/Boolean_values/1 ==="
 echo ">> openmatlab run demos/corpus/samples/t3_Boolean_values_1.m"
+sleep 0.8
 openmatlab run demos/corpus/samples/t3_Boolean_values_1.m
-sleep 2.5
+sleep 8.0
 
 echo
-echo "=== 3 T3 golden sample (deprompted Rosetta Sum_and_product_of_an_array/1) ==="
+echo "=== 4 Run T3 golden: rosetta/Sum_and_product_of_an_array/1 ==="
 echo ">> openmatlab run demos/corpus/samples/t3_Sum_and_product_of_an_array_1.m"
+sleep 0.8
 openmatlab run demos/corpus/samples/t3_Sum_and_product_of_an_array_1.m
-sleep 2.5
+sleep 8.0
 
 echo
-echo "=== 4 M12 conformance gate — pytest tests/conformance/test_m12_conformance.py ==="
+echo "=== 5 M12 conformance gate (11 criteria) ==="
 echo ">> pytest tests/conformance/test_m12_conformance.py --tb=no -q"
+sleep 0.8
 pytest tests/conformance/test_m12_conformance.py --tb=no -q
-sleep 2.5
+sleep 9.0
 
 echo
 echo "############################################################"
-echo "# M12 showcase DONE — T0 99.5% T1 70.5% T2 82.8% T3 75.3%"
-echo "# C08 met (≥70%); conformance 11/11 passed"
+echo "# M12 showcase DONE"
+echo "# T0 99.5% | T1 70.5% | T2 82.8% (C07) | T3 75.3% (C08)"
+echo "# Conformance: 11/11 passed — milestone 10/10 met"
+echo "# Epics #765-#766 stay OPEN pending Shaw acceptance"
 echo "############################################################"
-sleep 3.0
+sleep 8.0
 touch "$TERM_DONE"
-sleep 2.0
+sleep 2.5
 DEMO
 chmod +x "$TMP/term.sh"
 
@@ -89,7 +104,7 @@ xfce4-terminal \
   -e "bash $TMP/term.sh" &
 TERM_PID=$!
 
-for _ in $(seq 1 360); do
+for _ in $(seq 1 600); do
   if [[ -f "$TERM_DONE" ]]; then
     break
   fi

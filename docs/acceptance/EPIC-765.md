@@ -62,6 +62,27 @@ New cases: `tests/unit/test_corpus_goldens.py` (T3 match, source, nondeterminism
 
 **Existing tests changed: none** (Shaw-approved MATLAB-docs test fixes for cell/colormap/TickLabels/saveas landed separately in #982).
 
+
+## Window recording (E2E) — M12 corpus gate
+
+- Video: [`demos/corpus/showcase_m12_corpus.mp4`](../../demos/corpus/showcase_m12_corpus.mp4) (~71s, 1920×1200)
+- Also copied to `/workspace/recordings/showcase_m12_corpus.mp4`
+- Helper: `demos/corpus/record_m12_corpus_showcase.sh` (ffmpeg x11grab + fullscreen xfce4-terminal, DejaVu Sans Mono 18)
+- Batch note: [`M12-M13-batch.md`](M12-M13-batch.md) · Chinese summary: `/workspace/proposals/M12-M13-acceptance-evidence.md`
+
+| t (approx) | Scene |
+|---|---|
+| 0–4 s | Title card: M12 Corpus Gate / Epic #765 / C07+C08 |
+| 4–22 s | `sed -n '1,25p' docs/corpus/REPORT.md` — T0 99.5 %, T1 70.5 %, T2 82.8 %, **T3 75.3 % (C08)** |
+| 22–30 s | Show deprompted T3 sample source `demos/corpus/samples/t3_Boolean_values_1.m` |
+| 30–42 s | `openmatlab run` Boolean_values/1 (real T3 golden; passes) |
+| 42–55 s | `openmatlab run` Sum_and_product_of_an_array/1 (real T3 golden; passes) |
+| 55–71 s | `pytest tests/conformance/test_m12_conformance.py` → **11 passed**; wrap-up |
+
+```bash
+DISPLAY=:2 ./demos/corpus/record_m12_corpus_showcase.sh
+```
+
 ## Residuals (filed)
 
 | Residual | Issue |
@@ -75,4 +96,4 @@ New cases: `tests/unit/test_corpus_goldens.py` (T3 match, source, nondeterminism
 
 - Criteria met: **10 / 10** (C01–C10)
 - Conformance scripts passing: **11 / 11** (C08 no longer xfail)
-- Next: Shaw batch review of M12/M13 acceptance packages; cheap #766/#797 burn-down; do **not** close #765 or the M12 milestone until Shaw accepts.
+- Next: Shaw watches `showcase_m12_corpus.mp4` + reads this package; cheap #766/#797 burn-down; do **not** close #765 or the M12 milestone until Shaw accepts.
