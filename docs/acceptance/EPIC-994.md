@@ -74,4 +74,4 @@ No new residual. FD002–FD004 are milestone non-goals. The rest of the `readtab
 
 ## CI
 
-The required `test` check is the PR's GitHub Actions job. This file does not invent that URL; it is added when the job is green.
+Required check `test` on merge commit `29ba8e2214ebdb7d905ff5e7c6d8ded09544053a`: [job 120300936498](https://github.com/superche/openmatlab/actions/runs/39919470221/job/120300936498) **success** ([run 39919470221](https://github.com/superche/openmatlab/actions/runs/39919470221)).
