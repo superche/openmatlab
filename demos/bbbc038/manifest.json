@@ -1,0 +1,22 @@
+{
+  "dataset": "BBBC038v1",
+  "zip_name": "stage1_test.zip",
+  "url": "https://data.broadinstitute.org/bbbc/BBBC038/stage1_test.zip",
+  "bytes": 9545388,
+  "sha256": "c097954151884341448a5c77aab21f581815ad9cad203ff2ff38d6947c9f0733",
+  "license": "CC0-1.0",
+  "landing": "https://bbbc.broadinstitute.org/BBBC038",
+  "doi": "10.1038/s41592-019-0612-7",
+  "citations": [
+    "J. C. Caicedo et al., Nucleus segmentation across imaging experiments: the 2018 Data Science Bowl, Nature Methods 16:1247-1253, 2019."
+  ],
+  "fov": {
+    "member": "0114f484a16c152baa2d82fdd43740880a762c93f436c8988ac461c5c9dbe7d5/images/0114f484a16c152baa2d82fdd43740880a762c93f436c8988ac461c5c9dbe7d5.png",
+    "bytes": 29407,
+    "sha256": "02c3330da39df276ff0c6856e1957fb16efeeaf6f75e05f02e76390372884def",
+    "height": 256,
+    "width": 256,
+    "bit_depth": 8,
+    "color_type": 6
+  }
+}

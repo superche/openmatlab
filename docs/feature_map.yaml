@@ -585,6 +585,26 @@ features:
     tests: [tests/unit/test_mitbih_export.py, tests/bdd/test_mitbih_export_bdd.py, tests/conformance/test_m15_v07.py]
     cases: [tc.mitbih_export, tc.mitbih_export_bdd, tc.mitbih_v07]
 
+  - id: libs.imread
+    layer: libs
+    name: imread for non-interlaced 8-bit and 16-bit PNG
+    status: partial
+    depends_on: []
+    spec: docs/design/EPIC-1020-bbbc038-imread.md
+    notes: "V02 of M16 (Epic #1020). Grayscale, RGB, and gray/RGB-with-alpha. Alpha is the third output; A is gray or RGB uint8/uint16. Sides up to 4096. The stage1_test demo FOV is 8-bit RGBA on disk and returns 256x256x3 uint8. Non-goals: JPEG, TIFF, GIF, indexed color, Adam7, bit depth below 8, the imread option matrix. Segmentation is I-E2 (#1021)."
+    tests: [tests/unit/test_bbbc038_stage1.py, tests/bdd/test_bbbc038_imread_bdd.py, tests/conformance/test_m16_v01_v02.py]
+    cases: [tc.bbbc038_stage1, tc.bbbc038_imread_bdd, tc.bbbc038_v01_v02]
+
+  - id: libs.bbbc038_stage1
+    layer: libs
+    name: BBBC038 stage1_test runtime download and one-FOV extract
+    status: partial
+    depends_on: [libs.imread]
+    spec: docs/design/EPIC-1020-bbbc038-imread.md
+    notes: "V01 of M16 (Epic #1020). Broad CC0 1.0 stage1_test.zip only (Content-Length and size 9545388, sha256 pinned), cached under downloads/bbbc038/ (never committed). One FOV is extracted; the zip member name is not a filesystem path. Non-goals: stage1_train, contest scoring, vendoring PNGs. imread is libs.imread."
+    tests: [tests/unit/test_bbbc038_stage1.py, tests/bdd/test_bbbc038_imread_bdd.py, tests/conformance/test_m16_v01_v02.py]
+    cases: [tc.bbbc038_stage1, tc.bbbc038_imread_bdd, tc.bbbc038_v01_v02]
+
   - id: host.debug_ui
     layer: host
     name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"
