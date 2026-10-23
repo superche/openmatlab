@@ -615,6 +615,16 @@ features:
     tests: [tests/unit/test_imbinarize.py, tests/bdd/test_bbbc038_imbinarize_bdd.py, tests/conformance/test_m16_v03.py]
     cases: [tc.bbbc038_imbinarize, tc.bbbc038_imbinarize_bdd, tc.bbbc038_v03]
 
+  - id: libs.regionprops
+    layer: libs
+    name: bwlabel, bwconncomp, and regionprops subset
+    status: partial
+    depends_on: [libs.imbinarize]
+    spec: docs/design/EPIC-1022-regionprops.md
+    notes: "V04 and V05 of M16 (Epic #1022). bwlabel and bwconncomp label a 2-D mask, default connectivity 8, ids in column-major encounter order. regionprops returns Area, Centroid [x y] (1-based column, row), and Eccentricity from second central moments. The story FOV has no mask file; the count is this labeling of the P=50 mask (6 objects, areas 152 219 143 117 193 154, mean 163, median 153). Tolerance on the count and the areas is 0. Non-goals: Circularity, BoundingBox, the rest of the property matrix, 3-D, contest scoring (I-E4 #1023 owns the lab figure)."
+    tests: [tests/unit/test_regionprops.py, tests/bdd/test_bbbc038_regionprops_bdd.py, tests/conformance/test_m16_v04_v05.py]
+    cases: [tc.bbbc038_regionprops, tc.bbbc038_regionprops_bdd, tc.bbbc038_v04_v05]
+
   - id: host.debug_ui
     layer: host
     name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"
