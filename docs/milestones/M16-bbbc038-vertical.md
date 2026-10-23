@@ -39,9 +39,9 @@ There is no conformance manifest and no corpus-% threshold on this milestone. Go
 | V05 | **Morphology summary.** Area histogram and a mean or median area, or circularity. | Panel | p0 | [#1022](https://github.com/superche/openmatlab/issues/1022) | met |
 | V06 | **Lab-meeting multi-panel figure.** One `tiledlayout`: the FOV, an overlay (`labeloverlay` or `imshow`), the area histogram, and an optional table summary. Footnote cites CC0, Caicedo et al. Nature Methods 2019, and BBBC038v1. | Full figure on screen | p0 | [#1023](https://github.com/superche/openmatlab/issues/1023) | met |
 | V07 | **Export you can take away.** `exportgraphics` (or `print`) writes PNG **and** PDF. Resolution is enough to project or insert (default ≥ 150 dpi; demo 300 dpi). The crop keeps the title and the footnote. | Non-empty PNG + PDF; visual check | p0 | [#1024](https://github.com/superche/openmatlab/issues/1024) | met |
-| V08 | **Workbench runs the story.** A real Workbench window runs the story script. The Command Window shows the count and the other key numbers. The Figures panel shows the final figure. | Screen recording (same shape as the M14/M15 acceptance recordings) | p0 | [#1025](https://github.com/superche/openmatlab/issues/1025) | unmet |
-| V09 | **Reproducible acceptance package.** Story `.m` and download helper under `demos/bbbc038/`, plus `docs/acceptance/` text (milestone package and per-epic `EPIC-NNN.md`). A third party reproduces from the public Broad zip and tip `main` only. Licence block below, and the statement that the data is not committed. | Package checklist in the acceptance doc | p0 | [#1025](https://github.com/superche/openmatlab/issues/1025) | unmet |
-| V10 | **This vertical does not hostage corpus or Core.** Close does not require a corpus-% rise or an empty milestone/9. If a /9 item or an M12/M13 residual blocks the story, file a labelled blocker issue (`vertical-bbbc038` or `m16-blocker`). A workaround means it does not block close. | Issue link, or an explicit "no blocker" note | p1 | [#1025](https://github.com/superche/openmatlab/issues/1025) | unmet |
+| V08 | **Workbench runs the story.** A real Workbench window runs the story script. The Command Window shows the count and the other key numbers. The Figures panel shows the final figure. | Screen recording (same shape as the M14/M15 acceptance recordings) | p0 | [#1025](https://github.com/superche/openmatlab/issues/1025) | met |
+| V09 | **Reproducible acceptance package.** Story `.m` and download helper under `demos/bbbc038/`, plus `docs/acceptance/` text (milestone package and per-epic `EPIC-NNN.md`). A third party reproduces from the public Broad zip and tip `main` only. Licence block below, and the statement that the data is not committed. | Package checklist in the acceptance doc | p0 | [#1025](https://github.com/superche/openmatlab/issues/1025) | met |
+| V10 | **This vertical does not hostage corpus or Core.** Close does not require a corpus-% rise or an empty milestone/9. If a /9 item or an M12/M13 residual blocks the story, file a labelled blocker issue (`vertical-bbbc038` or `m16-blocker`). A workaround means it does not block close. | Issue link, or an explicit "no blocker" note | p1 | [#1025](https://github.com/superche/openmatlab/issues/1025) | met |
 
 ## Epics
 
@@ -52,9 +52,9 @@ Approved order. Each epic moves the story one step and can be accepted on its ow
 3. **I-E3 [#1022](https://github.com/superche/openmatlab/issues/1022) (p0, M):** `bwlabel` / `bwconncomp` + `regionprops` + count and morphology — V04, V05. Depends on I-E2. Contest scoring and a full `regionprops` property matrix stay out. Evidence: [EPIC-1022](../acceptance/EPIC-1022.md).
 4. **I-E4 [#1023](https://github.com/superche/openmatlab/issues/1023) (p0, S):** `imshow` / `labeloverlay` + lab-meeting `tiledlayout` — V06. Depends on I-E3. App Designer and brush selection stay out. Evidence: [EPIC-1023](../acceptance/EPIC-1023.md).
 5. **I-E5 [#1024](https://github.com/superche/openmatlab/issues/1024) (p0, S):** `exportgraphics` / `print` quality — V07. Depends on I-E4. PNG and PDF at the story's 300 dpi. Third-party `export_fig`, animation, and pixel-identical glyphs stay out. Evidence: [EPIC-1024](../acceptance/EPIC-1024.md).
-6. **I-E6 [#1025](https://github.com/superche/openmatlab/issues/1025) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on I-E1…I-E5. Corpus residuals and the training zip stay out.
+6. **I-E6 [#1025](https://github.com/superche/openmatlab/issues/1025) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on I-E1…I-E5. Corpus residuals and the training zip stay out. Evidence: [EPIC-1025](../acceptance/EPIC-1025.md).
 
-**Work order:** #1020, then #1021, then #1022, then #1023, #1024, #1025. V01 and V02 are met by #1020 ([EPIC-1020](../acceptance/EPIC-1020.md)). V03 is met by #1021 ([EPIC-1021](../acceptance/EPIC-1021.md)). V04 and V05 are met by #1022 ([EPIC-1022](../acceptance/EPIC-1022.md)). V06 is met by #1023 ([EPIC-1023](../acceptance/EPIC-1023.md)). V07 is met by #1024 ([EPIC-1024](../acceptance/EPIC-1024.md)). V08–V10 are still open.
+**Work order:** #1020, then #1021, then #1022, then #1023, #1024, #1025. V01 and V02 are met by #1020 ([EPIC-1020](../acceptance/EPIC-1020.md)). V03 is met by #1021 ([EPIC-1021](../acceptance/EPIC-1021.md)). V04 and V05 are met by #1022 ([EPIC-1022](../acceptance/EPIC-1022.md)). V06 is met by #1023 ([EPIC-1023](../acceptance/EPIC-1023.md)). V07 is met by #1024 ([EPIC-1024](../acceptance/EPIC-1024.md)). V08, V09, and V10 are met by #1025 ([EPIC-1025](../acceptance/EPIC-1025.md)). Epics stay open until Shaw accepts them.
 
 ## Defaults
 
@@ -68,7 +68,7 @@ Approved by Shaw on 2026-10-23, as a block:
 6. **Export.** Gate at least 150 dpi. The demo default is 300 dpi. PNG and PDF.
 7. **Blockers.** Milestone/9 and corpus residuals become labelled issues (`vertical-bbbc038` or `m16-blocker`). A workaround does not block M16 close.
 8. **Tests.** Existing tests stay as they are. New tests for this vertical are added on their own. Editing an old test needs Shaw's OK first.
-9. **Recording.** A real Workbench window, about 2–3 minutes, when I-E6 lands. This epic does not record one.
+9. **Recording.** A real Workbench window, about 2–3 minutes. The capture is `demos/workbench/showcase_m16_bbbc038.mp4`. Re-record with `DISPLAY=:2 ./demos/workbench/record_m16_bbbc038_showcase.sh`.
 
 ## Citation
 
@@ -86,6 +86,6 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. A full Image Pro
 
 ## Progress snapshot
 
-M16 opened 2026-10-23. **7 / 10** criteria marked met in the table (V01–V07). Epics #1020–#1025 stay open until accepted. I-E1 evidence: [EPIC-1020](../acceptance/EPIC-1020.md). I-E2 evidence: [EPIC-1021](../acceptance/EPIC-1021.md). I-E3 evidence: [EPIC-1022](../acceptance/EPIC-1022.md). I-E4 evidence: [EPIC-1023](../acceptance/EPIC-1023.md). I-E5 evidence: [EPIC-1024](../acceptance/EPIC-1024.md). The milestone timeline is [M16-bbbc038-vertical.md](../acceptance/M16-bbbc038-vertical.md). /9 and corpus residuals do not block close (V10). No `m16-blocker` issue is open.
+M16 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). Epics #1020–#1025 stay open until accepted. Milestone/16 stays open until that batch acceptance. I-E1 evidence: [EPIC-1020](../acceptance/EPIC-1020.md). I-E2 evidence: [EPIC-1021](../acceptance/EPIC-1021.md). I-E3 evidence: [EPIC-1022](../acceptance/EPIC-1022.md). I-E4 evidence: [EPIC-1023](../acceptance/EPIC-1023.md). I-E5 evidence: [EPIC-1024](../acceptance/EPIC-1024.md). I-E6 evidence: [EPIC-1025](../acceptance/EPIC-1025.md). The package is [M16-bbbc038-vertical.md](../acceptance/M16-bbbc038-vertical.md). /9 and corpus residuals do not block close (V10). No `m16-blocker` issue is open.
 
-Next unmet p0 is V08, epic [#1025](https://github.com/superche/openmatlab/issues/1025). This epic does not start it.
+No unmet row remains in the table.

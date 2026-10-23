@@ -18,6 +18,12 @@ MATLAB-aligned Host workbench window recording for milestone/6.
   `DISPLAY=:2 ./demos/workbench/record_m14_cmapss_showcase.sh`
   (driver: [`m14_driver.py`](m14_driver.py)). No display:
   `./demos/workbench/record_m14_cmapss_showcase.sh --headless` (no mp4).
+- [`showcase_m16_bbbc038.mp4`](showcase_m16_bbbc038.mp4) — M16 V08 capture of
+  `demos/bbbc038/story_stage1_test.m` (Command Window count and mean area,
+  Figures panel). Re-record:
+  `DISPLAY=:2 ./demos/workbench/record_m16_bbbc038_showcase.sh`
+  (driver: [`m16_driver.py`](m16_driver.py)). No display:
+  `./demos/workbench/record_m16_bbbc038_showcase.sh --headless` (no mp4).
 
 ## Re-record
 
