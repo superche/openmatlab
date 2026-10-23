@@ -37,3 +37,17 @@ that, so it stays the last figure. A single-channel `fft` line is a demo bonus.
 The same run writes the lab figure to `demos/cmapss/out/story_fd001.png` and
 `story_fd001.pdf` at 300 dpi (M14 V07). That directory is gitignored. The
 default `exportgraphics` resolution, when a script does not pass one, is 150 dpi.
+
+Workbench recording (M14 V08) uses the M13 showcase pattern. From the
+repository root, with a display:
+
+```text
+DISPLAY=:2 ./demos/cmapss/record_story_fd001.sh
+```
+
+That execs `demos/workbench/record_m14_cmapss_showcase.sh` and
+`demos/workbench/m14_driver.py`. The window opens this directory, runs
+`story_fd001.m`, and shows the Command Window lines and the Figures panel.
+`--dry-run` skips ffmpeg. Without a display, `--headless` runs the story in
+the CLI and writes no mp4. The video, when captured, is
+`demos/workbench/showcase_m14_cmapss.mp4`.

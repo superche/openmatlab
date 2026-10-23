@@ -38,9 +38,9 @@ There is no conformance manifest and no corpus-% threshold on this milestone. Go
 | V05 | **Correlation heatmap.** `heatmap` shows the sensor correlation with a readable colorbar and tick labels. `imagesc` plus manual ticks may stand in for #996 only; V05 is met when the story calls `heatmap`. | Panel (c) | p0 | [#997](https://github.com/superche/openmatlab/issues/997) | met |
 | V06 | **Lab-meeting multi-panel figure.** One figure, `tiledlayout` 2×2 (or 2×3): sensor vs cycle, early/late overlay, correlation heatmap, failure-cycle or RUL distribution. Titles, axis labels, unit id, and a footnote cite Saxena PHM08 and Zenodo DOI 10.5281/zenodo.15346912. | Full figure on screen | p0 | [#997](https://github.com/superche/openmatlab/issues/997) | met |
 | V07 | **Export you can take away.** `exportgraphics` (or `print`) writes PNG **and** PDF. Resolution is enough to project or insert (default ≥ 150 dpi; demo 300 dpi). The crop keeps the title and the colorbar. The files drop into slides. | Non-empty PNG + PDF; visual check | p0 | [#998](https://github.com/superche/openmatlab/issues/998) | met |
-| V08 | **Workbench runs the story.** A real Workbench window runs the story script. The Command Window shows progress and the key numbers. The Figures panel shows the final figure. | Screen recording (same shape as the M12/M13 acceptance recordings) | p0 | [#999](https://github.com/superche/openmatlab/issues/999) | unmet |
-| V09 | **Reproducible acceptance package.** Story `.m` and download helper under `demos/`, plus `docs/acceptance/` text (milestone package and per-epic `EPIC-NNN.md`). A third party reproduces from public Zenodo and tip `main` only. Licence block: CC BY 4.0, Saxena PHM08, Zenodo DOI, and the statement that the data is not committed. | Package checklist in the acceptance doc | p0 | [#999](https://github.com/superche/openmatlab/issues/999) | unmet |
-| V10 | **This vertical does not hostage corpus or Core.** Close does not require a corpus-% rise or an empty milestone/9. If a /9 item or an M12/M13 residual blocks the story, file a labelled blocker issue (`vertical-cmapss` or `m14-blocker`). A workaround means it does not block close. | Issue link, or an explicit "no blocker" note | p1 | [#999](https://github.com/superche/openmatlab/issues/999) | unmet |
+| V08 | **Workbench runs the story.** A real Workbench window runs the story script. The Command Window shows progress and the key numbers. The Figures panel shows the final figure. | Screen recording (same shape as the M12/M13 acceptance recordings) | p0 | [#999](https://github.com/superche/openmatlab/issues/999) | met |
+| V09 | **Reproducible acceptance package.** Story `.m` and download helper under `demos/`, plus `docs/acceptance/` text (milestone package and per-epic `EPIC-NNN.md`). A third party reproduces from public Zenodo and tip `main` only. Licence block: CC BY 4.0, Saxena PHM08, Zenodo DOI, and the statement that the data is not committed. | Package checklist in the acceptance doc | p0 | [#999](https://github.com/superche/openmatlab/issues/999) | met |
+| V10 | **This vertical does not hostage corpus or Core.** Close does not require a corpus-% rise or an empty milestone/9. If a /9 item or an M12/M13 residual blocks the story, file a labelled blocker issue (`vertical-cmapss` or `m14-blocker`). A workaround means it does not block close. | Issue link, or an explicit "no blocker" note | p1 | [#999](https://github.com/superche/openmatlab/issues/999) | met |
 
 ## Epics
 
@@ -53,7 +53,7 @@ Approved order. Each epic moves the story one step and can be accepted on its ow
 5. **V-E5 [#998](https://github.com/superche/openmatlab/issues/998) (p0, M):** `exportgraphics` / `print` quality for the multi-panel figure — V07. Depends on V-E4. PNG and PDF are the story default. Third-party `export_fig`, animation, and pixel-identical glyphs stay out.
 6. **V-E6 [#999](https://github.com/superche/openmatlab/issues/999) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on V-E1…V-E5. Corpus residuals and MIT-BIH stay out.
 
-**Work order:** #994, then #995 ∥ #996, then #997, #998, #999. The highest unmet p0 in table order is V01, so V-E1 is first.
+**Work order:** #994, then #995 ∥ #996, then #997, #998, #999. V08–V10 are met by #999. The rows still labelled unmet are V01 and V02; their evidence is [EPIC-994](../acceptance/EPIC-994.md), and this package does not relabel them.
 
 ## Defaults
 
@@ -73,6 +73,6 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. Full Signal Proc
 
 ## Progress snapshot
 
-M14 opened 2026-10-23. **5 / 10** criteria marked met in the table (V03, V04, V05, V06, V07). V01 and V02 are unchanged in this table; their evidence is [EPIC-994](../acceptance/EPIC-994.md). Epics #994–#999 stay open until accepted. Next unmet p0 in table order is V01 (#994). /9 and corpus residuals do not block close.
+M14 opened 2026-10-23. **8 / 10** criteria marked met in the table (V03–V10). V01 and V02 are unchanged in this table; their evidence is [EPIC-994](../acceptance/EPIC-994.md). Epics #994–#999 stay open until accepted. The batch package is [M14-cmapss-vertical.md](../acceptance/M14-cmapss-vertical.md). /9 and corpus residuals do not block close (V10). No `m14-blocker` issue is open.
 
-V-E1 evidence: [EPIC-994](../acceptance/EPIC-994.md). V-E2 evidence: [EPIC-995](../acceptance/EPIC-995.md). V-E3 evidence: [EPIC-996](../acceptance/EPIC-996.md). V-E4 evidence: [EPIC-997](../acceptance/EPIC-997.md). V-E5 evidence: [EPIC-998](../acceptance/EPIC-998.md).
+V-E1 evidence: [EPIC-994](../acceptance/EPIC-994.md). V-E2 evidence: [EPIC-995](../acceptance/EPIC-995.md). V-E3 evidence: [EPIC-996](../acceptance/EPIC-996.md). V-E4 evidence: [EPIC-997](../acceptance/EPIC-997.md). V-E5 evidence: [EPIC-998](../acceptance/EPIC-998.md). V-E6 evidence: [EPIC-999](../acceptance/EPIC-999.md).

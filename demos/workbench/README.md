@@ -13,6 +13,11 @@ MATLAB-aligned Host workbench window recording for milestone/6.
   Run and Advance, error hyperlink. Re-record: `DISPLAY=:2 ./demos/workbench/record_d10_showcase.sh`
   (driver: [`d10_driver.py`](d10_driver.py))
 - [`sample_project/`](sample_project/) — cwd used by Current Folder / Editor demo
+- [`showcase_m14_cmapss.mp4`](showcase_m14_cmapss.mp4) — M14 V08 capture of
+  `demos/cmapss/story_fd001.m` (Command Window + Figures). Re-record:
+  `DISPLAY=:2 ./demos/workbench/record_m14_cmapss_showcase.sh`
+  (driver: [`m14_driver.py`](m14_driver.py)). No display:
+  `./demos/workbench/record_m14_cmapss_showcase.sh --headless` (no mp4).
 
 ## Re-record
 
