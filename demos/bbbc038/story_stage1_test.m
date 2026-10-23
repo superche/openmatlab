@@ -1,4 +1,4 @@
-% BBBC038v1 stage1_test, one FOV (M16 V01-V05).
+% BBBC038v1 stage1_test, one FOV (M16 V01-V06).
 % Licence: CC0 1.0.
 % J. C. Caicedo et al., Nature Methods 16:1247-1253, 2019.
 % doi:10.1038/s41592-019-0612-7
@@ -15,8 +15,11 @@
 % regionprops returns Area, Centroid [x y] (column, row, 1-based), and
 % Eccentricity from the second central moments. stage1_test has no masks.
 % The count is this labeling. Tolerance on the count and the areas is 0.
-% The area histogram is its own figure; figure(1) leaves the before/after
-% panel current. The lab-meeting tiledlayout is I-E4.
+% The area histogram is its own figure. V06 builds a 2-by-2 lab figure
+% (raw FOV, labeloverlay, area histogram, count/mean/median) and a footnote
+% for CC0, Caicedo et al. 2019, and BBBC038v1, then closes that figure.
+% figure(1) leaves the before/after panel current. The histogram stays the
+% only other figure. PNG/PDF export at 300 dpi is I-E5.
 %
 % From the repository root:
 %   openmatlab -e "run('demos/bbbc038/story_stage1_test.m')"
@@ -67,4 +70,8 @@ fprintf('BBBC038 V05 mean=%.4f median=%.4f ecc=%.6f\n', meanarea, medarea, meane
 figure;
 histogram(areas);
 title('BBBC038 areas');
+run(fullfile(here, 'lab_figure.m'));
+fprintf('BBBC038 V06 grid=%.0f %.0f tiles=%.0f class=%s\n', gs(1), gs(2), labtiles, class(overlay));
+fprintf('BBBC038 V06 footnote=%s\n', footnote);
+close(fig_lab);
 figure(1);

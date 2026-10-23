@@ -122,6 +122,13 @@ use_cases:
     features: [libs.regionprops, libs.imbinarize]
     priority: p0
 
+  - id: uc.bbbc038_v06
+    title: Lab-meeting tiledlayout for one BBBC038 FOV
+    actor: scientific user
+    goal: One figure with the FOV, a label overlay, the area histogram, and a citation footnote
+    features: [libs.labeloverlay, libs.regionprops]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2473,6 +2480,33 @@ test_cases:
     features: [libs.regionprops, libs.imbinarize, libs.bbbc038_stage1]
     use_cases: [uc.bbbc038_v04]
     impl: tests/conformance/test_m16_v04_v05.py
+    status: active
+    env: conformance
+
+  - id: tc.bbbc038_labeloverlay
+    kind: unit
+    title: labeloverlay transparency and palette (Epic #1023)
+    features: [libs.labeloverlay]
+    use_cases: [uc.bbbc038_v06]
+    impl: tests/unit/test_labeloverlay.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_labeloverlay_bdd
+    kind: unit
+    title: labeloverlay Gherkin (Epic #1023)
+    features: [libs.labeloverlay]
+    use_cases: [uc.bbbc038_v06]
+    impl: tests/bdd/test_bbbc038_labeloverlay_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_v06
+    kind: conformance
+    title: V06 lab-meeting tiledlayout on one BBBC038 FOV (Epic #1023)
+    features: [libs.labeloverlay, libs.regionprops, libs.bbbc038_stage1]
+    use_cases: [uc.bbbc038_v06]
+    impl: tests/conformance/test_m16_v06.py
     status: active
     env: conformance
 
