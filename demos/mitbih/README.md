@@ -8,6 +8,8 @@ openmatlab -e "run('demos/mitbih/story_record100.m')"
 
 The story prints Fs, the channel count, the sample count, and the first MLII sample in mV. It then zero-phase bandpass-filters MLII at 0.5–40 Hz (`filtfilt`, with `bandpass` as the same order-2 Butterworth) and plots the first 10 s of raw and filtered on one axes. On the filtered column it marks R peaks (`findpeaks`, 0.5 mV, 0.25 s apart), draws an RR histogram, and plots the amplitude spectrum of that 10 s excerpt. The same series also fill one 2×2 `tiledlayout` (raw, filtered with R peaks, RR in seconds, spectrum) with a citation footnote. That figure is written at 300 dpi to `demos/mitbih/out/story_record100.png` and `story_record100.pdf` (gitignored). The raw-versus-filtered axes remain the last figure.
 
+The Workbench recording is `demos/workbench/showcase_m15_mitbih.mp4`. Re-record with `DISPLAY=:2 ./demos/mitbih/record_story_record100.sh`. Without a display, `./demos/mitbih/record_story_record100.sh --headless` reruns the story and writes no mp4.
+
 Licence: ODC-By 1.0. Data DOI: [10.13026/C2F305](https://doi.org/10.13026/C2F305).
 
 - G. B. Moody and R. G. Mark, The impact of the MIT-BIH Arrhythmia Database, IEEE Engineering in Medicine and Biology Magazine, 20(3):45–50, 2001.
