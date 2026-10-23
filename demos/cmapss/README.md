@@ -33,3 +33,7 @@ failure-cycle histogram, and unit 1's RUL. The layout title carries the unit
 id. The layout xlabel is the footnote (Saxena PHM08 and Zenodo DOI
 10.5281/zenodo.15346912). The raw / `smoothdata` axes is still drawn after
 that, so it stays the last figure. A single-channel `fft` line is a demo bonus.
+
+The same run writes the lab figure to `demos/cmapss/out/story_fd001.png` and
+`story_fd001.pdf` at 300 dpi (M14 V07). That directory is gitignored. The
+default `exportgraphics` resolution, when a script does not pass one, is 150 dpi.

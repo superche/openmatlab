@@ -637,7 +637,7 @@ features:
     status: partial
     depends_on: [libs.graphics.charts2d, libs.graphics.layout, libs.graphics.properties]
     spec: docs/design/EPIC-997-heatmap.md
-    notes: "Story slice for M14 V05/V06 (Epic #997). heatmap(C), heatmap(x,y,C), and heatmap(T,x,y) with optional ColorVariable (mean) or a count. ColorLimits, Colormap, ColorbarVisible, XDisplayLabels/YDisplayLabels, Title/XLabel/YLabel. The chart is an axes child so tiledlayout/nexttile keep working; the colorbar is painted for this chart only. Category labels use TickLabelInterpreter none. A figure that contains a heatmap is drawn larger so the labels fit. Non-goals: clustergram, geographic heatmaps, brush selection, cell labels, ColorMethod other than count and mean."
+    notes: "Story slice for M14 V05/V06 (Epic #997). heatmap(C), heatmap(x,y,C), and heatmap(T,x,y) with optional ColorVariable (mean) or a count. ColorLimits, Colormap, ColorbarVisible, XDisplayLabels/YDisplayLabels, Title/XLabel/YLabel. The chart is an axes child so tiledlayout/nexttile keep working; the colorbar is painted for this chart only. Category labels use TickLabelInterpreter none. A figure that contains a heatmap is drawn larger so the labels fit; a tiled one leaves the right margin free for colorbar tick labels (Epic #998). Non-goals: clustergram, geographic heatmaps, brush selection, cell labels, ColorMethod other than count and mean."
     tests: [tests/unit/test_heatmap.py, tests/bdd/test_heatmap_bdd.py, tests/conformance/test_m14_v05_v06.py]
     cases: [tc.heatmap, tc.heatmap_bdd, tc.cmapss_v05_v06]
 
@@ -654,8 +654,11 @@ features:
     name: Figure files (own .fig format) and export (savefig, openfig, exportgraphics, print)
     status: done
     depends_on: [libs.graphics.properties]
-    notes: "OpenMATLAB-own .fig (zipped JSON property tree, incompatible with MATLAB .fig; MATLAB .fig rejected): savefig/openfig ('new'/'reuse', visibility)/hgsave/hgload with zero property-tree diff; exportgraphics (png/jpg/tif/gif/pdf/eps/svg, Resolution, BackgroundColor, tight crop); print -dDEVICE -rN at the figure size. saveas .fig still unsupported (existing test; #979) (Epic #773, M13 G08)"
-    tests: [tests/unit/test_epic773_figio.py]
+    notes: "OpenMATLAB-own .fig (zipped JSON property tree, incompatible with MATLAB .fig; MATLAB .fig rejected): savefig/openfig ('new'/'reuse', visibility)/hgsave/hgload with zero property-tree diff; exportgraphics (png/jpg/tif/gif/pdf/eps/svg, Resolution default 150, BackgroundColor). A heatmap figure exports at the layout canvas, not the default Position; the crop is padded so a tiled title, colorbar labels and footnote stay inside (Epic #998, M14 V07). print -dDEVICE -rN keeps Position size unless an artist would be clipped, in which case the page grows. saveas .fig still unsupported (existing test; #979) (Epic #773, M13 G08)"
+    tests: [tests/unit/test_epic773_figio.py, tests/unit/test_m14_v07_export.py, tests/bdd/test_export_story_bdd.py, tests/conformance/test_m14_v07.py]
+    cases: [tc.graphics_figio, tc.export_story, tc.export_story_bdd, tc.cmapss_v07]
+    spec: docs/design/EPIC-998-export.md
+
   - id: libs.graphics.defaults
     layer: libs
     name: Default<Type><Prop> on root/figure/axes

@@ -1,4 +1,4 @@
-% NASA C-MAPSS FD001 story (M14 V01, V02, V03, V04, V05, V06).
+% NASA C-MAPSS FD001 story (M14 V01, V02, V03, V04, V05, V06, V07).
 % Saxena, Goebel, Simon, and Eklund, PHM08.
 % Data: DOI 10.5281/zenodo.15346912 (CC BY 4.0).
 % The zip and the text files stay in downloads/cmapss/ and are never committed.
@@ -98,7 +98,7 @@ nh = floor(numel(raw) / 2) + 1;
 % Lab-meeting figure (V05, V06), then the V03 axes so that figure stays last.
 % 2x3: traces, early/late, heatmap down the right column, failure cycles, RUL.
 % The layout xlabel is the footnote (Saxena PHM08 + the Zenodo DOI).
-figure;
+fig_lab = figure;
 tl = tiledlayout(2, 3, 'TileSpacing', 'compact', 'Padding', 'loose');
 tl.Title.String = sprintf('FD001 unit %g', unit_id);
 tl.XLabel.String = sprintf('A. Saxena, K. Goebel, D. Simon, and N. Eklund, PHM08, 2008.\nData: DOI 10.5281/zenodo.15346912 (CC BY 4.0).');
@@ -162,3 +162,16 @@ fprintf('V04 fft_bin=%g fft_mag=%g\n', fft_bin, fft_mag);
 gs = tl.GridSize;
 fprintf('V05 class=%s colorbar=%s nlabel=%g clim=%g %g\n', class(hm), hm.ColorbarVisible, numel(hm.XDisplayLabels), hm.ColorLimits(1), hm.ColorLimits(2));
 fprintf('V06 grid=%g %g unit=%g traces=%g\n', gs(1), gs(2), unit_id, nshow);
+
+% V07. PNG and PDF of the lab figure, at 300 dpi. exportgraphics defaults to
+% 150 dpi; the story asks for the slide / draft resolution. Files land in
+% demos/cmapss/out/ and are gitignored (the C-MAPSS zip and text stay out too).
+out_dir = fullfile(here, 'out');
+if ~isfolder(out_dir)
+    mkdir(out_dir);
+end
+png_path = fullfile(out_dir, 'story_fd001.png');
+pdf_path = fullfile(out_dir, 'story_fd001.pdf');
+exportgraphics(fig_lab, png_path, 'Resolution', 300);
+exportgraphics(fig_lab, pdf_path, 'Resolution', 300);
+fprintf('V07 png=%s pdf=%s dpi=300\n', png_path, pdf_path);
