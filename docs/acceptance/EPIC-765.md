@@ -30,7 +30,7 @@
 | T2 burn-downs + C07 met (82.3 %) | #765 | [#901](https://github.com/superche/openmatlab/pull/901)–[#913](https://github.com/superche/openmatlab/pull/913) | success |
 | Full corpus re-run on 48bb627 (T0/T1/T2; T3 n/a) | #765 | [#984](https://github.com/superche/openmatlab/pull/984) | success |
 | T3 golden harness (`goldens.py` + pipeline) | #765 | [#985](https://github.com/superche/openmatlab/pull/985) | [job 120216162774](https://github.com/superche/openmatlab/actions/runs/39892778961/job/120216162774) **success** |
-| C08 met: T3 75.3 %; M12 10/10 | #765 | [#986](https://github.com/superche/openmatlab/pull/986) | [job 120219077949]() **success** |
+| C08 met: T3 75.3 %; M12 10/10 | #765 | [#986](https://github.com/superche/openmatlab/pull/986) | [job 120219077949](https://github.com/superche/openmatlab/actions/runs/39893692239/job/120219077949) **success** |
 
 ## Functional demo (real CLI output)
 
@@ -61,14 +61,6 @@ $ pytest -m "unit or bdd" --ignore=tests/unit/extensions/test_community_signal_p
 New cases: `tests/unit/test_corpus_goldens.py` (T3 match, source, nondeterminism, integrity); C08 conformance flipped to met in #986.
 
 **Existing tests changed: none** (Shaw-approved MATLAB-docs test fixes for cell/colormap/TickLabels/saveas landed separately in #982).
-
-## Feature map (epic-related)
-
-```text
-$ openmatlab features | rg -F qa.corpus_tier
-qa.corpus_tier2                  qa         done     Corpus T2 self-check oracle and dialect exclusions
-qa.corpus_tier3                  qa         done     Corpus T3 golden oracle (MATLAB transcripts + Octave-runtime with doc links)
-```
 
 ## Residuals (filed)
 
