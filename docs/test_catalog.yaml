@@ -108,6 +108,13 @@ use_cases:
     features: [libs.bbbc038_stage1, libs.imread]
     priority: p0
 
+  - id: uc.bbbc038_v03
+    title: Segment one BBBC038 FOV with imbinarize and bwareaopen
+    actor: scientific user
+    goal: Global Otsu mask and area opening, shown next to the raw FOV
+    features: [libs.imbinarize, libs.imread, libs.bbbc038_stage1]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2405,6 +2412,33 @@ test_cases:
     features: [libs.bbbc038_stage1, libs.imread]
     use_cases: [uc.bbbc038_stage1]
     impl: tests/conformance/test_m16_v01_v02.py
+    status: active
+    env: conformance
+
+  - id: tc.bbbc038_imbinarize
+    kind: unit
+    title: Otsu imbinarize and 2-D bwareaopen (Epic #1021)
+    features: [libs.imbinarize]
+    use_cases: [uc.bbbc038_v03]
+    impl: tests/unit/test_imbinarize.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_imbinarize_bdd
+    kind: unit
+    title: imbinarize and bwareaopen Gherkin (Epic #1021)
+    features: [libs.imbinarize]
+    use_cases: [uc.bbbc038_v03]
+    impl: tests/bdd/test_bbbc038_imbinarize_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_v03
+    kind: conformance
+    title: V03 imbinarize and bwareaopen on one BBBC038 FOV (Epic #1021)
+    features: [libs.imbinarize, libs.imread, libs.bbbc038_stage1]
+    use_cases: [uc.bbbc038_v03]
+    impl: tests/conformance/test_m16_v03.py
     status: active
     env: conformance
 

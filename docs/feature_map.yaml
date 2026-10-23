@@ -601,9 +601,19 @@ features:
     status: partial
     depends_on: [libs.imread]
     spec: docs/design/EPIC-1020-bbbc038-imread.md
-    notes: "V01 of M16 (Epic #1020). Broad CC0 1.0 stage1_test.zip only (Content-Length and size 9545388, sha256 pinned), cached under downloads/bbbc038/ (never committed). One FOV is extracted; the zip member name is not a filesystem path. Non-goals: stage1_train, contest scoring, vendoring PNGs. imread is libs.imread."
+    notes: "V01 of M16 (Epic #1020). Broad CC0 1.0 stage1_test.zip only (Content-Length and size 9545388, sha256 pinned), cached under downloads/bbbc038/ (never committed). One FOV is extracted; the zip member name is not a filesystem path. Non-goals: stage1_train, contest scoring, vendoring PNGs. imread is libs.imread. Segmentation is libs.imbinarize."
     tests: [tests/unit/test_bbbc038_stage1.py, tests/bdd/test_bbbc038_imread_bdd.py, tests/conformance/test_m16_v01_v02.py]
     cases: [tc.bbbc038_stage1, tc.bbbc038_imread_bdd, tc.bbbc038_v01_v02]
+
+  - id: libs.imbinarize
+    layer: libs
+    name: imbinarize and bwareaopen for one FOV
+    status: partial
+    depends_on: [libs.imread]
+    spec: docs/design/EPIC-1021-imbinarize.md
+    notes: "V03 of M16 (Epic #1021). Default imbinarize is global Otsu via graythresh. RGB uses published rgb2gray weights 0.2989, 0.5870, 0.1140. Foreground is im2double(gray) > level. Ties take the smallest bin. bwareaopen drops 2-D components with area < P; default connectivity 8; conn 4 or 8. The story FOV uses level 22/255 and P=50 (areas 1, 24, then 117 and above). Non-goals: adaptive threshold, a threshold matrix, 3-D connectivity, bwlabel, bwconncomp, regionprops (I-E3 #1022), GPU."
+    tests: [tests/unit/test_imbinarize.py, tests/bdd/test_bbbc038_imbinarize_bdd.py, tests/conformance/test_m16_v03.py]
+    cases: [tc.bbbc038_imbinarize, tc.bbbc038_imbinarize_bdd, tc.bbbc038_v03]
 
   - id: host.debug_ui
     layer: host
