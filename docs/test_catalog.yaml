@@ -45,6 +45,13 @@ use_cases:
     features: [libs.smoothdata, libs.cmapss_fd001]
     priority: p0
 
+  - id: uc.cmapss_metrics
+    title: Report FD001 early/late means, sensor correlation, and train RUL
+    actor: scientific user
+    goal: groupsummary failure cycles and RUL, early versus late sensor means, Pearson correlation
+    features: [libs.cmapss_metrics, libs.table_join_group, libs.cmapss_fd001]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2099,6 +2106,33 @@ test_cases:
     features: [libs.smoothdata, libs.cmapss_fd001]
     use_cases: [uc.cmapss_preprocess]
     impl: tests/conformance/test_m14_v03.py
+    status: active
+    env: conformance
+
+  - id: tc.cmapss_metrics
+    kind: unit
+    title: FD001 RUL, early/late means, and Pearson correlation formulas (Epic #996)
+    features: [libs.cmapss_metrics]
+    use_cases: [uc.cmapss_metrics]
+    impl: tests/unit/test_cmapss_metrics.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_metrics_bdd
+    kind: unit
+    title: FD001 degradation-metric Gherkin (Epic #996)
+    features: [libs.cmapss_metrics]
+    use_cases: [uc.cmapss_metrics]
+    impl: tests/bdd/test_cmapss_metrics_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_v04
+    kind: conformance
+    title: V04 FD001 early/late means, correlation, train RUL, and panels (Epic #996)
+    features: [libs.cmapss_metrics, libs.cmapss_fd001]
+    use_cases: [uc.cmapss_metrics]
+    impl: tests/conformance/test_m14_v04.py
     status: active
     env: conformance
 

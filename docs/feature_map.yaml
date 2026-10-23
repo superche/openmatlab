@@ -511,7 +511,7 @@ features:
     name: C-MAPSS FD001 runtime download and readtable load
     status: partial
     depends_on: [libs.table_io]
-    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721), heatmap (later M14 epics). Unit-1 smoothing is libs.smoothdata (Epic #995)."
+    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721), heatmap (later M14 epics). Unit-1 smoothing is libs.smoothdata (Epic #995). Degradation metrics are libs.cmapss_metrics (Epic #996)."
     tests: [tests/unit/test_cmapss_fd001.py, tests/bdd/test_cmapss_fd001_bdd.py, tests/conformance/test_m14_v01_v02.py]
     cases: [tc.cmapss_fd001, tc.cmapss_fd001_bdd, tc.cmapss_v01_v02]
 
@@ -524,6 +524,16 @@ features:
     notes: "Story slice for M14 V03 (Epic #995). movmean delegates to movmean (smoothdata defaults to omitnan). gaussian sigma is one fifth of the window width, weights renormalized on the truncated window. Second output echoes the window. Non-goals: automatic window, SmoothingFactor, movmedian, lowess/loess/sgolay, tables, timetables, duration windows, GPU."
     tests: [tests/unit/test_smoothdata.py, tests/bdd/test_smoothdata_bdd.py, tests/conformance/test_m14_v03.py]
     cases: [tc.smoothdata, tc.smoothdata_bdd, tc.cmapss_v03]
+
+  - id: libs.cmapss_metrics
+    layer: libs
+    name: FD001 early/late means, sensor correlation, and train RUL
+    status: partial
+    depends_on: [libs.cmapss_fd001, libs.table_join_group, numerics.stats_m3]
+    spec: docs/design/EPIC-996-degradation-metrics.md
+    notes: "Story slice for M14 V04 (Epic #996). failure cycle is groupsummary max(cycle); train RUL is failure_cycle - cycle (0 on the last cycle); early/late means are groupsummary means on the first and last W=30 cycles; correlation is corrcoef (sample Pearson, n-1). imagesc stands in for the correlation panel until heatmap (Epic #997). Non-goals: PHM08 contest models, deep-learning RUL, test-set scoring, FD002-004, Predictive Maintenance Toolbox."
+    tests: [tests/unit/test_cmapss_metrics.py, tests/bdd/test_cmapss_metrics_bdd.py, tests/conformance/test_m14_v04.py]
+    cases: [tc.cmapss_metrics, tc.cmapss_metrics_bdd, tc.cmapss_v04]
 
   - id: host.debug_ui
     layer: host
