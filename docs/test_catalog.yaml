@@ -38,6 +38,13 @@ use_cases:
     features: [libs.cmapss_fd001, libs.table_io]
     priority: p0
 
+  - id: uc.cmapss_preprocess
+    title: Drop near-constant FD001 sensors and smooth one unit
+    actor: scientific user
+    goal: smoothdata movmean and gaussian on one unit, raw and smoothed on one axes
+    features: [libs.smoothdata, libs.cmapss_fd001]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2065,6 +2072,33 @@ test_cases:
     features: [libs.cmapss_fd001]
     use_cases: [uc.cmapss_fd001]
     impl: tests/conformance/test_m14_v01_v02.py
+    status: active
+    env: conformance
+
+  - id: tc.smoothdata
+    kind: unit
+    title: smoothdata movmean cross-check and gaussian window formula (Epic #995)
+    features: [libs.smoothdata]
+    use_cases: [uc.cmapss_preprocess]
+    impl: tests/unit/test_smoothdata.py
+    status: active
+    env: unit
+
+  - id: tc.smoothdata_bdd
+    kind: unit
+    title: smoothdata movmean and gaussian Gherkin (Epic #995)
+    features: [libs.smoothdata]
+    use_cases: [uc.cmapss_preprocess]
+    impl: tests/bdd/test_smoothdata_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_v03
+    kind: conformance
+    title: V03 unit-1 near-constant drop, smoothdata, and dual-line plot (Epic #995)
+    features: [libs.smoothdata, libs.cmapss_fd001]
+    use_cases: [uc.cmapss_preprocess]
+    impl: tests/conformance/test_m14_v03.py
     status: active
     env: conformance
 
