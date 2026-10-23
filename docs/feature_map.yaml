@@ -625,6 +625,16 @@ features:
     tests: [tests/unit/test_regionprops.py, tests/bdd/test_bbbc038_regionprops_bdd.py, tests/conformance/test_m16_v04_v05.py]
     cases: [tc.bbbc038_regionprops, tc.bbbc038_regionprops_bdd, tc.bbbc038_v04_v05]
 
+  - id: libs.labeloverlay
+    layer: libs
+    name: labeloverlay for one gray or RGB image
+    status: partial
+    depends_on: [libs.regionprops]
+    spec: docs/design/EPIC-1023-labeloverlay.md
+    notes: "V06 of M16 (Epic #1023). labeloverlay blends a 2-D label matrix onto gray or RGB uint8 or floating images. Transparency defaults to 0.5. Label 0 is copied. Label k uses a fixed 8-color cycle, not lines(). uint8 output is uint8 RGB, rounded ties-to-even. The story FOV (6 objects) is a 2-by-2 tiledlayout: raw imshow, overlay imshow, area histogram in px, and a count/mean/median summary, with a CC0 / Caicedo 2019 / BBBC038v1 footnote. The story closes that figure so the 1-by-2 panel stays current. Non-goals: Colormap, IncludedLabels, 3-D, App Designer, brush, 300 dpi export (I-E5 #1024)."
+    tests: [tests/unit/test_labeloverlay.py, tests/bdd/test_bbbc038_labeloverlay_bdd.py, tests/conformance/test_m16_v06.py]
+    cases: [tc.bbbc038_labeloverlay, tc.bbbc038_labeloverlay_bdd, tc.bbbc038_v06]
+
   - id: host.debug_ui
     layer: host
     name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"
