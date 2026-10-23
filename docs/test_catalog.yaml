@@ -1800,6 +1800,12 @@ test_cases:
     impl: tests/unit/test_corpus_selfcheck.py
     status: active
     env: unit
+  - id: tc.corpus_tier3
+    kind: unit
+    milestone: M12
+    features: [qa.corpus_tier3]
+    path: tests/unit/test_corpus_goldens.py
+    notes: "T3 golden match, source, nondeterminism, integrity (C08)"
 
   - id: tc.graphics_plot3d
     kind: unit

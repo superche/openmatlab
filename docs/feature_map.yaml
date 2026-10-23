@@ -705,6 +705,12 @@ features:
     depends_on: [qa.corpus_report]
     notes: "M12 C07 met (Epic #765; T3/C08 pending Shaw): GNU Octave %!assert/%!test blocks run at run time (pass/fail, hashes and counts only; no Octave source or expected values committed), chebfun and matlab2tikz own checks; corpus/dialect.json excludes blocks where documented MATLAB differs from Octave (outside the rate, never a pass); full run T2 82.3 %"
     tests: [tests/unit/test_corpus_selfcheck.py]
+  - id: qa.corpus_tier3
+    package: qa
+    status: done
+    milestone: M12
+    depends_on: [qa.corpus_report]
+    notes: "T3 golden oracle (MATLAB >> transcripts; Octave-runtime goldens with MATLAB doc links per Shaw 2026-10-17); goldens.py + pipeline t3/oracle; C08 met at 75.3 % (55/73)"
 
   - id: lang.endless_functions
     layer: qa
