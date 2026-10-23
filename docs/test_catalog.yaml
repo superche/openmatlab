@@ -1802,10 +1802,12 @@ test_cases:
     env: unit
   - id: tc.corpus_tier3
     kind: unit
-    milestone: M12
+    title: Corpus T3 golden oracle (Epic #765 C08)
     features: [qa.corpus_tier3]
-    path: tests/unit/test_corpus_goldens.py
-    notes: "T3 golden match, source, nondeterminism, integrity (C08)"
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_goldens.py
+    status: active
+    env: unit
 
   - id: tc.graphics_plot3d
     kind: unit
