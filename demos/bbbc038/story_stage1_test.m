@@ -1,4 +1,4 @@
-% BBBC038v1 stage1_test, one FOV (M16 V01-V03).
+% BBBC038v1 stage1_test, one FOV (M16 V01-V05).
 % Licence: CC0 1.0.
 % J. C. Caicedo et al., Nature Methods 16:1247-1253, 2019.
 % doi:10.1038/s41592-019-0612-7
@@ -10,6 +10,13 @@
 % luminance > level. bwareaopen keeps 8-connected components with area >= 50.
 % On this FOV those areas are 1, 24, 117, 143, 152, 154, 193, and 219, so 50
 % sits between the 24-pixel fragment and the next object.
+%
+% V04/V05 label that mask with bwlabel and bwconncomp (8-connected).
+% regionprops returns Area, Centroid [x y] (column, row, 1-based), and
+% Eccentricity from the second central moments. stage1_test has no masks.
+% The count is this labeling. Tolerance on the count and the areas is 0.
+% The area histogram is its own figure; figure(1) leaves the before/after
+% panel current. The lab-meeting tiledlayout is I-E4.
 %
 % From the repository root:
 %   openmatlab -e "run('demos/bbbc038/story_stage1_test.m')"
@@ -42,3 +49,22 @@ nexttile;
 imshow(BW2);
 title('BBBC038 mask');
 ntiles = 2;
+[L, ncount] = bwlabel(BW2);
+CC = bwconncomp(BW2);
+stats = regionprops(CC, 'Area', 'Centroid', 'Eccentricity');
+ncc = CC.NumObjects;
+areas = [stats.Area];
+ecc = [stats.Eccentricity];
+meanarea = mean(areas);
+medarea = median(areas);
+meanecc = mean(ecc);
+fprintf('BBBC038 V04 count=%.0f objects=%.0f\n', ncount, ncc);
+for k = 1:ncount
+    fprintf('BBBC038 V04 id=%.0f area=%.0f cx=%.4f cy=%.4f ecc=%.6f\n', ...
+        k, stats(k).Area, stats(k).Centroid(1), stats(k).Centroid(2), stats(k).Eccentricity);
+end
+fprintf('BBBC038 V05 mean=%.4f median=%.4f ecc=%.6f\n', meanarea, medarea, meanecc);
+figure;
+histogram(areas);
+title('BBBC038 areas');
+figure(1);

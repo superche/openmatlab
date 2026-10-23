@@ -115,6 +115,13 @@ use_cases:
     features: [libs.imbinarize, libs.imread, libs.bbbc038_stage1]
     priority: p0
 
+  - id: uc.bbbc038_v04
+    title: Count nuclei and summarize area on one BBBC038 FOV
+    actor: scientific user
+    goal: Connected-component count, area histogram, and mean or median area
+    features: [libs.regionprops, libs.imbinarize]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2439,6 +2446,33 @@ test_cases:
     features: [libs.imbinarize, libs.imread, libs.bbbc038_stage1]
     use_cases: [uc.bbbc038_v03]
     impl: tests/conformance/test_m16_v03.py
+    status: active
+    env: conformance
+
+  - id: tc.bbbc038_regionprops
+    kind: unit
+    title: bwlabel, bwconncomp, and regionprops moments (Epic #1022)
+    features: [libs.regionprops]
+    use_cases: [uc.bbbc038_v04]
+    impl: tests/unit/test_regionprops.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_regionprops_bdd
+    kind: unit
+    title: bwlabel connectivity Gherkin (Epic #1022)
+    features: [libs.regionprops]
+    use_cases: [uc.bbbc038_v04]
+    impl: tests/bdd/test_bbbc038_regionprops_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_v04_v05
+    kind: conformance
+    title: V04/V05 nucleus count and area histogram on one BBBC038 FOV (Epic #1022)
+    features: [libs.regionprops, libs.imbinarize, libs.bbbc038_stage1]
+    use_cases: [uc.bbbc038_v04]
+    impl: tests/conformance/test_m16_v04_v05.py
     status: active
     env: conformance
 
