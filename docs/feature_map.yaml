@@ -561,9 +561,19 @@ features:
     status: partial
     depends_on: []
     spec: docs/design/EPIC-1010-mitbih-findpeaks.md
-    notes: "V04 and V05 of M15 (Epic #1010). findpeaks keeps the first sample of a run that is strictly above both neighbors, drops peaks below MinPeakHeight, then keeps the tallest peak when two are closer than MinPeakDistance. A positive scalar second argument is a sample rate and locations are seconds from 0. The record-100 story uses height 0.5 mV and 0.25 s on the filtered MLII column, plots RR with histogram, and takes abs(fft) of the 10 s excerpt. .atr is not the golden. Non-goals: prominence, width, NPeaks, a Pan-Tompkins implementation, an arrhythmia classifier, spectrogram."
+    notes: "V04 and V05 of M15 (Epic #1010). findpeaks keeps the first sample of a run that is strictly above both neighbors, drops peaks below MinPeakHeight, then keeps the tallest peak when two are closer than MinPeakDistance. A positive scalar second argument is a sample rate and locations are seconds from 0. The record-100 story uses height 0.5 mV and 0.25 s on the filtered MLII column, plots RR with histogram, and takes abs(fft) of the 10 s excerpt. .atr is not the golden. The 2x2 lab figure is libs.mitbih_labfigure (Epic #1011). Non-goals: prominence, width, NPeaks, a Pan-Tompkins implementation, an arrhythmia classifier, spectrogram."
     tests: [tests/unit/test_findpeaks.py, tests/bdd/test_mitbih_findpeaks_bdd.py, tests/conformance/test_m15_v04_v05.py]
     cases: [tc.findpeaks, tc.mitbih_findpeaks_bdd, tc.mitbih_v04_v05]
+
+  - id: libs.mitbih_labfigure
+    layer: libs
+    name: Record 100 2x2 tiledlayout with citation footnote
+    status: partial
+    depends_on: [libs.graphics.layout, libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
+    spec: docs/design/EPIC-1011-mitbih-labfigure.md
+    notes: "V06 of M15 (Epic #1011). One figure, tiledlayout(2,2): raw MLII excerpt, filtered trace with R peaks, RR histogram in seconds, and the 10 s amplitude spectrum. Layout title is MIT-BIH record 100. The footnote is the layout XLabel (DOI 10.13026/C2F305, Moody and Mark 2001, Goldberger et al. 2000). Axis units are s, mV, and Hz. The earlier single-panel figures stay, and the raw-versus-filtered axes are still created last. Non-goals: exportgraphics and print (Epic #1012), App Designer, brush selection, spectrogram as a gate."
+    tests: [tests/unit/test_mitbih_labfigure.py, tests/bdd/test_mitbih_labfigure_bdd.py, tests/conformance/test_m15_v06.py]
+    cases: [tc.mitbih_labfigure, tc.mitbih_labfigure_bdd, tc.mitbih_v06]
 
   - id: host.debug_ui
     layer: host
