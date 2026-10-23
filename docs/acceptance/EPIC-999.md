@@ -5,7 +5,7 @@
 **Design:** [`docs/design/EPIC-999-recording.md`](../design/EPIC-999-recording.md)  
 **Batch package:** [`M14-cmapss-vertical.md`](M14-cmapss-vertical.md)  
 **Captured:** 2026-10-23  
-**Functional tip:** `TIP_SHA` (the commit that adds the recording; re-run on that commit or a descendant)  
+**Functional tip:** `e21cb43a46c033b0ccf37e99df70851a97ccc619` (the commit that adds the recording; re-run on that commit or a descendant)  
 **Rule:** Outputs below come from real local commands. None are invented. The mp4 is an ffmpeg `x11grab` of the live tk Workbench. It is not a stand-in.
 
 ## Verdict
