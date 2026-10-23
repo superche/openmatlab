@@ -94,6 +94,13 @@ use_cases:
     features: [libs.mitbih_labfigure, libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
     priority: p0
 
+  - id: uc.mitbih_export
+    title: Take the record-100 lab figure away as PNG and PDF
+    actor: scientific user
+    goal: exportgraphics writes a 300 dpi PNG and PDF whose crop keeps the title and the citation footnote
+    features: [libs.mitbih_export, libs.graphics.figio, libs.mitbih_labfigure]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2337,6 +2344,33 @@ test_cases:
     features: [libs.mitbih_labfigure, libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
     use_cases: [uc.mitbih_labfigure]
     impl: tests/conformance/test_m15_v06.py
+    status: active
+    env: conformance
+
+  - id: tc.mitbih_export
+    kind: unit
+    title: 300 dpi PNG and PDF keep the title and the citation footnote (Epic #1012)
+    features: [libs.mitbih_export, libs.graphics.figio]
+    use_cases: [uc.mitbih_export]
+    impl: tests/unit/test_mitbih_export.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_export_bdd
+    kind: unit
+    title: exportgraphics Gherkin writes a non-empty png and pdf (Epic #1012)
+    features: [libs.mitbih_export, libs.graphics.figio]
+    use_cases: [uc.mitbih_export]
+    impl: tests/bdd/test_mitbih_export_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_v07
+    kind: conformance
+    title: V07 record 100 lab figure PNG and PDF at 300 dpi (Epic #1012)
+    features: [libs.mitbih_export, libs.mitbih_labfigure, libs.graphics.figio]
+    use_cases: [uc.mitbih_export]
+    impl: tests/conformance/test_m15_v07.py
     status: active
     env: conformance
 
