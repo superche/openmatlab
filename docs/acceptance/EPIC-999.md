@@ -10,7 +10,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criteria V08, V09, and V10 are **met**. Epic #999 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #999 on 2026-10-23 (Asia/Shanghai); M14 criteria V08, V09, and V10 are **met**. Milestone/14 is closed (**10 / 10**, V01–V10).
 
 The Workbench window opens `demos/cmapss/story_fd001.m`, runs it, prints the FD001 size and the V03–V07 lines in the Command Window, and shows both docked figures in the Figures panel (lab figure, then the raw / `smoothdata` axes). The recording is [`demos/workbench/showcase_m14_cmapss.mp4`](../../demos/workbench/showcase_m14_cmapss.mp4) (120.5 s, 1920×1200). Re-record on the usual box with `DISPLAY=:2 ./demos/workbench/record_m14_cmapss_showcase.sh`.
 
@@ -198,9 +198,9 @@ No new residual. Corpus burn-down, milestone/9, MIT-BIH, and CWRU stay out of th
 
 ## Milestone progress (M14)
 
-- Criteria met: **V08 met**, **V09 met**, **V10 met** in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md) (**8 / 10** rows marked met: V03–V10). V01 and V02 were not relabelled; their evidence is [EPIC-994](EPIC-994.md).
+- Criteria met: **10 / 10** (V01–V10) in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md). V01 and V02 are **met**; their evidence is [EPIC-994](EPIC-994.md). V08, V09, and V10 are **met** in this package.
 - Per-epic evidence: [EPIC-994](EPIC-994.md), [EPIC-995](EPIC-995.md), [EPIC-996](EPIC-996.md), [EPIC-997](EPIC-997.md), [EPIC-998](EPIC-998.md), this file.
-- Remaining gap on the milestone table: V01 and V02 still labelled unmet (evidence already in EPIC-994).
+- Milestone/14 is **closed**. Shaw accepted epics #994–#999 on 2026-10-23 (Asia/Shanghai).
 
 ## CI
 

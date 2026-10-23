@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criterion V07 is **met**. Epic #998 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #998 on 2026-10-23 (Asia/Shanghai); M14 criterion V07 is **met**. Milestone/14 is closed.
 
 `demos/cmapss/story_fd001.m` writes the lab-meeting figure twice with `exportgraphics`:
 
@@ -107,7 +107,8 @@ No new residual. Third-party `export_fig`, animation, and pixel-identical glyphs
 
 - Criteria met: **V07 met** in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md) (**5 / 10** rows marked met: V03, V04, V05, V06, V07). V01 and V02 were not relabelled in that table; their evidence is [EPIC-994](EPIC-994.md).
 - Conformance: V07 passing (`tests/conformance/test_m14_v07.py`). V01/V02, V03, V04 and V05/V06 still passing.
-- Remaining gaps (priority order): V01/V02 rows still labelled unmet on the milestone page (evidence in EPIC-994), then V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Remaining gaps at capture (priority order): V01/V02 rows were still labelled unmet on the milestone page (evidence in EPIC-994), then V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Close-out (2026-10-23, Asia/Shanghai): Shaw accepted this epic. Milestone/14 is closed at **10 / 10**. V01 and V02 are **met** in the milestone table.
 
 ## CI
 

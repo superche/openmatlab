@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criteria V05 and V06 are **met**. Epic #997 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #997 on 2026-10-23 (Asia/Shanghai); M14 criteria V05 and V06 are **met**. Milestone/14 is closed.
 
 `heatmap` draws a matrix or a table. The story calls it for the FD001 sensor correlation. The lab-meeting chart is one `tiledlayout(2, 3)` figure:
 
@@ -99,7 +99,8 @@ No new residual. `clustergram`, geographic heatmaps, brush selection, cell label
 
 - Criteria met: **V05 met**, **V06 met** in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md) (**4 / 10** rows marked met: V03, V04, V05, V06). V01 and V02 were not relabelled in that table; their evidence is [EPIC-994](EPIC-994.md).
 - Conformance: V05/V06 passing (`tests/conformance/test_m14_v05_v06.py`). V01/V02, V03, and V04 still passing.
-- Remaining gaps (priority order): V01/V02 rows still labelled unmet on the milestone page (evidence in EPIC-994), then V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Remaining gaps at capture (priority order): V01/V02 rows were still labelled unmet on the milestone page (evidence in EPIC-994), then V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Close-out (2026-10-23, Asia/Shanghai): Shaw accepted this epic. Milestone/14 is closed at **10 / 10**. V01 and V02 are **met** in the milestone table.
 
 ## CI
 

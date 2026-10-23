@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criteria V01 and V02 are **met**. Epic #994 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #994 on 2026-10-23 (Asia/Shanghai); M14 criteria V01 and V02 are **met**. Milestone/14 is closed.
 
 `cmapss_fetch` downloads `CMAPSSData.zip` from Zenodo (CC BY 4.0, DOI 10.5281/zenodo.15346912), checks the byte size and sha256 in `demos/cmapss/manifest.json`, and extracts the three FD001 text files under `downloads/cmapss/`. `demos/cmapss/load_fd001.m` reads them with `readtable` (space delimiter, no header, PHM08 names). The zip and the text files are not committed.
 
@@ -68,9 +68,10 @@ No new residual. FD002–FD004 are milestone non-goals. The rest of the `readtab
 
 ## Milestone progress (M14)
 
-- Criteria met: **2 / 10** (V01, V02)
+- Criteria met at capture: **2 / 10** (V01, V02)
 - Conformance: V01 and V02 passing. V03–V10 have no scripts yet (epics #995–#999).
-- Next: V-E2 #995.
+- Next at capture: V-E2 #995.
+- Close-out (2026-10-23, Asia/Shanghai): Shaw accepted this epic. Milestone/14 is closed at **10 / 10** (V01–V10 **met**).
 
 ## CI
 

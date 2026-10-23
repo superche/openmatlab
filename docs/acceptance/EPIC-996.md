@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criterion V04 is **met**. Epic #996 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #996 on 2026-10-23 (Asia/Shanghai); M14 criterion V04 is **met**. Milestone/14 is closed.
 
 Train FD001 metrics are the public formulas, computed with `groupsummary` and `corrcoef`:
 
@@ -108,7 +108,8 @@ No new residual. A PHM08 contest model, deep-learning RUL, scoring `RUL_FD001.tx
 
 - Criteria met: **V04 met** in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md) (2 / 10 rows marked met: V03, V04). V01 and V02 were not relabelled in that table; their evidence is [EPIC-994](EPIC-994.md).
 - Conformance: V04 passing (`tests/conformance/test_m14_v04.py`). V01/V02 and V03 still passing. V05–V10 have no scripts yet (epics #997–#999).
-- Remaining gaps (priority order): V01/V02 rows still labelled unmet on the milestone page (evidence in EPIC-994), then V05–V06 [#997](https://github.com/superche/openmatlab/issues/997), V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Remaining gaps at capture (priority order): V01/V02 rows were still labelled unmet on the milestone page (evidence in EPIC-994), then V05–V06 [#997](https://github.com/superche/openmatlab/issues/997), V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Close-out (2026-10-23, Asia/Shanghai): Shaw accepted this epic. Milestone/14 is closed at **10 / 10**. V01 and V02 are **met** in the milestone table.
 
 ## CI
 

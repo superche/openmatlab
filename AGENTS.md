@@ -64,7 +64,7 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - **Domain gate:** business-conformance reference vectors — `docs/milestones/M-domain-conformance.md` (milestone/5).
 - **Tables / Debugger:** `docs/milestones/M10-tables.md` (milestone/10), `docs/milestones/M11-debugger-workbench.md` (milestone/11), both closed.
 - **Corpus gate / Graphics:** `docs/milestones/M12-corpus-gate.md` (milestone/12), `docs/milestones/M13-graphics.md` (milestone/13). Corpus licensing: GPL/GFDL sources are fetched at runtime only, never committed.
-- **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. /9 and corpus residuals do not block close.
+- **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14, closed). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. /9 and corpus residuals do not block close.
 - **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6).
 
 ## Residual Issues（强制）
