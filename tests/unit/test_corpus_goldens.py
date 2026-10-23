@@ -63,3 +63,30 @@ def test_golden_match_precision_and_wrap(out, golden, ok):
 ])
 def test_nondeterministic_scripts_have_no_golden(code, hit):
     assert G.nondeterministic(code) == hit
+
+
+def test_committed_t3_records_are_documented_goldens():
+    """M12 C08: every T3 attempt is golden:matlab or golden:octave with a MATLAB doc URL."""
+    from openmatlab.qa.corpus import results
+
+    doc = results.load()
+    t3 = [r for r in doc.get("records", []) if r.get("t3") in ("pass", "error", "timeout", "crash")]
+    if not t3:
+        return  # harness landed before the first full T3 run
+    for r in t3:
+        tag = str(r.get("oracle", ""))
+        assert tag.startswith("golden:matlab") or tag.startswith("golden:octave"), r.get("id")
+        if tag.startswith("golden:octave"):
+            assert "https://www.mathworks.com/help/" in tag or "doc:" in tag, r.get("id")
+
+
+def test_committed_records_carry_no_corpus_text():
+    """Results keep ids / tiers / categories / short messages only — never golden stdout."""
+    from openmatlab.qa.corpus import results
+
+    doc = results.load()
+    blob = " ".join(
+        f"{r.get('oracle','')} {r.get('message','')} {r.get('key','')}" for r in doc.get("records", [])
+    )
+    # no multi-line MATLAB banners that look like pasted transcripts
+    assert "Columns 1 through" not in blob
