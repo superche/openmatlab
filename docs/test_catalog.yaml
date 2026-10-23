@@ -129,6 +129,13 @@ use_cases:
     features: [libs.labeloverlay, libs.regionprops]
     priority: p0
 
+  - id: uc.bbbc038_v07
+    title: Export the BBBC038 lab figure as PNG and PDF
+    actor: scientific user
+    goal: A 300 dpi PNG and PDF whose crop keeps the title and the citation footnote
+    features: [libs.bbbc038_export, libs.graphics.figio]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2507,6 +2514,33 @@ test_cases:
     features: [libs.labeloverlay, libs.regionprops, libs.bbbc038_stage1]
     use_cases: [uc.bbbc038_v06]
     impl: tests/conformance/test_m16_v06.py
+    status: active
+    env: conformance
+
+  - id: tc.bbbc038_export
+    kind: unit
+    title: BBBC038 lab figure export at 150 and 300 dpi (Epic #1024)
+    features: [libs.bbbc038_export, libs.graphics.figio]
+    use_cases: [uc.bbbc038_v07]
+    impl: tests/unit/test_bbbc038_export.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_export_bdd
+    kind: unit
+    title: BBBC038 exportgraphics Gherkin (Epic #1024)
+    features: [libs.bbbc038_export]
+    use_cases: [uc.bbbc038_v07]
+    impl: tests/bdd/test_bbbc038_export_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_v07
+    kind: conformance
+    title: V07 300 dpi PNG and PDF of the BBBC038 lab figure (Epic #1024)
+    features: [libs.bbbc038_export, libs.labeloverlay, libs.bbbc038_stage1]
+    use_cases: [uc.bbbc038_v07]
+    impl: tests/conformance/test_m16_v07.py
     status: active
     env: conformance
 

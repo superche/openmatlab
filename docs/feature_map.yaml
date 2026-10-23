@@ -635,6 +635,16 @@ features:
     tests: [tests/unit/test_labeloverlay.py, tests/bdd/test_bbbc038_labeloverlay_bdd.py, tests/conformance/test_m16_v06.py]
     cases: [tc.bbbc038_labeloverlay, tc.bbbc038_labeloverlay_bdd, tc.bbbc038_v06]
 
+  - id: libs.bbbc038_export
+    layer: libs
+    name: BBBC038 lab figure PNG and PDF at 300 dpi
+    status: partial
+    depends_on: [libs.graphics.figio, libs.labeloverlay]
+    spec: docs/design/EPIC-1024-bbbc038-export.md
+    notes: "V07 of M16 (Epic #1024). The story exports the 1200-by-900 lab figure with exportgraphics at Resolution 300 to demos/bbbc038/out/story_stage1_test.png and story_stage1_test.pdf, then closes that figure. The crop keeps the layout title and the CC0 / Caicedo 2019 / BBBC038v1 footnote. That directory is gitignored. Default exportgraphics resolution stays 150. print -dpng/-dpdf -r300 of the same canvas keeps the title and the footnote. Non-goals: export_fig, animation, pixel-identical glyphs, the Workbench recording (Epic #1025)."
+    tests: [tests/unit/test_bbbc038_export.py, tests/bdd/test_bbbc038_export_bdd.py, tests/conformance/test_m16_v07.py]
+    cases: [tc.bbbc038_export, tc.bbbc038_export_bdd, tc.bbbc038_v07]
+
   - id: host.debug_ui
     layer: host
     name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"

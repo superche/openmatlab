@@ -1,4 +1,4 @@
-% BBBC038v1 stage1_test, one FOV (M16 V01-V06).
+% BBBC038v1 stage1_test, one FOV (M16 V01-V07).
 % Licence: CC0 1.0.
 % J. C. Caicedo et al., Nature Methods 16:1247-1253, 2019.
 % doi:10.1038/s41592-019-0612-7
@@ -19,7 +19,8 @@
 % (raw FOV, labeloverlay, area histogram, count/mean/median) and a footnote
 % for CC0, Caicedo et al. 2019, and BBBC038v1, then closes that figure.
 % figure(1) leaves the before/after panel current. The histogram stays the
-% only other figure. PNG/PDF export at 300 dpi is I-E5.
+% only other figure. V07 exports the lab figure to PNG and PDF at 300 dpi
+% before that close. The files stay in demos/bbbc038/out/ and are gitignored.
 %
 % From the repository root:
 %   openmatlab -e "run('demos/bbbc038/story_stage1_test.m')"
@@ -73,5 +74,18 @@ title('BBBC038 areas');
 run(fullfile(here, 'lab_figure.m'));
 fprintf('BBBC038 V06 grid=%.0f %.0f tiles=%.0f class=%s\n', gs(1), gs(2), labtiles, class(overlay));
 fprintf('BBBC038 V06 footnote=%s\n', footnote);
+out_dir = fullfile(here, 'out');
+if ~isfolder(out_dir)
+    mkdir(out_dir);
+end
+png_path = fullfile(out_dir, 'story_stage1_test.png');
+pdf_path = fullfile(out_dir, 'story_stage1_test.pdf');
+exportgraphics(fig_lab, png_path, 'Resolution', 300);
+exportgraphics(fig_lab, pdf_path, 'Resolution', 300);
+png_info = dir(png_path);
+pdf_info = dir(pdf_path);
+png_bytes = png_info.bytes;
+pdf_bytes = pdf_info.bytes;
+fprintf('BBBC038 V07 png=%s pdf=%s dpi=300 png_bytes=%.0f pdf_bytes=%.0f\n', png_path, pdf_path, png_bytes, pdf_bytes);
 close(fig_lab);
 figure(1);
