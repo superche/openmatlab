@@ -13,7 +13,8 @@ import pytest
 from openmatlab.host.repl import ReplSession
 from openmatlab.qa.paths import repo_root
 from openmatlab.runtime.session import Session
-from tests.unit.test_m14_v07_export import assert_lab_page
+
+from .export_page import assert_lab_page
 
 pytestmark = [pytest.mark.conformance, pytest.mark.unit, pytest.mark.needs_numpy, pytest.mark.needs_matplotlib]
 
