@@ -66,6 +66,13 @@ use_cases:
     features: [libs.graphics.figio, libs.graphics.heatmap]
     priority: p0
 
+  - id: uc.mitbih_record100
+    title: Download MIT-BIH record 100 and read it in millivolts
+    actor: scientific user
+    goal: Runtime PhysioNet fetch and a two-channel ECG at 360 Hz, in mV
+    features: [libs.mitbih_record100]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2201,6 +2208,33 @@ test_cases:
     features: [libs.graphics.figio, libs.graphics.heatmap, libs.cmapss_metrics]
     use_cases: [uc.cmapss_export]
     impl: tests/conformance/test_m14_v07.py
+    status: active
+    env: conformance
+
+  - id: tc.mitbih_record100
+    kind: unit
+    title: MIT-BIH manifest, gitignore, format 212 and annotation bytes (Epic #1008)
+    features: [libs.mitbih_record100]
+    use_cases: [uc.mitbih_record100]
+    impl: tests/unit/test_mitbih_record100.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_record100_bdd
+    kind: unit
+    title: MIT-BIH format 212 millivolt load Gherkin (Epic #1008)
+    features: [libs.mitbih_record100]
+    use_cases: [uc.mitbih_record100]
+    impl: tests/bdd/test_mitbih_record100_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_v01_v02
+    kind: conformance
+    title: V01/V02 PhysioNet record 100 download and mV scale (Epic #1008)
+    features: [libs.mitbih_record100]
+    use_cases: [uc.mitbih_record100]
+    impl: tests/conformance/test_m15_v01_v02.py
     status: active
     env: conformance
 

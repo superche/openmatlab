@@ -65,6 +65,7 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - **Tables / Debugger:** `docs/milestones/M10-tables.md` (milestone/10), `docs/milestones/M11-debugger-workbench.md` (milestone/11), both closed.
 - **Corpus gate / Graphics:** `docs/milestones/M12-corpus-gate.md` (milestone/12), `docs/milestones/M13-graphics.md` (milestone/13). Corpus licensing: GPL/GFDL sources are fetched at runtime only, never committed.
 - **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14, closed). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. /9 and corpus residuals do not block close.
+- **MIT-BIH Arrhythmia vertical:** `docs/milestones/M15-mitbih-vertical.md` (milestone/15). PhysioNet record 100 only (`100.hea` / `100.dat` / `100.atr`), ODC-By 1.0, runtime-only, never committed. /9 and corpus residuals do not block close.
 - **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6).
 
 ## Residual Issues（强制）

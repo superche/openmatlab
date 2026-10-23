@@ -535,6 +535,16 @@ features:
     tests: [tests/unit/test_cmapss_metrics.py, tests/bdd/test_cmapss_metrics_bdd.py, tests/conformance/test_m14_v04.py]
     cases: [tc.cmapss_metrics, tc.cmapss_metrics_bdd, tc.cmapss_v04]
 
+  - id: libs.mitbih_record100
+    layer: libs
+    name: MIT-BIH record 100 runtime download and format 212 load in mV
+    status: partial
+    depends_on: []
+    spec: docs/design/EPIC-1008-mitbih-record100.md
+    notes: "PhysioNet ODC-By 1.0 record 100 only. 100.hea, 100.dat and 100.atr are checked by size and sha256 and cached under downloads/mitbih/ (never committed). Format 212 keeps the 12-bit two's-complement sample (header ADC resolution is 11); mV is (adc-baseline)/gain. Fs 360, 650000 samples, channels MLII and V5. Optional .atr parse is not a diagnostic golden. V01/V02 of M15 (Epic #1008). Non-goals: other records, the full zip, a WFDB toolbox, GPL corpus copies. Bandpass is Epic #1009. R peaks, RR and fft are Epic #1010."
+    tests: [tests/unit/test_mitbih_record100.py, tests/bdd/test_mitbih_record100_bdd.py, tests/conformance/test_m15_v01_v02.py]
+    cases: [tc.mitbih_record100, tc.mitbih_record100_bdd, tc.mitbih_v01_v02]
+
   - id: host.debug_ui
     layer: host
     name: "Workbench debug UI — gutter breakpoints, current line, debug toolbar, stack selector"
