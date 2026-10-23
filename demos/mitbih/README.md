@@ -6,6 +6,8 @@ Runtime download of PhysioNet record 100 only. The `.hea`, `.dat` and `.atr` fil
 openmatlab -e "run('demos/mitbih/story_record100.m')"
 ```
 
+The story prints Fs, the channel count, the sample count, and the first MLII sample in mV. It then zero-phase bandpass-filters MLII at 0.5–40 Hz (`filtfilt`, with `bandpass` as the same order-2 Butterworth) and plots the first 10 s of raw and filtered on one axes.
+
 Licence: ODC-By 1.0. Data DOI: [10.13026/C2F305](https://doi.org/10.13026/C2F305).
 
 - G. B. Moody and R. G. Mark, The impact of the MIT-BIH Arrhythmia Database, IEEE Engineering in Medicine and Biology Magazine, 20(3):45–50, 2001.

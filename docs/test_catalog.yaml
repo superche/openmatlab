@@ -73,6 +73,13 @@ use_cases:
     features: [libs.mitbih_record100]
     priority: p0
 
+  - id: uc.mitbih_bandpass
+    title: Zero-phase bandpass of one MIT-BIH channel
+    actor: scientific user
+    goal: Filter record 100 MLII at about 0.5-40 Hz and compare raw vs filtered on one axes
+    features: [libs.filtfilt, libs.mitbih_record100]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2235,6 +2242,33 @@ test_cases:
     features: [libs.mitbih_record100]
     use_cases: [uc.mitbih_record100]
     impl: tests/conformance/test_m15_v01_v02.py
+    status: active
+    env: conformance
+
+  - id: tc.filtfilt_bandpass
+    kind: unit
+    title: filtfilt goldens and 0.5-40 Hz Butterworth bandpass (Epic #1009)
+    features: [libs.filtfilt]
+    use_cases: [uc.mitbih_bandpass]
+    impl: tests/unit/test_filtfilt_bandpass.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_bandpass_bdd
+    kind: unit
+    title: Zero-phase bandpass Gherkin (Epic #1009)
+    features: [libs.filtfilt]
+    use_cases: [uc.mitbih_bandpass]
+    impl: tests/bdd/test_mitbih_bandpass_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_v03
+    kind: conformance
+    title: V03 record 100 MLII raw vs 0.5-40 Hz filtfilt on one axes (Epic #1009)
+    features: [libs.filtfilt, libs.mitbih_record100]
+    use_cases: [uc.mitbih_bandpass]
+    impl: tests/conformance/test_m15_v03.py
     status: active
     env: conformance
 
