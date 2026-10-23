@@ -1,4 +1,4 @@
-# Epic #765 (M12 C-E5): T2 self-check oracle (T3 pending)
+# Epic #765 (M12 C-E5): T2 self-check oracle + T3 golden oracle
 
 Milestone: [M12 Real-script compatibility gate](../milestones/M12-corpus-gate.md), criteria C07 (T2 ≥ 75 %, locked) and C08 (T3 ≥ 70 %, locked).
 
@@ -45,7 +45,7 @@ Full runs: #904 (`3567779`, 64.1 %), #909 (`b23f9b7`, 71.7 %), #913 (`20145ad`, 
 - **C08 (T3 goldens):** met at 75.3 %. Optional burn-down: Octave-runtime goldens with doc links; stdout-mismatch residuals.
 - The T2 long tail (276 `assert-mismatch`, 74 undefined functions, ...) is tracked through the deduplicated `corpus` issues and the #766 burn-down.
 
-## C08 (T3) — in progress (Shaw 2026-10-17)
+## C08 (T3) — met (Shaw 2026-10-17; landed 2026-10-23)
 
 Shaw approved (2026-10-17, "都按照matlab文档来"): T3 goldens may be (1) MATLAB transcripts under
 \`>>\` prompts, and (2) Octave-produced stdout at run time when each golden links public MATLAB

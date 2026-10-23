@@ -2,8 +2,8 @@
 "_doc": "Committed corpus results (``docs/corpus/results.json``): written by ``python -m openmatlab.qa.corpus run``.",
 "full_run": true,
 "timeout": 20.0,
-"commit": "7fa09df2f13a91f2952a8c6547f71105c2492678",
-"generated": "2026-10-23T03:07:14Z",
+"commit": "5d9513a4974fde8fa54340fcf11c21b57defcc11",
+"generated": "2026-10-23T03:19:42Z",
 "records": [
 {
 "id": "chebfun/chebfun/test_aaa",
@@ -19,7 +19,7 @@
 "key": "eig(A,B): B is singular; the QZ algorithm is not supported.",
 "error_id": "MATLAB:eig:singularB",
 "message": "eig(A,B): B is singular; the QZ algorithm is not supported.",
-"elapsed": 1.681
+"elapsed": 1.135
 },
 {
 "id": "chebfun/chebfun/test_aaatrig",
@@ -35,7 +35,7 @@
 "key": "Input to SVD must not contain NaN or Inf.",
 "error_id": "MATLAB:svd:matrixWithNaNInf",
 "message": "Input to SVD must not contain NaN or Inf.",
-"elapsed": 1.831
+"elapsed": 1.282
 },
 {
 "id": "chebfun/chebfun/test_abs",
@@ -51,7 +51,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.732
+"elapsed": 1.883
 },
 {
 "id": "chebfun/chebfun/test_addBreaks",
@@ -67,7 +67,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.536
+"elapsed": 2.548
 },
 {
 "id": "chebfun/chebfun/test_addBreaksAtRoots",
@@ -76,14 +76,14 @@
 "role": "driver",
 "notes": [],
 "t0": "pass",
-"t1": "timeout",
-"t2": "timeout",
-"status": "timeout",
-"category": "timeout",
-"key": "",
+"t1": "error",
+"t2": "error",
+"status": "error",
+"category": "semantics-diff",
+"key": "end outside of an indexing expression",
 "error_id": "",
-"message": "timed out after 20 s",
-"elapsed": 20.017
+"message": "end outside of an indexing expression",
+"elapsed": 15.425
 },
 {
 "id": "chebfun/chebfun/test_airy",
@@ -99,7 +99,7 @@
 "key": "airy: complex arguments are not supported yet.",
 "error_id": "openmatlab:airy:complex",
 "message": "airy: complex arguments are not supported yet.",
-"elapsed": 3.442
+"elapsed": 2.69
 },
 {
 "id": "chebfun/chebfun/test_all",
@@ -115,7 +115,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.555
+"elapsed": 4.557
 },
 {
 "id": "chebfun/chebfun/test_and",
@@ -131,7 +131,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 4.147
+"elapsed": 3.135
 },
 {
 "id": "chebfun/chebfun/test_any",
@@ -147,7 +147,7 @@
 "key": "end outside of an indexing expression",
 "error_id": "",
 "message": "end outside of an indexing expression",
-"elapsed": 11.17
+"elapsed": 8.712
 },
 {
 "id": "chebfun/chebfun/test_arclength",
@@ -163,7 +163,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.017
+"elapsed": 20.013
 },
 {
 "id": "chebfun/chebfun/test_assignColumns",
@@ -179,7 +179,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 4.39
+"elapsed": 3.581
 },
 {
 "id": "chebfun/chebfun/test_atan2",
@@ -195,7 +195,7 @@
 "key": "Inputs ust be real.",
 "error_id": "CHEBFUN:CHEBFUN:atan2:real",
 "message": "Inputs ust be real.",
-"elapsed": 3.032
+"elapsed": 2.338
 },
 {
 "id": "chebfun/chebfun/test_besselh",
@@ -211,7 +211,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 5.446
+"elapsed": 4.295
 },
 {
 "id": "chebfun/chebfun/test_besselj",
@@ -227,7 +227,7 @@
 "key": "besselj: complex arguments are not supported yet.",
 "error_id": "openmatlab:bessel:complex",
 "message": "besselj: complex arguments are not supported yet.",
-"elapsed": 9.219
+"elapsed": 6.108
 },
 {
 "id": "chebfun/chebfun/test_besselyk",
@@ -243,7 +243,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 4.844
+"elapsed": 3.837
 },
 {
 "id": "chebfun/chebfun/test_bvp4c",
@@ -259,7 +259,7 @@
 "key": "bvpinit",
 "error_id": "",
 "message": "Undefined function or variable: bvpinit",
-"elapsed": 2.583
+"elapsed": 1.934
 },
 {
 "id": "chebfun/chebfun/test_bvp5c",
@@ -275,7 +275,7 @@
 "key": "bvpinit",
 "error_id": "",
 "message": "Undefined function or variable: bvpinit",
-"elapsed": 2.49
+"elapsed": 1.888
 },
 {
 "id": "chebfun/chebfun/test_cell2quasi",
@@ -291,7 +291,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.96
+"elapsed": 1.987
 },
 {
 "id": "chebfun/chebfun/test_cf",
@@ -307,7 +307,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 8.076
+"elapsed": 5.26
 },
 {
 "id": "chebfun/chebfun/test_changeTech",
@@ -323,7 +323,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 3.387
+"elapsed": 2.536
 },
 {
 "id": "chebfun/chebfun/test_chebcoeffs",
@@ -339,7 +339,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.017
+"elapsed": 20.013
 },
 {
 "id": "chebfun/chebfun/test_chebfun_lu",
@@ -355,7 +355,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.748
+"elapsed": 3.697
 },
 {
 "id": "chebfun/chebfun/test_chebpade",
@@ -371,7 +371,7 @@
 "key": "Matrix dimensions must agree.",
 "error_id": "",
 "message": "Matrix dimensions must agree.",
-"elapsed": 2.886
+"elapsed": 2.287
 },
 {
 "id": "chebfun/chebfun/test_chebpoly",
@@ -387,7 +387,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.021
+"elapsed": 20.015
 },
 {
 "id": "chebfun/chebfun/test_circconv",
@@ -403,7 +403,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.591
+"elapsed": 2.742
 },
 {
 "id": "chebfun/chebfun/test_comet",
@@ -419,7 +419,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 2.734
+"elapsed": 2.335
 },
 {
 "id": "chebfun/chebfun/test_comet3",
@@ -435,7 +435,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 3.491
+"elapsed": 2.736
 },
 {
 "id": "chebfun/chebfun/test_complex",
@@ -451,7 +451,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.641
+"elapsed": 3.493
 },
 {
 "id": "chebfun/chebfun/test_compose_binary",
@@ -467,7 +467,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 12.111
+"elapsed": 10.758
 },
 {
 "id": "chebfun/chebfun/test_compose_chebfuns",
@@ -483,7 +483,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 12.058
+"elapsed": 10.009
 },
 {
 "id": "chebfun/chebfun/test_compose_unary",
@@ -499,7 +499,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.015
+"elapsed": 20.013
 },
 {
 "id": "chebfun/chebfun/test_constructor_basic",
@@ -515,7 +515,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.029
+"elapsed": 20.011
 },
 {
 "id": "chebfun/chebfun/test_constructor_basic_periodic",
@@ -531,7 +531,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.014
+"elapsed": 20.011
 },
 {
 "id": "chebfun/chebfun/test_constructor_equi",
@@ -547,7 +547,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 3.781
+"elapsed": 2.928
 },
 {
 "id": "chebfun/chebfun/test_constructor_inputs",
@@ -563,7 +563,7 @@
 "key": "condition: expected Array, got CharValue",
 "error_id": "",
 "message": "condition: expected Array, got CharValue",
-"elapsed": 2.932
+"elapsed": 2.476
 },
 {
 "id": "chebfun/chebfun/test_constructor_inputs_periodic",
@@ -579,7 +579,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.79
+"elapsed": 2.931
 },
 {
 "id": "chebfun/chebfun/test_constructor_singfun",
@@ -595,7 +595,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 14.774
+"elapsed": 11.914
 },
 {
 "id": "chebfun/chebfun/test_constructor_splitting",
@@ -611,7 +611,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 18.335
+"elapsed": 14.299
 },
 {
 "id": "chebfun/chebfun/test_constructor_turbo",
@@ -627,7 +627,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.09
+"elapsed": 3.988
 },
 {
 "id": "chebfun/chebfun/test_constructor_unbndfun",
@@ -643,7 +643,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.19
+"elapsed": 4.087
 },
 {
 "id": "chebfun/chebfun/test_conv",
@@ -659,7 +659,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 19.478
+"elapsed": 15.038
 },
 {
 "id": "chebfun/chebfun/test_cov",
@@ -675,7 +675,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 9.822
+"elapsed": 7.373
 },
 {
 "id": "chebfun/chebfun/test_cummax",
@@ -691,7 +691,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.492
+"elapsed": 1.826
 },
 {
 "id": "chebfun/chebfun/test_cummin",
@@ -707,7 +707,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.528
+"elapsed": 1.935
 },
 {
 "id": "chebfun/chebfun/test_cumsum",
@@ -723,7 +723,7 @@
 "key": "warning: message must be a text scalar.",
 "error_id": "",
 "message": "warning: message must be a text scalar.",
-"elapsed": 5.598
+"elapsed": 4.055
 },
 {
 "id": "chebfun/chebfun/test_dct",
@@ -739,7 +739,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.679
+"elapsed": 2.185
 },
 {
 "id": "chebfun/chebfun/test_defineInterval",
@@ -755,7 +755,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 8.264
+"elapsed": 6.92
 },
 {
 "id": "chebfun/chebfun/test_definePoint",
@@ -771,7 +771,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.589
+"elapsed": 4.811
 },
 {
 "id": "chebfun/chebfun/test_deltaOps",
@@ -787,7 +787,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.683
+"elapsed": 1.873
 },
 {
 "id": "chebfun/chebfun/test_deriv",
@@ -803,7 +803,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.04
+"elapsed": 3.142
 },
 {
 "id": "chebfun/chebfun/test_diag",
@@ -819,7 +819,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.345
+"elapsed": 3.452
 },
 {
 "id": "chebfun/chebfun/test_diff",
@@ -835,7 +835,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 16.547
+"elapsed": 13.76
 },
 {
 "id": "chebfun/chebfun/test_dlt",
@@ -851,7 +851,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 7.966
+"elapsed": 6.485
 },
 {
 "id": "chebfun/chebfun/test_doubleLength",
@@ -867,7 +867,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.64
+"elapsed": 2.736
 },
 {
 "id": "chebfun/chebfun/test_dst",
@@ -883,7 +883,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.804
+"elapsed": 2.132
 },
 {
 "id": "chebfun/chebfun/test_ellipj",
@@ -899,7 +899,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 12.518
+"elapsed": 10.274
 },
 {
 "id": "chebfun/chebfun/test_ellipke",
@@ -915,7 +915,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.512
+"elapsed": 1.939
 },
 {
 "id": "chebfun/chebfun/test_end",
@@ -931,7 +931,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 9.129
+"elapsed": 7.315
 },
 {
 "id": "chebfun/chebfun/test_eq",
@@ -947,7 +947,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.24
+"elapsed": 4.186
 },
 {
 "id": "chebfun/chebfun/test_erfX",
@@ -963,7 +963,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.696
+"elapsed": 5.753
 },
 {
 "id": "chebfun/chebfun/test_exp",
@@ -979,7 +979,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.085
+"elapsed": 2.594
 },
 {
 "id": "chebfun/chebfun/test_extractColumns",
@@ -995,7 +995,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.99
+"elapsed": 2.532
 },
 {
 "id": "chebfun/chebfun/test_feval",
@@ -1011,7 +1011,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.018
+"elapsed": 20.023
 },
 {
 "id": "chebfun/chebfun/test_find",
@@ -1027,7 +1027,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.183
+"elapsed": 3.486
 },
 {
 "id": "chebfun/chebfun/test_fix",
@@ -1043,7 +1043,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 6.402
+"elapsed": 5.206
 },
 {
 "id": "chebfun/chebfun/test_fliplr",
@@ -1059,7 +1059,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 9.465
+"elapsed": 7.958
 },
 {
 "id": "chebfun/chebfun/test_flipud",
@@ -1075,7 +1075,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.012
+"elapsed": 7.909
 },
 {
 "id": "chebfun/chebfun/test_floor",
@@ -1091,7 +1091,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 6.24
+"elapsed": 4.938
 },
 {
 "id": "chebfun/chebfun/test_fracCalc",
@@ -1107,7 +1107,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.23
+"elapsed": 1.882
 },
 {
 "id": "chebfun/chebfun/test_fred",
@@ -1123,7 +1123,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.032
+"elapsed": 20.012
 },
 {
 "id": "chebfun/chebfun/test_get",
@@ -1139,7 +1139,7 @@
 "key": "subtract: operands could not be broadcast together with shap",
 "error_id": "",
 "message": "subtract: operands could not be broadcast together with shapes (0,0) (2,1) ",
-"elapsed": 3.941
+"elapsed": 3.192
 },
 {
 "id": "chebfun/chebfun/test_getValuesAtBreakpoints",
@@ -1155,7 +1155,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.092
+"elapsed": 3.036
 },
 {
 "id": "chebfun/chebfun/test_gmres",
@@ -1171,7 +1171,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.243
+"elapsed": 1.881
 },
 {
 "id": "chebfun/chebfun/test_horzcat",
@@ -1187,7 +1187,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 3.79
+"elapsed": 2.896
 },
 {
 "id": "chebfun/chebfun/test_hypot",
@@ -1203,7 +1203,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.293
+"elapsed": 2.833
 },
 {
 "id": "chebfun/chebfun/test_idlt",
@@ -1219,7 +1219,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.593
+"elapsed": 7.108
 },
 {
 "id": "chebfun/chebfun/test_imag",
@@ -1235,7 +1235,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.688
+"elapsed": 3.837
 },
 {
 "id": "chebfun/chebfun/test_innerProduct",
@@ -1251,7 +1251,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.02
+"elapsed": 20.011
 },
 {
 "id": "chebfun/chebfun/test_interp1",
@@ -1267,7 +1267,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 4.99
+"elapsed": 4.24
 },
 {
 "id": "chebfun/chebfun/test_inv",
@@ -1283,7 +1283,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.432
+"elapsed": 1.875
 },
 {
 "id": "chebfun/chebfun/test_isempty",
@@ -1299,7 +1299,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.826
+"elapsed": 2.08
 },
 {
 "id": "chebfun/chebfun/test_isequal",
@@ -1315,7 +1315,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 13.495
+"elapsed": 9.307
 },
 {
 "id": "chebfun/chebfun/test_isfinite",
@@ -1331,7 +1331,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.184
+"elapsed": 7.905
 },
 {
 "id": "chebfun/chebfun/test_isinf",
@@ -1347,7 +1347,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.216
+"elapsed": 7.946
 },
 {
 "id": "chebfun/chebfun/test_isnan",
@@ -1363,7 +1363,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.973
+"elapsed": 8.437
 },
 {
 "id": "chebfun/chebfun/test_iszero",
@@ -1379,7 +1379,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 11.314
+"elapsed": 8.351
 },
 {
 "id": "chebfun/chebfun/test_ivp",
@@ -1395,7 +1395,7 @@
 "key": "property",
 "error_id": "",
 "message": "function handle: undefined function 'vdp1'",
-"elapsed": 2.683
+"elapsed": 1.681
 },
 {
 "id": "chebfun/chebfun/test_jaccoeffs",
@@ -1411,7 +1411,7 @@
 "key": "recursionLimit",
 "error_id": "MATLAB:recursionLimit",
 "message": "Maximum recursion limit reached (maximum recursion depth exceeded)",
-"elapsed": 3.203
+"elapsed": 2.336
 },
 {
 "id": "chebfun/chebfun/test_join",
@@ -1427,7 +1427,7 @@
 "key": "cellfun: unsupported option _",
 "error_id": "",
 "message": "cellfun: unsupported option 'uniformout'",
-"elapsed": 2.895
+"elapsed": 2.383
 },
 {
 "id": "chebfun/chebfun/test_kron",
@@ -1443,7 +1443,7 @@
 "key": "nargin: _ is not a MATLAB function file",
 "error_id": "MATLAB:narginout:notValidMfile",
 "message": "nargin: '@(x,y)x.^2.*sin(y)' is not a MATLAB function file",
-"elapsed": 3.608
+"elapsed": 2.286
 },
 {
 "id": "chebfun/chebfun/test_kronOp",
@@ -1459,7 +1459,7 @@
 "key": "test_kronOp: Error in class file chebmatrix.m: Expected IDEN",
 "error_id": "",
 "message": "test_kronOp: Error in class file chebmatrix.m: Expected IDENT, got KW_END at line 180, column 22",
-"elapsed": 3.413
+"elapsed": 2.235
 },
 {
 "id": "chebfun/chebfun/test_le",
@@ -1475,7 +1475,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "",
 "message": "Undefined function or variable: heaviside",
-"elapsed": 6.016
+"elapsed": 4.26
 },
 {
 "id": "chebfun/chebfun/test_legcoeffs",
@@ -1491,7 +1491,7 @@
 "key": "matmul: matmul: Input operand _ has a mismatch in its core d",
 "error_id": "",
 "message": "matmul: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 2 is different from 11)",
-"elapsed": 3.904
+"elapsed": 2.79
 },
 {
 "id": "chebfun/chebfun/test_log",
@@ -1507,7 +1507,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.404
+"elapsed": 3.351
 },
 {
 "id": "chebfun/chebfun/test_logical",
@@ -1523,7 +1523,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 3.995
+"elapsed": 3.135
 },
 {
 "id": "chebfun/chebfun/test_lt",
@@ -1539,7 +1539,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "",
 "message": "Undefined function or variable: heaviside",
-"elapsed": 5.308
+"elapsed": 4.15
 },
 {
 "id": "chebfun/chebfun/test_mat2cell",
@@ -1555,7 +1555,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.453
+"elapsed": 5.105
 },
 {
 "id": "chebfun/chebfun/test_max",
@@ -1571,7 +1571,7 @@
 "key": "Non-singleton dimensions of the two input arrays must match ",
 "error_id": "MATLAB:bsxfun:arrayDimensionsMustMatch",
 "message": "Non-singleton dimensions of the two input arrays must match each other.",
-"elapsed": 6.057
+"elapsed": 4.747
 },
 {
 "id": "chebfun/chebfun/test_mean",
@@ -1587,7 +1587,7 @@
 "key": "logical: expected Array, got ClassInstance",
 "error_id": "",
 "message": "logical: expected Array, got ClassInstance",
-"elapsed": 2.647
+"elapsed": 2.227
 },
 {
 "id": "chebfun/chebfun/test_merge",
@@ -1603,7 +1603,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.016
+"elapsed": 20.011
 },
 {
 "id": "chebfun/chebfun/test_min",
@@ -1619,7 +1619,7 @@
 "key": "Non-singleton dimensions of the two input arrays must match ",
 "error_id": "MATLAB:bsxfun:arrayDimensionsMustMatch",
 "message": "Non-singleton dimensions of the two input arrays must match each other.",
-"elapsed": 4.946
+"elapsed": 4.141
 },
 {
 "id": "chebfun/chebfun/test_minandmax",
@@ -1635,7 +1635,7 @@
 "key": "Non-singleton dimensions of the two input arrays must match ",
 "error_id": "MATLAB:bsxfun:arrayDimensionsMustMatch",
 "message": "Non-singleton dimensions of the two input arrays must match each other.",
-"elapsed": 5.26
+"elapsed": 4.685
 },
 {
 "id": "chebfun/chebfun/test_minus",
@@ -1651,7 +1651,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.498
+"elapsed": 4.785
 },
 {
 "id": "chebfun/chebfun/test_mldivide",
@@ -1667,7 +1667,7 @@
 "key": "recursionLimit",
 "error_id": "MATLAB:recursionLimit",
 "message": "Maximum recursion limit reached (maximum recursion depth exceeded)",
-"elapsed": 2.835
+"elapsed": 2.396
 },
 {
 "id": "chebfun/chebfun/test_mrdivide",
@@ -1683,7 +1683,7 @@
 "key": "== does not support array-valued CHEBFUN objects.",
 "error_id": "CHEBFUN:CHEBFUN:eq:array",
 "message": "== does not support array-valued CHEBFUN objects.",
-"elapsed": 2.579
+"elapsed": 2.24
 },
 {
 "id": "chebfun/chebfun/test_mtimes",
@@ -1699,7 +1699,7 @@
 "key": "nargin: _ is not a MATLAB function file",
 "error_id": "MATLAB:narginout:notValidMfile",
 "message": "nargin: '@(x,y)x.^2.*sin(y)' is not a MATLAB function file",
-"elapsed": 9.457
+"elapsed": 8.672
 },
 {
 "id": "chebfun/chebfun/test_ne",
@@ -1715,7 +1715,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.14
+"elapsed": 4.301
 },
 {
 "id": "chebfun/chebfun/test_nextpow2",
@@ -1731,7 +1731,7 @@
 "key": "Non-singleton dimensions of the two input arrays must match ",
 "error_id": "MATLAB:bsxfun:arrayDimensionsMustMatch",
 "message": "Non-singleton dimensions of the two input arrays must match each other.",
-"elapsed": 4.688
+"elapsed": 4.034
 },
 {
 "id": "chebfun/chebfun/test_nodots",
@@ -1747,7 +1747,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.13
+"elapsed": 1.779
 },
 {
 "id": "chebfun/chebfun/test_norm",
@@ -1763,7 +1763,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 5.302
+"elapsed": 4.96
 },
 {
 "id": "chebfun/chebfun/test_not",
@@ -1779,7 +1779,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 3.429
+"elapsed": 3.032
 },
 {
 "id": "chebfun/chebfun/test_null",
@@ -1795,7 +1795,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.586
+"elapsed": 2.377
 },
 {
 "id": "chebfun/chebfun/test_or",
@@ -1811,7 +1811,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 3.592
+"elapsed": 3.149
 },
 {
 "id": "chebfun/chebfun/test_orth",
@@ -1827,7 +1827,7 @@
 "key": "recursionLimit",
 "error_id": "MATLAB:recursionLimit",
 "message": "Maximum recursion limit reached (maximum recursion depth exceeded)",
-"elapsed": 2.607
+"elapsed": 2.193
 },
 {
 "id": "chebfun/chebfun/test_overlap",
@@ -1843,7 +1843,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.017
+"elapsed": 20.014
 },
 {
 "id": "chebfun/chebfun/test_pchip",
@@ -1859,7 +1859,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.634
+"elapsed": 3.148
 },
 {
 "id": "chebfun/chebfun/test_permute",
@@ -1875,7 +1875,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.332
+"elapsed": 2.032
 },
 {
 "id": "chebfun/chebfun/test_pinv",
@@ -1891,7 +1891,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.8
+"elapsed": 3.19
 },
 {
 "id": "chebfun/chebfun/test_plot",
@@ -1907,7 +1907,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 10.141
+"elapsed": 9.016
 },
 {
 "id": "chebfun/chebfun/test_plot_xylim",
@@ -1923,7 +1923,7 @@
 "key": "plot: expected a numeric argument",
 "error_id": "MATLAB:invalidType",
 "message": "plot: expected a numeric argument",
-"elapsed": 2.185
+"elapsed": 1.978
 },
 {
 "id": "chebfun/chebfun/test_plotcoeffs",
@@ -1939,7 +1939,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 16.74
+"elapsed": 14.983
 },
 {
 "id": "chebfun/chebfun/test_plus",
@@ -1955,7 +1955,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.035
+"elapsed": 20.011
 },
 {
 "id": "chebfun/chebfun/test_points",
@@ -1971,7 +1971,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.28
+"elapsed": 2.077
 },
 {
 "id": "chebfun/chebfun/test_polyfit",
@@ -1987,7 +1987,7 @@
 "key": "matmul: matmul: Input operand _ has a mismatch in its core d",
 "error_id": "",
 "message": "matmul: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 2 is different from 6)",
-"elapsed": 4.182
+"elapsed": 3.935
 },
 {
 "id": "chebfun/chebfun/test_polyfitL1",
@@ -2003,7 +2003,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.021
+"elapsed": 20.01
 },
 {
 "id": "chebfun/chebfun/test_polyval",
@@ -2019,7 +2019,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.033
+"elapsed": 1.878
 },
 {
 "id": "chebfun/chebfun/test_power",
@@ -2035,7 +2035,7 @@
 "key": "Too many input arguments.",
 "error_id": "MATLAB:TooManyInputs",
 "message": "Too many input arguments.",
-"elapsed": 5.745
+"elapsed": 5.249
 },
 {
 "id": "chebfun/chebfun/test_prod",
@@ -2051,7 +2051,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.787
+"elapsed": 4.69
 },
 {
 "id": "chebfun/chebfun/test_qr",
@@ -2067,7 +2067,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.985
+"elapsed": 5.104
 },
 {
 "id": "chebfun/chebfun/test_range",
@@ -2083,7 +2083,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.017
+"elapsed": 20.016
 },
 {
 "id": "chebfun/chebfun/test_rdivide",
@@ -2099,7 +2099,7 @@
 "key": "Non-singleton dimensions of the two input arrays must match ",
 "error_id": "MATLAB:bsxfun:arrayDimensionsMustMatch",
 "message": "Non-singleton dimensions of the two input arrays must match each other.",
-"elapsed": 4.282
+"elapsed": 4.386
 },
 {
 "id": "chebfun/chebfun/test_real",
@@ -2115,7 +2115,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.889
+"elapsed": 3.638
 },
 {
 "id": "chebfun/chebfun/test_realpow",
@@ -2131,7 +2131,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 1.877
+"elapsed": 1.823
 },
 {
 "id": "chebfun/chebfun/test_realsqrt",
@@ -2147,7 +2147,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 1.992
+"elapsed": 1.832
 },
 {
 "id": "chebfun/chebfun/test_removeDeltas",
@@ -2163,7 +2163,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.979
+"elapsed": 2.49
 },
 {
 "id": "chebfun/chebfun/test_repmat",
@@ -2179,7 +2179,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.391
+"elapsed": 2.036
 },
 {
 "id": "chebfun/chebfun/test_residue",
@@ -2195,7 +2195,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "",
 "message": "Undefined function or variable: residue",
-"elapsed": 2.184
+"elapsed": 2.192
 },
 {
 "id": "chebfun/chebfun/test_restrict",
@@ -2211,7 +2211,7 @@
 "key": "end outside of an indexing expression",
 "error_id": "",
 "message": "end outside of an indexing expression",
-"elapsed": 11.304
+"elapsed": 10.142
 },
 {
 "id": "chebfun/chebfun/test_roots",
@@ -2227,7 +2227,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 5.89
+"elapsed": 5.597
 },
 {
 "id": "chebfun/chebfun/test_round",
@@ -2243,7 +2243,7 @@
 "key": "Dimensions of arrays being concatenated are not consistent.",
 "error_id": "MATLAB:catenate:dimensionMismatch",
 "message": "Dimensions of arrays being concatenated are not consistent.",
-"elapsed": 6.596
+"elapsed": 6.101
 },
 {
 "id": "chebfun/chebfun/test_sign",
@@ -2259,7 +2259,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 1.991
+"elapsed": 1.787
 },
 {
 "id": "chebfun/chebfun/test_simplify",
@@ -2275,7 +2275,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.887
+"elapsed": 2.646
 },
 {
 "id": "chebfun/chebfun/test_spline",
@@ -2291,7 +2291,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.482
+"elapsed": 3.293
 },
 {
 "id": "chebfun/chebfun/test_splitting_abs",
@@ -2307,7 +2307,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.012
+"elapsed": 20.016
 },
 {
 "id": "chebfun/chebfun/test_sqrt",
@@ -2323,7 +2323,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.016
+"elapsed": 20.013
 },
 {
 "id": "chebfun/chebfun/test_subspace",
@@ -2339,7 +2339,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 7.104
+"elapsed": 6.538
 },
 {
 "id": "chebfun/chebfun/test_subsref",
@@ -2355,7 +2355,7 @@
 "key": "index: expected Array, got CharValue",
 "error_id": "",
 "message": "index: expected Array, got CharValue",
-"elapsed": 2.53
+"elapsed": 2.327
 },
 {
 "id": "chebfun/chebfun/test_sum",
@@ -2371,7 +2371,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 18.396
+"elapsed": 16.843
 },
 {
 "id": "chebfun/chebfun/test_svd",
@@ -2387,7 +2387,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.084
+"elapsed": 2.778
 },
 {
 "id": "chebfun/chebfun/test_tan",
@@ -2403,7 +2403,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.047
+"elapsed": 1.776
 },
 {
 "id": "chebfun/chebfun/test_times",
@@ -2419,7 +2419,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.013
+"elapsed": 20.01
 },
 {
 "id": "chebfun/chebfun/test_trig",
@@ -2435,7 +2435,7 @@
 "key": "property",
 "error_id": "CHEBFUN:CHEBTECH:extrapolate:nansInfs",
 "message": "Too many NaNs/Infs to handle.",
-"elapsed": 3.901
+"elapsed": 3.396
 },
 {
 "id": "chebfun/chebfun/test_trigcasting",
@@ -2451,7 +2451,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 11.818
+"elapsed": 11.486
 },
 {
 "id": "chebfun/chebfun/test_trigcoeffs",
@@ -2467,7 +2467,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.778
+"elapsed": 2.63
 },
 {
 "id": "chebfun/chebfun/test_trigpade",
@@ -2483,7 +2483,7 @@
 "key": "cell assign: expected scalar index",
 "error_id": "",
 "message": "cell assign: expected scalar index",
-"elapsed": 2.475
+"elapsed": 2.332
 },
 {
 "id": "chebfun/chebfun/test_trigratinterp",
@@ -2499,7 +2499,7 @@
 "key": "cell assign: expected scalar index",
 "error_id": "",
 "message": "cell assign: expected scalar index",
-"elapsed": 2.45
+"elapsed": 2.336
 },
 {
 "id": "chebfun/chebfun/test_trigremez",
@@ -2515,7 +2515,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 6.244
+"elapsed": 6.109
 },
 {
 "id": "chebfun/chebfun/test_truncate",
@@ -2531,7 +2531,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 1.936
+"elapsed": 1.83
 },
 {
 "id": "chebfun/chebfun/test_tweakDomain",
@@ -2547,7 +2547,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.928
+"elapsed": 2.738
 },
 {
 "id": "chebfun/chebfun/test_ultracoeffs",
@@ -2563,7 +2563,7 @@
 "key": "zeros: expected scalar argument",
 "error_id": "",
 "message": "zeros: expected scalar argument",
-"elapsed": 2.276
+"elapsed": 2.394
 },
 {
 "id": "chebfun/chebfun/test_unwrap",
@@ -2579,7 +2579,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.491
+"elapsed": 2.992
 },
 {
 "id": "chebfun/chebfun/test_var",
@@ -2595,7 +2595,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.64
+"elapsed": 2.943
 },
 {
 "id": "chebfun/chebfun/test_vectorCheck",
@@ -2611,7 +2611,7 @@
 "key": "warning: not enough input arguments",
 "error_id": "",
 "message": "warning: not enough input arguments",
-"elapsed": 1.429
+"elapsed": 1.281
 },
 {
 "id": "chebfun/chebfun/test_vertcat",
@@ -2627,7 +2627,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.087
+"elapsed": 1.936
 },
 {
 "id": "chebfun/chebfun/test_volt",
@@ -2636,14 +2636,14 @@
 "role": "driver",
 "notes": [],
 "t0": "pass",
-"t1": "timeout",
-"t2": "timeout",
-"status": "timeout",
-"category": "timeout",
+"t1": "pass",
+"t2": "pass",
+"status": "pass",
+"category": "pass",
 "key": "",
 "error_id": "",
-"message": "timed out after 20 s",
-"elapsed": 20.013
+"message": "",
+"elapsed": 18.847
 },
 {
 "id": "chebfun/chebfun/test_waterfall",
@@ -2659,7 +2659,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 2.691
+"elapsed": 2.338
 },
 {
 "id": "chebfun/chebtech/test_abs",
@@ -2675,7 +2675,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.154
+"elapsed": 2.141
 },
 {
 "id": "chebfun/chebtech/test_alias",
@@ -2691,7 +2691,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 14.447
+"elapsed": 11.224
 },
 {
 "id": "chebfun/chebtech/test_angles",
@@ -2707,7 +2707,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.693
+"elapsed": 1.274
 },
 {
 "id": "chebfun/chebtech/test_any",
@@ -2723,7 +2723,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.835
+"elapsed": 1.383
 },
 {
 "id": "chebfun/chebtech/test_assignColumns",
@@ -2739,7 +2739,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.03
+"elapsed": 20.029
 },
 {
 "id": "chebfun/chebtech/test_bary",
@@ -2755,7 +2755,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.632
+"elapsed": 1.325
 },
 {
 "id": "chebfun/chebtech/test_cell2mat",
@@ -2771,7 +2771,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.085
+"elapsed": 1.53
 },
 {
 "id": "chebfun/chebtech/test_chebTcoeffs2chebUcoeffs",
@@ -2787,7 +2787,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.679
+"elapsed": 1.226
 },
 {
 "id": "chebfun/chebtech/test_clenshaw",
@@ -2803,7 +2803,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.631
+"elapsed": 1.177
 },
 {
 "id": "chebfun/chebtech/test_compose",
@@ -2819,7 +2819,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 7.762
+"elapsed": 6.188
 },
 {
 "id": "chebfun/chebtech/test_conj",
@@ -2835,7 +2835,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.183
+"elapsed": 1.574
 },
 {
 "id": "chebfun/chebtech/test_cumsum",
@@ -2851,7 +2851,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.013
+"elapsed": 20.01
 },
 {
 "id": "chebfun/chebtech/test_diff",
@@ -2867,7 +2867,7 @@
 "key": "airy: complex arguments are not supported yet.",
 "error_id": "openmatlab:airy:complex",
 "message": "airy: complex arguments are not supported yet.",
-"elapsed": 1.881
+"elapsed": 1.375
 },
 {
 "id": "chebfun/chebtech/test_extractBoundaryRoots",
@@ -2883,7 +2883,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.083
+"elapsed": 3.684
 },
 {
 "id": "chebfun/chebtech/test_feval",
@@ -2899,7 +2899,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.019
+"elapsed": 20.009
 },
 {
 "id": "chebfun/chebtech/test_fliplr",
@@ -2915,7 +2915,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.985
+"elapsed": 1.575
 },
 {
 "id": "chebfun/chebtech/test_flipud",
@@ -2931,7 +2931,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.734
+"elapsed": 2.231
 },
 {
 "id": "chebfun/chebtech/test_happinessCheck",
@@ -2947,7 +2947,7 @@
 "key": "array assign: A null assignment can have only one non-colon ",
 "error_id": "",
 "message": "array assign: A null assignment can have only one non-colon index.",
-"elapsed": 1.881
+"elapsed": 1.43
 },
 {
 "id": "chebfun/chebtech/test_imag",
@@ -2963,7 +2963,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.585
+"elapsed": 2.102
 },
 {
 "id": "chebfun/chebtech/test_innerProduct",
@@ -2979,7 +2979,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.707
+"elapsed": 3.202
 },
 {
 "id": "chebfun/chebtech/test_isempty",
@@ -2995,7 +2995,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.185
+"elapsed": 1.582
 },
 {
 "id": "chebfun/chebtech/test_isequal",
@@ -3011,7 +3011,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.179
+"elapsed": 1.738
 },
 {
 "id": "chebfun/chebtech/test_isfinite",
@@ -3027,7 +3027,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.682
+"elapsed": 1.478
 },
 {
 "id": "chebfun/chebtech/test_isinf",
@@ -3043,7 +3043,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.946
+"elapsed": 1.379
 },
 {
 "id": "chebfun/chebtech/test_isnan",
@@ -3059,7 +3059,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.938
+"elapsed": 1.536
 },
 {
 "id": "chebfun/chebtech/test_isreal",
@@ -3075,7 +3075,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.456
+"elapsed": 1.888
 },
 {
 "id": "chebfun/chebtech/test_iszero",
@@ -3091,7 +3091,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.635
+"elapsed": 1.281
 },
 {
 "id": "chebfun/chebtech/test_legcoeffs",
@@ -3107,7 +3107,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.75
+"elapsed": 1.939
 },
 {
 "id": "chebfun/chebtech/test_length",
@@ -3123,7 +3123,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.164
+"elapsed": 1.582
 },
 {
 "id": "chebfun/chebtech/test_mat2cell",
@@ -3139,7 +3139,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.188
+"elapsed": 1.733
 },
 {
 "id": "chebfun/chebtech/test_max",
@@ -3155,7 +3155,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.253
+"elapsed": 3.247
 },
 {
 "id": "chebfun/chebtech/test_min",
@@ -3171,7 +3171,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.848
+"elapsed": 3.148
 },
 {
 "id": "chebfun/chebtech/test_minandmax",
@@ -3187,7 +3187,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.598
+"elapsed": 4.502
 },
 {
 "id": "chebfun/chebtech/test_minus",
@@ -3203,7 +3203,7 @@
 "key": "airy: complex arguments are not supported yet.",
 "error_id": "openmatlab:airy:complex",
 "message": "airy: complex arguments are not supported yet.",
-"elapsed": 16.886
+"elapsed": 12.967
 },
 {
 "id": "chebfun/chebtech/test_mldivide",
@@ -3219,7 +3219,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.584
+"elapsed": 2.037
 },
 {
 "id": "chebfun/chebtech/test_mrdivide",
@@ -3235,7 +3235,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.086
+"elapsed": 2.201
 },
 {
 "id": "chebfun/chebtech/test_mtimes",
@@ -3251,7 +3251,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.394
+"elapsed": 1.833
 },
 {
 "id": "chebfun/chebtech/test_plus",
@@ -3267,7 +3267,7 @@
 "key": "airy: complex arguments are not supported yet.",
 "error_id": "openmatlab:airy:complex",
 "message": "airy: complex arguments are not supported yet.",
-"elapsed": 18.045
+"elapsed": 12.741
 },
 {
 "id": "chebfun/chebtech/test_poly",
@@ -3283,7 +3283,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.987
+"elapsed": 1.531
 },
 {
 "id": "chebfun/chebtech/test_prolong",
@@ -3299,7 +3299,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.35
+"elapsed": 4.694
 },
 {
 "id": "chebfun/chebtech/test_qr",
@@ -3315,7 +3315,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.015
+"elapsed": 20.013
 },
 {
 "id": "chebfun/chebtech/test_quadpts",
@@ -3331,7 +3331,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 1.733
+"elapsed": 1.326
 },
 {
 "id": "chebfun/chebtech/test_rdivide",
@@ -3347,7 +3347,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.019
+"elapsed": 20.01
 },
 {
 "id": "chebfun/chebtech/test_real",
@@ -3363,7 +3363,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.382
+"elapsed": 1.777
 },
 {
 "id": "chebfun/chebtech/test_restrict",
@@ -3379,7 +3379,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.937
+"elapsed": 4.739
 },
 {
 "id": "chebfun/chebtech/test_roots",
@@ -3395,7 +3395,7 @@
 "key": "",
 "error_id": "",
 "message": "CPU budget exceeded (20 s)",
-"elapsed": 14.15
+"elapsed": 10.422
 },
 {
 "id": "chebfun/chebtech/test_sample",
@@ -3411,7 +3411,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.729
+"elapsed": 1.331
 },
 {
 "id": "chebfun/chebtech/test_scaleInvariance",
@@ -3427,7 +3427,7 @@
 "key": "array assign: A null assignment can have only one non-colon ",
 "error_id": "",
 "message": "array assign: A null assignment can have only one non-colon index.",
-"elapsed": 1.787
+"elapsed": 1.636
 },
 {
 "id": "chebfun/chebtech/test_sign",
@@ -3443,7 +3443,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.483
+"elapsed": 1.981
 },
 {
 "id": "chebfun/chebtech/test_simplify",
@@ -3459,7 +3459,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.022
+"elapsed": 20.012
 },
 {
 "id": "chebfun/chebtech/test_size",
@@ -3475,7 +3475,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.044
+"elapsed": 1.582
 },
 {
 "id": "chebfun/chebtech/test_sum",
@@ -3484,14 +3484,14 @@
 "role": "driver",
 "notes": [],
 "t0": "pass",
-"t1": "timeout",
-"t2": "timeout",
-"status": "timeout",
-"category": "timeout",
+"t1": "pass",
+"t2": "pass",
+"status": "pass",
+"category": "pass",
 "key": "",
 "error_id": "",
-"message": "timed out after 20 s",
-"elapsed": 20.024
+"message": "",
+"elapsed": 19.273
 },
 {
 "id": "chebfun/chebtech/test_times",
@@ -3507,7 +3507,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.013
+"elapsed": 20.01
 },
 {
 "id": "chebfun/chebtech/test_trigcoeffs",
@@ -3523,7 +3523,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 8.809
+"elapsed": 6.885
 },
 {
 "id": "chebfun/chebtech/test_turbo",
@@ -3539,7 +3539,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.477
+"elapsed": 2.03
 },
 {
 "id": "chebfun/misc/test_bary",
@@ -3555,7 +3555,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.388
+"elapsed": 1.476
 },
 {
 "id": "chebfun/misc/test_besselroots",
@@ -3571,7 +3571,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.284
+"elapsed": 1.525
 },
 {
 "id": "chebfun/misc/test_blowup",
@@ -3587,7 +3587,7 @@
 "key": "cell index: expected cell, got CharValue",
 "error_id": "",
 "message": "cell index: expected cell, got CharValue",
-"elapsed": 1.727
+"elapsed": 1.237
 },
 {
 "id": "chebfun/misc/test_cheb2jac",
@@ -3603,7 +3603,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.038
+"elapsed": 2.108
 },
 {
 "id": "chebfun/misc/test_cheb2leg",
@@ -3619,7 +3619,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.492
+"elapsed": 3.554
 },
 {
 "id": "chebfun/misc/test_chebpoly",
@@ -3635,7 +3635,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.899
+"elapsed": 4.625
 },
 {
 "id": "chebfun/misc/test_chebpolyval",
@@ -3651,7 +3651,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 3.435
+"elapsed": 2.285
 },
 {
 "id": "chebfun/misc/test_chebpolyvalm",
@@ -3667,7 +3667,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.53
+"elapsed": 1.274
 },
 {
 "id": "chebfun/misc/test_chebvar",
@@ -3683,7 +3683,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 1.64
+"elapsed": 1.285
 },
 {
 "id": "chebfun/misc/test_coeffs2vals",
@@ -3699,7 +3699,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.415
+"elapsed": 2.441
 },
 {
 "id": "chebfun/misc/test_conformal",
@@ -3715,7 +3715,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.728
+"elapsed": 1.984
 },
 {
 "id": "chebfun/misc/test_conformal2",
@@ -3731,7 +3731,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.683
+"elapsed": 2.03
 },
 {
 "id": "chebfun/misc/test_cumsummat",
@@ -3747,7 +3747,7 @@
 "key": "property",
 "error_id": "",
 "message": "function handle: undefined function 'standardCheck'",
-"elapsed": 1.38
+"elapsed": 1.08
 },
 {
 "id": "chebfun/misc/test_diffmat",
@@ -3763,7 +3763,7 @@
 "key": "property",
 "error_id": "",
 "message": "function handle: undefined function 'standardCheck'",
-"elapsed": 1.483
+"elapsed": 1.236
 },
 {
 "id": "chebfun/misc/test_fov",
@@ -3779,7 +3779,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.289
+"elapsed": 7.837
 },
 {
 "id": "chebfun/misc/test_gpr",
@@ -3795,7 +3795,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.024
+"elapsed": 20.015
 },
 {
 "id": "chebfun/misc/test_hermpoly",
@@ -3811,7 +3811,7 @@
 "key": "Error using hermpoly: invalid input arguments.",
 "error_id": "MATLAB:hermpoly:invalidInput",
 "message": "Error using hermpoly: invalid input arguments.",
-"elapsed": 4.708
+"elapsed": 3.39
 },
 {
 "id": "chebfun/misc/test_hermpts",
@@ -3827,7 +3827,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.247
+"elapsed": 2.831
 },
 {
 "id": "chebfun/misc/test_inufft",
@@ -3843,7 +3843,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "",
 "message": "Undefined function or variable: pcg",
-"elapsed": 2.644
+"elapsed": 1.981
 },
 {
 "id": "chebfun/misc/test_isSubset",
@@ -3859,7 +3859,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.637
+"elapsed": 1.23
 },
 {
 "id": "chebfun/misc/test_jac2cheb",
@@ -3875,7 +3875,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.34
+"elapsed": 1.682
 },
 {
 "id": "chebfun/misc/test_jac2jac",
@@ -3891,7 +3891,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.046
+"elapsed": 20.01
 },
 {
 "id": "chebfun/misc/test_jacpoly",
@@ -3907,7 +3907,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.137
+"elapsed": 2.284
 },
 {
 "id": "chebfun/misc/test_jacpts",
@@ -3923,7 +3923,7 @@
 "key": "array assign: A null assignment can have only one non-colon ",
 "error_id": "",
 "message": "array assign: A null assignment can have only one non-colon index.",
-"elapsed": 2.905
+"elapsed": 2.085
 },
 {
 "id": "chebfun/misc/test_lagpoly",
@@ -3939,7 +3939,7 @@
 "key": "Error using lagpoly: invalid input arguments.",
 "error_id": "MATLAB:lagpoly:invalidInput",
 "message": "Error using lagpoly: invalid input arguments.",
-"elapsed": 4.909
+"elapsed": 3.748
 },
 {
 "id": "chebfun/misc/test_lagpts",
@@ -3955,7 +3955,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.035
+"elapsed": 20.014
 },
 {
 "id": "chebfun/misc/test_lebesgue",
@@ -3971,7 +3971,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 12.892
+"elapsed": 8.15
 },
 {
 "id": "chebfun/misc/test_leg2cheb",
@@ -3987,7 +3987,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.494
+"elapsed": 5.199
 },
 {
 "id": "chebfun/misc/test_legpoly",
@@ -4003,7 +4003,7 @@
 "key": "",
 "error_id": "",
 "message": "CPU budget exceeded (20 s)",
-"elapsed": 11.012
+"elapsed": 10.76
 },
 {
 "id": "chebfun/misc/test_legpts",
@@ -4019,7 +4019,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.677
+"elapsed": 1.227
 },
 {
 "id": "chebfun/misc/test_lobpts",
@@ -4035,7 +4035,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 2.835
+"elapsed": 2.235
 },
 {
 "id": "chebfun/misc/test_minimax",
@@ -4051,7 +4051,7 @@
 "key": "Domain argument should be a row vector with two entries in i",
 "error_id": "CHEBFUN:BNDFUN:bndfun:badDomain",
 "message": "Domain argument should be a row vector with two entries in increasing order.",
-"elapsed": 4.948
+"elapsed": 2.286
 },
 {
 "id": "chebfun/misc/test_nufft",
@@ -4067,7 +4067,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.035
+"elapsed": 20.014
 },
 {
 "id": "chebfun/misc/test_nufft2",
@@ -4083,7 +4083,7 @@
 "key": "",
 "error_id": "",
 "message": "CPU budget exceeded (20 s)",
-"elapsed": 8.931
+"elapsed": 6.401
 },
 {
 "id": "chebfun/misc/test_padeapprox",
@@ -4099,7 +4099,7 @@
 "key": "Index in position _ exceeds array bounds (must not exceed _)",
 "error_id": "",
 "message": "Index in position 2 exceeds array bounds (must not exceed 4).",
-"elapsed": 2.133
+"elapsed": 1.127
 },
 {
 "id": "chebfun/misc/test_pde15s",
@@ -4115,7 +4115,7 @@
 "key": "Too many input arguments.",
 "error_id": "",
 "message": "Too many input arguments.",
-"elapsed": 3.743
+"elapsed": 1.984
 },
 {
 "id": "chebfun/misc/test_pswf",
@@ -4131,7 +4131,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 6.953
+"elapsed": 3.403
 },
 {
 "id": "chebfun/misc/test_pswfpts",
@@ -4147,7 +4147,7 @@
 "key": "subtract: operands could not be broadcast together with shap",
 "error_id": "",
 "message": "subtract: operands could not be broadcast together with shapes (9,1) (2,0) ",
-"elapsed": 4.095
+"elapsed": 2.2
 },
 {
 "id": "chebfun/misc/test_quantumstates",
@@ -4163,7 +4163,7 @@
 "key": "vectorize: input must be a character vector or an anonymous ",
 "error_id": "MATLAB:vectorize:InvalidInput",
 "message": "vectorize: input must be a character vector or an anonymous function.",
-"elapsed": 5.115
+"elapsed": 2.245
 },
 {
 "id": "chebfun/misc/test_radaupts",
@@ -4179,7 +4179,7 @@
 "key": "symvar",
 "error_id": "",
 "message": "Undefined function or variable: symvar",
-"elapsed": 4.663
+"elapsed": 2.447
 },
 {
 "id": "chebfun/misc/test_randnfun",
@@ -4195,7 +4195,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.027
+"elapsed": 20.012
 },
 {
 "id": "chebfun/misc/test_randnfun2",
@@ -4211,7 +4211,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "MATLAB:UndefinedFunction",
 "message": "Undefined function 'trigtech.coeffs2vals'.",
-"elapsed": 3.0
+"elapsed": 1.773
 },
 {
 "id": "chebfun/misc/test_randnfundisk",
@@ -4227,7 +4227,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "MATLAB:UndefinedFunction",
 "message": "Undefined function 'trigtech.coeffs2vals'.",
-"elapsed": 2.379
+"elapsed": 1.683
 },
 {
 "id": "chebfun/misc/test_randnfunsphere",
@@ -4243,7 +4243,7 @@
 "key": "Arguments must be _-D, or at least one argument must be scal",
 "error_id": "",
 "message": "Arguments must be 2-D, or at least one argument must be scalar. Use TIMES (.*) for elementwise multiplication.",
-"elapsed": 2.138
+"elapsed": 1.64
 },
 {
 "id": "chebfun/misc/test_ratinterp",
@@ -4259,7 +4259,7 @@
 "key": "function-resolution:class-folder",
 "error_id": "",
 "message": "Undefined function or variable: residue",
-"elapsed": 3.345
+"elapsed": 2.439
 },
 {
 "id": "chebfun/misc/test_scribble",
@@ -4275,7 +4275,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 19.039
+"elapsed": 13.9
 },
 {
 "id": "chebfun/misc/test_smoothie",
@@ -4291,7 +4291,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.017
+"elapsed": 20.024
 },
 {
 "id": "chebfun/misc/test_splitting",
@@ -4307,7 +4307,7 @@
 "key": "cell index: expected cell, got CharValue",
 "error_id": "",
 "message": "cell index: expected cell, got CharValue",
-"elapsed": 1.688
+"elapsed": 1.23
 },
 {
 "id": "chebfun/misc/test_trigBary",
@@ -4323,7 +4323,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.336
+"elapsed": 2.377
 },
 {
 "id": "chebfun/misc/test_ultra2ultra",
@@ -4339,7 +4339,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.886
+"elapsed": 2.226
 },
 {
 "id": "chebfun/misc/test_ultrapoly",
@@ -4355,7 +4355,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.837
+"elapsed": 2.792
 },
 {
 "id": "chebfun/misc/test_ultrapts",
@@ -4371,7 +4371,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 9.288
+"elapsed": 6.272
 },
 {
 "id": "chebfun/trigtech/test_abs",
@@ -4387,7 +4387,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.877
+"elapsed": 1.575
 },
 {
 "id": "chebfun/trigtech/test_alias",
@@ -4403,7 +4403,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.432
+"elapsed": 3.386
 },
 {
 "id": "chebfun/trigtech/test_any",
@@ -4419,7 +4419,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.582
+"elapsed": 1.286
 },
 {
 "id": "chebfun/trigtech/test_assignColumns",
@@ -4435,7 +4435,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.037
+"elapsed": 20.019
 },
 {
 "id": "chebfun/trigtech/test_cell2mat",
@@ -4451,7 +4451,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.881
+"elapsed": 1.384
 },
 {
 "id": "chebfun/trigtech/test_circconv",
@@ -4467,7 +4467,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.288
+"elapsed": 2.544
 },
 {
 "id": "chebfun/trigtech/test_coeffs2vals",
@@ -4483,7 +4483,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.58
+"elapsed": 1.282
 },
 {
 "id": "chebfun/trigtech/test_compose",
@@ -4499,7 +4499,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.701
+"elapsed": 3.754
 },
 {
 "id": "chebfun/trigtech/test_conj",
@@ -4515,7 +4515,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.883
+"elapsed": 1.481
 },
 {
 "id": "chebfun/trigtech/test_constructor",
@@ -4531,7 +4531,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 3.099
+"elapsed": 2.438
 },
 {
 "id": "chebfun/trigtech/test_cumsum",
@@ -4547,7 +4547,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.108
+"elapsed": 4.151
 },
 {
 "id": "chebfun/trigtech/test_diff",
@@ -4563,7 +4563,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 7.422
+"elapsed": 5.497
 },
 {
 "id": "chebfun/trigtech/test_diffmat",
@@ -4579,7 +4579,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.769
+"elapsed": 4.746
 },
 {
 "id": "chebfun/trigtech/test_feval",
@@ -4595,7 +4595,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.54
+"elapsed": 3.103
 },
 {
 "id": "chebfun/trigtech/test_fliplr",
@@ -4611,7 +4611,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.635
+"elapsed": 1.377
 },
 {
 "id": "chebfun/trigtech/test_flipud",
@@ -4627,7 +4627,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.035
+"elapsed": 1.579
 },
 {
 "id": "chebfun/trigtech/test_happinessCheck",
@@ -4643,7 +4643,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.794
+"elapsed": 1.487
 },
 {
 "id": "chebfun/trigtech/test_imag",
@@ -4659,7 +4659,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.238
+"elapsed": 1.53
 },
 {
 "id": "chebfun/trigtech/test_innerProduct",
@@ -4675,7 +4675,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.195
+"elapsed": 2.287
 },
 {
 "id": "chebfun/trigtech/test_isempty",
@@ -4691,7 +4691,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.45
+"elapsed": 2.897
 },
 {
 "id": "chebfun/trigtech/test_isequal",
@@ -4707,7 +4707,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.905
+"elapsed": 2.952
 },
 {
 "id": "chebfun/trigtech/test_isfinite",
@@ -4723,7 +4723,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.034
+"elapsed": 20.016
 },
 {
 "id": "chebfun/trigtech/test_isinf",
@@ -4739,7 +4739,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.776
+"elapsed": 1.332
 },
 {
 "id": "chebfun/trigtech/test_isnan",
@@ -4755,7 +4755,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.734
+"elapsed": 1.378
 },
 {
 "id": "chebfun/trigtech/test_isreal",
@@ -4771,7 +4771,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.631
+"elapsed": 2.151
 },
 {
 "id": "chebfun/trigtech/test_iszero",
@@ -4787,7 +4787,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.745
+"elapsed": 1.232
 },
 {
 "id": "chebfun/trigtech/test_length",
@@ -4803,7 +4803,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.016
+"elapsed": 20.015
 },
 {
 "id": "chebfun/trigtech/test_mat2cell",
@@ -4819,7 +4819,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.035
+"elapsed": 1.583
 },
 {
 "id": "chebfun/trigtech/test_max",
@@ -4835,7 +4835,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.365
+"elapsed": 9.149
 },
 {
 "id": "chebfun/trigtech/test_min",
@@ -4851,7 +4851,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.677
+"elapsed": 9.303
 },
 {
 "id": "chebfun/trigtech/test_minandmax",
@@ -4867,7 +4867,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 13.273
+"elapsed": 10.732
 },
 {
 "id": "chebfun/trigtech/test_minus",
@@ -4883,7 +4883,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.015
+"elapsed": 20.013
 },
 {
 "id": "chebfun/trigtech/test_mldivide",
@@ -4899,7 +4899,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.832
+"elapsed": 1.576
 },
 {
 "id": "chebfun/trigtech/test_mrdivide",
@@ -4915,7 +4915,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.015
+"elapsed": 20.013
 },
 {
 "id": "chebfun/trigtech/test_mtimes",
@@ -4931,7 +4931,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.176
+"elapsed": 2.035
 },
 {
 "id": "chebfun/trigtech/test_plus",
@@ -4947,7 +4947,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.015
+"elapsed": 20.012
 },
 {
 "id": "chebfun/trigtech/test_poly",
@@ -4963,7 +4963,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.826
+"elapsed": 1.425
 },
 {
 "id": "chebfun/trigtech/test_prolong",
@@ -4979,7 +4979,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.78
+"elapsed": 1.48
 },
 {
 "id": "chebfun/trigtech/test_qr",
@@ -4995,7 +4995,7 @@
 "key": "subtract: operands could not be broadcast together with shap",
 "error_id": "",
 "message": "subtract: operands could not be broadcast together with shapes (9,9) (3,3) ",
-"elapsed": 2.686
+"elapsed": 1.873
 },
 {
 "id": "chebfun/trigtech/test_quadpts",
@@ -5011,7 +5011,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.532
+"elapsed": 1.274
 },
 {
 "id": "chebfun/trigtech/test_rdivide",
@@ -5027,7 +5027,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.023
+"elapsed": 20.028
 },
 {
 "id": "chebfun/trigtech/test_real",
@@ -5043,7 +5043,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.392
+"elapsed": 2.675
 },
 {
 "id": "chebfun/trigtech/test_restrict",
@@ -5059,7 +5059,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.038
+"elapsed": 2.234
 },
 {
 "id": "chebfun/trigtech/test_roots",
@@ -5075,7 +5075,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 10.414
+"elapsed": 6.77
 },
 {
 "id": "chebfun/trigtech/test_sample",
@@ -5091,7 +5091,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.626
+"elapsed": 1.339
 },
 {
 "id": "chebfun/trigtech/test_scaleInvariance",
@@ -5107,7 +5107,7 @@
 "key": "array assign: A null assignment can have only one non-colon ",
 "error_id": "",
 "message": "array assign: A null assignment can have only one non-colon index.",
-"elapsed": 1.778
+"elapsed": 1.389
 },
 {
 "id": "chebfun/trigtech/test_sign",
@@ -5123,7 +5123,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.885
+"elapsed": 1.895
 },
 {
 "id": "chebfun/trigtech/test_simplify",
@@ -5139,7 +5139,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.046
+"elapsed": 20.018
 },
 {
 "id": "chebfun/trigtech/test_size",
@@ -5155,7 +5155,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.789
+"elapsed": 1.38
 },
 {
 "id": "chebfun/trigtech/test_sum",
@@ -5164,14 +5164,14 @@
 "role": "driver",
 "notes": [],
 "t0": "pass",
-"t1": "timeout",
-"t2": "timeout",
-"status": "timeout",
-"category": "timeout",
+"t1": "pass",
+"t2": "pass",
+"status": "pass",
+"category": "pass",
 "key": "",
 "error_id": "",
-"message": "timed out after 20 s",
-"elapsed": 20.018
+"message": "",
+"elapsed": 18.262
 },
 {
 "id": "chebfun/trigtech/test_times",
@@ -5187,7 +5187,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.033
+"elapsed": 20.014
 },
 {
 "id": "chebfun/trigtech/test_trigcoeffs",
@@ -5203,7 +5203,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.99
+"elapsed": 1.527
 },
 {
 "id": "chebfun/trigtech/test_vals2coeffs",
@@ -5219,7 +5219,7 @@
 "key": "Assertion failed.",
 "error_id": "MATLAB:assertion:failed",
 "message": "Assertion failed.",
-"elapsed": 1.735
+"elapsed": 1.327
 },
 {
 "id": "matlab2tikz/ACID/001_multiline_labels",
@@ -5235,7 +5235,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.834
+"elapsed": 1.583
 },
 {
 "id": "matlab2tikz/ACID/002_plain_cos",
@@ -5251,7 +5251,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.932
+"elapsed": 1.736
 },
 {
 "id": "matlab2tikz/ACID/003_sine_with_markers",
@@ -5267,7 +5267,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.488
+"elapsed": 1.348
 },
 {
 "id": "matlab2tikz/ACID/004_markerSizes",
@@ -5283,7 +5283,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.756
+"elapsed": 1.239
 },
 {
 "id": "matlab2tikz/ACID/005_markerSizes2",
@@ -5299,7 +5299,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 9.164
+"elapsed": 7.703
 },
 {
 "id": "matlab2tikz/ACID/006_sine_with_annotation",
@@ -5315,7 +5315,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.022
+"elapsed": 1.74
 },
 {
 "id": "matlab2tikz/ACID/007_linesWithOutliers",
@@ -5331,7 +5331,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.415
+"elapsed": 1.277
 },
 {
 "id": "matlab2tikz/ACID/008_peaks_contour",
@@ -5347,7 +5347,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.902
+"elapsed": 1.592
 },
 {
 "id": "matlab2tikz/ACID/009_contourPenny",
@@ -5363,7 +5363,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.339
+"elapsed": 1.177
 },
 {
 "id": "matlab2tikz/ACID/010_peaks_contourf",
@@ -5379,7 +5379,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.594
+"elapsed": 1.448
 },
 {
 "id": "matlab2tikz/ACID/011_many_random_points",
@@ -5395,7 +5395,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.451
+"elapsed": 1.287
 },
 {
 "id": "matlab2tikz/ACID/012_double_colorbar",
@@ -5411,7 +5411,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.387
+"elapsed": 2.049
 },
 {
 "id": "matlab2tikz/ACID/013_randomWithLines",
@@ -5427,7 +5427,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.544
+"elapsed": 1.37
 },
 {
 "id": "matlab2tikz/ACID/014_double_axes",
@@ -5443,7 +5443,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.86
+"elapsed": 1.728
 },
 {
 "id": "matlab2tikz/ACID/015_double_axes2",
@@ -5459,7 +5459,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.753
+"elapsed": 1.666
 },
 {
 "id": "matlab2tikz/ACID/016_logplot",
@@ -5475,7 +5475,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.05
+"elapsed": 1.683
 },
 {
 "id": "matlab2tikz/ACID/017_colorbarLogplot",
@@ -5491,7 +5491,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.5
+"elapsed": 1.228
 },
 {
 "id": "matlab2tikz/ACID/018_legendplot",
@@ -5507,7 +5507,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.921
+"elapsed": 1.891
 },
 {
 "id": "matlab2tikz/ACID/019_legendplotBoxoff",
@@ -5523,7 +5523,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.502
+"elapsed": 1.398
 },
 {
 "id": "matlab2tikz/ACID/020_plotyyLegends",
@@ -5539,7 +5539,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.778
+"elapsed": 1.348
 },
 {
 "id": "matlab2tikz/ACID/021_zoom",
@@ -5555,7 +5555,7 @@
 "key": "Index in position _ exceeds array bounds (must not exceed _)",
 "error_id": "",
 "message": "Index in position 2 exceeds array bounds (must not exceed 0).",
-"elapsed": 4.342
+"elapsed": 3.47
 },
 {
 "id": "matlab2tikz/ACID/022_quiveroverlap",
@@ -5571,7 +5571,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.499
+"elapsed": 1.322
 },
 {
 "id": "matlab2tikz/ACID/023_quiverplot",
@@ -5587,7 +5587,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.486
+"elapsed": 1.288
 },
 {
 "id": "matlab2tikz/ACID/024_quiver3plot",
@@ -5603,7 +5603,7 @@
 "key": "quiver3",
 "error_id": "",
 "message": "Undefined function or variable: quiver3",
-"elapsed": 1.429
+"elapsed": 1.229
 },
 {
 "id": "matlab2tikz/ACID/025_logicalImage",
@@ -5619,7 +5619,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.423
+"elapsed": 1.221
 },
 {
 "id": "matlab2tikz/ACID/026_imagescplot",
@@ -5635,7 +5635,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.541
+"elapsed": 1.225
 },
 {
 "id": "matlab2tikz/ACID/027_imagescplot2",
@@ -5651,7 +5651,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.615
+"elapsed": 1.316
 },
 {
 "id": "matlab2tikz/ACID/028_stairsplot",
@@ -5667,7 +5667,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.398
+"elapsed": 1.284
 },
 {
 "id": "matlab2tikz/ACID/029_polarplot",
@@ -5683,7 +5683,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.469
+"elapsed": 1.223
 },
 {
 "id": "matlab2tikz/ACID/030_roseplot",
@@ -5699,7 +5699,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.522
+"elapsed": 1.228
 },
 {
 "id": "matlab2tikz/ACID/031_compassplot",
@@ -5715,7 +5715,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.513
+"elapsed": 1.201
 },
 {
 "id": "matlab2tikz/ACID/032_stemplot",
@@ -5731,7 +5731,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.722
+"elapsed": 1.339
 },
 {
 "id": "matlab2tikz/ACID/033_stemplot2",
@@ -5747,7 +5747,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.406
+"elapsed": 1.245
 },
 {
 "id": "matlab2tikz/ACID/034_bars",
@@ -5763,7 +5763,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.757
+"elapsed": 2.132
 },
 {
 "id": "matlab2tikz/ACID/035_xAxisReversed",
@@ -5779,7 +5779,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.568
+"elapsed": 1.331
 },
 {
 "id": "matlab2tikz/ACID/036_errorBars",
@@ -5795,7 +5795,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.563
+"elapsed": 1.24
 },
 {
 "id": "matlab2tikz/ACID/037_errorBars2",
@@ -5811,7 +5811,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.42
+"elapsed": 1.251
 },
 {
 "id": "matlab2tikz/ACID/038_subplot2x2b",
@@ -5827,7 +5827,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.679
+"elapsed": 1.603
 },
 {
 "id": "matlab2tikz/ACID/039_manualAlignment",
@@ -5843,7 +5843,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.838
+"elapsed": 1.522
 },
 {
 "id": "matlab2tikz/ACID/040_subplotCustom",
@@ -5859,7 +5859,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.786
+"elapsed": 1.493
 },
 {
 "id": "matlab2tikz/ACID/041_legendsubplots",
@@ -5875,7 +5875,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.604
+"elapsed": 2.182
 },
 {
 "id": "matlab2tikz/ACID/042_bodeplots",
@@ -5891,7 +5891,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.411
+"elapsed": 1.159
 },
 {
 "id": "matlab2tikz/ACID/043_rlocusPlot",
@@ -5907,7 +5907,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.354
+"elapsed": 1.291
 },
 {
 "id": "matlab2tikz/ACID/044_mandrillImage",
@@ -5923,7 +5923,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.359
+"elapsed": 1.234
 },
 {
 "id": "matlab2tikz/ACID/045_besselImage",
@@ -5939,7 +5939,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.123
+"elapsed": 1.961
 },
 {
 "id": "matlab2tikz/ACID/046_clownImage",
@@ -5955,7 +5955,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.296
+"elapsed": 1.213
 },
 {
 "id": "matlab2tikz/ACID/047_zplanePlot1",
@@ -5971,7 +5971,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.442
+"elapsed": 1.255
 },
 {
 "id": "matlab2tikz/ACID/048_zplanePlot2",
@@ -5987,7 +5987,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.372
+"elapsed": 1.182
 },
 {
 "id": "matlab2tikz/ACID/049_freqResponsePlot",
@@ -6003,7 +6003,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.385
+"elapsed": 1.537
 },
 {
 "id": "matlab2tikz/ACID/050_axesLocation",
@@ -6019,7 +6019,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.632
+"elapsed": 1.793
 },
 {
 "id": "matlab2tikz/ACID/051_axesColors",
@@ -6035,7 +6035,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.564
+"elapsed": 1.711
 },
 {
 "id": "matlab2tikz/ACID/052_multipleAxes",
@@ -6051,7 +6051,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.731
+"elapsed": 1.743
 },
 {
 "id": "matlab2tikz/ACID/053_scatterPlotRandom",
@@ -6067,7 +6067,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.367
+"elapsed": 1.221
 },
 {
 "id": "matlab2tikz/ACID/054_scatterPlot",
@@ -6083,7 +6083,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.412
+"elapsed": 1.166
 },
 {
 "id": "matlab2tikz/ACID/055_scatter3Plot",
@@ -6099,7 +6099,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.491
+"elapsed": 1.4
 },
 {
 "id": "matlab2tikz/ACID/056_spherePlot",
@@ -6115,7 +6115,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.998
+"elapsed": 1.714
 },
 {
 "id": "matlab2tikz/ACID/057_surfPlot",
@@ -6131,7 +6131,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.884
+"elapsed": 1.518
 },
 {
 "id": "matlab2tikz/ACID/058_surfPlot2",
@@ -6147,7 +6147,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.727
+"elapsed": 1.449
 },
 {
 "id": "matlab2tikz/ACID/059_superkohle",
@@ -6163,7 +6163,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.378
+"elapsed": 1.182
 },
 {
 "id": "matlab2tikz/ACID/060_meshPlot",
@@ -6179,7 +6179,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.486
+"elapsed": 1.43
 },
 {
 "id": "matlab2tikz/ACID/061_ylabels",
@@ -6195,7 +6195,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.881
+"elapsed": 1.861
 },
 {
 "id": "matlab2tikz/ACID/062_spectro",
@@ -6211,7 +6211,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.479
+"elapsed": 1.387
 },
 {
 "id": "matlab2tikz/ACID/063_mixedBarLine",
@@ -6227,7 +6227,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.573
+"elapsed": 1.341
 },
 {
 "id": "matlab2tikz/ACID/064_decayingharmonic",
@@ -6243,7 +6243,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.881
+"elapsed": 1.638
 },
 {
 "id": "matlab2tikz/ACID/065_texcolor",
@@ -6259,7 +6259,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.493
+"elapsed": 1.315
 },
 {
 "id": "matlab2tikz/ACID/066_textext",
@@ -6275,7 +6275,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.692
+"elapsed": 1.599
 },
 {
 "id": "matlab2tikz/ACID/067_texrandom",
@@ -6291,7 +6291,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.284
+"elapsed": 1.965
 },
 {
 "id": "matlab2tikz/ACID/068_latexInterpreter",
@@ -6307,7 +6307,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.886
+"elapsed": 1.542
 },
 {
 "id": "matlab2tikz/ACID/069_latexmath2",
@@ -6323,7 +6323,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.99
+"elapsed": 1.618
 },
 {
 "id": "matlab2tikz/ACID/070_parameterCurve3d",
@@ -6339,7 +6339,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.559
+"elapsed": 1.352
 },
 {
 "id": "matlab2tikz/ACID/071_parameterSurf",
@@ -6355,7 +6355,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.451
+"elapsed": 1.236
 },
 {
 "id": "matlab2tikz/ACID/072_fill3plot",
@@ -6371,7 +6371,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.464
+"elapsed": 1.187
 },
 {
 "id": "matlab2tikz/ACID/073_rectanglePlot",
@@ -6387,7 +6387,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.408
+"elapsed": 1.226
 },
 {
 "id": "matlab2tikz/ACID/074_herrorbarPlot",
@@ -6403,7 +6403,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: newplot",
-"elapsed": 1.625
+"elapsed": 1.223
 },
 {
 "id": "matlab2tikz/ACID/075_hist3d",
@@ -6419,7 +6419,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.44
+"elapsed": 1.2
 },
 {
 "id": "matlab2tikz/ACID/076_myBoxplot",
@@ -6435,7 +6435,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.552
+"elapsed": 1.189
 },
 {
 "id": "matlab2tikz/ACID/077_areaPlot",
@@ -6451,7 +6451,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.489
+"elapsed": 1.201
 },
 {
 "id": "matlab2tikz/ACID/078_customLegend",
@@ -6467,7 +6467,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.731
+"elapsed": 1.34
 },
 {
 "id": "matlab2tikz/ACID/079_pixelLegend",
@@ -6483,7 +6483,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.498
+"elapsed": 1.343
 },
 {
 "id": "matlab2tikz/ACID/080_croppedImage",
@@ -6499,7 +6499,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.401
+"elapsed": 1.236
 },
 {
 "id": "matlab2tikz/ACID/081_pColorPlot",
@@ -6515,7 +6515,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.673
+"elapsed": 1.436
 },
 {
 "id": "matlab2tikz/ACID/082_hgTransformPlot",
@@ -6531,7 +6531,7 @@
 "key": "hgtransform",
 "error_id": "",
 "message": "Undefined function or variable: hgtransform",
-"elapsed": 2.009
+"elapsed": 1.576
 },
 {
 "id": "matlab2tikz/ACID/083_scatterPlotMarkers",
@@ -6547,7 +6547,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.548
+"elapsed": 2.092
 },
 {
 "id": "matlab2tikz/ACID/084_multiplePatches",
@@ -6563,7 +6563,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.545
+"elapsed": 1.331
 },
 {
 "id": "matlab2tikz/ACID/085_logbaseline",
@@ -6579,7 +6579,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.782
+"elapsed": 1.633
 },
 {
 "id": "matlab2tikz/ACID/086_alphaImage",
@@ -6595,7 +6595,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.083
+"elapsed": 1.678
 },
 {
 "id": "matlab2tikz/ACID/087_annotationAll",
@@ -6611,7 +6611,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.356
+"elapsed": 1.201
 },
 {
 "id": "matlab2tikz/ACID/088_annotationSubplots",
@@ -6627,7 +6627,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.395
+"elapsed": 1.24
 },
 {
 "id": "matlab2tikz/ACID/089_annotationText",
@@ -6643,7 +6643,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.12
+"elapsed": 2.077
 },
 {
 "id": "matlab2tikz/ACID/090_annotationTextUnits",
@@ -6659,7 +6659,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.306
+"elapsed": 2.219
 },
 {
 "id": "matlab2tikz/ACID/091_imageOrientation_PNG",
@@ -6675,7 +6675,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 6.134
+"elapsed": 5.223
 },
 {
 "id": "matlab2tikz/ACID/092_imageOrientation_inline",
@@ -6691,7 +6691,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.935
+"elapsed": 5.537
 },
 {
 "id": "matlab2tikz/ACID/093_texInterpreter",
@@ -6707,7 +6707,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.978
+"elapsed": 1.643
 },
 {
 "id": "matlab2tikz/ACID/094_stackedBarsWithOther",
@@ -6723,7 +6723,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.956
+"elapsed": 1.481
 },
 {
 "id": "matlab2tikz/ACID/095_colorbarLabelTitle",
@@ -6739,7 +6739,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.872
+"elapsed": 1.689
 },
 {
 "id": "matlab2tikz/ACID/096_textAlignment",
@@ -6755,7 +6755,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.464
+"elapsed": 2.002
 },
 {
 "id": "matlab2tikz/ACID/097_overlappingPlots",
@@ -6771,7 +6771,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.266
+"elapsed": 1.957
 },
 {
 "id": "matlab2tikz/ACID/098_histogramPlot",
@@ -6787,7 +6787,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.464
+"elapsed": 1.238
 },
 {
 "id": "matlab2tikz/ACID/099_alphaTest",
@@ -6803,7 +6803,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.036
+"elapsed": 1.851
 },
 {
 "id": "matlab2tikz/ACID/100_removeOutsideMarker",
@@ -6819,7 +6819,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 4.41
+"elapsed": 3.502
 },
 {
 "id": "matlab2tikz/ACID/101_colorbars",
@@ -6835,7 +6835,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.077
+"elapsed": 2.353
 },
 {
 "id": "matlab2tikz/ACID/102_colorbarManualLocationRightOut",
@@ -6851,7 +6851,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.501
+"elapsed": 1.386
 },
 {
 "id": "matlab2tikz/ACID/103_colorbarManualLocationRightIn",
@@ -6867,7 +6867,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.553
+"elapsed": 1.398
 },
 {
 "id": "matlab2tikz/ACID/104_colorbarManualLocationLeftOut",
@@ -6883,7 +6883,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.672
+"elapsed": 1.406
 },
 {
 "id": "matlab2tikz/src/cleanfigure",
@@ -6898,7 +6898,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.64
+"elapsed": 1.105
 },
 {
 "id": "matlab2tikz/src/dev/formatWhitespace",
@@ -6913,7 +6913,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.321
+"elapsed": 1.157
 },
 {
 "id": "matlab2tikz/src/figure2dot",
@@ -6928,7 +6928,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.437
+"elapsed": 1.105
 },
 {
 "id": "matlab2tikz/src/m2tInputParser",
@@ -6943,7 +6943,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.474
+"elapsed": 1.04
 },
 {
 "id": "matlab2tikz/src/m2tcustom",
@@ -6958,7 +6958,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.413
+"elapsed": 1.085
 },
 {
 "id": "matlab2tikz/src/matlab2tikz",
@@ -6973,7 +6973,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.609
+"elapsed": 1.296
 },
 {
 "id": "matlab2tikz/src/private/errorUnknownEnvironment",
@@ -6988,7 +6988,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.448
+"elapsed": 1.043
 },
 {
 "id": "matlab2tikz/src/private/getEnvironment",
@@ -7003,7 +7003,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.264
+"elapsed": 1.112
 },
 {
 "id": "matlab2tikz/src/private/guitypes",
@@ -7018,7 +7018,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.412
+"elapsed": 1.197
 },
 {
 "id": "matlab2tikz/src/private/isAxis3D",
@@ -7033,7 +7033,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.379
+"elapsed": 1.089
 },
 {
 "id": "matlab2tikz/src/private/isVersionBelow",
@@ -7048,7 +7048,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.303
+"elapsed": 1.141
 },
 {
 "id": "matlab2tikz/src/private/m2tUpdater",
@@ -7063,7 +7063,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.256
+"elapsed": 1.085
 },
 {
 "id": "matlab2tikz/src/private/m2tstrjoin",
@@ -7078,7 +7078,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.212
+"elapsed": 1.083
 },
 {
 "id": "matlab2tikz/src/private/versionArray",
@@ -7093,7 +7093,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.213
+"elapsed": 1.026
 },
 {
 "id": "matlab2tikz/src/private/versionString",
@@ -7108,7 +7108,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.129
+"elapsed": 1.075
 },
 {
 "id": "octave/elfun/acosd",
@@ -74539,7 +74539,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.989
+"elapsed": 1.18
 },
 {
 "id": "rosetta/100_doors/1",
@@ -74554,7 +74554,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.059
+"elapsed": 1.188
 },
 {
 "id": "rosetta/100_doors/2",
@@ -74569,7 +74569,7 @@
 "key": "array assign: set_index: indices must be positive integers",
 "error_id": "",
 "message": "array assign: set_index: indices must be positive integers",
-"elapsed": 1.917
+"elapsed": 1.137
 },
 {
 "id": "rosetta/100_doors/3",
@@ -74599,7 +74599,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.897
+"elapsed": 1.185
 },
 {
 "id": "rosetta/100_doors/5",
@@ -74616,7 +74616,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.891
+"elapsed": 1.182
 },
 {
 "id": "rosetta/100_doors/6",
@@ -74631,7 +74631,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.885
+"elapsed": 1.178
 },
 {
 "id": "rosetta/100_prisoners/1",
@@ -74648,7 +74648,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.887
+"elapsed": 1.135
 },
 {
 "id": "rosetta/2048/1",
@@ -74665,7 +74665,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.89
+"elapsed": 1.177
 },
 {
 "id": "rosetta/2048/2",
@@ -74680,7 +74680,7 @@
 "key": "input",
 "error_id": "MATLAB:input:EndOfInput",
 "message": "input: no more input is available.",
-"elapsed": 2.016
+"elapsed": 1.184
 },
 {
 "id": "rosetta/2048/3",
@@ -74727,7 +74727,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.989
+"elapsed": 1.121
 },
 {
 "id": "rosetta/ABC_problem/1",
@@ -74744,7 +74744,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.393
+"elapsed": 1.228
 },
 {
 "id": "rosetta/A_B/1",
@@ -74761,7 +74761,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.294
+"elapsed": 1.186
 },
 {
 "id": "rosetta/Abbreviations_easy/1",
@@ -74778,7 +74778,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.992
+"elapsed": 1.179
 },
 {
 "id": "rosetta/Abstract_type/1",
@@ -74795,7 +74795,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.903
+"elapsed": 1.178
 },
 {
 "id": "rosetta/Abstract_type/2",
@@ -74840,7 +74840,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 7.904
+"elapsed": 5.213
 },
 {
 "id": "rosetta/Ackermann_function/1",
@@ -74857,7 +74857,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.867
+"elapsed": 1.131
 },
 {
 "id": "rosetta/Align_columns/1",
@@ -74874,7 +74874,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.606
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Amicable_pairs/1",
@@ -74906,7 +74906,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.085
+"elapsed": 1.131
 },
 {
 "id": "rosetta/Animate_a_pendulum/1",
@@ -74921,7 +74921,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.014
+"elapsed": 20.022
 },
 {
 "id": "rosetta/Anonymous_recursion/1",
@@ -74938,7 +74938,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.039
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Append_a_record_to_the_end_of_a_text_file/1",
@@ -74972,7 +74972,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.091
+"elapsed": 1.146
 },
 {
 "id": "rosetta/Apply_a_digital_filter_direct_form_II_transposed/1",
@@ -74987,7 +74987,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.488
+"elapsed": 1.387
 },
 {
 "id": "rosetta/Arbitrary_precision_integers_included/1",
@@ -75006,7 +75006,7 @@
 "key": "vpi",
 "error_id": "",
 "message": "Undefined function or variable: vpi",
-"elapsed": 1.891
+"elapsed": 1.071
 },
 {
 "id": "rosetta/Archimedean_spiral/1",
@@ -75021,7 +75021,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.936
+"elapsed": 1.185
 },
 {
 "id": "rosetta/Arithmetic_Complex/1",
@@ -75040,7 +75040,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.941
+"elapsed": 1.085
 },
 {
 "id": "rosetta/Arithmetic_Integer/1",
@@ -75055,7 +75055,7 @@
 "key": "dialect:scanf",
 "error_id": "",
 "message": "Undefined function or variable: scanf",
-"elapsed": 1.755
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Arithmetic_geometric_mean/1",
@@ -75072,7 +75072,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.888
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Arithmetic_geometric_mean_Calculate_Pi/1",
@@ -75087,7 +75087,7 @@
 "key": "digits",
 "error_id": "",
 "message": "Undefined function or variable: digits",
-"elapsed": 2.105
+"elapsed": 1.125
 },
 {
 "id": "rosetta/Array_concatenation/1",
@@ -75106,7 +75106,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.882
+"elapsed": 1.128
 },
 {
 "id": "rosetta/Array_concatenation/2",
@@ -75123,7 +75123,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.894
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Array_length/1",
@@ -75138,7 +75138,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.837
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Array_length/2",
@@ -75153,7 +75153,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.037
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Arrays/1",
@@ -75172,7 +75172,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.882
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Ascending_primes/1",
@@ -75187,7 +75187,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.593
+"elapsed": 1.142
 },
 {
 "id": "rosetta/Assertions/1",
@@ -75232,7 +75232,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.135
+"elapsed": 1.038
 },
 {
 "id": "rosetta/Associative_array_Creation/2",
@@ -75247,7 +75247,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.349
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Associative_array_Creation/3",
@@ -75262,7 +75262,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.998
+"elapsed": 1.142
 },
 {
 "id": "rosetta/Associative_array_Creation/4",
@@ -75277,7 +75277,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.916
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Associative_array_Creation/5",
@@ -75292,7 +75292,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.001
+"elapsed": 1.035
 },
 {
 "id": "rosetta/Associative_array_Creation/6",
@@ -75307,7 +75307,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.948
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Associative_array_Creation/7",
@@ -75322,7 +75322,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.236
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Associative_array_Iteration/1",
@@ -75337,7 +75337,7 @@
 "key": "undefined-variable",
 "error_id": "",
 "message": "Undefined variable: hash",
-"elapsed": 2.046
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Associative_array_Iteration/2",
@@ -75352,7 +75352,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: hash",
-"elapsed": 2.033
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Averages_Arithmetic_mean/1",
@@ -75369,7 +75369,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.931
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Averages_Mean_angle/1",
@@ -75386,7 +75386,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.354
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Averages_Mean_time_of_day/1",
@@ -75418,7 +75418,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.938
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Averages_Mode/1",
@@ -75435,7 +75435,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.052
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Averages_Pythagorean_means/1",
@@ -75452,7 +75452,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.088
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Averages_Pythagorean_means/2",
@@ -75469,7 +75469,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.997
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Averages_Pythagorean_means/3",
@@ -75488,7 +75488,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.14
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Averages_Root_mean_square/1",
@@ -75505,7 +75505,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.541
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Averages_Root_mean_square/2",
@@ -75524,7 +75524,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.4
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Averages_Simple_moving_average/1",
@@ -75554,7 +75554,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: P",
-"elapsed": 1.899
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Babbage_problem/1",
@@ -75569,7 +75569,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.295
+"elapsed": 1.838
 },
 {
 "id": "rosetta/Babylonian_spiral/1",
@@ -75584,7 +75584,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.02
+"elapsed": 20.015
 },
 {
 "id": "rosetta/Balanced_brackets/1",
@@ -75601,7 +75601,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.395
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Benford_s_law/1",
@@ -75616,7 +75616,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.837
+"elapsed": 1.679
 },
 {
 "id": "rosetta/Binary_digits/1",
@@ -75631,7 +75631,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.239
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Binary_search/1",
@@ -75648,7 +75648,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.889
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Binary_search/2",
@@ -75667,7 +75667,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.793
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Binary_search/3",
@@ -75684,7 +75684,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.939
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Binary_search/4",
@@ -75703,7 +75703,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.891
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Binary_strings/1",
@@ -75735,7 +75735,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.992
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Bitmap/1",
@@ -75752,7 +75752,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.933
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Bitmap/2",
@@ -75771,7 +75771,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: Bitmap",
-"elapsed": 2.236
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Bitmap_B_zier_curves_Cubic/1",
@@ -75788,7 +75788,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.44
+"elapsed": 1.084
 },
 {
 "id": "rosetta/Bitmap_B_zier_curves_Cubic/2",
@@ -75805,7 +75805,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: Bitmap",
-"elapsed": 1.983
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Bitmap_B_zier_curves_Quadratic/1",
@@ -75822,7 +75822,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.996
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Bitmap_B_zier_curves_Quadratic/2",
@@ -75839,7 +75839,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: Bitmap",
-"elapsed": 1.992
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Bitmap_Bresenham_s_line_algorithm/1",
@@ -75856,7 +75856,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.882
+"elapsed": 1.174
 },
 {
 "id": "rosetta/Bitmap_Bresenham_s_line_algorithm/2",
@@ -75873,7 +75873,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: Bitmap",
-"elapsed": 2.238
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Bitmap_Write_a_PPM_file/1",
@@ -75888,7 +75888,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.039
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Bitwise_operations/1",
@@ -75905,7 +75905,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.04
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Bitwise_operations/2",
@@ -75924,7 +75924,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.358
+"elapsed": 1.024
 },
 {
 "id": "rosetta/Boolean_values/1",
@@ -75943,7 +75943,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.29
+"elapsed": 1.1
 },
 {
 "id": "rosetta/Box_the_compass/1",
@@ -75960,7 +75960,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.934
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Brazilian_numbers/1",
@@ -75975,7 +75975,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.034
+"elapsed": 20.009
 },
 {
 "id": "rosetta/Bulls_and_cows/1",
@@ -75992,7 +75992,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.881
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Bulls_and_cows_Player/1",
@@ -76009,7 +76009,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.138
+"elapsed": 1.134
 },
 {
 "id": "rosetta/CSV_data_manipulation/1",
@@ -76024,7 +76024,7 @@
 "key": "file",
 "error_id": "MATLAB:FileIO:InvalidFid",
 "message": "Invalid file identifier. Use fopen to generate a valid file identifier.",
-"elapsed": 2.141
+"elapsed": 1.028
 },
 {
 "id": "rosetta/CSV_data_manipulation/2",
@@ -76039,7 +76039,7 @@
 "key": "file",
 "error_id": "MATLAB:textio:textio:FileNotFound",
 "message": "Unable to find or open 'data.csv'. Check the path and filename or file permissions.",
-"elapsed": 2.099
+"elapsed": 1.027
 },
 {
 "id": "rosetta/CSV_to_HTML_translation/1",
@@ -76101,7 +76101,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.882
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Caesar_cipher/2",
@@ -76116,7 +76116,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: decipherCaesar",
-"elapsed": 2.193
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Call_a_function/1",
@@ -76161,7 +76161,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.094
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Case_sensitivity_of_identifiers/1",
@@ -76193,7 +76193,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.5
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Catalan_numbers/2",
@@ -76210,7 +76210,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.936
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Catalan_numbers/3",
@@ -76229,7 +76229,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.191
+"elapsed": 1.128
 },
 {
 "id": "rosetta/Catalan_numbers/4",
@@ -76244,7 +76244,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.887
+"elapsed": 1.131
 },
 {
 "id": "rosetta/Catalan_numbers/5",
@@ -76263,7 +76263,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: CatalanNumber",
-"elapsed": 1.889
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Catalan_numbers_Pascal_s_triangle/1",
@@ -76278,7 +76278,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.396
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Character_codes/1",
@@ -76342,7 +76342,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.753
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Check_that_file_exists/1",
@@ -76357,7 +76357,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.877
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Chinese_remainder_theorem/1",
@@ -76374,7 +76374,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.029
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Chinese_remainder_theorem/2",
@@ -76393,7 +76393,7 @@
 "key": "multi-assign: expected _ outputs, got _",
 "error_id": "",
 "message": "multi-assign: expected 2 outputs, got 1",
-"elapsed": 1.927
+"elapsed": 1.084
 },
 {
 "id": "rosetta/Cholesky_decomposition/1",
@@ -76408,7 +76408,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.134
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Classes/1",
@@ -76425,7 +76425,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.932
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Classes/2",
@@ -76442,7 +76442,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.137
+"elapsed": 1.132
 },
 {
 "id": "rosetta/Classes/3",
@@ -76459,7 +76459,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.037
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Classes/4",
@@ -76476,7 +76476,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.946
+"elapsed": 1.128
 },
 {
 "id": "rosetta/Classes/5",
@@ -76495,7 +76495,7 @@
 "key": "class: expected _.._ arguments, got _",
 "error_id": "",
 "message": "class: expected 1..1 arguments, got 2",
-"elapsed": 1.79
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Classes/6",
@@ -76512,7 +76512,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.781
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Classes/7",
@@ -76529,7 +76529,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.034
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Classes/8",
@@ -76546,7 +76546,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.087
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Classes/9",
@@ -76565,7 +76565,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: GenericClass2",
-"elapsed": 2.116
+"elapsed": 1.125
 },
 {
 "id": "rosetta/Closest_pair_problem/1",
@@ -76582,7 +76582,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.99
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Closest_pair_problem/2",
@@ -76599,7 +76599,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.84
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Collections/1",
@@ -76618,7 +76618,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.444
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Color_Difference_CIE_E2000/1",
@@ -76635,7 +76635,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.946
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Combinations/1",
@@ -76654,7 +76654,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.193
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Comma_quibbling/1",
@@ -76671,7 +76671,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.093
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Comments/1",
@@ -76686,7 +76686,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.503
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Compare_a_list_of_strings/1",
@@ -76701,7 +76701,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.102
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Compound_data_type/1",
@@ -76716,7 +76716,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.944
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Compound_data_type/2",
@@ -76731,7 +76731,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.19
+"elapsed": 1.133
 },
 {
 "id": "rosetta/Conditional_structures/1",
@@ -76761,7 +76761,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: x",
-"elapsed": 2.543
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Constrained_random_points_on_a_circle/1",
@@ -76778,7 +76778,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.083
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Constrained_random_points_on_a_circle/2",
@@ -76795,7 +76795,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.003
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Convert_decimal_number_to_rational/1",
@@ -76810,7 +76810,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.042
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Conway_s_Game_of_Life/1",
@@ -76825,7 +76825,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: life",
-"elapsed": 1.748
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Conway_s_Game_of_Life/2",
@@ -76840,7 +76840,7 @@
 "key": "open",
 "error_id": "",
 "message": "Undefined function or variable: open",
-"elapsed": 2.094
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Conway_s_Game_of_Life/3",
@@ -76857,7 +76857,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.936
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Coprimes/1",
@@ -76872,7 +76872,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.13
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Copy_a_string/1",
@@ -76887,7 +76887,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.935
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Count_in_octal/1",
@@ -76902,7 +76902,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.011
+"elapsed": 20.009
 },
 {
 "id": "rosetta/Count_in_octal/2",
@@ -76932,7 +76932,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.043
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Count_in_octal/4",
@@ -76962,7 +76962,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.047
+"elapsed": 1.04
 },
 {
 "id": "rosetta/Count_the_coins/1",
@@ -76992,7 +76992,7 @@
 "key": "file",
 "error_id": "MATLAB:FileIO:InvalidFid",
 "message": "Invalid file identifier. Use fopen to generate a valid file identifier.",
-"elapsed": 2.033
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Create_a_two_dimensional_array_at_runtime/1",
@@ -77009,7 +77009,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.93
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Create_a_two_dimensional_array_at_runtime/2",
@@ -77024,7 +77024,7 @@
 "key": "RPAREN",
 "error_id": "",
 "message": "Unexpected token RPAREN at line 3, column 19",
-"elapsed": 1.981
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Create_an_HTML_table/1",
@@ -77041,7 +77041,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.841
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Cumulative_standard_deviation/1",
@@ -77056,7 +77056,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.882
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Cumulative_standard_deviation/2",
@@ -77089,7 +77089,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.936
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Damm_algorithm/1",
@@ -77104,7 +77104,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.946
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Date_format/1",
@@ -77121,7 +77121,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.058
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Day_of_the_week/1",
@@ -77136,7 +77136,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.195
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Deconvolution_1D/1",
@@ -77155,7 +77155,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.705
+"elapsed": 1.035
 },
 {
 "id": "rosetta/Define_a_primitive_data_type/1",
@@ -77172,7 +77172,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.642
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Define_a_primitive_data_type/2",
@@ -77191,7 +77191,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: RingInt",
-"elapsed": 2.291
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Delete_a_file/1",
@@ -77206,7 +77206,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.051
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Delete_a_file/2",
@@ -77221,7 +77221,7 @@
 "key": "system",
 "error_id": "",
 "message": "Undefined function or variable: system",
-"elapsed": 2.355
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Department_numbers/1",
@@ -77236,7 +77236,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.473
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Detect_division_by_zero/1",
@@ -77253,7 +77253,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.723
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Determine_if_a_string_is_collapsible/1",
@@ -77283,7 +77283,7 @@
 "key": "Mixed function/script in isnum.m: statements after function ",
 "error_id": "",
 "message": "Mixed function/script in isnum.m: statements after function definitions are not allowed",
-"elapsed": 2.144
+"elapsed": 1.035
 },
 {
 "id": "rosetta/Determine_if_a_string_is_squeezable/1",
@@ -77298,7 +77298,7 @@
 "key": "Mixed function/script in squeezee.m: statements after functi",
 "error_id": "",
 "message": "Mixed function/script in squeezee.m: statements after function definitions are not allowed",
-"elapsed": 2.996
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Documentation/1",
@@ -77315,7 +77315,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.537
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Dot_product/1",
@@ -77330,7 +77330,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.247
+"elapsed": 1.023
 },
 {
 "id": "rosetta/Dot_product/2",
@@ -77347,7 +77347,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.356
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Draw_a_clock/1",
@@ -77362,7 +77362,7 @@
 "key": "interactive",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.052
+"elapsed": 20.01
 },
 {
 "id": "rosetta/Draw_a_sphere/1",
@@ -77377,7 +77377,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.2
+"elapsed": 1.131
 },
 {
 "id": "rosetta/EKG_sequence_convergence/1",
@@ -77392,7 +77392,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 3.958
+"elapsed": 2.44
 },
 {
 "id": "rosetta/Element_wise_operations/1",
@@ -77407,7 +77407,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.991
+"elapsed": 1.023
 },
 {
 "id": "rosetta/Elementary_cellular_automaton/1",
@@ -77424,7 +77424,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.95
+"elapsed": 1.129
 },
 {
 "id": "rosetta/Elementary_cellular_automaton/2",
@@ -77443,7 +77443,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.147
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Emirp_primes/1",
@@ -77458,7 +77458,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.129
+"elapsed": 3.489
 },
 {
 "id": "rosetta/Empty_directory/1",
@@ -77475,7 +77475,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.887
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Empty_program/1",
@@ -77492,7 +77492,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.15
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Empty_string/1",
@@ -77507,7 +77507,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.692
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Endless_maze/1",
@@ -77524,7 +77524,7 @@
 "key": "input",
 "error_id": "MATLAB:input:EndOfInput",
 "message": "input: no more input is available.",
-"elapsed": 1.997
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Entropy/1",
@@ -77541,7 +77541,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.849
+"elapsed": 1.023
 },
 {
 "id": "rosetta/Entropy/2",
@@ -77558,7 +77558,7 @@
 "key": "abs: expected numeric Array argument",
 "error_id": "",
 "message": "abs: expected numeric Array argument",
-"elapsed": 1.985
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Enumerations/1",
@@ -77575,7 +77575,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.196
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Environment_variables/1",
@@ -77590,7 +77590,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.186
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Equilibrium_index/1",
@@ -77607,7 +77607,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.883
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Equilibrium_index/2",
@@ -77626,7 +77626,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.895
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Ethiopian_multiplication/1",
@@ -77643,7 +77643,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.094
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Ethiopian_multiplication/2",
@@ -77660,7 +77660,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.891
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Ethiopian_multiplication/3",
@@ -77677,7 +77677,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.057
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Ethiopian_multiplication/4",
@@ -77694,7 +77694,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.941
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Ethiopian_multiplication/5",
@@ -77711,7 +77711,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.906
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Euclidean_rhythm/1",
@@ -77726,7 +77726,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.905
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Euler_method/1",
@@ -77741,7 +77741,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.161
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/1",
@@ -77760,7 +77760,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.985
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/2",
@@ -77777,7 +77777,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.341
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/3",
@@ -77794,7 +77794,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.866
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/4",
@@ -77811,7 +77811,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.856
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/5",
@@ -77828,7 +77828,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.17
+"elapsed": 0.975
 },
 {
 "id": "rosetta/Evaluate_binomial_coefficients/6",
@@ -77847,7 +77847,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.008
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Even_or_odd/1",
@@ -77909,7 +77909,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.058
+"elapsed": 0.983
 },
 {
 "id": "rosetta/Evolutionary_algorithm/2",
@@ -77928,7 +77928,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: EvolutionaryAlgorithm",
-"elapsed": 1.941
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Evolutionary_algorithm/3",
@@ -77943,7 +77943,7 @@
 "key": "The subscript vectors must all be of the same size.",
 "error_id": "MATLAB:sub2ind:SubscriptVectorSize",
 "message": "The subscript vectors must all be of the same size.",
-"elapsed": 2.156
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Evolutionary_algorithm/4",
@@ -77977,7 +77977,7 @@
 "key": "Help",
 "error_id": "",
 "message": "Help",
-"elapsed": 1.892
+"elapsed": 0.978
 },
 {
 "id": "rosetta/Exceptions_Catch_an_exception_thrown_in_a_nested_call/1",
@@ -77994,7 +77994,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.043
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Exceptions_Catch_an_exception_thrown_in_a_nested_call/2",
@@ -78013,7 +78013,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.102
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Execute_a_system_command/1",
@@ -78032,7 +78032,7 @@
 "key": "system",
 "error_id": "",
 "message": "Undefined function or variable: system",
-"elapsed": 1.846
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Factorial/1",
@@ -78064,7 +78064,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.058
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Factorial/3",
@@ -78081,7 +78081,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.047
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Factorize_string_into_Lyndon_words/1",
@@ -78096,7 +78096,7 @@
 "key": "end outside of an indexing expression",
 "error_id": "",
 "message": "end outside of an indexing expression",
-"elapsed": 1.947
+"elapsed": 1.182
 },
 {
 "id": "rosetta/Factors_of_an_integer/1",
@@ -78126,7 +78126,7 @@
 "key": "end outside of an indexing expression",
 "error_id": "",
 "message": "end outside of an indexing expression",
-"elapsed": 2.06
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Fast_Fourier_transform/1",
@@ -78141,7 +78141,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.95
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Fibonacci_sequence/1",
@@ -78158,7 +78158,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.176
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Fibonacci_sequence/2",
@@ -78175,7 +78175,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.91
+"elapsed": 0.991
 },
 {
 "id": "rosetta/Fibonacci_sequence/3",
@@ -78192,7 +78192,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.041
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Fibonacci_sequence/4",
@@ -78209,7 +78209,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.843
+"elapsed": 1.092
 },
 {
 "id": "rosetta/File_modification_time/1",
@@ -78224,7 +78224,7 @@
 "key": "Not enough input arguments.",
 "error_id": "MATLAB:minrhs",
 "message": "Not enough input arguments.",
-"elapsed": 1.84
+"elapsed": 1.092
 },
 {
 "id": "rosetta/File_modification_time/2",
@@ -78239,7 +78239,7 @@
 "key": "system",
 "error_id": "",
 "message": "Undefined function or variable: system",
-"elapsed": 2.005
+"elapsed": 1.036
 },
 {
 "id": "rosetta/File_size/1",
@@ -78254,7 +78254,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.91
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Filter/1",
@@ -78271,7 +78271,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.99
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Filter/2",
@@ -78290,7 +78290,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.188
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Find_common_directory_path/1",
@@ -78305,7 +78305,7 @@
 "key": "Mixed function/script in longest_common_dirpath.m: statement",
 "error_id": "",
 "message": "Mixed function/script in longest_common_dirpath.m: statements after function definitions are not allowed",
-"elapsed": 1.953
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Find_limit_of_recursion/1",
@@ -78324,7 +78324,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.115
+"elapsed": 0.986
 },
 {
 "id": "rosetta/Find_the_intersection_of_a_line_with_a_plane/1",
@@ -78341,7 +78341,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.955
+"elapsed": 0.99
 },
 {
 "id": "rosetta/Find_the_intersection_of_a_line_with_a_plane/2",
@@ -78360,7 +78360,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.153
+"elapsed": 1.137
 },
 {
 "id": "rosetta/Find_the_intersection_of_two_lines/1",
@@ -78377,7 +78377,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.208
+"elapsed": 0.989
 },
 {
 "id": "rosetta/Find_the_last_Sunday_of_each_month/1",
@@ -78409,7 +78409,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.242
+"elapsed": 1.136
 },
 {
 "id": "rosetta/Find_the_missing_permutation/2",
@@ -78428,7 +78428,7 @@
 "key": "perms: input must be numeric, logical or char.",
 "error_id": "MATLAB:perms:invalidInput",
 "message": "perms: input must be numeric, logical or char.",
-"elapsed": 2.0
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Five_weekends/1",
@@ -78443,7 +78443,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.336
+"elapsed": 1.244
 },
 {
 "id": "rosetta/Fivenum/1",
@@ -78460,7 +78460,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.092
+"elapsed": 1.08
 },
 {
 "id": "rosetta/FizzBuzz/1",
@@ -78477,7 +78477,7 @@
 "key": "RPAREN",
 "error_id": "",
 "message": "Unexpected token RPAREN at line 10, column 28",
-"elapsed": 2.084
+"elapsed": 1.03
 },
 {
 "id": "rosetta/FizzBuzz/2",
@@ -78494,7 +78494,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.411
+"elapsed": 1.144
 },
 {
 "id": "rosetta/FizzBuzz/3",
@@ -78526,7 +78526,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.132
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Flow_control_structures/1",
@@ -78541,7 +78541,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.047
+"elapsed": 1.051
 },
 {
 "id": "rosetta/Floyd_s_triangle/1",
@@ -78558,7 +78558,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.245
+"elapsed": 1.038
 },
 {
 "id": "rosetta/Forest_fire/1",
@@ -78575,7 +78575,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.183
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Formatted_numeric_output/1",
@@ -78594,7 +78594,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.402
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Forward_difference/1",
@@ -78626,7 +78626,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.042
+"elapsed": 1.099
 },
 {
 "id": "rosetta/Four_bit_adder/2",
@@ -78645,7 +78645,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.44
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Gauss_Jordan_matrix_inversion/1",
@@ -78660,7 +78660,7 @@
 "key": "Mixed function/script in GaussInverse.m: statements after fu",
 "error_id": "",
 "message": "Mixed function/script in GaussInverse.m: statements after function definitions are not allowed",
-"elapsed": 2.016
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Gaussian_elimination/1",
@@ -78677,7 +78677,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.297
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Generate_lower_case_ASCII_alphabet/1",
@@ -78692,7 +78692,7 @@
 "key": "colon: expected Array, got CharValue",
 "error_id": "",
 "message": "colon: expected Array, got CharValue",
-"elapsed": 2.038
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Generate_lower_case_ASCII_alphabet/2",
@@ -78707,7 +78707,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.091
+"elapsed": 1.04
 },
 {
 "id": "rosetta/Generic_swap/1",
@@ -78726,7 +78726,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.034
+"elapsed": 1.122
 },
 {
 "id": "rosetta/Generic_swap/2",
@@ -78745,7 +78745,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.04
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Gray_code/1",
@@ -78762,7 +78762,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.134
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Grayscale_image/1",
@@ -78779,7 +78779,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.289
+"elapsed": 1.085
 },
 {
 "id": "rosetta/Greatest_common_divisor/1",
@@ -78796,7 +78796,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.147
+"elapsed": 1.084
 },
 {
 "id": "rosetta/Greatest_element_of_a_list/1",
@@ -78813,7 +78813,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.256
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Greatest_subsequential_sum/1",
@@ -78830,7 +78830,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.996
+"elapsed": 0.986
 },
 {
 "id": "rosetta/Guess_the_number/1",
@@ -78847,7 +78847,7 @@
 "key": "input",
 "error_id": "MATLAB:input:EndOfInput",
 "message": "input: no more input is available.",
-"elapsed": 2.139
+"elapsed": 1.138
 },
 {
 "id": "rosetta/Guess_the_number_With_feedback/1",
@@ -78864,7 +78864,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.186
+"elapsed": 1.132
 },
 {
 "id": "rosetta/Guess_the_number_With_feedback_player/1",
@@ -78881,7 +78881,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.039
+"elapsed": 1.08
 },
 {
 "id": "rosetta/HTTP/1",
@@ -78900,7 +78900,7 @@
 "key": "urlread",
 "error_id": "",
 "message": "Undefined function or variable: urlread",
-"elapsed": 2.032
+"elapsed": 1.03
 },
 {
 "id": "rosetta/HTTPS/1",
@@ -78915,7 +78915,7 @@
 "key": "urlread",
 "error_id": "",
 "message": "Undefined function or variable: urlread",
-"elapsed": 1.948
+"elapsed": 1.044
 },
 {
 "id": "rosetta/Hailstone_sequence/1",
@@ -78932,7 +78932,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.963
+"elapsed": 1.091
 },
 {
 "id": "rosetta/Hailstone_sequence/2",
@@ -78947,7 +78947,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.089
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Hailstone_sequence/3",
@@ -78962,7 +78962,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.016
+"elapsed": 20.02
 },
 {
 "id": "rosetta/Hailstone_sequence/4",
@@ -78979,7 +78979,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.084
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Hailstone_sequence/5",
@@ -78998,7 +78998,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.025
+"elapsed": 20.009
 },
 {
 "id": "rosetta/Hailstone_sequence/6",
@@ -79015,7 +79015,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.038
+"elapsed": 1.024
 },
 {
 "id": "rosetta/Hailstone_sequence/7",
@@ -79034,7 +79034,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.029
+"elapsed": 20.009
 },
 {
 "id": "rosetta/Hamming_numbers/1",
@@ -79049,7 +79049,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.036
+"elapsed": 1.07
 },
 {
 "id": "rosetta/Handle_a_signal/1",
@@ -79066,7 +79066,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.895
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Handle_a_signal/2",
@@ -79083,7 +79083,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.032
+"elapsed": 1.071
 },
 {
 "id": "rosetta/Happy_numbers/1",
@@ -79100,7 +79100,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.927
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Harshad_or_Niven_series/1",
@@ -79117,7 +79117,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.083
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Harshad_or_Niven_series/2",
@@ -79149,7 +79149,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.147
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Haversine_formula/1",
@@ -79179,7 +79179,7 @@
 "key": "msgbox",
 "error_id": "",
 "message": "Undefined function or variable: msgbox",
-"elapsed": 1.932
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Hello_world_Graphical/2",
@@ -79194,7 +79194,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.329
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Hello_world_Line_printer/1",
@@ -79209,7 +79209,7 @@
 "key": "file",
 "error_id": "MATLAB:FileIO:InvalidFid",
 "message": "Invalid file identifier. Use fopen to generate a valid file identifier.",
-"elapsed": 1.986
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Hello_world_Newline_omission/1",
@@ -79224,7 +79224,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.833
+"elapsed": 1.022
 },
 {
 "id": "rosetta/Hello_world_Standard_error/1",
@@ -79239,7 +79239,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.183
+"elapsed": 1.073
 },
 {
 "id": "rosetta/Hello_world_Standard_error/2",
@@ -79254,7 +79254,7 @@
 "key": "Goodbye, World!",
 "error_id": "",
 "message": "Goodbye, World!",
-"elapsed": 2.03
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Hello_world_Text/1",
@@ -79271,7 +79271,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.13
+"elapsed": 1.023
 },
 {
 "id": "rosetta/Here_document/1",
@@ -79286,7 +79286,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.385
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Higher_order_functions/1",
@@ -79301,7 +79301,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.745
+"elapsed": 1.022
 },
 {
 "id": "rosetta/Hofstadter_Conway_10_000_sequence/1",
@@ -79318,7 +79318,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.982
+"elapsed": 1.071
 },
 {
 "id": "rosetta/Hofstadter_Conway_10_000_sequence/2",
@@ -79365,7 +79365,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.39
+"elapsed": 1.024
 },
 {
 "id": "rosetta/Honeycombs/1",
@@ -79382,7 +79382,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.939
+"elapsed": 1.128
 },
 {
 "id": "rosetta/Horner_s_rule_for_polynomial_evaluation/1",
@@ -79399,7 +79399,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.138
+"elapsed": 1.142
 },
 {
 "id": "rosetta/Horner_s_rule_for_polynomial_evaluation/2",
@@ -79418,7 +79418,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.539
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Horner_s_rule_for_polynomial_evaluation/3",
@@ -79437,7 +79437,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.137
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Host_introspection/1",
@@ -79454,7 +79454,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.285
+"elapsed": 1.139
 },
 {
 "id": "rosetta/Hostname/1",
@@ -79469,7 +79469,7 @@
 "key": "system",
 "error_id": "",
 "message": "Undefined function or variable: system",
-"elapsed": 2.341
+"elapsed": 1.04
 },
 {
 "id": "rosetta/IBAN/1",
@@ -79486,7 +79486,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.103
+"elapsed": 1.082
 },
 {
 "id": "rosetta/IBAN/2",
@@ -79501,7 +79501,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.305
+"elapsed": 1.19
 },
 {
 "id": "rosetta/I_before_E_except_after_C/1",
@@ -79518,7 +79518,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.245
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Identity_matrix/1",
@@ -79533,7 +79533,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.238
+"elapsed": 1.045
 },
 {
 "id": "rosetta/Image_convolution/1",
@@ -79545,10 +79545,10 @@
 "t1": "error",
 "status": "error",
 "category": "semantics-diff",
-"key": "run: /tmp/omcorpus-ckbppbev/testConvImage.m is a function fi",
+"key": "run: /tmp/omcorpus-wogowxm_/testConvImage.m is a function fi",
 "error_id": "",
-"message": "run: /tmp/omcorpus-ckbppbev/testConvImage.m is a function file; call it as a function instead",
-"elapsed": 2.137
+"message": "run: /tmp/omcorpus-wogowxm2/testConvImage.m is a function file; call it as a function instead",
+"elapsed": 1.129
 },
 {
 "id": "rosetta/Include_a_file/1",
@@ -79580,7 +79580,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.035
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Infinity/1",
@@ -79595,7 +79595,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.085
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Integer_sequence/1",
@@ -79659,7 +79659,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.985
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Introspection/1",
@@ -79708,7 +79708,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.333
+"elapsed": 1.137
 },
 {
 "id": "rosetta/Jewels_and_stones/1",
@@ -79725,7 +79725,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.185
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Josephus_problem/1",
@@ -79742,7 +79742,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.647
+"elapsed": 1.129
 },
 {
 "id": "rosetta/Knuth_shuffle/1",
@@ -79759,7 +79759,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.378
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Knuth_shuffle/2",
@@ -79776,7 +79776,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.651
+"elapsed": 1.136
 },
 {
 "id": "rosetta/LU_decomposition/1",
@@ -79791,7 +79791,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.484
+"elapsed": 1.082
 },
 {
 "id": "rosetta/LU_decomposition/2",
@@ -79806,7 +79806,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.341
+"elapsed": 1.096
 },
 {
 "id": "rosetta/LU_decomposition/3",
@@ -79823,7 +79823,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.354
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Langton_s_ant/1",
@@ -79840,7 +79840,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.743
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Last_Friday_of_each_month/1",
@@ -79870,7 +79870,7 @@
 "key": "Mixed function/script in last_fridays_of_year.m: statements ",
 "error_id": "",
 "message": "Mixed function/script in last_fridays_of_year.m: statements after function definitions are not allowed",
-"elapsed": 2.349
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Leap_year/1",
@@ -79887,7 +79887,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.162
+"elapsed": 1.135
 },
 {
 "id": "rosetta/Leap_year/2",
@@ -79902,7 +79902,7 @@
 "key": "year: input must be a datetime.",
 "error_id": "MATLAB:year:InvalidInput",
 "message": "year: input must be a datetime.",
-"elapsed": 2.597
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Least_common_multiple/1",
@@ -79949,7 +79949,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.354
+"elapsed": 1.082
 },
 {
 "id": "rosetta/List_comprehensions/1",
@@ -79964,7 +79964,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.34
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Literals_Integer/1",
@@ -79981,7 +79981,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.252
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Literals_Integer/2",
@@ -79998,7 +79998,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: x11",
-"elapsed": 2.386
+"elapsed": 1.038
 },
 {
 "id": "rosetta/Literals_Integer/3",
@@ -80028,7 +80028,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.289
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Literals_String/1",
@@ -80043,7 +80043,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.352
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Longest_common_prefix/1",
@@ -80058,7 +80058,7 @@
 "key": "Mixed function/script in longest_common_prefix.m: statements",
 "error_id": "",
 "message": "Mixed function/script in longest_common_prefix.m: statements after function definitions are not allowed",
-"elapsed": 2.469
+"elapsed": 1.085
 },
 {
 "id": "rosetta/Longest_string_challenge/1",
@@ -80075,7 +80075,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.301
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Loops_Continue/1",
@@ -80090,7 +80090,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.455
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Loops_Continue/2",
@@ -80105,7 +80105,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.451
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Loops_Continue/3",
@@ -80135,7 +80135,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.505
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Loops_Downward_for/1",
@@ -80180,7 +80180,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.447
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Loops_For/2",
@@ -80195,7 +80195,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.258
+"elapsed": 1.133
 },
 {
 "id": "rosetta/Loops_For_with_a_specified_step/1",
@@ -80285,7 +80285,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.027
+"elapsed": 20.009
 },
 {
 "id": "rosetta/Loops_N_plus_one_half/1",
@@ -80330,7 +80330,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.302
+"elapsed": 1.084
 },
 {
 "id": "rosetta/Loops_While/1",
@@ -80345,7 +80345,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.09
+"elapsed": 1.131
 },
 {
 "id": "rosetta/Loops_While/2",
@@ -80377,7 +80377,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.129
+"elapsed": 1.088
 },
 {
 "id": "rosetta/Lucas_Lehmer_test/2",
@@ -80394,7 +80394,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.244
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Luhn_test_of_credit_card_numbers/1",
@@ -80411,7 +80411,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.436
+"elapsed": 1.186
 },
 {
 "id": "rosetta/MD5/1",
@@ -80428,7 +80428,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.139
+"elapsed": 1.083
 },
 {
 "id": "rosetta/MD5/2",
@@ -80445,7 +80445,7 @@
 "key": "circshift: expected a numeric or logical array",
 "error_id": "",
 "message": "circshift: expected a numeric or logical array",
-"elapsed": 2.193
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Mandelbrot_set/1",
@@ -80462,7 +80462,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.097
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Mandelbrot_set/2",
@@ -80477,7 +80477,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.067
+"elapsed": 20.042
 },
 {
 "id": "rosetta/Matrix_chain_multiplication/1",
@@ -80494,7 +80494,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.287
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Matrix_chain_multiplication/2",
@@ -80511,7 +80511,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.389
+"elapsed": 1.177
 },
 {
 "id": "rosetta/Matrix_exponentiation_operator/1",
@@ -80528,7 +80528,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.941
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Matrix_exponentiation_operator/2",
@@ -80545,7 +80545,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.19
+"elapsed": 1.089
 },
 {
 "id": "rosetta/Matrix_multiplication/1",
@@ -80564,7 +80564,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.942
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Matrix_transposition/1",
@@ -80583,7 +80583,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.188
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Matrix_transposition/2",
@@ -80598,7 +80598,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: A",
-"elapsed": 2.194
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Matrix_transposition/3",
@@ -80613,7 +80613,7 @@
 "key": "cellfun: unsupported option _",
 "error_id": "",
 "message": "cellfun: unsupported option 'un'",
-"elapsed": 2.239
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Matrix_with_two_diagonals/1",
@@ -80630,7 +80630,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.076
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Maze_generation/1",
@@ -80647,7 +80647,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.093
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Memory_allocation/1",
@@ -80662,7 +80662,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 5.156
+"elapsed": 3.693
 },
 {
 "id": "rosetta/Memory_layout_of_a_data_structure/1",
@@ -80681,7 +80681,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.542
+"elapsed": 1.023
 },
 {
 "id": "rosetta/Menu/1",
@@ -80698,7 +80698,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.835
+"elapsed": 1.073
 },
 {
 "id": "rosetta/Middle_three_digits/1",
@@ -80715,7 +80715,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.694
+"elapsed": 1.071
 },
 {
 "id": "rosetta/Middle_three_digits/2",
@@ -80730,7 +80730,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.638
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Minesweeper_game/1",
@@ -80745,7 +80745,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: xpbombs",
-"elapsed": 1.689
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Minesweeper_game/2",
@@ -80762,7 +80762,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.889
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Monte_Carlo_methods/1",
@@ -80779,7 +80779,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.538
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Monte_Carlo_methods/2",
@@ -80796,7 +80796,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.679
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Monte_Carlo_methods/3",
@@ -80813,7 +80813,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.375
+"elapsed": 1.931
 },
 {
 "id": "rosetta/Monty_Hall_problem/1",
@@ -80860,7 +80860,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.65
+"elapsed": 1.432
 },
 {
 "id": "rosetta/Monty_Hall_problem/4",
@@ -80877,7 +80877,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.02
+"elapsed": 20.01
 },
 {
 "id": "rosetta/Morse_code/1",
@@ -80894,7 +80894,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.892
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Morse_code/2",
@@ -80913,7 +80913,7 @@
 "key": "sound",
 "error_id": "",
 "message": "Undefined function or variable: sound",
-"elapsed": 1.64
+"elapsed": 1.073
 },
 {
 "id": "rosetta/Mouse_position/1",
@@ -80928,7 +80928,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.566
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Move_to_front_algorithm/1",
@@ -80945,7 +80945,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.645
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Multiline_shebang/1",
@@ -80990,7 +80990,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.637
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Multiple_regression/2",
@@ -81021,7 +81021,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.428
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Multiple_regression/4",
@@ -81068,7 +81068,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.49
+"elapsed": 1.071
 },
 {
 "id": "rosetta/Multiplication_tables/2",
@@ -81085,7 +81085,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.583
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Munching_squares/1",
@@ -81100,7 +81100,7 @@
 "key": "colormap",
 "error_id": "MATLAB:colormap:InvalidName",
 "message": "colormap: unknown colormap 'bone(size)'.",
-"elapsed": 1.889
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Mutual_recursion/1",
@@ -81117,7 +81117,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.591
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Mutual_recursion/2",
@@ -81134,7 +81134,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.386
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Mutual_recursion/3",
@@ -81153,7 +81153,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.985
+"elapsed": 1.235
 },
 {
 "id": "rosetta/N_queens_problem/1",
@@ -81168,7 +81168,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.016
+"elapsed": 20.025
 },
 {
 "id": "rosetta/N_th/1",
@@ -81185,7 +81185,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.582
+"elapsed": 1.042
 },
 {
 "id": "rosetta/Named_parameters/1",
@@ -81217,7 +81217,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.38
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Non_decimal_radices_Convert/1",
@@ -81232,7 +81232,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.426
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Non_decimal_radices_Input/1",
@@ -81247,7 +81247,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.829
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Non_decimal_radices_Output/1",
@@ -81262,7 +81262,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.431
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Nth_root/1",
@@ -81279,7 +81279,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.48
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Nth_root/2",
@@ -81298,7 +81298,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.7
+"elapsed": 1.033
 },
 {
 "id": "rosetta/Null_object/1",
@@ -81313,7 +81313,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.633
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Number_reversal_game/1",
@@ -81330,7 +81330,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.576
+"elapsed": 1.025
 },
 {
 "id": "rosetta/Numerical_integration/1",
@@ -81347,7 +81347,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.447
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Numerical_integration/2",
@@ -81364,7 +81364,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.631
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Numerical_integration/3",
@@ -81381,7 +81381,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.54
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Numerical_integration/4",
@@ -81398,7 +81398,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.387
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Numerical_integration/5",
@@ -81430,7 +81430,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.703
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Numerical_integration/7",
@@ -81447,7 +81447,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.487
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Numerical_integration/8",
@@ -81464,7 +81464,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.531
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Numerical_integration/9",
@@ -81481,7 +81481,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.586
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Numerical_integration_Gauss_Legendre_Quadrature/1",
@@ -81496,7 +81496,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 8.585
+"elapsed": 5.614
 },
 {
 "id": "rosetta/O_Halloran_numbers/1",
@@ -81528,7 +81528,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.54
+"elapsed": 1.085
 },
 {
 "id": "rosetta/One_of_n_lines_in_a_file/1",
@@ -81545,7 +81545,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.477
+"elapsed": 1.023
 },
 {
 "id": "rosetta/One_of_n_lines_in_a_file/2",
@@ -81560,7 +81560,7 @@
 "key": "Output argument _ (and possibly others) not assigned a value",
 "error_id": "MATLAB:unassignedOutputs",
 "message": "Output argument \"n\" (and possibly others) not assigned a value in the execution with \"one_of_n_lines_in_a_file\" function.",
-"elapsed": 1.484
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Ordered_words/1",
@@ -81590,7 +81590,7 @@
 "key": "end outside of an indexing expression",
 "error_id": "",
 "message": "end outside of an indexing expression",
-"elapsed": 1.4
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Palindrome_detection/1",
@@ -81607,7 +81607,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.48
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Palindrome_detection/2",
@@ -81626,7 +81626,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.53
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Pandigital_prime/1",
@@ -81673,7 +81673,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.532
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Pangram_checker/2",
@@ -81690,7 +81690,7 @@
 "key": "Error using histc: invalid input arguments.",
 "error_id": "MATLAB:histc:invalidInput",
 "message": "Error using histc: invalid input arguments.",
-"elapsed": 1.537
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Pascal_matrix_generation/1",
@@ -81705,7 +81705,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.534
+"elapsed": 1.139
 },
 {
 "id": "rosetta/Pascal_s_triangle/1",
@@ -81752,7 +81752,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.497
+"elapsed": 1.024
 },
 {
 "id": "rosetta/Perfect_numbers/1",
@@ -81769,7 +81769,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.531
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Perfect_numbers/2",
@@ -81786,7 +81786,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.429
+"elapsed": 0.992
 },
 {
 "id": "rosetta/Perfect_shuffle/1",
@@ -81803,7 +81803,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.547
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Perfect_shuffle/2",
@@ -81818,7 +81818,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.021
+"elapsed": 20.012
 },
 {
 "id": "rosetta/Permutations/1",
@@ -81833,7 +81833,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.435
+"elapsed": 1.092
 },
 {
 "id": "rosetta/Phrase_reversals/1",
@@ -81848,7 +81848,7 @@
 "key": "Mixed function/script in revstr.m: statements after function",
 "error_id": "",
 "message": "Mixed function/script in revstr.m: statements after function definitions are not allowed",
-"elapsed": 1.493
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Pi/1",
@@ -81865,7 +81865,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.485
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Pick_random_element/1",
@@ -81880,7 +81880,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.478
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Pick_random_element/2",
@@ -81895,7 +81895,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.63
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Plot_coordinate_pairs/1",
@@ -81912,7 +81912,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.582
+"elapsed": 1.073
 },
 {
 "id": "rosetta/Polynomial_regression/1",
@@ -81931,7 +81931,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.53
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Power_set/1",
@@ -81948,7 +81948,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.438
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Power_set/2",
@@ -81965,7 +81965,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.531
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Power_set/3",
@@ -81982,7 +81982,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.492
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Price_fraction/1",
@@ -81997,7 +81997,7 @@
 "key": "Mixed function/script in rescale.m: statements after functio",
 "error_id": "",
 "message": "Mixed function/script in rescale.m: statements after function definitions are not allowed",
-"elapsed": 1.543
+"elapsed": 1.14
 },
 {
 "id": "rosetta/Primality_by_trial_division/1",
@@ -82014,7 +82014,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.582
+"elapsed": 1.036
 },
 {
 "id": "rosetta/Primality_by_trial_division/2",
@@ -82033,7 +82033,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.53
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Prime_decomposition/1",
@@ -82050,7 +82050,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.631
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Probabilistic_choice/1",
@@ -82067,7 +82067,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.592
+"elapsed": 1.134
 },
 {
 "id": "rosetta/Probabilistic_choice/2",
@@ -82084,7 +82084,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.498
+"elapsed": 0.982
 },
 {
 "id": "rosetta/Program_termination/1",
@@ -82099,7 +82099,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: condition",
-"elapsed": 1.596
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Program_termination/2",
@@ -82114,7 +82114,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: condition",
-"elapsed": 1.638
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Proper_divisors/1",
@@ -82131,7 +82131,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.634
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Pythagorean_triples/1",
@@ -82161,7 +82161,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.839
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Queue_Definition/1",
@@ -82176,7 +82176,7 @@
 "key": "undefined-variable",
 "error_id": "",
 "message": "Undefined variable: x",
-"elapsed": 1.585
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Queue_Definition/2",
@@ -82193,7 +82193,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.193
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Queue_Definition/3",
@@ -82212,7 +82212,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: FIFOQueue",
-"elapsed": 1.412
+"elapsed": 0.976
 },
 {
 "id": "rosetta/Quine/1",
@@ -82227,7 +82227,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.992
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Quine/2",
@@ -82259,7 +82259,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.633
+"elapsed": 1.132
 },
 {
 "id": "rosetta/Quine/4",
@@ -82276,7 +82276,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.703
+"elapsed": 1.089
 },
 {
 "id": "rosetta/Random_numbers/1",
@@ -82291,7 +82291,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.042
+"elapsed": 1.133
 },
 {
 "id": "rosetta/Random_numbers/2",
@@ -82323,7 +82323,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.895
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Random_numbers/4",
@@ -82340,7 +82340,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.703
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Range_expansion/1",
@@ -82357,7 +82357,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.588
+"elapsed": 1.132
 },
 {
 "id": "rosetta/Range_extraction/1",
@@ -82372,7 +82372,7 @@
 "key": "Mixed function/script in range_extraction.m: statements afte",
 "error_id": "",
 "message": "Mixed function/script in range_extraction.m: statements after function definitions are not allowed",
-"elapsed": 1.444
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Read_a_configuration_file/1",
@@ -82389,7 +82389,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.629
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Read_a_file_line_by_line/1",
@@ -82434,7 +82434,7 @@
 "key": "file",
 "error_id": "MATLAB:FileIO:InvalidFid",
 "message": "Invalid file identifier. Use fopen to generate a valid file identifier.",
-"elapsed": 1.585
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Real_constants_and_functions/1",
@@ -82464,7 +82464,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.443
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Remove_duplicate_elements/1",
@@ -82483,7 +82483,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.64
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Remove_vowels_from_a_string/1",
@@ -82498,7 +82498,7 @@
 "key": "Mixed function/script in remove_vowels.m: statements after f",
 "error_id": "",
 "message": "Mixed function/script in remove_vowels.m: statements after function definitions are not allowed",
-"elapsed": 1.636
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Rename_a_file/1",
@@ -82530,7 +82530,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.692
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Return_multiple_values/1",
@@ -82545,7 +82545,7 @@
 "key": "Mixed function/script in foo.m: statements after function de",
 "error_id": "",
 "message": "Mixed function/script in foo.m: statements after function definitions are not allowed",
-"elapsed": 1.542
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Return_multiple_values/2",
@@ -82562,7 +82562,7 @@
 "key": "foo",
 "error_id": "",
 "message": "Undefined function or variable: foo",
-"elapsed": 1.688
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Reverse_a_string/1",
@@ -82581,7 +82581,7 @@
 "key": "fragment",
 "error_id": "",
 "message": "Undefined variable: Grabbed",
-"elapsed": 1.534
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Reverse_words_in_a_string/1",
@@ -82598,7 +82598,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.485
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Roman_numerals_Decode/1",
@@ -82615,7 +82615,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.681
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Roman_numerals_Decode/2",
@@ -82630,7 +82630,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.444
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Roots_of_a_quadratic_function/1",
@@ -82645,7 +82645,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.589
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Roots_of_unity/1",
@@ -82662,7 +82662,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.78
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Roots_of_unity/2",
@@ -82681,7 +82681,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.729
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Rosetta_Code_Count_examples/1",
@@ -82713,7 +82713,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.587
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Rot_13/2",
@@ -82732,7 +82732,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.687
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Rot_13/3",
@@ -82749,7 +82749,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.825
+"elapsed": 1.089
 },
 {
 "id": "rosetta/Rot_13/4",
@@ -82768,7 +82768,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.68
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Runge_Kutta_method/1",
@@ -82785,7 +82785,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.539
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Runtime_evaluation/1",
@@ -82802,7 +82802,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.686
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Runtime_evaluation_In_an_environment/1",
@@ -82819,7 +82819,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.682
+"elapsed": 1.179
 },
 {
 "id": "rosetta/Search_a_list/1",
@@ -82834,7 +82834,7 @@
 "key": "EOF",
 "error_id": "",
 "message": "Unexpected token EOF at line 2, column 1",
-"elapsed": 1.615
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Search_a_list/2",
@@ -82849,7 +82849,7 @@
 "key": "EOF",
 "error_id": "",
 "message": "Unexpected token EOF at line 2, column 1",
-"elapsed": 1.594
+"elapsed": 1.133
 },
 {
 "id": "rosetta/Search_a_list/3",
@@ -82866,7 +82866,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.646
+"elapsed": 1.027
 },
 {
 "id": "rosetta/Search_a_list/4",
@@ -82885,7 +82885,7 @@
 "key": "The string _ does not exist in this collection of strings.",
 "error_id": "",
 "message": "The string 'g' does not exist in this collection of strings.",
-"elapsed": 1.597
+"elapsed": 1.09
 },
 {
 "id": "rosetta/Self_describing_numbers/1",
@@ -82902,7 +82902,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.608
+"elapsed": 1.088
 },
 {
 "id": "rosetta/Self_describing_numbers/2",
@@ -82949,7 +82949,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.73
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Sequence_of_non_squares/2",
@@ -82968,7 +82968,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.013
+"elapsed": 20.03
 },
 {
 "id": "rosetta/Sequence_of_non_squares/3",
@@ -82983,7 +82983,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.935
+"elapsed": 1.18
 },
 {
 "id": "rosetta/Sequence_of_primes_by_trial_division/1",
@@ -83000,7 +83000,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.832
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Set/1",
@@ -83047,7 +83047,7 @@
 "key": "a",
 "error_id": "",
 "message": "Undefined function or variable: a",
-"elapsed": 1.43
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Show_the_epoch/1",
@@ -83077,7 +83077,7 @@
 "key": "Dot indexing is not supported for variables of this type.",
 "error_id": "",
 "message": "Dot indexing is not supported for variables of this type.",
-"elapsed": 1.638
+"elapsed": 1.026
 },
 {
 "id": "rosetta/Sierpinski_pentagon/1",
@@ -83092,7 +83092,7 @@
 "key": "reshape: expected numeric Array argument",
 "error_id": "",
 "message": "reshape: expected numeric Array argument",
-"elapsed": 1.535
+"elapsed": 0.982
 },
 {
 "id": "rosetta/Sierpinski_triangle/1",
@@ -83107,7 +83107,7 @@
 "key": "Dot indexing is not supported for variables of this type.",
 "error_id": "",
 "message": "Dot indexing is not supported for variables of this type.",
-"elapsed": 1.635
+"elapsed": 1.085
 },
 {
 "id": "rosetta/Sierpinski_triangle/2",
@@ -83122,7 +83122,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.537
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Sierpinski_triangle/3",
@@ -83137,7 +83137,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.592
+"elapsed": 1.137
 },
 {
 "id": "rosetta/Sierpinski_triangle_Graphical/1",
@@ -83152,7 +83152,7 @@
 "key": "add: operands could not be broadcast together with shapes (_",
 "error_id": "",
 "message": "add: operands could not be broadcast together with shapes (2,6) (2,1,3) ",
-"elapsed": 1.603
+"elapsed": 1.03
 },
 {
 "id": "rosetta/Sierpinski_triangle_Graphical/2",
@@ -83167,7 +83167,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.806
+"elapsed": 1.176
 },
 {
 "id": "rosetta/Sieve_of_Eratosthenes/1",
@@ -83184,7 +83184,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.654
+"elapsed": 1.123
 },
 {
 "id": "rosetta/Sieve_of_Eratosthenes/2",
@@ -83201,7 +83201,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.79
+"elapsed": 1.088
 },
 {
 "id": "rosetta/Singly_linked_list_Traversal/1",
@@ -83248,7 +83248,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.785
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Sort_an_integer_array/1",
@@ -83263,7 +83263,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.114
+"elapsed": 1.043
 },
 {
 "id": "rosetta/Sorting_algorithms_Bogosort/1",
@@ -83280,7 +83280,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.158
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Sorting_algorithms_Bogosort/2",
@@ -83297,7 +83297,7 @@
 "key": "",
 "error_id": "",
 "message": "timed out after 20 s",
-"elapsed": 20.021
+"elapsed": 20.015
 },
 {
 "id": "rosetta/Sorting_algorithms_Bubble_sort/1",
@@ -83314,7 +83314,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.459
+"elapsed": 1.09
 },
 {
 "id": "rosetta/Sorting_algorithms_Cocktail_sort/1",
@@ -83331,7 +83331,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.737
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Sorting_algorithms_Cocktail_sort/2",
@@ -83348,7 +83348,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.795
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Sorting_algorithms_Comb_sort/1",
@@ -83365,7 +83365,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.441
+"elapsed": 0.981
 },
 {
 "id": "rosetta/Sorting_algorithms_Comb_sort/2",
@@ -83384,7 +83384,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.595
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Sorting_algorithms_Counting_sort/1",
@@ -83401,7 +83401,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.585
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Sorting_algorithms_Counting_sort/2",
@@ -83420,7 +83420,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.598
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Sorting_algorithms_Gnome_sort/1",
@@ -83437,7 +83437,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 2.094
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Sorting_algorithms_Gnome_sort/2",
@@ -83456,7 +83456,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.43
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Sorting_algorithms_Heapsort/1",
@@ -83473,7 +83473,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.534
+"elapsed": 1.072
 },
 {
 "id": "rosetta/Sorting_algorithms_Heapsort/2",
@@ -83492,7 +83492,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.539
+"elapsed": 1.029
 },
 {
 "id": "rosetta/Sorting_algorithms_Insertion_sort/1",
@@ -83509,7 +83509,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.586
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Sorting_algorithms_Insertion_sort/2",
@@ -83528,7 +83528,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.555
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Sorting_algorithms_Merge_sort/1",
@@ -83545,7 +83545,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.482
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Sorting_algorithms_Merge_sort/2",
@@ -83564,7 +83564,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.55
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Sorting_algorithms_Pancake_sort/1",
@@ -83581,7 +83581,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.588
+"elapsed": 1.021
 },
 {
 "id": "rosetta/Sorting_algorithms_Pancake_sort/2",
@@ -83600,7 +83600,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.682
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Sorting_algorithms_Permutation_sort/1",
@@ -83617,7 +83617,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.79
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Sorting_algorithms_Permutation_sort/2",
@@ -83636,7 +83636,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.737
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Sorting_algorithms_Quicksort/1",
@@ -83653,7 +83653,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.587
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Sorting_algorithms_Quicksort/2",
@@ -83670,7 +83670,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.538
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Sorting_algorithms_Quicksort/3",
@@ -83687,7 +83687,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.532
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Sorting_algorithms_Selection_sort/1",
@@ -83704,7 +83704,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.484
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Sorting_algorithms_Selection_sort/2",
@@ -83723,7 +83723,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.842
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Sorting_algorithms_Shell_sort/1",
@@ -83740,7 +83740,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.483
+"elapsed": 1.085
 },
 {
 "id": "rosetta/Sorting_algorithms_Shell_sort/2",
@@ -83759,7 +83759,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.533
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Sorting_algorithms_Stooge_sort/1",
@@ -83776,7 +83776,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.663
+"elapsed": 1.131
 },
 {
 "id": "rosetta/Sorting_algorithms_Stooge_sort/2",
@@ -83795,7 +83795,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.434
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Spiral_matrix/1",
@@ -83812,7 +83812,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.55
+"elapsed": 1.042
 },
 {
 "id": "rosetta/Spiral_matrix/2",
@@ -83831,7 +83831,7 @@
 "key": "spiral",
 "error_id": "",
 "message": "Undefined function or variable: spiral",
-"elapsed": 1.487
+"elapsed": 1.138
 },
 {
 "id": "rosetta/Stack/1",
@@ -83846,7 +83846,7 @@
 "key": "undefined-variable",
 "error_id": "",
 "message": "Undefined variable: x",
-"elapsed": 1.436
+"elapsed": 1.087
 },
 {
 "id": "rosetta/Stack/2",
@@ -83863,7 +83863,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.577
+"elapsed": 1.153
 },
 {
 "id": "rosetta/Stack/3",
@@ -83882,7 +83882,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: LIFOQueue",
-"elapsed": 1.64
+"elapsed": 1.178
 },
 {
 "id": "rosetta/Stair_climbing_puzzle/1",
@@ -83899,7 +83899,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.552
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Statistics_Basic/1",
@@ -83929,7 +83929,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.529
+"elapsed": 1.238
 },
 {
 "id": "rosetta/Steffensen_s_method/1",
@@ -83938,13 +83938,13 @@
 "role": "script",
 "notes": [],
 "t0": "pass",
-"t1": "timeout",
-"status": "timeout",
-"category": "timeout",
+"t1": "pass",
+"status": "pass",
+"category": "pass",
 "key": "",
 "error_id": "",
-"message": "timed out after 20 s",
-"elapsed": 20.023
+"message": "",
+"elapsed": 15.594
 },
 {
 "id": "rosetta/Stem_and_leaf_plot/1",
@@ -83974,7 +83974,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.328
+"elapsed": 1.129
 },
 {
 "id": "rosetta/String_case/1",
@@ -83993,7 +83993,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.486
+"elapsed": 1.082
 },
 {
 "id": "rosetta/String_comparison/1",
@@ -84008,7 +84008,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.382
+"elapsed": 1.13
 },
 {
 "id": "rosetta/String_concatenation/1",
@@ -84027,7 +84027,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.428
+"elapsed": 1.027
 },
 {
 "id": "rosetta/String_length/1",
@@ -84046,7 +84046,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.384
+"elapsed": 1.077
 },
 {
 "id": "rosetta/String_length/2",
@@ -84065,7 +84065,7 @@
 "key": "dec_hex: input must be numeric.",
 "error_id": "MATLAB:dec2hex:InvalidInput",
 "message": "dec2hex: input must be numeric.",
-"elapsed": 1.433
+"elapsed": 1.077
 },
 {
 "id": "rosetta/String_matching/1",
@@ -84097,7 +84097,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.379
+"elapsed": 1.141
 },
 {
 "id": "rosetta/Strip_block_comments/1",
@@ -84114,7 +84114,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.591
+"elapsed": 1.079
 },
 {
 "id": "rosetta/Strip_comments_from_a_string/1",
@@ -84131,7 +84131,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.434
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Strip_control_codes_and_extended_characters_from_a_string/1",
@@ -84148,7 +84148,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.481
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Strip_whitespace_from_a_string_Top_and_tail/1",
@@ -84163,7 +84163,7 @@
 "key": "SEMICOLON",
 "error_id": "",
 "message": "Expected RPAREN, got SEMICOLON at line 8, column 49",
-"elapsed": 1.484
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Substring/1",
@@ -84193,7 +84193,7 @@
 "key": "str",
 "error_id": "",
 "message": "Undefined function or variable: str",
-"elapsed": 1.481
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Sudoku/1",
@@ -84210,7 +84210,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.329
+"elapsed": 1.031
 },
 {
 "id": "rosetta/Sudoku/2",
@@ -84225,7 +84225,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.584
+"elapsed": 1.084
 },
 {
 "id": "rosetta/Sudoku/3",
@@ -84242,7 +84242,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.445
+"elapsed": 1.082
 },
 {
 "id": "rosetta/Sum_and_product_of_an_array/1",
@@ -84261,7 +84261,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.455
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Sum_and_product_puzzle/1",
@@ -84278,7 +84278,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.382
+"elapsed": 1.184
 },
 {
 "id": "rosetta/Sum_digits_of_an_integer/1",
@@ -84308,7 +84308,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.493
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Sum_multiples_of_3_and_5/2",
@@ -84323,7 +84323,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.381
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Sum_multiples_of_3_and_5/3",
@@ -84338,7 +84338,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.585
+"elapsed": 1.174
 },
 {
 "id": "rosetta/Sum_of_a_series/1",
@@ -84353,7 +84353,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.486
+"elapsed": 1.086
 },
 {
 "id": "rosetta/Sum_of_elements_below_main_diagonal_of_matrix/1",
@@ -84368,7 +84368,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.438
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Sum_of_squares/1",
@@ -84385,7 +84385,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.488
+"elapsed": 1.126
 },
 {
 "id": "rosetta/Sutherland_Hodgman_polygon_clipping/1",
@@ -84402,7 +84402,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.447
+"elapsed": 1.124
 },
 {
 "id": "rosetta/Sutherland_Hodgman_polygon_clipping/2",
@@ -84419,7 +84419,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.698
+"elapsed": 1.336
 },
 {
 "id": "rosetta/Symmetric_difference/1",
@@ -84438,7 +84438,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.579
+"elapsed": 1.08
 },
 {
 "id": "rosetta/Symmetric_difference/2",
@@ -84455,7 +84455,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.486
+"elapsed": 1.081
 },
 {
 "id": "rosetta/Symmetric_difference/3",
@@ -84474,7 +84474,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.427
+"elapsed": 1.078
 },
 {
 "id": "rosetta/System_time/1",
@@ -84489,7 +84489,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.392
+"elapsed": 1.083
 },
 {
 "id": "rosetta/System_time/2",
@@ -84504,7 +84504,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.535
+"elapsed": 1.088
 },
 {
 "id": "rosetta/Take_notes_on_the_command_line/1",
@@ -84521,7 +84521,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.582
+"elapsed": 1.09
 },
 {
 "id": "rosetta/Text_processing_2/1",
@@ -84551,7 +84551,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.487
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Tic_tac_toe/1",
@@ -84568,7 +84568,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.588
+"elapsed": 1.076
 },
 {
 "id": "rosetta/Tokenize_a_string/1",
@@ -84583,7 +84583,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.546
+"elapsed": 1.032
 },
 {
 "id": "rosetta/Total_circles_area/1",
@@ -84600,7 +84600,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.537
+"elapsed": 1.075
 },
 {
 "id": "rosetta/Towers_of_Hanoi/1",
@@ -84617,7 +84617,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.533
+"elapsed": 1.125
 },
 {
 "id": "rosetta/Trabb_Pardo_Knuth_algorithm/1",
@@ -84634,7 +84634,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.531
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Trigonometric_functions/1",
@@ -84651,7 +84651,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.481
+"elapsed": 1.074
 },
 {
 "id": "rosetta/Trigonometric_functions/2",
@@ -84670,7 +84670,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.578
+"elapsed": 1.14
 },
 {
 "id": "rosetta/Truncatable_primes/1",
@@ -84687,7 +84687,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.53
+"elapsed": 1.037
 },
 {
 "id": "rosetta/Truncatable_primes/2",
@@ -84706,7 +84706,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 19.116
+"elapsed": 14.375
 },
 {
 "id": "rosetta/Truncate_a_file/1",
@@ -84723,7 +84723,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.483
+"elapsed": 1.153
 },
 {
 "id": "rosetta/URL_decoding/1",
@@ -84740,7 +84740,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.383
+"elapsed": 1.091
 },
 {
 "id": "rosetta/URL_encoding/1",
@@ -84757,7 +84757,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.783
+"elapsed": 1.083
 },
 {
 "id": "rosetta/Undefined_values/1",
@@ -84772,7 +84772,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.688
+"elapsed": 1.133
 },
 {
 "id": "rosetta/Undefined_values/2",
@@ -84787,7 +84787,7 @@
 "key": "Not enough input arguments.",
 "error_id": "MATLAB:minrhs",
 "message": "Not enough input arguments.",
-"elapsed": 1.489
+"elapsed": 1.073
 },
 {
 "id": "rosetta/Undefined_values/3",
@@ -84802,7 +84802,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.537
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Undefined_values/4",
@@ -84817,7 +84817,7 @@
 "key": "Not enough input arguments.",
 "error_id": "MATLAB:minrhs",
 "message": "Not enough input arguments.",
-"elapsed": 1.492
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Universal_Turing_machine/1",
@@ -84834,7 +84834,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.551
+"elapsed": 1.078
 },
 {
 "id": "rosetta/User_input_Text/1",
@@ -84852,7 +84852,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.492
+"elapsed": 1.13
 },
 {
 "id": "rosetta/Van_der_Corput_sequence/1",
@@ -84869,7 +84869,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.587
+"elapsed": 1.09
 },
 {
 "id": "rosetta/Variables/1",
@@ -84884,7 +84884,7 @@
 "key": "missing-dependency",
 "error_id": "",
 "message": "Undefined function or variable: float32",
-"elapsed": 1.535
+"elapsed": 1.028
 },
 {
 "id": "rosetta/Variables/2",
@@ -84899,7 +84899,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.5
+"elapsed": 1.143
 },
 {
 "id": "rosetta/Variadic_function/1",
@@ -84916,7 +84916,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.388
+"elapsed": 1.135
 },
 {
 "id": "rosetta/Variadic_function/2",
@@ -84935,7 +84935,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.588
+"elapsed": 1.123
 },
 {
 "id": "rosetta/Vector_products/1",
@@ -84967,7 +84967,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.446
+"elapsed": 1.077
 },
 {
 "id": "rosetta/Walsh_matrix/1",
@@ -84982,7 +84982,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.512
+"elapsed": 1.175
 },
 {
 "id": "rosetta/Web_scraping/1",
@@ -84997,7 +84997,7 @@
 "key": "urlread",
 "error_id": "",
 "message": "Undefined function or variable: urlread",
-"elapsed": 1.492
+"elapsed": 1.122
 },
 {
 "id": "rosetta/Word_frequency/1",
@@ -85014,7 +85014,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.59
+"elapsed": 1.034
 },
 {
 "id": "rosetta/Write_float_arrays_to_a_text_file/1",
@@ -85029,7 +85029,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.535
+"elapsed": 1.074
 },
 {
 "id": "rosetta/XML_DOM_serialization/1",
@@ -85044,7 +85044,7 @@
 "key": "com",
 "error_id": "",
 "message": "Undefined variable: com",
-"elapsed": 1.481
+"elapsed": 1.126
 },
 {
 "id": "rosetta/XML_Input/1",
@@ -85074,7 +85074,7 @@
 "key": "com",
 "error_id": "",
 "message": "Undefined variable: com",
-"elapsed": 1.435
+"elapsed": 1.078
 },
 {
 "id": "rosetta/Xiaolin_Wu_s_line_algorithm/1",
@@ -85089,7 +85089,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.792
+"elapsed": 1.288
 },
 {
 "id": "rosetta/Zeckendorf_number_representation/1",
@@ -85104,7 +85104,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.542
+"elapsed": 1.129
 },
 {
 "id": "rosetta/Zero_to_the_zero_power/1",
@@ -85119,7 +85119,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.431
+"elapsed": 1.127
 },
 {
 "id": "rosetta/Zig_zag_matrix/1",
@@ -85136,7 +85136,7 @@
 "key": "",
 "error_id": "",
 "message": "",
-"elapsed": 1.736
+"elapsed": 1.033
 }
 ]
 }
