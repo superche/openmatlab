@@ -4,7 +4,7 @@
 **Milestone:** [C-MAPSS PHM vertical (M14)](https://github.com/superche/openmatlab/milestone/14) · [`docs/milestones/M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md)  
 **Design:** [`docs/design/EPIC-998-export.md`](../design/EPIC-998-export.md)  
 **Captured:** 2026-10-23  
-**Functional tip:** `FUNCTIONAL_TIP_SHA` (the feature commit on this branch; re-run the commands there or on a descendant)  
+**Functional tip:** `4fbea5f8ca891f93e98d29adf60432a045a136a2` (the feature commit on this branch; re-run the commands there or on a descendant)  
 **Rule:** Outputs below come from real local commands. None are invented.
 
 ## Verdict
