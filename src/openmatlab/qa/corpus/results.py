@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from openmatlab.qa.paths import repo_root
 
-KEEP = ("id", "source", "kind", "role", "notes", "t0", "t1", "t2", "t2_blocks", "sha256", "status", "category", "key", "error_id", "message", "elapsed")
+KEEP = ("id", "source", "kind", "role", "notes", "t0", "t1", "t2", "t2_blocks", "t3", "oracle", "sha256", "status", "category", "key", "error_id", "message", "elapsed")
 
 
 def path() -> Path:

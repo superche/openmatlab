@@ -8,6 +8,8 @@ entry (no corpus code is stored: id, tiers, category, key, a truncated message):
   page are staged next to them under their function names, so a page's helpers resolve.
 * Entries with a ``call`` (chebfun self-tests, matlab2tikz ACID scenes) run that driver.
 * Octave ``%!`` test files: their ``%!assert``/``%!test`` blocks are the T2 tier (:mod:`.selfcheck`, C-E5 #765).
+* T3 goldens (:mod:`.goldens`, C-E5 #765): Rosetta transcripts under MATLAB ``>>`` prompts, and
+  Octave-produced stdout at run time only when a MATLAB doc URL is attached (Shaw 2026-10-17).
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from typing import Dict, List, Optional
 from . import manifest as M
 from .classify import classify_features, features
 from .preprocess import prepare
+from . import goldens as G
 from . import selfcheck
 from .runner import DEFAULT_TIMEOUT, run_one
 
@@ -56,6 +59,7 @@ class _Job:
             return rec
         stage = Path(tempfile.mkdtemp(prefix="omstage-"))
         try:
+            p = None
             if e.call:
                 code, role, notes, inputs = raw, "driver", [], None
                 drv = stage / ("drv_" + re.sub(r"\W", "_", e.id)[-50:] + ".m")
@@ -91,6 +95,15 @@ class _Job:
             cat, key = classify_features(r, feats)
             rec.update(category=cat, key=key, status=r["status"], run_kind=r["kind"], features=feats, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
                        elapsed=r["elapsed"])
+            # T3: MATLAB-transcript golden (C03 deprompted >> output). Octave-runtime goldens are
+            # attached separately when a MATLAB doc URL is configured for the entry.
+            if (role == "script" and p is not None and p.transcript
+                    and G.golden_source(p.notes, raw) == "matlab"
+                    and not G.nondeterministic("\n".join([code, *self.siblings.values()]))):
+                ok, why = (G.golden_match(r["stdout"], p.transcript) if r["status"] == "pass"
+                           else (False, "T1 " + r["status"]))
+                rec["t3"] = "pass" if ok else ("error" if r["status"] == "pass" else r["status"])
+                rec["oracle"] = "golden:matlab" + ("" if ok else "; " + why)
             return rec
         finally:
             shutil.rmtree(stage, ignore_errors=True)
