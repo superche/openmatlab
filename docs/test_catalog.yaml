@@ -87,6 +87,13 @@ use_cases:
     features: [libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
     priority: p0
 
+  - id: uc.mitbih_labfigure
+    title: One lab-meeting figure for MIT-BIH record 100
+    actor: scientific user
+    goal: A 2x2 tiledlayout of raw MLII, filtered R peaks, RR, and the spectrum, with a citation footnote
+    features: [libs.mitbih_labfigure, libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2303,6 +2310,33 @@ test_cases:
     features: [libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
     use_cases: [uc.mitbih_peaks]
     impl: tests/conformance/test_m15_v04_v05.py
+    status: active
+    env: conformance
+
+  - id: tc.mitbih_labfigure
+    kind: unit
+    title: 2x2 tiledlayout title, four tiles, and citation footnote (Epic #1011)
+    features: [libs.mitbih_labfigure, libs.graphics.layout]
+    use_cases: [uc.mitbih_labfigure]
+    impl: tests/unit/test_mitbih_labfigure.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_labfigure_bdd
+    kind: unit
+    title: tiledlayout 2x2 Gherkin reports four tiles (Epic #1011)
+    features: [libs.mitbih_labfigure, libs.graphics.layout]
+    use_cases: [uc.mitbih_labfigure]
+    impl: tests/bdd/test_mitbih_labfigure_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_v06
+    kind: conformance
+    title: V06 record 100 lab-meeting tiledlayout (Epic #1011)
+    features: [libs.mitbih_labfigure, libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
+    use_cases: [uc.mitbih_labfigure]
+    impl: tests/conformance/test_m15_v06.py
     status: active
     env: conformance
 

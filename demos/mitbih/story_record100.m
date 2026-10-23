@@ -1,4 +1,4 @@
-% MIT-BIH Arrhythmia record 100 (M15 V01-V05).
+% MIT-BIH Arrhythmia record 100 (M15 V01-V06).
 % Licence: ODC-By 1.0. Data DOI: 10.13026/C2F305.
 % Moody and Mark, IEEE Eng. Med. Biol. Mag. 20(3):45-50, 2001.
 % Goldberger et al., Circulation 101(23):e215-e220, 2000.
@@ -76,6 +76,37 @@ xlabel('Hz');
 ylabel('mV');
 title('MIT-BIH 100 MLII amplitude spectrum');
 
+% V06: one 2x2 lab figure. The V03 axes are created after it so they stay last.
+fig_lab = figure;
+tl = tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'loose');
+tl.Title.String = 'MIT-BIH record 100';
+tl.XLabel.String = sprintf('G. B. Moody and R. G. Mark, IEEE Eng. Med. Biol. Mag. 20(3):45-50, 2001.\nA. L. Goldberger et al., Circulation 101(23):e215-e220, 2000.\nData: DOI 10.13026/C2F305 (ODC-By 1.0).');
+nexttile;
+plot(t, xshow);
+xlabel('s');
+ylabel('mV');
+title('record 100 MLII raw');
+nexttile;
+plot(t, yshow);
+hold on;
+plot(t(locs(win)), pks(win), 'o');
+xlabel('s');
+ylabel('mV');
+title('record 100 MLII filtered, R peaks');
+nexttile;
+histogram(rr);
+xlabel('s');
+ylabel('count');
+title('record 100 RR');
+nexttile;
+plot(freqs, spec(1:nh));
+xlim([0 60]);
+xlabel('Hz');
+ylabel('mV');
+title('record 100 MLII spectrum');
+gs = tl.GridSize;
+ntiles = numel(tl.Children);
+
 figure;
 plot(t, xshow, t, yshow);
 nlines = numel(get(gca, 'Children'));
@@ -86,3 +117,4 @@ title('MIT-BIH 100 MLII raw and 0.5-40 Hz');
 fprintf('V03 band=0.5-40 order=%.0f nlines=%.0f mean=%.6f std_raw=%.6f std_filt=%.6f agree=%.3e\n', order, nlines, mf, sr, sf, agree);
 fprintf('V04 peaks=%.0f mean_rr=%.6f rr_n=%.0f peaks_10s=%.0f height=%.3f mindist=%.0f npeak_lines=%.0f\n', npeaks, mean_rr, numel(rr), npeaks_win, height, mindist, npeak_lines);
 fprintf('V05 fpeak=%.6f fft_mag=%.6f nh=%.0f\n', fpeak, fft_mag, nh);
+fprintf('V06 grid=%.0f %.0f tiles=%.0f\n', gs(1), gs(2), ntiles);
