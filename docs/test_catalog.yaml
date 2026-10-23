@@ -101,6 +101,13 @@ use_cases:
     features: [libs.mitbih_export, libs.graphics.figio, libs.mitbih_labfigure]
     priority: p0
 
+  - id: uc.bbbc038_stage1
+    title: Download BBBC038 stage1_test and imread one FOV
+    actor: scientific user
+    goal: Runtime Broad fetch of stage1_test.zip and a uint8 RGB field of view
+    features: [libs.bbbc038_stage1, libs.imread]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2371,6 +2378,33 @@ test_cases:
     features: [libs.mitbih_export, libs.mitbih_labfigure, libs.graphics.figio]
     use_cases: [uc.mitbih_export]
     impl: tests/conformance/test_m15_v07.py
+    status: active
+    env: conformance
+
+  - id: tc.bbbc038_stage1
+    kind: unit
+    title: BBBC038 manifest, gitignore, zip member safety, and PNG imread (Epic #1020)
+    features: [libs.bbbc038_stage1, libs.imread]
+    use_cases: [uc.bbbc038_stage1]
+    impl: tests/unit/test_bbbc038_stage1.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_imread_bdd
+    kind: unit
+    title: PNG imread grayscale and RGBA Gherkin (Epic #1020)
+    features: [libs.imread, libs.bbbc038_stage1]
+    use_cases: [uc.bbbc038_stage1]
+    impl: tests/bdd/test_bbbc038_imread_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.bbbc038_v01_v02
+    kind: conformance
+    title: V01/V02 Broad stage1_test download and imread of one FOV (Epic #1020)
+    features: [libs.bbbc038_stage1, libs.imread]
+    use_cases: [uc.bbbc038_stage1]
+    impl: tests/conformance/test_m16_v01_v02.py
     status: active
     env: conformance
 
