@@ -1,4 +1,4 @@
-% MIT-BIH Arrhythmia record 100 (M15 V01-V06).
+% MIT-BIH Arrhythmia record 100 (M15 V01-V07).
 % Licence: ODC-By 1.0. Data DOI: 10.13026/C2F305.
 % Moody and Mark, IEEE Eng. Med. Biol. Mag. 20(3):45-50, 2001.
 % Goldberger et al., Circulation 101(23):e215-e220, 2000.
@@ -76,8 +76,10 @@ xlabel('Hz');
 ylabel('mV');
 title('MIT-BIH 100 MLII amplitude spectrum');
 
-% V06: one 2x2 lab figure. The V03 axes are created after it so they stay last.
-fig_lab = figure;
+% V06: one 2x2 lab figure. The default 560-by-420 window puts the three-line
+% footnote on top of the bottom tiles, so the lab figure is slide-sized.
+% The V03 axes are created after the export so they stay the last figure.
+fig_lab = figure('Position', [100 100 1200 900]);
 tl = tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'loose');
 tl.Title.String = 'MIT-BIH record 100';
 tl.XLabel.String = sprintf('G. B. Moody and R. G. Mark, IEEE Eng. Med. Biol. Mag. 20(3):45-50, 2001.\nA. L. Goldberger et al., Circulation 101(23):e215-e220, 2000.\nData: DOI 10.13026/C2F305 (ODC-By 1.0).');
@@ -107,6 +109,21 @@ title('record 100 MLII spectrum');
 gs = tl.GridSize;
 ntiles = numel(tl.Children);
 
+% V07: PNG and PDF at 300 dpi. exportgraphics defaults to 150. The files
+% stay in demos/mitbih/out/ and are gitignored.
+out_dir = fullfile(here, 'out');
+if ~isfolder(out_dir)
+    mkdir(out_dir);
+end
+png_path = fullfile(out_dir, 'story_record100.png');
+pdf_path = fullfile(out_dir, 'story_record100.pdf');
+exportgraphics(fig_lab, png_path, 'Resolution', 300);
+exportgraphics(fig_lab, pdf_path, 'Resolution', 300);
+png_info = dir(png_path);
+pdf_info = dir(pdf_path);
+png_bytes = png_info.bytes;
+pdf_bytes = pdf_info.bytes;
+
 figure;
 plot(t, xshow, t, yshow);
 nlines = numel(get(gca, 'Children'));
@@ -118,3 +135,4 @@ fprintf('V03 band=0.5-40 order=%.0f nlines=%.0f mean=%.6f std_raw=%.6f std_filt=
 fprintf('V04 peaks=%.0f mean_rr=%.6f rr_n=%.0f peaks_10s=%.0f height=%.3f mindist=%.0f npeak_lines=%.0f\n', npeaks, mean_rr, numel(rr), npeaks_win, height, mindist, npeak_lines);
 fprintf('V05 fpeak=%.6f fft_mag=%.6f nh=%.0f\n', fpeak, fft_mag, nh);
 fprintf('V06 grid=%.0f %.0f tiles=%.0f\n', gs(1), gs(2), ntiles);
+fprintf('V07 png=%s pdf=%s dpi=300 png_bytes=%.0f pdf_bytes=%.0f\n', png_path, pdf_path, png_bytes, pdf_bytes);
