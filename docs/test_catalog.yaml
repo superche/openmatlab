@@ -80,6 +80,13 @@ use_cases:
     features: [libs.filtfilt, libs.mitbih_record100]
     priority: p0
 
+  - id: uc.mitbih_peaks
+    title: R peaks, RR histogram, and an amplitude spectrum of record 100
+    actor: scientific user
+    goal: Mark R peaks on filtered MLII, summarize RR, and show one channel spectrum
+    features: [libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2269,6 +2276,33 @@ test_cases:
     features: [libs.filtfilt, libs.mitbih_record100]
     use_cases: [uc.mitbih_bandpass]
     impl: tests/conformance/test_m15_v03.py
+    status: active
+    env: conformance
+
+  - id: tc.findpeaks
+    kind: unit
+    title: findpeaks height, distance, plateau, and sine-crest locations (Epic #1010)
+    features: [libs.findpeaks]
+    use_cases: [uc.mitbih_peaks]
+    impl: tests/unit/test_findpeaks.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_findpeaks_bdd
+    kind: unit
+    title: findpeaks Gherkin for a sine crest and MinPeakDistance (Epic #1010)
+    features: [libs.findpeaks]
+    use_cases: [uc.mitbih_peaks]
+    impl: tests/bdd/test_mitbih_findpeaks_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.mitbih_v04_v05
+    kind: conformance
+    title: V04/V05 record 100 R peaks, RR histogram, and MLII spectrum (Epic #1010)
+    features: [libs.findpeaks, libs.filtfilt, libs.mitbih_record100]
+    use_cases: [uc.mitbih_peaks]
+    impl: tests/conformance/test_m15_v04_v05.py
     status: active
     env: conformance
 
