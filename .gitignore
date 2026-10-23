@@ -91,3 +91,6 @@ credentials/
 
 # M12 corpus cache (runtime-fetched; GPL/GFDL code must never be committed)
 corpus/cache/
+
+# M14 C-MAPSS cache (runtime-fetched from Zenodo, CC BY 4.0; zip and txt must never be committed)
+downloads/cmapss/

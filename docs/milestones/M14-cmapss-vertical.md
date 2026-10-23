@@ -74,3 +74,5 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. Full Signal Proc
 ## Progress snapshot
 
 M14 opened 2026-10-23. **0 / 10** criteria met. Epics #994–#999 are open on milestone/14. Next unmet p0 is V01 (#994). /9 and corpus residuals do not block close.
+
+V-E1 evidence: [EPIC-994](../acceptance/EPIC-994.md).
