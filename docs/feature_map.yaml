@@ -6,7 +6,7 @@
 
 version: 1
 product: openmatlab
-updated: "2026-10-12"
+updated: "2026-10-23"
 
 layers:
   - id: host
@@ -505,6 +505,15 @@ features:
     depends_on: [runtime.table_core]
     notes: "csv-module splitting, per-column typing (double/datetime/text), makeValidName headers; T08 (Epic #694). Residual #721: import options, VariableDescriptions, encodings"
     tests: [tests/unit/test_table_io.py, tests/bdd/test_table_io_bdd.py]
+
+  - id: libs.cmapss_fd001
+    layer: libs
+    name: C-MAPSS FD001 runtime download and readtable load
+    status: partial
+    depends_on: [libs.table_io]
+    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721), smoothdata/heatmap (later M14 epics)."
+    tests: [tests/unit/test_cmapss_fd001.py, tests/bdd/test_cmapss_fd001_bdd.py, tests/conformance/test_m14_v01_v02.py]
+    cases: [tc.cmapss_fd001, tc.cmapss_fd001_bdd, tc.cmapss_v01_v02]
 
   - id: host.debug_ui
     layer: host

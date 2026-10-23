@@ -2,7 +2,7 @@
 # Schema: docs/QA.md § Layer 2
 version: 1
 product: openmatlab
-updated: "2026-10-12"
+updated: "2026-10-23"
 
 use_cases:
   - id: uc.matrix_first_repl
@@ -30,6 +30,13 @@ use_cases:
     goal: .m functions via ToolboxPath
     features: [libs.mfile_loading, runtime.function_resolver, lang.function_def]
     priority: p1
+
+  - id: uc.cmapss_fd001
+    title: Download NASA C-MAPSS FD001 and read it with readtable
+    actor: scientific user
+    goal: Runtime Zenodo fetch and a PHM08-named table of train_FD001
+    features: [libs.cmapss_fd001, libs.table_io]
+    priority: p0
 
 test_cases:
   - id: tc.arch_session_composition
@@ -2033,4 +2040,31 @@ test_cases:
     impl: tests/unit/test_epic774_snapshots.py
     status: active
     env: unit
+
+  - id: tc.cmapss_fd001
+    kind: unit
+    title: C-MAPSS manifest, gitignore, and space-delimited readtable (Epic #994)
+    features: [libs.cmapss_fd001]
+    use_cases: [uc.cmapss_fd001]
+    impl: tests/unit/test_cmapss_fd001.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_fd001_bdd
+    kind: unit
+    title: C-MAPSS FD001 readtable Gherkin (Epic #994)
+    features: [libs.cmapss_fd001]
+    use_cases: [uc.cmapss_fd001]
+    impl: tests/bdd/test_cmapss_fd001_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_v01_v02
+    kind: conformance
+    title: V01/V02 Zenodo FD001 download and public train scale (Epic #994)
+    features: [libs.cmapss_fd001]
+    use_cases: [uc.cmapss_fd001]
+    impl: tests/conformance/test_m14_v01_v02.py
+    status: active
+    env: conformance
 

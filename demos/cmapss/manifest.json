@@ -1,0 +1,42 @@
+{
+  "url": "https://zenodo.org/records/15346912/files/CMAPSSData.zip?download=1",
+  "doi": "10.5281/zenodo.15346912",
+  "license": "CC-BY-4.0",
+  "citation": "A. Saxena, K. Goebel, D. Simon, and N. Eklund, Damage Propagation Modeling for Aircraft Engine Run-to-Failure Simulation, PHM08, 2008.",
+  "zip_name": "CMAPSSData.zip",
+  "bytes": 12425978,
+  "sha256": "74bef434a34db25c7bf72e668ea4cd52afe5f2cf8e44367c55a82bfd91a5a34f",
+  "columns": [
+    "unit",
+    "cycle",
+    "setting_1",
+    "setting_2",
+    "setting_3",
+    "sensor_1",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_5",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "fd001": {
+    "train": {"file": "train_FD001.txt", "rows": 20631, "units": 100, "cols": 26},
+    "test": {"file": "test_FD001.txt", "rows": 13096, "units": 100, "cols": 26},
+    "rul": {"file": "RUL_FD001.txt", "rows": 100, "cols": 1}
+  }
+}

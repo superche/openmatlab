@@ -577,7 +577,9 @@ def _read_table(name, delim=None, empty=np.nan, skip_header=True, r0=0, c0=0):
     d = delim if delim is not None else _sniff(lines)
     rows = []
     for ln in lines:
-        toks = ln.split(d) if d else ln.split()
+        # A space delimiter collapses padding runs, the same way readtable does.
+        # C-MAPSS rows are space-padded; consecutive spaces are not empty fields.
+        toks = ln.split() if d in (None, "", " ") else ln.split(d)
         vals = [_to_float(t, empty) for t in toks]
         if any(v is None for v in vals):
             if skip_header and not rows:
@@ -598,7 +600,8 @@ def _readmatrix(args, *, nargout=1):
     i = 1
     while i + 1 < len(args):
         if _text(args[i], "readmatrix").lower() == "delimiter":
-            delim = _text(args[i + 1], "readmatrix")
+            raw = _text(args[i + 1], "readmatrix")
+            delim = " " if raw.lower() == "space" else raw
         i += 2
     return (NDArrayValue(_read_table(name, delim, np.nan)),)
 
