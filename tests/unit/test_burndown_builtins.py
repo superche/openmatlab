@@ -43,7 +43,7 @@ def test_matrix_functions():
              "g = gradient([1 4 9 16]); [gx, gy] = gradient(magic(3)); c = conv2([1 2; 3 4], [1 1]); "
              "cs = conv2(magic(3), ones(2), 'same'); f2 = filter2([1 1], [1 2 3]); vd = vander([1 2 3]); "
              "hb = hilb(2); ih = invhilb(2) * hilb(2); w = wilkinson(3); cp = compan([1 -3 2]); "
-             "re = repelem([1 2], [2 3]); rc = repelem('ab', 2); d = del2([1 4 9 16 25]);")
+             "re = repelem([1 2], [2 3]); rc = repelem('ab', 2); d = del2([1 4 9 16 25]); sp = spiral(5);")
     assert _v(s, "r").tolist() == [[1, 2], [0, 0]] and _v(s, "p").tolist() == [[1, 1, 1], [1, 2, 3], [1, 3, 6]]
     assert _v(s, "h").tolist() == [[1, 2, 3], [2, 3, 0], [3, 0, 0]] and _v(s, "hd").tolist() == [[1, 1], [1, -1]]
     assert _v(s, "q").tolist() == [[5, 0], [0, 5]] and _v(s, "g").tolist() == [[3, 4, 6, 7]]
@@ -52,6 +52,9 @@ def test_matrix_functions():
     assert _v(s, "vd").tolist() == [[1, 1, 1], [4, 2, 1], [9, 3, 1]] and np.allclose(_v(s, "ih"), np.eye(2))
     assert _v(s, "w").tolist() == [[1, 1, 0], [1, 0, 1], [0, 1, 1]] and _v(s, "cp").tolist() == [[3, -2], [1, 0]]
     assert _v(s, "re").tolist() == [[1, 1, 2, 2, 2]] and _t(s, "rc") == "aabb" and np.allclose(_v(s, "d"), 0.5)
+    # spiral(5) per MATLAB demos / MathWorks Answers (https://www.mathworks.com/help/matlab/ref/spiral.html)
+    assert _v(s, "sp").tolist() == [[21, 22, 23, 24, 25], [20, 7, 8, 9, 10], [19, 6, 1, 2, 11],
+                                    [18, 5, 4, 3, 12], [17, 16, 15, 14, 13]]
 
 
 def test_rat_legendre_and_elementary():

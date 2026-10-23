@@ -1,7 +1,7 @@
 """Missing base-MATLAB functions found by the corpus (#766 burn-down, missing-builtin group).
 
 Text: strtok isspace findstr strmatch base2dec strjust validatestring getenv vectorize.
-Arrays/matrices: repelem rref pascal hankel hadamard vander hilb invhilb rosser wilkinson
+Arrays/matrices: repelem rref pascal hankel hadamard spiral vander hilb invhilb rosser wilkinson
 compan polyvalm gradient del2 conv2 filter2 rat legendre.
 Elementary: reallog realsqrt realpow erfcx and the degree/hyperbolic reciprocal trig family
 (secd cscd cotd asecd acscd acotd sech csch coth asech acsch acoth).
@@ -336,6 +336,33 @@ def _pascal(args, *, nargout=1):
     return (NDArrayValue(P),)
 
 
+
+def _spiral(args, *, nargout=1):
+    """spiral(n): n-by-n matrix with 1..n^2 in a rectangular spiral (MATLAB demos).
+
+    Public docs: https://www.mathworks.com/help/matlab/ref/spiral.html
+    Pattern confirmed against MathWorks Answers spiral(5) listing (Ulam-style).
+    """
+    _need(args, 1, "spiral")
+    n = int(_scalar(args[0], "spiral"))
+    if n < 0:
+        raise _err("spiral: N must be a non-negative integer.", "MATLAB:spiral:invalidN")
+    S = np.zeros((0, 0), dtype=float)
+    for m in range(1, n + 1):
+        S = np.rot90(S, 2)
+        S2 = np.zeros((m, m), dtype=float)
+        if m > 1:
+            S2[: m - 1, : m - 1] = S
+        p = m * m - m + 1
+        v = np.arange(m - 1, -1, -1, dtype=float)
+        S2[:, m - 1] = p - v
+        S2[m - 1, :] = p + v
+        S = S2
+    if n % 2 == 1:
+        S = np.rot90(S, 2)
+    return (NDArrayValue(S),)
+
+
 def _hankel(args, *, nargout=1):
     _need(args, 1, "hankel")
     c = _num(args[0], "hankel").reshape(-1, order="F")
@@ -664,7 +691,7 @@ def register(builtins: Dict[str, Callable]) -> None:
     table = {
         "strtok": _strtok, "isspace": _isspace, "findstr": _findstr, "strmatch": _strmatch,
         "base2dec": _base2dec, "strjust": _strjust, "validatestring": _validatestring, "getenv": _getenv,
-        "vectorize": _vectorize, "repelem": _repelem, "rref": _rref, "pascal": _pascal, "hankel": _hankel,
+        "vectorize": _vectorize, "repelem": _repelem, "rref": _rref, "pascal": _pascal, "spiral": _spiral, "hankel": _hankel,
         "hadamard": _hadamard, "vander": _vander, "hilb": _hilb, "invhilb": _invhilb, "rosser": _rosser,
         "wilkinson": _wilkinson, "compan": _compan, "polyvalm": _polyvalm, "gradient": _gradient, "del2": _del2,
         "conv2": _conv2, "filter2": _filter2, "rat": _rat, "legendre": _legendre, "erfcx": _erfcx,
