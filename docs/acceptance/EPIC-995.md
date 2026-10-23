@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Ready for user acceptance.** M14 criterion V03 is **met**. Epic #995 stays **open** until the user accepts it.
+**Accepted.** Shaw accepted Epic #995 on 2026-10-23 (Asia/Shanghai); M14 criterion V03 is **met**. Milestone/14 is closed.
 
 `smoothdata` accepts `movmean` and `gaussian` with an explicit window. `movmean` calls the existing builtin (default flag `omitnan`). `gaussian` uses `sigma = window/5` for a scalar window and rescales weights on the truncated window. `demos/cmapss/story_fd001.m` drops unit 1's near-constant sensors and plots the raw series with both smoothers on one axes.
 
@@ -70,7 +70,8 @@ No new residual. The methods outside this slice (`movmedian`, lowess, loess, rlo
 
 - Criteria met: **V03 met** in [`M14-cmapss-vertical.md`](../milestones/M14-cmapss-vertical.md) (1 / 10 rows marked met). V01 and V02 were not relabelled in that table; their evidence is [EPIC-994](EPIC-994.md).
 - Conformance: V03 passing (`tests/conformance/test_m14_v03.py`). V01/V02 still passing. V04–V10 have no scripts yet (epics #996–#999).
-- Remaining gaps (priority order): V01/V02 rows still labelled unmet on the milestone page (evidence in EPIC-994), then V04 [#996](https://github.com/superche/openmatlab/issues/996), V05–V06 [#997](https://github.com/superche/openmatlab/issues/997), V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Remaining gaps at capture (priority order): V01/V02 rows were still labelled unmet on the milestone page (evidence in EPIC-994), then V04 [#996](https://github.com/superche/openmatlab/issues/996), V05–V06 [#997](https://github.com/superche/openmatlab/issues/997), V07 [#998](https://github.com/superche/openmatlab/issues/998), V08–V10 [#999](https://github.com/superche/openmatlab/issues/999).
+- Close-out (2026-10-23, Asia/Shanghai): Shaw accepted this epic. Milestone/14 is closed at **10 / 10**. V01 and V02 are **met** in the milestone table.
 
 ## CI
 

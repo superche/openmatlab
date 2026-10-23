@@ -16,7 +16,7 @@ A PHM scientist or analyst who already writes MATLAB finishes one week of FD001 
 
 The gate is that story. Corpus pass rate, toolbox parity, and an empty Core backlog are outside it.
 
-Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **C-MAPSS PHM vertical**. Epics #994–#999 are open on milestone/14.
+Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **C-MAPSS PHM vertical**. Shaw accepted epics #994–#999 on 2026-10-23 (Asia/Shanghai); milestone/14 is closed.
 
 ## Exit criteria (measurable)
 
@@ -31,8 +31,8 @@ There is no conformance manifest and no corpus-% threshold on this milestone. Go
 
 | # | Criterion (scientist result) | Demo | Priority | Epic | Status |
 |---|---|---|---|---|---|
-| V01 | **Data in hand and clean.** Runtime download of `CMAPSSData.zip` (about 12.4 MB) from Zenodo, unzip to `train_FD001.txt`, `test_FD001.txt`, and `RUL_FD001.txt`. The zip and the raw text never appear in the repo or in a PR. Cache dir is gitignored (`downloads/`, same policy as the GPL corpus). | One script run; `git status` clean; `git check-ignore` on the cache | p0 | [#994](https://github.com/superche/openmatlab/issues/994) | unmet |
-| V02 | **Read the table the usual way.** Headerless space-delimited `train_FD001.txt` loads with `readtable` (or a documented `readmatrix` path) into a table. 26 columns use PHM08 names (unit, cycle, 3 settings, 21 sensors). `height` and a chosen unit's row count match the published FD001 scale (fixed assert, not a MathWorks binary). | `.m` + numeric assert | p0 | [#994](https://github.com/superche/openmatlab/issues/994) | unmet |
+| V01 | **Data in hand and clean.** Runtime download of `CMAPSSData.zip` (about 12.4 MB) from Zenodo, unzip to `train_FD001.txt`, `test_FD001.txt`, and `RUL_FD001.txt`. The zip and the raw text never appear in the repo or in a PR. Cache dir is gitignored (`downloads/`, same policy as the GPL corpus). | One script run; `git status` clean; `git check-ignore` on the cache | p0 | [#994](https://github.com/superche/openmatlab/issues/994) | met |
+| V02 | **Read the table the usual way.** Headerless space-delimited `train_FD001.txt` loads with `readtable` (or a documented `readmatrix` path) into a table. 26 columns use PHM08 names (unit, cycle, 3 settings, 21 sensors). `height` and a chosen unit's row count match the published FD001 scale (fixed assert, not a MathWorks binary). | `.m` + numeric assert | p0 | [#994](https://github.com/superche/openmatlab/issues/994) | met |
 | V03 | **Preprocess as written.** On a chosen unit, drop near-constant sensors and smooth. `smoothdata` is the primary call (`movmean` / `gaussian` and a window at minimum); `movmean` may sit beside it. Raw and smoothed curves share one axes. | Panel (a), before/after or dual line | p0 | [#995](https://github.com/superche/openmatlab/issues/995) | met |
 | V04 | **Reportable metrics.** At least: early-vs-late cycle sensor-mean difference, a sensor correlation matrix, and per-unit failure cycle or RUL (train RUL = max(cycle) − cycle). Values match Octave or a fixed public formula within a relative tolerance (about 1e-8 to 1e-6, set by magnitude). Optional single-channel `fft` is a demo bonus, not a gate. | Numeric table + panels (b) and (d) | p0 | [#996](https://github.com/superche/openmatlab/issues/996) | met |
 | V05 | **Correlation heatmap.** `heatmap` shows the sensor correlation with a readable colorbar and tick labels. `imagesc` plus manual ticks may stand in for #996 only; V05 is met when the story calls `heatmap`. | Panel (c) | p0 | [#997](https://github.com/superche/openmatlab/issues/997) | met |
@@ -53,7 +53,7 @@ Approved order. Each epic moves the story one step and can be accepted on its ow
 5. **V-E5 [#998](https://github.com/superche/openmatlab/issues/998) (p0, M):** `exportgraphics` / `print` quality for the multi-panel figure — V07. Depends on V-E4. PNG and PDF are the story default. Third-party `export_fig`, animation, and pixel-identical glyphs stay out.
 6. **V-E6 [#999](https://github.com/superche/openmatlab/issues/999) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on V-E1…V-E5. Corpus residuals and MIT-BIH stay out.
 
-**Work order:** #994, then #995 ∥ #996, then #997, #998, #999. V08–V10 are met by #999. The rows still labelled unmet are V01 and V02; their evidence is [EPIC-994](../acceptance/EPIC-994.md), and this package does not relabel them.
+**Work order:** #994, then #995 ∥ #996, then #997, #998, #999. V01 and V02 are met by #994 ([EPIC-994](../acceptance/EPIC-994.md)). V08–V10 are met by #999.
 
 ## Defaults
 
@@ -73,6 +73,14 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. Full Signal Proc
 
 ## Progress snapshot
 
-M14 opened 2026-10-23. **8 / 10** criteria marked met in the table (V03–V10). V01 and V02 are unchanged in this table; their evidence is [EPIC-994](../acceptance/EPIC-994.md). Epics #994–#999 stay open until accepted. The batch package is [M14-cmapss-vertical.md](../acceptance/M14-cmapss-vertical.md). /9 and corpus residuals do not block close (V10). No `m14-blocker` issue is open.
+M14 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). The batch package is [M14-cmapss-vertical.md](../acceptance/M14-cmapss-vertical.md). /9 and corpus residuals do not block close (V10). No `m14-blocker` issue is open.
 
-V-E1 evidence: [EPIC-994](../acceptance/EPIC-994.md). V-E2 evidence: [EPIC-995](../acceptance/EPIC-995.md). V-E3 evidence: [EPIC-996](../acceptance/EPIC-996.md). V-E4 evidence: [EPIC-997](../acceptance/EPIC-997.md). V-E5 evidence: [EPIC-998](../acceptance/EPIC-998.md). V-E6 evidence: [EPIC-999](../acceptance/EPIC-999.md).
+V-E1 evidence: [EPIC-994](../acceptance/EPIC-994.md) (V01, V02). V-E2 evidence: [EPIC-995](../acceptance/EPIC-995.md) (V03). V-E3 evidence: [EPIC-996](../acceptance/EPIC-996.md) (V04). V-E4 evidence: [EPIC-997](../acceptance/EPIC-997.md) (V05, V06). V-E5 evidence: [EPIC-998](../acceptance/EPIC-998.md) (V07). V-E6 evidence: [EPIC-999](../acceptance/EPIC-999.md) (V08, V09, V10).
+
+## Close-out (2026-10-23)
+
+**Status: closed.** Shaw accepted every epic (#994–#999) on 2026-10-23 (Asia/Shanghai), and the GitHub milestone is closed.
+
+- **Criteria:** 10 / 10 met (V01–V10).
+- **Open p0 issues:** none on milestone/14.
+- **Acceptance:** `docs/acceptance/EPIC-994.md` … `EPIC-999.md`, and [`M14-cmapss-vertical.md`](../acceptance/M14-cmapss-vertical.md).

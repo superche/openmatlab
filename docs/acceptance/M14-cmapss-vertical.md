@@ -4,11 +4,11 @@
 **Captured:** 2026-10-23  
 **Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. The C-MAPSS zip and text are not in the repository.
 
-Epics **#994–#999** stay **open** until accepted. This file is the batch a reviewer can read once. Each epic still has its own evidence file.
+**Accepted.** Shaw accepted epics **#994–#999** on 2026-10-23 (Asia/Shanghai). Milestone/14 is **closed**. This file is the batch a reviewer can read once. Each epic still has its own evidence file.
 
 ## 中文摘要
 
-FD001 故事在 Workbench 里跑通：Current Folder 打开 `story_fd001.m`，Command Window 打出训练集规模和 V03–V07 指标，Figures 面板先显示组会用的多面板图（含 `heatmap`），再显示 raw / `smoothdata` 曲线。录屏是 `demos/workbench/showcase_m14_cmapss.mp4`（约 121 秒，1920×1200）。数据来自 Zenodo CC BY 4.0（DOI 10.5281/zenodo.15346912），引用 Saxena PHM08，zip 和原文不入库。语料残留和 milestone/9 不挡住本垂直关闭。没有 `m14-blocker` issue。
+FD001 故事在 Workbench 里跑通：Current Folder 打开 `story_fd001.m`，Command Window 打出训练集规模和 V03–V07 指标，Figures 面板先显示组会用的多面板图（含 `heatmap`），再显示 raw / `smoothdata` 曲线。录屏是 `demos/workbench/showcase_m14_cmapss.mp4`（约 121 秒，1920×1200）。数据来自 Zenodo CC BY 4.0（DOI 10.5281/zenodo.15346912），引用 Saxena PHM08，zip 和原文不入库。语料残留和 milestone/9 不挡住本垂直关闭。没有 `m14-blocker` issue。Shaw 于 2026-10-23（Asia/Shanghai）验收 #994–#999，milestone/14 已关闭。门禁表 **10 / 10**，V01 与 V02 为 met。
 
 ## Video (V08)
 
@@ -34,7 +34,7 @@ Scene clock from the driver log in [EPIC-999](EPIC-999.md). Frames read back fro
 | [#998](https://github.com/superche/openmatlab/issues/998) V-E5 | V07 | [EPIC-998](EPIC-998.md) |
 | [#999](https://github.com/superche/openmatlab/issues/999) V-E6 | V08, V09, V10 | [EPIC-999](EPIC-999.md) |
 
-The milestone table marks **8 / 10** met (V03–V10). V01 and V02 stay labelled unmet there; the evidence is EPIC-994, and this package does not relabel those two rows.
+The milestone table marks **10 / 10** met (V01–V10). V01 and V02 are **met**; the evidence is EPIC-994.
 
 ## Licence and citation
 
