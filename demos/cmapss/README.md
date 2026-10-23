@@ -22,3 +22,10 @@ space delimiter, no header, PHM08 names (`unit`, `cycle`, three settings,
 deviation is at most `1e-6`, and plots that unit's busiest remaining channel
 with `smoothdata(...,'movmean',15)` and `smoothdata(...,'gaussian',15)` on the
 same axes (M14 V03).
+
+It also prints a short FD001 train metric table (M14 V04): per-unit failure
+cycle and train RUL (`max(cycle) - cycle`, from `groupsummary`), early versus
+late means on the first and last 30 cycles, and the Pearson correlation of the
+sensors that are not idle. A second figure draws the early/late traces, an
+`imagesc` of the correlation (until `heatmap` lands), the failure-cycle
+histogram, and unit 1's RUL. A single-channel `fft` line is a demo bonus.
