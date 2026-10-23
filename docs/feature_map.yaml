@@ -541,9 +541,19 @@ features:
     status: partial
     depends_on: []
     spec: docs/design/EPIC-1008-mitbih-record100.md
-    notes: "PhysioNet ODC-By 1.0 record 100 only. 100.hea, 100.dat and 100.atr are checked by size and sha256 and cached under downloads/mitbih/ (never committed). Format 212 keeps the 12-bit two's-complement sample (header ADC resolution is 11); mV is (adc-baseline)/gain. Fs 360, 650000 samples, channels MLII and V5. Optional .atr parse is not a diagnostic golden. V01/V02 of M15 (Epic #1008). Non-goals: other records, the full zip, a WFDB toolbox, GPL corpus copies. Bandpass is Epic #1009. R peaks, RR and fft are Epic #1010."
+    notes: "PhysioNet ODC-By 1.0 record 100 only. 100.hea, 100.dat and 100.atr are checked by size and sha256 and cached under downloads/mitbih/ (never committed). Format 212 keeps the 12-bit two's-complement sample (header ADC resolution is 11); mV is (adc-baseline)/gain. Fs 360, 650000 samples, channels MLII and V5. Optional .atr parse is not a diagnostic golden. V01/V02 of M15 (Epic #1008). Non-goals: other records, the full zip, a WFDB toolbox, GPL corpus copies. The 0.5-40 Hz zero-phase bandpass is libs.filtfilt (Epic #1009). R peaks, RR and fft are Epic #1010."
     tests: [tests/unit/test_mitbih_record100.py, tests/bdd/test_mitbih_record100_bdd.py, tests/conformance/test_m15_v01_v02.py]
     cases: [tc.mitbih_record100, tc.mitbih_record100_bdd, tc.mitbih_v01_v02]
+
+  - id: libs.filtfilt
+    layer: libs
+    name: Zero-phase filtfilt and a thin Butterworth bandpass
+    status: partial
+    depends_on: []
+    spec: docs/design/EPIC-1009-mitbih-bandpass.md
+    notes: "V03 of M15 (Epic #1009). filtfilt uses Gustafsson steady-state initial conditions and odd reflection of 3*(nfilt-1) samples, then forward and reverse filter. butter adds the two-edge bandpass (order 2n) beside the lowpass and highpass formulas. bandpass(x,[f1 f2],fs) is that design at order 2 through filtfilt, not a designfilt object. The record-100 story filters MLII at 0.5-40 Hz and plots raw against filtered on one axes. Non-goals: designfilt, dsp System objects, GPU, bandstop, findpeaks (Epic #1010)."
+    tests: [tests/unit/test_filtfilt_bandpass.py, tests/bdd/test_mitbih_bandpass_bdd.py, tests/conformance/test_m15_v03.py]
+    cases: [tc.filtfilt_bandpass, tc.mitbih_bandpass_bdd, tc.mitbih_v03]
 
   - id: host.debug_ui
     layer: host

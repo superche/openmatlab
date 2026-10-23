@@ -1427,4 +1427,5 @@ __import__("openmatlab.libs.gridn", fromlist=["register"]).register(BUILTINS)  #
 __import__("openmatlab.libs.matfun", fromlist=["register"]).register(BUILTINS)  # #765 T2 burn-down
 __import__("openmatlab.libs.cmapss", fromlist=["register"]).register(BUILTINS)  # M14 V-E1 (#994)
 __import__("openmatlab.libs.mitbih", fromlist=["register"]).register(BUILTINS)  # M15 B-E1 (#1008)
+__import__("openmatlab.libs.filtfilt", fromlist=["register"]).register(BUILTINS)  # M15 B-E2 (#1009)
 __import__("openmatlab.libs.smoothdata", fromlist=["register"]).register(BUILTINS)  # M14 V-E2 (#995)
