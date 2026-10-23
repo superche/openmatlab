@@ -511,7 +511,7 @@ features:
     name: C-MAPSS FD001 runtime download and readtable load
     status: partial
     depends_on: [libs.table_io]
-    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721), heatmap (later M14 epics). Unit-1 smoothing is libs.smoothdata (Epic #995). Degradation metrics are libs.cmapss_metrics (Epic #996)."
+    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721). Unit-1 smoothing is libs.smoothdata (Epic #995). Degradation metrics are libs.cmapss_metrics (Epic #996). The lab figure's heatmap is libs.graphics.heatmap (Epic #997)."
     tests: [tests/unit/test_cmapss_fd001.py, tests/bdd/test_cmapss_fd001_bdd.py, tests/conformance/test_m14_v01_v02.py]
     cases: [tc.cmapss_fd001, tc.cmapss_fd001_bdd, tc.cmapss_v01_v02]
 
@@ -531,7 +531,7 @@ features:
     status: partial
     depends_on: [libs.cmapss_fd001, libs.table_join_group, numerics.stats_m3]
     spec: docs/design/EPIC-996-degradation-metrics.md
-    notes: "Story slice for M14 V04 (Epic #996). failure cycle is groupsummary max(cycle); train RUL is failure_cycle - cycle (0 on the last cycle); early/late means are groupsummary means on the first and last W=30 cycles; correlation is corrcoef (sample Pearson, n-1). imagesc stands in for the correlation panel until heatmap (Epic #997). Non-goals: PHM08 contest models, deep-learning RUL, test-set scoring, FD002-004, Predictive Maintenance Toolbox."
+    notes: "Story slice for M14 V04 (Epic #996). failure cycle is groupsummary max(cycle); train RUL is failure_cycle - cycle (0 on the last cycle); early/late means are groupsummary means on the first and last W=30 cycles; correlation is corrcoef (sample Pearson, n-1). The story draws that matrix with heatmap (Epic #997). Non-goals: PHM08 contest models, deep-learning RUL, test-set scoring, FD002-004, Predictive Maintenance Toolbox."
     tests: [tests/unit/test_cmapss_metrics.py, tests/bdd/test_cmapss_metrics_bdd.py, tests/conformance/test_m14_v04.py]
     cases: [tc.cmapss_metrics, tc.cmapss_metrics_bdd, tc.cmapss_v04]
 
@@ -630,6 +630,16 @@ features:
     depends_on: [libs.graphics.handle_arrays]
     notes: "tiledlayout (grid/flow/vertical/horizontal, TileSpacing/Padding), nexttile (tile, span, layout arg), yyaxis left/right with per-side limits, subplot Position (own approximate grid) with overlap replace and 'Position' form, nice auto limits (1/2/5 x 10^k, log decades), axis equal/image/square/normal/ij/xy properties, isgraphics(h,type) (Epic #770, M13 G03)"
     tests: [tests/unit/test_epic770_layout.py]
+
+  - id: libs.graphics.heatmap
+    layer: libs
+    name: heatmap for a matrix or a table, with colorbar and tick labels
+    status: partial
+    depends_on: [libs.graphics.charts2d, libs.graphics.layout, libs.graphics.properties]
+    spec: docs/design/EPIC-997-heatmap.md
+    notes: "Story slice for M14 V05/V06 (Epic #997). heatmap(C), heatmap(x,y,C), and heatmap(T,x,y) with optional ColorVariable (mean) or a count. ColorLimits, Colormap, ColorbarVisible, XDisplayLabels/YDisplayLabels, Title/XLabel/YLabel. The chart is an axes child so tiledlayout/nexttile keep working; the colorbar is painted for this chart only. Category labels use TickLabelInterpreter none. A figure that contains a heatmap is drawn larger so the labels fit. Non-goals: clustergram, geographic heatmaps, brush selection, cell labels, ColorMethod other than count and mean."
+    tests: [tests/unit/test_heatmap.py, tests/bdd/test_heatmap_bdd.py, tests/conformance/test_m14_v05_v06.py]
+    cases: [tc.heatmap, tc.heatmap_bdd, tc.cmapss_v05_v06]
 
   - id: libs.graphics.properties
     layer: libs

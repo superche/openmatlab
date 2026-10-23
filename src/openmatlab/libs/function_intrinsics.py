@@ -355,3 +355,7 @@ INTRINSICS.update(_dbgb.INTRINSICS)
 from openmatlab.runtime import classdef_subs as _cs  # noqa: E402  (O-E4 #621)
 
 INTRINSICS.update(_cs.INTRINSICS)
+
+from openmatlab.libs import heatmap_builtins as _hm  # noqa: E402  (M14 V-E4 #997)
+
+INTRINSICS.update(_hm.INTRINSICS)
