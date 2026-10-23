@@ -102,6 +102,7 @@ States on 2026-10-16: milestone/1, /2, /3, /4, /5, /6, /7, /8 **closed**; /10 Ta
 | **Debugger and Workbench** | `MException.stack`/`dbstack`, breakpoints/stepping, `keyboard`/`input`, Workbench debug UI, variable editor, workflows. GitHub milestone/11. Doc: [`milestones/M11-debugger-workbench.md`](milestones/M11-debugger-workbench.md); manifest `tests/conformance/m11_manifest.py`. Epics #698–#703 |
 | **Real-script compatibility gate** | Public real-MATLAB corpus (runtime-fetched for GPL/GFDL sources), sandboxed runner, tiers T0–T3, classifier, REPORT and `corpus` issue triage. GitHub milestone/12. Doc: [`milestones/M12-corpus-gate.md`](milestones/M12-corpus-gate.md); manifest `tests/conformance/m12_manifest.py`. Epics #761–#766 |
 | **Graphics completion** | Handle model, queries, layout, charts, colour/3-D, own-format `.fig`/export, Workbench figures, snapshots. GitHub milestone/13. Doc: [`milestones/M13-graphics.md`](milestones/M13-graphics.md); manifest `tests/conformance/m13_manifest.py`. Epics #767–#774 |
+| **C-MAPSS PHM vertical** | NASA C-MAPSS FD001 scientist story (download, `readtable`, preprocess, metrics, multi-panel figure, export). Zenodo CC BY 4.0, runtime-only, never committed. Gate is 录屏+文字+`.m`, not corpus %. GitHub milestone/14. Doc: [`milestones/M14-cmapss-vertical.md`](milestones/M14-cmapss-vertical.md). Epics #994–#999. /9 and corpus residuals do not block close. |
 
 **Rules**
 
