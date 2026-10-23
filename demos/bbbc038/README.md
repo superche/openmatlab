@@ -12,7 +12,7 @@ It then segments that FOV with global Otsu (`graythresh` / `imbinarize`) and `bw
 
 `bwlabel` and `bwconncomp` then count the 8-connected objects on that mask. `regionprops` reports Area, Centroid, and Eccentricity. This zip has no ground-truth masks, so the count is that labeling (tolerance 0). On this FOV the count is 6, the areas are 152, 219, 143, 117, 193, and 154 (label order), the mean area is 163, and the median is 153. A separate figure is the area histogram.
 
-`labeloverlay` paints those six labels onto the FOV (default transparency 0.5). A 2-by-2 `tiledlayout` shows the raw FOV, the overlay, the area histogram (`Area (px)` / `Count`), and the count, mean, and median. The footnote cites CC0 1.0, Caicedo et al. Nature Methods 2019, and BBBC038v1. The story closes that figure. The 1-by-2 before/after panel stays the current figure, and the standalone histogram stays the only other figure. A review snapshot of the lab figure is in `docs/acceptance/EPIC-1023-v06.png`. 300 dpi PNG/PDF export is a later step.
+`labeloverlay` paints those six labels onto the FOV (default transparency 0.5). A 2-by-2 `tiledlayout` shows the raw FOV, the overlay, the area histogram (`Area (px)` / `Count`), and the count, mean, and median. The footnote cites CC0 1.0, Caicedo et al. Nature Methods 2019, and BBBC038v1. The story then writes that figure to `demos/bbbc038/out/story_stage1_test.png` and `story_stage1_test.pdf` at 300 dpi and closes it. Those files are gitignored. The 1-by-2 before/after panel stays the current figure, and the standalone histogram stays the only other figure. A review snapshot of the export is in `docs/acceptance/EPIC-1024-v07.png`.
 
 Licence: CC0 1.0. Dataset: [BBBC038v1](https://bbbc.broadinstitute.org/BBBC038).
 
