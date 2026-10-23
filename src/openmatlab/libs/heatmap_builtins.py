@@ -394,7 +394,10 @@ def _figure_pre(mfig, model, fig) -> None:
     wide = any(c.alive and c.type == "tiledlayout" for c in fig.children)
     mfig.set_size_inches(13.5, 8.0) if wide else mfig.set_size_inches(6.4, 5.2)
     if wide:
-        mfig.subplots_adjust(left=0.06, right=0.98, bottom=0.22, top=0.88, wspace=0.72, hspace=0.46)
+        # right stops short of the page so the colorbar tick labels sit inside
+        # the canvas. exportgraphics still pads the crop; print keeps this canvas
+        # when nothing hangs off the edge (Epic #998).
+        mfig.subplots_adjust(left=0.06, right=0.90, bottom=0.22, top=0.88, wspace=0.72, hspace=0.46)
 
 
 hm.POST_DRAW = _post

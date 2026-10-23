@@ -15,10 +15,14 @@ stored in ``UserData`` and similar properties are kept when they are numeric, lo
 Other MATLAB values (structs, cells, objects) are stored as ``[]`` and listed in the file's
 ``dropped`` field. A MATLAB ``.fig`` (a MAT file) is rejected with ``MATLAB:openfig:InvalidFile``.
 
-``exportgraphics`` and ``print`` render the figure through Matplotlib at the figure's size
-(``Position`` in pixels / ``ScreenPixelsPerInch``) and the requested resolution (``Resolution``,
-``-rN``; 150 dpi by default for ``exportgraphics``, 150 for ``print`` raster output). ``exportgraphics``
-of an axes crops to that axes.
+``exportgraphics`` and ``print`` render the figure through Matplotlib at the requested
+resolution (``Resolution``, ``-rN``; 150 dpi by default for both). A figure without a heatmap
+exports at ``Position`` in pixels / ``ScreenPixelsPerInch``. A heatmap figure keeps the canvas
+the renderer already sized for the category labels (13.5 by 8 inches when it also has a tiled
+layout). ``exportgraphics`` then crops to a padded tight box so the layout title, colorbar
+labels and footnote stay inside the page. ``print`` keeps the canvas unless an artist extends
+past it, in which case the page grows to include that artist. An axes export includes that
+axes' colorbar.
 """
 
 from __future__ import annotations
@@ -357,6 +361,93 @@ def _figure_inches(m, f: GObj):
     return max(w, 1.0) / ppi, max(h, 1.0) / ppi
 
 
+# Inches of white kept around a tight crop so a title, colorbar tick or footnote
+# is not shaved by the page edge. print uses the same pad only when it has to grow.
+_CROP_PAD_IN = 0.16
+_OVERFLOW_EPS_IN = 0.02
+
+
+def _heatmap_canvas(f: GObj) -> bool:
+    return any(c.alive and c.type == "axes" and c.props.get("_Heatmap") == "on" for c in f.children)
+
+
+def _as_inches(mfig, bb):
+    """Artist boxes come back in pixels; the figure tight box is already in inches."""
+    from matplotlib.transforms import Bbox, TransformedBbox
+
+    if bb is None:
+        return None
+    ext = bb.extents if isinstance(bb, TransformedBbox) else bb.transformed(mfig.dpi_scale_trans.inverted()).extents
+    ext = [float(v) for v in ext]
+    if not all(math.isfinite(v) for v in ext):
+        return None
+    return Bbox.from_extents(*ext)
+
+
+def _content_bbox(mfig):
+    mfig.canvas.draw()
+    return _as_inches(mfig, mfig.get_tightbbox(mfig.canvas.get_renderer()))
+
+
+def _panel_axes(mfig):
+    """Matplotlib axes that correspond to graphics axes. Colorbar axes are extra."""
+    caxes = set()
+    for ax in mfig.axes:
+        for im in list(getattr(ax, "images", [])):
+            cbar = getattr(im, "colorbar", None)
+            cax = getattr(cbar, "ax", None) if cbar is not None else None
+            if cax is not None:
+                caxes.add(cax)
+    return [ax for ax in mfig.axes if ax not in caxes]
+
+
+def _axes_bbox(mfig, ax, pad: float):
+    """The axes plus its colorbar, in inches. A bare axes has no colorbar."""
+    from matplotlib.transforms import Bbox
+
+    renderer = mfig.canvas.get_renderer()
+    boxes = []
+    bb = _as_inches(mfig, ax.get_tightbbox(renderer))
+    if bb is not None:
+        boxes.append(bb)
+    seen = set()
+    for artist in list(getattr(ax, "images", [])) + list(getattr(ax, "collections", [])):
+        cbar = getattr(artist, "colorbar", None)
+        cax = getattr(cbar, "ax", None) if cbar is not None else None
+        if cax is None or id(cax) in seen:
+            continue
+        seen.add(id(cax))
+        cb = _as_inches(mfig, cax.get_tightbbox(renderer))
+        if cb is not None:
+            boxes.append(cb)
+    if not boxes:
+        return None
+    return Bbox.union(boxes).padded(pad)
+
+
+def _export_bbox(mfig, o: GObj, f: GObj, crop: bool):
+    """Page box in inches, or None to keep the canvas (print of a figure that fits)."""
+    if crop and o.type == "axes":
+        panels = _panel_axes(mfig)
+        idx = [c for c in f.children if c.type == "axes" and c.alive].index(o)
+        if idx < len(panels):
+            mfig.canvas.draw()
+            boxed = _axes_bbox(mfig, panels[idx], 0.05)
+            if boxed is not None:
+                return boxed
+    content = _content_bbox(mfig)
+    if content is None:
+        return None
+    if crop:
+        return content.padded(_CROP_PAD_IN)
+    w, h = (float(v) for v in mfig.get_size_inches())
+    sticks_out = (content.x0 < -_OVERFLOW_EPS_IN or content.y0 < -_OVERFLOW_EPS_IN
+                  or content.x1 > w + _OVERFLOW_EPS_IN or content.y1 > h + _OVERFLOW_EPS_IN)
+    if sticks_out:
+        return content.padded(_CROP_PAD_IN)
+    return None
+
+
 def render_to_file(m, o: GObj, path: str, fmt: str, dpi: float, background=None, crop_axes: bool = False) -> None:
     f = m.figure_of(o)
     be = m.backend
@@ -378,16 +469,14 @@ def render_to_file(m, o: GObj, path: str, fmt: str, dpi: float, background=None,
         if background == "white" or f.props.get("InvertHardcopy", "on") == "on":
             kw["facecolor"] = "white"
     try:
-        mfig.set_size_inches(*_figure_inches(m, f))
-        if crop_axes and o.type == "axes":
-            idx = [c for c in f.children if c.type == "axes" and c.alive].index(o)
-            mfig.canvas.draw()
-            ax = mfig.axes[idx] if idx < len(mfig.axes) else None
-            if ax is not None:
-                kw["bbox_inches"] = ax.get_tightbbox(mfig.canvas.get_renderer()).transformed(
-                    mfig.dpi_scale_trans.inverted()).padded(0.05)
-        elif crop_axes:
-            kw["bbox_inches"] = "tight"
+        # Heatmap layout (category labels, colorbar, footnote) is drawn on the
+        # canvas FIGURE_PRE sized. Squashing that back to the default Position
+        # piles the labels on top of each other and clips the colorbar.
+        if not _heatmap_canvas(f):
+            mfig.set_size_inches(*_figure_inches(m, f))
+        boxed = _export_bbox(mfig, o, f, crop_axes)
+        if boxed is not None:
+            kw["bbox_inches"] = boxed
         if fmt == "gif":
             import io
 

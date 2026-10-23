@@ -59,6 +59,13 @@ use_cases:
     features: [libs.graphics.heatmap, libs.graphics.layout, libs.cmapss_metrics]
     priority: p0
 
+  - id: uc.cmapss_export
+    title: Take the FD001 lab figure away as PNG and PDF
+    actor: scientific user
+    goal: exportgraphics writes a 300 dpi PNG and PDF whose crop keeps the title, colorbar and footnote
+    features: [libs.graphics.figio, libs.graphics.heatmap]
+    priority: p0
+
 test_cases:
   - id: tc.arch_session_composition
     kind: unit
@@ -2167,6 +2174,33 @@ test_cases:
     features: [libs.graphics.heatmap, libs.cmapss_metrics]
     use_cases: [uc.cmapss_figure]
     impl: tests/conformance/test_m14_v05_v06.py
+    status: active
+    env: conformance
+
+  - id: tc.export_story
+    kind: unit
+    title: Lab-figure PNG and PDF resolution, crop and print (Epic #998)
+    features: [libs.graphics.figio]
+    use_cases: [uc.cmapss_export]
+    impl: tests/unit/test_m14_v07_export.py
+    status: active
+    env: unit
+
+  - id: tc.export_story_bdd
+    kind: unit
+    title: exportgraphics writes PNG and PDF (Epic #998)
+    features: [libs.graphics.figio]
+    use_cases: [uc.cmapss_export]
+    impl: tests/bdd/test_export_story_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.cmapss_v07
+    kind: conformance
+    title: V07 FD001 story PNG and PDF at 300 dpi (Epic #998)
+    features: [libs.graphics.figio, libs.graphics.heatmap, libs.cmapss_metrics]
+    use_cases: [uc.cmapss_export]
+    impl: tests/conformance/test_m14_v07.py
     status: active
     env: conformance
 
