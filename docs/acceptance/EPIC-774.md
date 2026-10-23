@@ -60,21 +60,25 @@ qa.snapshots                     qa         done     Golden image snapshot infra
 
 ## Window recording (E2E) — M13 graphics
 
-- Video: [`demos/workbench/showcase_m13_graphics.mp4`](../../demos/workbench/showcase_m13_graphics.mp4) (~107s, 1920×1200)
+- Video: [`demos/workbench/showcase_m13_graphics.mp4`](../../demos/workbench/showcase_m13_graphics.mp4) (~147s, 1920×1200) — **re-recorded 2026-10-23** after Shaw rejected the first take (figures listed but UI never switched)
 - Also copied to `/workspace/recordings/showcase_m13_graphics.mp4`
-- Helper: `demos/workbench/record_m13_graphics_showcase.sh` + driver `demos/workbench/m13_driver.py` (real tk Workbench, xdotool, on-screen captions)
+- Helper: `demos/workbench/record_m13_graphics_showcase.sh` + driver `demos/workbench/m13_driver.py` (real tk Workbench, xdotool, on-screen captions 「切换 Figure N」)
 - Batch note: [`M12-M13-batch.md`](M12-M13-batch.md) · Chinese summary: `/workspace/proposals/M12-M13-acceptance-evidence.md`
-- Covers G09 (#767 output + #774 docking), G05, G03, G08, G10 on one continuous capture.
+- Covers G09 (#767 output + #774 docking **with interactive Figures-panel switching**), G05, G03, G08, G10 on one continuous capture.
 
 | t (approx) | Scene |
 |---|---|
 | 0–7 s | Intro caption; open `demo_out.m` |
 | 7–20 s | **G09/#767**: Run → Command Window shows `fprintf`/`disp` (`total = 42`, `hello from script`) |
-| 20–37 s | **G09/#774**: `DefaultFigureWindowStyle=docked`; two plots; Figures panel + focus (gcf=2); Refresh |
-| 37–54 s | **G05**: `imagesc` + `colormap(jet)` + `colorbar`; colormap size `[256 3]` |
-| 54–71 s | **G03**: `tiledlayout(1,2)` / `nexttile` / `yyaxis right` |
-| 71–88 s | **G08**: `savefig` → `openfig` `.fig` round-trip (own format; Tag preserved) |
-| 88–107 s | **G10**: caption + CW note — **46** golden PNGs under `tests/conformance/golden/snapshots/` (e.g. `imagesc.png`) |
+| 20–37 s | **G09/#774**: `DefaultFigureWindowStyle=docked`; **4** distinct plots (plot / imagesc+colorbar / tiledlayout / surf); Figures Refresh |
+| **41.8 s** | **切换 Figure 1** — click list entry → focus `*` + preview; CW `get(gcf,'Number')` → **1** |
+| **50.3 s** | **切换 Figure 2** — click → focused=2; CW → **2** (~3–5 s pause on preview) |
+| **58.8 s** | **切换 Figure 3** — click → focused=3; CW → **3** |
+| **67.3 s** | **切换 Figure 4** — click → focused=4; CW → **4** |
+| 77–94 s | **G05**: `imagesc` + `colormap(jet)` + `colorbar`; colormap size `[256 3]` |
+| 94–111 s | **G03**: `tiledlayout(1,2)` / `nexttile` / `yyaxis right` |
+| 111–128 s | **G08**: `savefig` → `openfig` `.fig` round-trip (own format; Tag preserved) |
+| 128–147 s | **G10**: caption + CW note — **46** golden PNGs under `tests/conformance/golden/snapshots/` |
 
 ```bash
 DISPLAY=:2 ./demos/workbench/record_m13_graphics_showcase.sh

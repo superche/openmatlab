@@ -4,7 +4,8 @@ Launches the real tk Workbench (``Workbench.run_tk``) at large scale and drives 
 with real X pointer/keyboard events (xdotool). Scenes (in order, with captions):
 
 1. Command Window gets fprintf/disp from a script (G09 half / #767)
-2. DefaultFigureWindowStyle docked → figures in Figures panel; new fig takes focus (G09)
+2. DefaultFigureWindowStyle docked → 4 distinct plots; **click each Figures
+   list entry** so preview/focus/gcf switch (G09 / #774) — acceptance blocker
 3. colormap default size 256; colorbar; imagesc (G05)
 4. tiledlayout / yyaxis (G03)
 5. savefig/openfig .fig round-trip (G08 own format)
@@ -31,11 +32,13 @@ SCRIPTS = {
 fprintf('G09 output: total = %d\\n', 42);
 disp('hello from script');
 """,
-    "demo_dock.m": """% M13 G09 (#774) - docked figures take focus in Figures panel
+    "demo_dock.m": """% M13 G09 (#774) - 4 docked figures for Figures-panel switching
 set(groot, 'DefaultFigureWindowStyle', 'docked');
-figure; plot(1:5, 'LineWidth', 2); title('Fig 1 plot');
-figure; plot(1:3, 'r-o'); title('Fig 2 (focus)');
-fprintf('gcf Number = %d (new figure has focus)\\n', get(gcf, 'Number'));
+figure; plot(1:5, 'LineWidth', 2); title('Fig1 plot');
+figure; imagesc(magic(8)); colormap(jet); colorbar; title('Fig2 imagesc');
+figure; t = tiledlayout(1, 2); nexttile; plot(1:4, 'b-s'); title('tile L'); nexttile; plot(4:-1:1, 'r-o'); title('tile R');
+figure; [X,Y] = meshgrid(-2:0.5:2); surf(X, Y, X.^2 + Y.^2); title('Fig4 surf');
+fprintf('created 4 docked figures; gcf Number = %d\\n', get(gcf, 'Number'));
 """,
     "demo_color.m": """% M13 G05 - colormap default 256, imagesc, colorbar
 figure;
@@ -66,6 +69,9 @@ fprintf('openfig round-trip OK; fig Number = %d Tag=%s\\n', g.Number, get(findob
     "demo_snap.m": """% M13 G10 - golden snapshots (≥40 under tests/conformance/golden/snapshots/)
 fprintf('G10: 46 golden PNG snapshots (e.g. imagesc.png, colormap_jet.png)\\n');
 fprintf('path: tests/conformance/golden/snapshots/\\n');
+""",
+    "demo_gcf.m": """% helper: print current figure number after a Figures-panel switch
+fprintf('gcf Number = %d (after switch)\\n', get(gcf, 'Number'));
 """,
 }
 
@@ -151,13 +157,136 @@ def open_from_cf(filename: str):
 
 
 def run_script():
-    click_widget(button("Run"))
+    """Move pointer to Run for the video, then invoke() so the script finishes
+    before the next scheduled step (xdotool-only clicks race the after() timeline)."""
+    b = button("Run")
+    if b is None:
+        print("WARN: Run button missing", flush=True)
+        return
+    move_to(*center(b))
+    time.sleep(0.25)
+    b.invoke()
+    state["root"].update_idletasks()
+    figs = state["wb"].figures.list()
+    print(
+        f"    -> after Run: {len(figs)} figs "
+        f"{[(f.number, f.docked) for f in figs]} focused={state['wb'].figures.focused()}",
+        flush=True,
+    )
 
 
 def click_fig_refresh():
+    """Refresh Figures panel. Prefer invoke() so we do not nest root.update()
+    (which would fire later root.after steps early). Still move the pointer for video."""
     b = button("Refresh")
+    if b is None:
+        return
+    # Visible mouse over Refresh, then synchronous invoke
+    move_to(*center(b))
+    time.sleep(0.2)
+    b.invoke()
+    state["root"].update_idletasks()
+    lb = fig_listbox()
+    items = list(lb.get(0, "end")) if lb is not None else []
+    n_docked = sum(1 for s in items if "[docked]" in s)
+    print(f"    -> refresh: {len(items)} figs, {n_docked} docked; {items}", flush=True)
+
+
+def fig_listbox():
+    """Figures panel listbox — pinned to the frame that owns the Focus button."""
+    focus_btn = button("Focus")
+    if focus_btn is not None:
+        frame = focus_btn.master.master  # fig_btns → fig_frame
+        for c in frame.winfo_children():
+            if isinstance(c, tk.Listbox):
+                return c
+    # Fallback: any listbox whose entries mention [docked]
+    for w in walk(state["root"]):
+        try:
+            if isinstance(w, tk.Listbox) and any("[docked]" in s for s in w.get(0, "end")):
+                return w
+        except tk.TclError:
+            pass
+    return None
+
+
+def click_fig_entry(index: int) -> None:
+    """Click a Figures listbox row: visible xdotool + reliable selection/focus."""
+    state["root"].update_idletasks()
+    state["root"].lift()
+    state["root"].focus_force()
+    lb = fig_listbox()
+    if lb is None:
+        print("WARN: fig listbox not found", flush=True)
+        return
+    # Ensure list is populated (synchronous refresh if empty)
+    if lb.size() == 0:
+        click_fig_refresh()
+        lb = fig_listbox()
+    if lb is None or index < 0 or index >= lb.size():
+        print(f"WARN: fig index {index} out of range (size={lb.size() if lb else None})", flush=True)
+        return
+    lb.see(index)
+    lb.update_idletasks()
+    bb = lb.bbox(index)
+    if bb is None:
+        n = max(lb.size(), 1)
+        row_h = max(lb.winfo_height() // n, 18)
+        x = lb.winfo_rootx() + 40
+        y = lb.winfo_rooty() + index * row_h + row_h // 2
+    else:
+        x = lb.winfo_rootx() + bb[0] + 40
+        y = lb.winfo_rooty() + bb[1] + bb[3] // 2
+    # Visible pointer motion + click for the recording
+    click_at(x, y, n=1)
+    time.sleep(0.15)
+    # Reliable focus path (does not call root.update — avoids stealing later after()s)
+    lb.selection_clear(0, "end")
+    lb.selection_set(index)
+    lb.activate(index)
+    handle = float(lb.get(index).split()[0])
+    try:
+        state["wb"].figures.focus(handle)
+    except Exception as exc:
+        print(f"WARN focus({handle}): {exc}", flush=True)
+    lb.event_generate("<<ListboxSelect>>")
+    state["root"].update_idletasks()
+    # Focus button via invoke (pointer moves for video)
+    b = button("Focus")
     if b is not None:
-        click_widget(b)
+        move_to(*center(b))
+        time.sleep(0.15)
+        b.invoke()
+        state["root"].update_idletasks()
+    focused = state["wb"].figures.focused()
+    print(f"    -> focused={focused} list={list(lb.get(0, 'end'))}", flush=True)
+
+
+def cw_eval_line(line: str) -> None:
+    """Type a line into the Command Window entry and press Return (shows gcf)."""
+    entry = find(
+        lambda w: isinstance(w, ttk.Entry)
+        and not isinstance(w, ttk.Combobox)
+        and w.winfo_rooty() > 500
+    )
+    if entry is None:
+        # Fallback: headless eval + hope CW text refreshes on next interaction
+        try:
+            state["wb"].command_window.eval(line)
+        except Exception as exc:
+            print(f"WARN cw_eval: {exc}", flush=True)
+        return
+    click_widget(entry)
+    time.sleep(0.15)
+    xdo("key", "ctrl+a")
+    time.sleep(0.05)
+    xdo("key", "BackSpace")
+    time.sleep(0.05)
+    # Use xdotool type for the expression
+    subprocess.run(["xdotool", "type", "--delay", "12", "--", line], check=False)
+    time.sleep(0.15)
+    xdo("key", "Return")
+    time.sleep(0.4)
 
 
 def steps():
@@ -175,16 +304,31 @@ def steps():
         run_script()
 
     def s_open_dock():
-        caption("2. G09 (#774): open demo_dock.m — DefaultFigureWindowStyle=docked")
+        caption("2. G09 (#774): open demo_dock.m — 4 docked figures (plot/imagesc/tiled/surf)")
         open_from_cf("demo_dock.m")
 
     def s_run_dock():
-        caption("2. Run: two docked figures; new figure takes focus (gcf=2) in Figures panel")
+        caption("2. Run: create 4 docked figures; new figure has focus (gcf=4)")
         run_script()
 
     def s_refresh_dock():
-        caption("2. Figures panel: docked previews + focus marker (Refresh)")
+        caption("2. Figures panel Refresh — list + PNG previews for all docked figs")
         click_fig_refresh()
+
+    def make_switch(n: int):
+        def s_switch():
+            caption(f"切换 Figure {n} / switch Figure {n} — click list entry, preview + focus *")
+            # Figures list is ordered by figure number; index = n-1 among list()
+            click_fig_entry(n - 1)
+
+        return s_switch
+
+    def make_gcf(n: int):
+        def s_gcf():
+            caption(f"切换 Figure {n}: get(gcf,'Number') → Command Window (expect {n})")
+            cw_eval_line("fprintf('gcf Number = %d\\n', get(gcf,'Number'));")
+
+        return s_gcf
 
     def s_open_color():
         caption("3. G05: open demo_color.m — colormap / imagesc / colorbar")
@@ -228,15 +372,26 @@ def steps():
         run_script()
 
     def s_done():
-        caption("M13 done — G09 output+docking, G05 colour, G03 layout, G08 .fig, G10 snapshots")
+        caption("M13 done — figure switching + G09/G05/G03/G08/G10")
 
+    # Delays are ms before each step fires (cumulative via plan loop below).
+    # Figure-switch steps get ~4–5 s dwell so Shaw can see each preview.
     plan = [
         (2500, s_intro),
         (4000, s_open_out),
         (6000, s_run_out),
         (7000, s_open_dock),
-        (6500, s_run_dock),
-        (5500, s_refresh_dock),
+        (9000, s_run_dock),
+        (8000, s_refresh_dock),
+        # Switch Figure 1 → 2 → 3 → 4 with pauses + gcf check
+        (5000, make_switch(1)),
+        (4000, make_gcf(1)),
+        (4500, make_switch(2)),
+        (4000, make_gcf(2)),
+        (4500, make_switch(3)),
+        (4000, make_gcf(3)),
+        (4500, make_switch(4)),
+        (4000, make_gcf(4)),
         (5500, s_open_color),
         (6500, s_run_color),
         (5000, s_refresh_color),
