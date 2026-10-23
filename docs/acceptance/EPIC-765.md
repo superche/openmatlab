@@ -12,7 +12,7 @@
 | Tip | SHA | Notes |
 |-----|-----|-------|
 | Functional tip | `5d9513a4974fde8fa54340fcf11c21b57defcc11` | Squash merge of C08-met PR [#986](https://github.com/superche/openmatlab/pull/986) (on tip of #985 T3 harness) |
-| Evidence merge tip | _recorded by follow-up sync PR_ | Squash merge of this acceptance PR |
+| Evidence merge tip | `8fd7d93c8853a852db1bf92520868deabb11a8f7` | Squash merge of [#989](https://github.com/superche/openmatlab/pull/989); re-run from here or `main` |
 
 ## Verdict
 
