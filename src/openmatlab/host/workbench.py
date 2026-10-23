@@ -1009,13 +1009,14 @@ class Workbench:
         ws_tree.pack(fill="both", expand=True)
 
         ttk.Label(fig_frame, text="Figures", font=("", 10, "bold")).pack(anchor="w")
-        # Docked figures appear as image previews in this panel (M13 G09); undocked stay listed.
-        fig_nb = ttk.Notebook(fig_frame)
-        fig_nb.pack(fill="both", expand=True)
-        fig_list = tk.Listbox(fig_frame, height=4)
-        fig_list.pack(fill="x")
+        # List + buttons first (fixed height) so the expanding preview notebook cannot
+        # squeeze the listbox to a few pixels — needed for visible click-to-focus (G09).
+        fig_list = tk.Listbox(fig_frame, height=6, exportselection=False)
+        fig_list.pack(fill="x", pady=(0, 2))
         fig_btns = ttk.Frame(fig_frame)
         fig_btns.pack(fill="x", pady=2)
+        fig_nb = ttk.Notebook(fig_frame)
+        fig_nb.pack(fill="both", expand=True)
         _fig_photos: Dict[int, Any] = {}  # keep PhotoImage refs alive
 
         def _active_ed_text():
@@ -1238,6 +1239,33 @@ class Workbench:
                         fig_nb.add(page, text=f"Fig {info.number}")
                     except Exception:
                         pass
+            # Show the focused figure's preview tab (G09 docking / focus).
+            _show_focused_preview()
+
+        def _show_focused_preview() -> None:
+            foc = self.figures.focused()
+            if foc is None:
+                return
+            target = f"Fig {int(foc)}"
+            for i, tab in enumerate(fig_nb.tabs()):
+                if fig_nb.tab(tab, "text") == target:
+                    fig_nb.select(i)
+                    break
+
+        def _relabel_fig_list(*, keep_sel: bool = True) -> None:
+            """Update listbox focus markers without rebuilding PNG previews."""
+            sel = fig_list.curselection()
+            fig_list.delete(0, "end")
+            for info in self.figures.list():
+                tag = "  [docked]" if info.docked else ""
+                focus = " *" if self.figures.focused() == info.number else ""
+                fig_list.insert("end", f"{info.number}  {info.title}{tag}{focus}")
+            if keep_sel and sel:
+                idx = sel[0]
+                if idx < fig_list.size():
+                    fig_list.selection_set(idx)
+                    fig_list.activate(idx)
+                    fig_list.see(idx)
 
         def path_go(_event=None) -> None:
             target = path_var.get().strip()
@@ -1436,6 +1464,23 @@ class Workbench:
                 self.figures.focus(h)
             except Exception as exc:
                 messagebox.showerror("Figures", str(exc))
+                return
+            _relabel_fig_list()
+            _show_focused_preview()
+
+        def on_fig_list_select(_event=None) -> None:
+            """Clicking a Figures list entry focuses that figure and shows its preview."""
+            h = _selected_handle()
+            if h is None:
+                return
+            try:
+                self.figures.focus(h)
+            except Exception:
+                return
+            # Defer list relabel so we don't fight the ListboxSelect event.
+            root.after_idle(lambda: (_relabel_fig_list(), _show_focused_preview()))
+
+        fig_list.bind("<<ListboxSelect>>", on_fig_list_select)
 
         ttk.Button(fig_btns, text="Refresh", command=refresh_figs).pack(side="left", padx=2)
         ttk.Button(fig_btns, text="Close", command=fig_close).pack(side="left", padx=2)
