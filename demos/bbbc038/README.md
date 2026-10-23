@@ -14,6 +14,8 @@ It then segments that FOV with global Otsu (`graythresh` / `imbinarize`) and `bw
 
 `labeloverlay` paints those six labels onto the FOV (default transparency 0.5). A 2-by-2 `tiledlayout` shows the raw FOV, the overlay, the area histogram (`Area (px)` / `Count`), and the count, mean, and median. The footnote cites CC0 1.0, Caicedo et al. Nature Methods 2019, and BBBC038v1. The story then writes that figure to `demos/bbbc038/out/story_stage1_test.png` and `story_stage1_test.pdf` at 300 dpi and closes it. Those files are gitignored. The 1-by-2 before/after panel stays the current figure, and the standalone histogram stays the only other figure. A review snapshot of the export is in `docs/acceptance/EPIC-1024-v07.png`.
 
+The Workbench recording is `demos/workbench/showcase_m16_bbbc038.mp4`. Re-record with `DISPLAY=:2 ./demos/bbbc038/record_story_stage1_test.sh`. Without a display, `./demos/bbbc038/record_story_stage1_test.sh --headless` reruns the story and writes no mp4.
+
 Licence: CC0 1.0. Dataset: [BBBC038v1](https://bbbc.broadinstitute.org/BBBC038).
 
 - J. C. Caicedo et al., Nucleus segmentation across imaging experiments: the 2018 Data Science Bowl, Nature Methods 16:1247–1253, 2019. doi:[10.1038/s41592-019-0612-7](https://doi.org/10.1038/s41592-019-0612-7).

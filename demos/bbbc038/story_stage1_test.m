@@ -24,6 +24,8 @@
 %
 % From the repository root:
 %   openmatlab -e "run('demos/bbbc038/story_stage1_test.m')"
+% Workbench recording (needs a display):
+%   DISPLAY=:2 ./demos/bbbc038/record_story_stage1_test.sh
 
 here = fileparts(mfilename('fullpath'));
 addpath(here);
