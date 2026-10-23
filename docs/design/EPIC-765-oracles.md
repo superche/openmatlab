@@ -44,3 +44,17 @@ Full runs: #904 (`3567779`, 64.1 %), #909 (`b23f9b7`, 71.7 %), #913 (`20145ad`, 
 
 - **C08 (T3 goldens):** waits for Shaw's decision on golden sourcing. Not built.
 - The T2 long tail (276 `assert-mismatch`, 74 undefined functions, ...) is tracked through the deduplicated `corpus` issues and the #766 burn-down.
+
+## C08 (T3) — in progress (Shaw 2026-10-17)
+
+Shaw approved (2026-10-17, "都按照matlab文档来"): T3 goldens may be (1) MATLAB transcripts under
+\`>>\` prompts, and (2) Octave-produced stdout at run time when each golden links public MATLAB
+docs confirming the behaviour. Store hashes / pass-fail / counts only; never commit GPL corpus
+or expected values. Where Octave differs from documented MATLAB, record a dialect exclusion
+(never a pass).
+
+\`src/openmatlab/qa/corpus/goldens.py\` implements the shared match/normalisation and the
+MATLAB-transcript source. Pipeline wires T3 for Rosetta script entries with a deprompted
+MATLAB transcript that is not nondeterministic. Octave-runtime goldens (with doc URLs) are
+the next burn-down step under this epic.
+
