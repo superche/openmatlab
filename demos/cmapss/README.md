@@ -26,6 +26,10 @@ same axes (M14 V03).
 It also prints a short FD001 train metric table (M14 V04): per-unit failure
 cycle and train RUL (`max(cycle) - cycle`, from `groupsummary`), early versus
 late means on the first and last 30 cycles, and the Pearson correlation of the
-sensors that are not idle. A second figure draws the early/late traces, an
-`imagesc` of the correlation (until `heatmap` lands), the failure-cycle
-histogram, and unit 1's RUL. A single-channel `fft` line is a demo bonus.
+sensors that are not idle. The lab-meeting figure (M14 V05, V06) is one
+`tiledlayout(2, 3)`: unit 1 sensor traces, early versus late, a `heatmap` of
+the correlation down the right column (colorbar, sensor tick labels), the
+failure-cycle histogram, and unit 1's RUL. The layout title carries the unit
+id. The layout xlabel is the footnote (Saxena PHM08 and Zenodo DOI
+10.5281/zenodo.15346912). The raw / `smoothdata` axes is still drawn after
+that, so it stays the last figure. A single-channel `fft` line is a demo bonus.

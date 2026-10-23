@@ -1,4 +1,4 @@
-% NASA C-MAPSS FD001 story (M14 V01, V02, V03, V04).
+% NASA C-MAPSS FD001 story (M14 V01, V02, V03, V04, V05, V06).
 % Saxena, Goebel, Simon, and Eklund, PHM08.
 % Data: DOI 10.5281/zenodo.15346912 (CC BY 4.0).
 % The zip and the text files stay in downloads/cmapss/ and are never committed.
@@ -95,40 +95,52 @@ spec(1) = 0;
 nh = floor(numel(raw) / 2) + 1;
 [fft_mag, fft_bin] = max(spec(1:nh));
 
-% Panels (b)(c)(d) first, so the V03 figure stays the last one.
+% Lab-meeting figure (V05, V06), then the V03 axes so that figure stays last.
+% 2x3: traces, early/late, heatmap down the right column, failure cycles, RUL.
+% The layout xlabel is the footnote (Saxena PHM08 + the Zenodo DOI).
 figure;
-tiledlayout(2, 2);
+tl = tiledlayout(2, 3, 'TileSpacing', 'compact', 'Padding', 'loose');
+tl.Title.String = sprintf('FD001 unit %g', unit_id);
+tl.XLabel.String = sprintf('A. Saxena, K. Goebel, D. Simon, and N. Eklund, PHM08, 2008.\nData: DOI 10.5281/zenodo.15346912 (CC BY 4.0).');
+
+nexttile;
+[~, ord] = sort(sig(keep), 'descend');
+nshow = min(4, numel(ord));
+show = ord(1:nshow);
+Z = normalize(Sk(:, show), 'zscore');
+plot(cyc, Z);
+xlabel('cycle');
+ylabel('z-score');
+title(sprintf('FD001 unit %g sensor traces', unit_id));
+legend(kept_names(show), 'Location', 'northwest');
+
 nexttile;
 tw = (1:numel(early_y))';
 plot(tw, early_y, tw, late_y);
 xlabel('window index');
-ylabel(picked);
-title('FD001 unit 1 early vs late');
+ylabel(picked, 'Interpreter', 'none');
+title(sprintf('FD001 unit %g early vs late', unit_id));
 legend('early', 'late');
-nexttile;
-imagesc(C, [-1 1]);
-colorbar;
-axis image;
-title('FD001 sensor correlation');
-xticks(1:p);
-xticklabels(metric_names);
-yticks(1:p);
-yticklabels(metric_names);
+
+nexttile([2 1]);
+hm = heatmap(metric_names, metric_names, C, 'ColorLimits', [-1 1], 'Title', 'FD001 sensor correlation', 'XLabel', 'sensor', 'YLabel', 'sensor');
+
 nexttile;
 histogram(fc);
 xlabel('failure cycle');
 ylabel('units');
 title('FD001 train failure cycles');
+
 nexttile;
 plot(cyc, rul_u1);
 xlabel('cycle');
 ylabel('RUL');
-title('FD001 unit 1 train RUL');
+title(sprintf('FD001 unit %g train RUL', unit_id));
 
 figure;
 plot(cyc, raw, cyc, sm, cyc, sg);
 xlabel('cycle');
-ylabel(picked);
+ylabel(picked, 'Interpreter', 'none');
 title('FD001 unit 1: raw and smoothdata');
 legend('raw', 'movmean', 'gaussian');
 nlines = numel(get(gca, 'Children'));
@@ -147,3 +159,6 @@ end
 fprintf('V04 fail_min=%g fail_median=%g fail_max=%g n_units=%g rul0=%g rul_max=%g\n', min(fc), median(fc), max(fc), numel(fc), n_rul0, max(rul));
 fprintf('V04 corr_offmax=%g %s %s\n', corr_offmax, metric_names{corr_i}, metric_names{corr_j});
 fprintf('V04 fft_bin=%g fft_mag=%g\n', fft_bin, fft_mag);
+gs = tl.GridSize;
+fprintf('V05 class=%s colorbar=%s nlabel=%g clim=%g %g\n', class(hm), hm.ColorbarVisible, numel(hm.XDisplayLabels), hm.ColorLimits(1), hm.ColorLimits(2));
+fprintf('V06 grid=%g %g unit=%g traces=%g\n', gs(1), gs(2), unit_id, nshow);

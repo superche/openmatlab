@@ -353,6 +353,8 @@ RESET_ON_REPLACE = {"XScale", "YScale", "XDir", "YDir", "CLim", "CLimMode", "XTi
                     "YTickLabel", "XTickMode", "YTickMode", "ZLim", "View", "ZLabel"}
 EXTRA_DRAW = None  # chart types of Epic #772 (set by openmatlab.libs.chart_builtins)
 POST_DRAW = None
+FIGURE_PRE = None  # size and margins before axes are placed (set by heatmap_builtins)
+FIGURE_POST = None  # figure-level title and footnote (set by openmatlab.libs.heatmap_builtins)
 
 
 def _style(s):
@@ -361,6 +363,11 @@ def _style(s):
 
 def draw_figure(model: Model, fig: GObj, mfig) -> None:
     mfig.clear()
+    if FIGURE_PRE is not None:
+        try:
+            FIGURE_PRE(mfig, model, fig)
+        except Exception:
+            pass
     for a in fig.children:
         if a.type != "axes" or not a.alive:
             continue
@@ -421,3 +428,8 @@ def draw_figure(model: Model, fig: GObj, mfig) -> None:
             names = list(a.legend.props["String"])
             if names:
                 ax.legend(names[: len(ax.lines) + len(ax.collections) + len(ax.containers)] or names)
+    if FIGURE_POST is not None:
+        try:
+            FIGURE_POST(mfig, model, fig)
+        except Exception:
+            pass
