@@ -57,15 +57,38 @@ libs.graphics.defaults           libs       done     Default<Type><Prop> on root
 qa.snapshots                     qa         done     Golden image snapshot infrastructure
 ```
 
+
+## Window recording (E2E) — M13 graphics
+
+- Video: [`demos/workbench/showcase_m13_graphics.mp4`](../../demos/workbench/showcase_m13_graphics.mp4) (~107s, 1920×1200)
+- Also copied to `/workspace/recordings/showcase_m13_graphics.mp4`
+- Helper: `demos/workbench/record_m13_graphics_showcase.sh` + driver `demos/workbench/m13_driver.py` (real tk Workbench, xdotool, on-screen captions)
+- Batch note: [`M12-M13-batch.md`](M12-M13-batch.md) · Chinese summary: `/workspace/proposals/M12-M13-acceptance-evidence.md`
+- Covers G09 (#767 output + #774 docking), G05, G03, G08, G10 on one continuous capture.
+
+| t (approx) | Scene |
+|---|---|
+| 0–7 s | Intro caption; open `demo_out.m` |
+| 7–20 s | **G09/#767**: Run → Command Window shows `fprintf`/`disp` (`total = 42`, `hello from script`) |
+| 20–37 s | **G09/#774**: `DefaultFigureWindowStyle=docked`; two plots; Figures panel + focus (gcf=2); Refresh |
+| 37–54 s | **G05**: `imagesc` + `colormap(jet)` + `colorbar`; colormap size `[256 3]` |
+| 54–71 s | **G03**: `tiledlayout(1,2)` / `nexttile` / `yyaxis right` |
+| 71–88 s | **G08**: `savefig` → `openfig` `.fig` round-trip (own format; Tag preserved) |
+| 88–107 s | **G10**: caption + CW note — **46** golden PNGs under `tests/conformance/golden/snapshots/` (e.g. `imagesc.png`) |
+
+```bash
+DISPLAY=:2 ./demos/workbench/record_m13_graphics_showcase.sh
+```
+
 ## Residuals (filed)
 
 | Residual | Issue |
 |---|---|
-| tkinter not available on this agent box for GUI figure-panel recording (CI/ubuntu has it; model + conformance verified) | none (env) |
+| ~~tkinter missing for GUI recording~~ **resolved 2026-10-23** — see `showcase_m13_graphics.mp4` | none (env) |
 | Pixel parity with MATLAB | none (M13 non-goal) |
 
 ## Milestone progress (M13)
 
 - Criteria met: **10 / 10** (all G01–G10; G05/G08 completed by Shaw-approved #982)
 - Conformance scripts passing: **11 / 11** (0 xfail)
-- Next: acceptance of open epics; M12 C08 T3; corpus re-run REPORT
+- Next: Shaw watches `showcase_m13_graphics.mp4` + batch-accepts open M13 epics (#765–#774 stay open until accepted)
