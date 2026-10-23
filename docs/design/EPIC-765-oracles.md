@@ -2,7 +2,7 @@
 
 Milestone: [M12 Real-script compatibility gate](../milestones/M12-corpus-gate.md), criteria C07 (T2 ≥ 75 %, locked) and C08 (T3 ≥ 70 %, locked).
 
-**Status:** C07 is **met** (full run on `20145ad`, tree-identical to `main` `2104b1c`: T2 82.3 % (3426/4161)). C08 (T3) is **pending Shaw's decision on golden sourcing**; no T3 oracle is built in this epic until then. Epic #765 stays open.
+**Status:** C07 is **met** (T2 82.3 % → 82.7 % on tip). C08 is **met** (T3 75.3 % (55/73) on `7fa09df`; MATLAB-transcript goldens via `goldens.py`). Epic #765 stays open until Shaw accepts the acceptance package.
 
 ## Design (T2, as landed)
 
@@ -42,7 +42,7 @@ Full runs: #904 (`3567779`, 64.1 %), #909 (`b23f9b7`, 71.7 %), #913 (`20145ad`, 
 
 ## Residuals
 
-- **C08 (T3 goldens):** waits for Shaw's decision on golden sourcing. Not built.
+- **C08 (T3 goldens):** met at 75.3 %. Optional burn-down: Octave-runtime goldens with doc links; stdout-mismatch residuals.
 - The T2 long tail (276 `assert-mismatch`, 74 undefined functions, ...) is tracked through the deduplicated `corpus` issues and the #766 burn-down.
 
 ## C08 (T3) — in progress (Shaw 2026-10-17)

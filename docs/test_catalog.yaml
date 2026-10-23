@@ -1800,6 +1800,14 @@ test_cases:
     impl: tests/unit/test_corpus_selfcheck.py
     status: active
     env: unit
+  - id: tc.corpus_tier3
+    kind: unit
+    title: Corpus T3 golden oracle (Epic #765 C08)
+    features: [qa.corpus_tier3]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_goldens.py
+    status: active
+    env: unit
 
   - id: tc.graphics_plot3d
     kind: unit
