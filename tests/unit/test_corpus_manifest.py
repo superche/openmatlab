@@ -75,6 +75,42 @@ def test_fetch_detects_hash_mismatch(tmp_path, monkeypatch):
     assert M.fetch(m) == {e.id: "sha256 mismatch"}
 
 
+def test_rosetta_403_retries_with_browser_tls(monkeypatch):
+    import io
+    import urllib.error
+    import urllib.request
+
+    seen = []
+
+    def boom(req, timeout=60):
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", hdrs=None, fp=io.BytesIO(b""))
+
+    monkeypatch.setattr(urllib.request, "urlopen", boom)
+    monkeypatch.setattr(M, "_read_impersonated", lambda url: seen.append(url) or b"{}")
+    monkeypatch.setattr(M.time, "sleep", lambda *_: None)
+    url = "https://rosettacode.org/w/api.php?action=query"
+    assert M._get(url) == b"{}"
+    assert seen == [url]
+
+
+def test_non_rosetta_403_is_not_impersonated(monkeypatch):
+    import io
+    import urllib.error
+    import urllib.request
+
+    def boom(req, timeout=60):
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", hdrs=None, fp=io.BytesIO(b""))
+
+    def refuse(url):
+        raise AssertionError(url)
+
+    monkeypatch.setattr(urllib.request, "urlopen", boom)
+    monkeypatch.setattr(M, "_read_impersonated", refuse)
+    monkeypatch.setattr(M.time, "sleep", lambda *_: None)
+    with pytest.raises(RuntimeError, match="403"):
+        M._get("https://codeload.github.com/example", retries=1)
+
+
 def test_check_cli_offline(capsys):
     from openmatlab.qa.corpus.__main__ import main
 

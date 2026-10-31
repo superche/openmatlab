@@ -19,6 +19,6 @@ Milestone: [M12 Real-script compatibility gate](../milestones/M12-corpus-gate.md
 | A GPL file committed to the repo | `check` and C01 flag it (whole-file match); partial copies → residual #785 |
 | Upstream page edited after pinning | Rosetta fetch uses the pinned revid; hash mismatch is reported per entry |
 | Malicious tarball paths | `..` components and non-regular members skipped |
-| Rosetta blocks `index.php?action=raw` (403) | Fetch uses the API by revid |
+| Rosetta blocks `index.php?action=raw` (403) | Fetch uses the API by revid. GitHub-hosted runners also get HTTP 403 from Cloudflare on `api.php`; that retry uses a Chrome TLS fingerprint (`curl-cffi`) and still checks sha256 |
 | GitHub API rate limit | Only `build` uses the API (one tree call); `fetch` uses raw/codeload |
 | Network down | `fetch` reports problems per entry; CLI prints one error line, no traceback |

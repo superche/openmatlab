@@ -17,6 +17,7 @@ import re
 import subprocess
 import tarfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
@@ -143,12 +144,35 @@ def _get(url: str, retries: int = 4) -> bytes:
     err: Exception = RuntimeError("no attempt")
     for i in range(retries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=60) as r:
-                return r.read()
+            return _read_url(url)
         except Exception as exc:  # network flake: back off
             err = exc
             time.sleep(2 * (i + 1))
     raise RuntimeError(f"fetch failed: {url}: {err}")
+
+
+def _read_url(url: str) -> bytes:
+    """GET ``url``. Rosetta Code's Cloudflare blocks GitHub-hosted runners (HTTP 403); retry those with a browser TLS fingerprint."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (403, 503) or "rosettacode.org" not in url:
+            raise
+        return _read_impersonated(url)
+
+
+def _read_impersonated(url: str) -> bytes:
+    try:
+        from curl_cffi import requests as creq
+    except ImportError as exc:
+        raise RuntimeError("rosettacode returned 403; pip install curl-cffi to fetch it from GitHub Actions") from exc
+    # Do not override User-Agent: it has to match the impersonated Chrome handshake.
+    r = creq.get(url, impersonate="chrome", timeout=60)
+    if r.status_code != 200:
+        raise RuntimeError(f"HTTP Error {r.status_code} impersonating chrome for {url}")
+    return r.content
 
 
 _RC_API = "https://rosettacode.org/w/api.php"
@@ -307,12 +331,16 @@ def fetch(m: Optional[Manifest] = None) -> Dict[str, str]:
     _gh_tarball("matlab2tikz/matlab2tikz", S["matlab2tikz"]["pin"], cache_dir() / "matlab2tikz")
     need = sorted({e.revid for e in m.entries if e.source == "rosetta" and not (cache_dir() / e.file).is_file()})
     texts: Dict[str, str] = {}
+    rosetta_err = ""
     for i in range(0, len(need), 50):  # the API by revision id (index.php?action=raw rejects scripted clients)
         q = {"action": "query", "prop": "revisions", "rvprop": "ids|content", "rvslots": "main", "format": "json",
              "formatversion": "2", "revids": "|".join(need[i:i + 50])}
         try:
             d = json.loads(_get(_RC_API + "?" + urllib.parse.urlencode(q)))
-        except RuntimeError:
+        except RuntimeError as exc:
+            rosetta_err = str(exc)
+            if "HTTP Error" in rosetta_err:
+                rosetta_err = rosetta_err[rosetta_err.rfind("HTTP Error"):].split(" for http", 1)[0][:160]
             continue
         for pg in d["query"].get("pages", []):
             for r in pg.get("revisions", []):
@@ -330,7 +358,10 @@ def fetch(m: Optional[Manifest] = None) -> Dict[str, str]:
             except RuntimeError:
                 pass
         if not p.is_file():
-            problems[e.id] = "missing after fetch"
+            why = "missing after fetch"
+            if e.source == "rosetta" and rosetta_err and e.revid not in texts:
+                why = "missing after fetch: " + rosetta_err[:160]
+            problems[e.id] = why
             continue
         code = p.read_text(encoding="utf-8", errors="replace")
         if e.kind == "acid-scene":
