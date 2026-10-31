@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
   issues: write
 
@@ -17,6 +18,8 @@ jobs:
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      OPENMATLAB_CORPUS_CACHE: ${{ runner.temp }}/openmatlab-corpus
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,16 +29,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          # Rosetta Code's Cloudflare returns 403 to urllib on GitHub-hosted runners.
-          pip install "curl-cffi>=0.7"
+      - name: Rosetta pin hash
+        id: rosetta-key
+        run: echo "key=$(python -m openmatlab.qa.corpus rosetta-key)" >> "$GITHUB_OUTPUT"
+      # Rosetta Code answers GitHub-hosted runners with HTTP 403. Restore the pinned
+      # entries from the cache, or from the corpus-rosetta release asset on a miss.
+      - name: Restore pinned Rosetta cache
+        id: rosetta-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/openmatlab-corpus/rosetta
+          key: rosetta-${{ steps.rosetta-key.outputs.key }}
+      - name: Seed Rosetta entries when the cache is missing or incomplete
+        run: python -m openmatlab.qa.corpus restore-rosetta
       - name: Fetch corpus at the pins (runtime only)
+        id: fetch
         run: python -m openmatlab.qa.corpus fetch
       - name: Run (sample on PRs, full nightly)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then S=10; else S=0; fi
           python -m openmatlab.qa.corpus run --sample "$S" --out /tmp/corpus-results.json
       - name: Report
-        if: always()
+        if: always() && steps.fetch.conclusion == 'success'
         run: python -m openmatlab.qa.corpus report --results /tmp/corpus-results.json --baseline docs/corpus/results.json --out /tmp/REPORT.md
       - uses: actions/upload-artifact@v4
         if: always()

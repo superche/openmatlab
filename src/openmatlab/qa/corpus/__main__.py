@@ -1,4 +1,4 @@
-"""python -m openmatlab.qa.corpus {build|fetch|check|run|report|gate|triage} — corpus maintenance and runs (M12)."""
+"""python -m openmatlab.qa.corpus {build|fetch|check|run|report|gate|triage|rosetta-key|seed-rosetta|restore-rosetta}."""
 
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ def main(argv=None) -> int:
     sub.add_parser("build", help="re-enumerate every source at its pin and rewrite corpus/manifest.json (network)")
     sub.add_parser("fetch", help="populate the local cache from corpus/manifest.json and verify sha256 (network)")
     sub.add_parser("check", help="licence allow-list + no copyleft bodies in the repo (offline)")
+    sub.add_parser("rosetta-key", help="print the Rosetta pin hash used as the CI cache key (offline)")
+    sd = sub.add_parser("seed-rosetta", help="fetch pinned Rosetta entries and write the CI seed archive (network)")
+    sd.add_argument("--out", default=None, help="archive path (default ./rosetta-<pin hash>.tar.gz)")
+    sub.add_parser("restore-rosetta", help="verify the Rosetta cache or download the release seed (no Rosetta Code)")
     rp = sub.add_parser("run", help="preprocess, run and classify every cached entry; write the results JSON")
     rp.add_argument("--timeout", type=float, default=20.0)
     rp.add_argument("--jobs", type=int, default=None)
@@ -44,6 +48,17 @@ def main(argv=None) -> int:
             for k, v in sorted(bad.items())[:50]:
                 print(f"  {k}: {v}")
             return 1 if bad else 0
+        elif a.cmd == "rosetta-key":
+            print(M.rosetta_cache_key())
+        elif a.cmd == "seed-rosetta":
+            from pathlib import Path
+
+            path = M.seed_rosetta(Path(a.out) if a.out else None)
+            print(f"wrote {path}")
+            print("Upload it (do not commit it):")
+            print(M.seed_upload_commands(path.name))
+        elif a.cmd == "restore-rosetta":
+            print(M.restore_rosetta())
         elif a.cmd == "run":
             from pathlib import Path
 

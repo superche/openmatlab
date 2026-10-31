@@ -14,10 +14,10 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import tarfile
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
@@ -144,35 +144,12 @@ def _get(url: str, retries: int = 4) -> bytes:
     err: Exception = RuntimeError("no attempt")
     for i in range(retries):
         try:
-            return _read_url(url)
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=60) as r:
+                return r.read()
         except Exception as exc:  # network flake: back off
             err = exc
             time.sleep(2 * (i + 1))
     raise RuntimeError(f"fetch failed: {url}: {err}")
-
-
-def _read_url(url: str) -> bytes:
-    """GET ``url``. Rosetta Code's Cloudflare blocks GitHub-hosted runners (HTTP 403); retry those with a browser TLS fingerprint."""
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return r.read()
-    except urllib.error.HTTPError as exc:
-        if exc.code not in (403, 503) or "rosettacode.org" not in url:
-            raise
-        return _read_impersonated(url)
-
-
-def _read_impersonated(url: str) -> bytes:
-    try:
-        from curl_cffi import requests as creq
-    except ImportError as exc:
-        raise RuntimeError("rosettacode returned 403; pip install curl-cffi to fetch it from GitHub Actions") from exc
-    # Do not override User-Agent: it has to match the impersonated Chrome handshake.
-    r = creq.get(url, impersonate="chrome", timeout=60)
-    if r.status_code != 200:
-        raise RuntimeError(f"HTTP Error {r.status_code} impersonating chrome for {url}")
-    return r.content
 
 
 _RC_API = "https://rosettacode.org/w/api.php"
@@ -322,50 +299,182 @@ def save(m: Manifest, path: Optional[Path] = None) -> Path:
     return path
 
 
+ROSETTA_RELEASE = "corpus-rosetta"
+
+
+def rosetta_cache_key(m: Optional[Manifest] = None) -> str:
+    """Hash of the pinned Rosetta rows. Cache keys and the seed asset name both use this."""
+    m = m or load()
+    rows = [f"{e.id}\t{e.revid}\t{e.sha256}\t{e.file}" for e in m.entries if e.source == "rosetta"]
+    return sha256("\n".join(rows))
+
+
+def rosetta_seed_name(m: Optional[Manifest] = None) -> str:
+    return f"rosetta-{rosetta_cache_key(m)}.tar.gz"
+
+
+def seed_upload_commands(name: Optional[str] = None) -> str:
+    name = name or rosetta_seed_name()
+    return (
+        f"gh release upload {ROSETTA_RELEASE} {name} --clobber\n"
+        "If that release does not exist yet:\n"
+        f"  gh release create {ROSETTA_RELEASE} {name} --title \"Rosetta corpus seed\" "
+        "--notes \"Pinned Rosetta entries for CI. Not a git commit.\"\n"
+        "Do not commit the tarball."
+    )
+
+
+def seed_instructions(name: Optional[str] = None) -> str:
+    name = name or rosetta_seed_name()
+    return (
+        f"Rosetta cache miss for {name}. "
+        "GitHub-hosted runners get HTTP 403 from Rosetta Code's Cloudflare, so CI does not fetch it live. "
+        f"The workflow restores actions/cache key rosetta-<pin hash> and, on a miss, downloads release asset "
+        f"{ROSETTA_RELEASE}/{name} and checks sha256.\n"
+        "From a checkout of this manifest, on a machine that can reach https://rosettacode.org :\n"
+        "  python -m openmatlab.qa.corpus seed-rosetta\n"
+        f"  {seed_upload_commands(name)}"
+    )
+
+
+def _seed_url(name: str) -> str:
+    repo = os.environ.get("GITHUB_REPOSITORY") or "superche/openmatlab"
+    return f"https://github.com/{repo}/releases/download/{ROSETTA_RELEASE}/{name}"
+
+
+def _cached_problem(e: Entry) -> Optional[str]:
+    p = cache_dir() / e.file
+    if not p.is_file():
+        return "missing after fetch"
+    code = p.read_text(encoding="utf-8", errors="replace")
+    if e.kind == "acid-scene":
+        code += "\n%scene " + str(int(e.id.rsplit("/", 1)[1].split("_")[0]))
+    if sha256(code) != e.sha256:
+        return "sha256 mismatch"
+    return None
+
+
+def _rosetta_problems(m: Manifest) -> Dict[str, str]:
+    out = {}
+    for e in m.entries:
+        if e.source != "rosetta":
+            continue
+        problem = _cached_problem(e)
+        if problem:
+            out[e.id] = problem
+    return out
+
+
+def _fetch_rosetta_live(m: Manifest) -> None:
+    """Download missing Rosetta pins from the MediaWiki API. HTTP failures raise."""
+    need = sorted({e.revid for e in m.entries if e.source == "rosetta" and not (cache_dir() / e.file).is_file()})
+    texts: Dict[str, str] = {}
+    for i in range(0, len(need), 50):  # the API by revision id (index.php?action=raw rejects scripted clients)
+        q = {"action": "query", "prop": "revisions", "rvprop": "ids|content", "rvslots": "main", "format": "json",
+             "formatversion": "2", "revids": "|".join(need[i:i + 50])}
+        d = json.loads(_get(_RC_API + "?" + urllib.parse.urlencode(q)))
+        if "query" not in d:
+            raise RuntimeError(f"rosetta API error: {d.get('error', d)}")
+        for pg in d["query"].get("pages", []):
+            for r in pg.get("revisions", []):
+                texts[str(r["revid"])] = r["slots"]["main"]["content"]
+    for e in m.entries:
+        if e.source != "rosetta" or (cache_dir() / e.file).is_file() or e.revid not in texts:
+            continue
+        blocks = rosetta_blocks(texts[e.revid])
+        k = int(e.id.rsplit("/", 1)[1])
+        if k <= len(blocks):
+            _cache_write(e.file, blocks[k - 1])
+
+
+def _write_rosetta_tar(m: Manifest, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(dest, mode="w:gz") as tf:
+        for e in m.entries:
+            if e.source != "rosetta":
+                continue
+            tf.add(cache_dir() / e.file, arcname=e.file)
+
+
+def _extract_rosetta_tar(blob: bytes) -> None:
+    root = cache_dir().resolve()
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
+        for mem in tf.getmembers():
+            if not mem.isfile() or mem.issym() or mem.islnk():
+                continue
+            rel = mem.name.replace("\\", "/").lstrip("./")
+            parts = [p for p in rel.split("/") if p not in ("", ".")]
+            rel = "/".join(parts)
+            if ".." in parts or not rel.startswith("rosetta/"):
+                raise RuntimeError(f"refusing seed path {mem.name}")
+            target = (root / rel).resolve()
+            if root != target and root not in target.parents:
+                raise RuntimeError(f"refusing seed path {mem.name}")
+            src = tf.extractfile(mem)
+            if src is None:
+                raise RuntimeError(f"empty seed member {mem.name}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(src.read())
+
+
+def seed_rosetta(out: Optional[Path] = None) -> Path:
+    """Fetch any missing Rosetta pins, check sha256, and write the CI seed archive."""
+    m = load()
+    if any(e.source == "rosetta" and not (cache_dir() / e.file).is_file() for e in m.entries):
+        _fetch_rosetta_live(m)
+    problems = _rosetta_problems(m)
+    if problems:
+        sample = "; ".join(f"{k}: {v}" for k, v in list(problems.items())[:3])
+        raise RuntimeError(f"seed refused: {len(problems)} Rosetta entries are not in the cache ({sample})")
+    dest = out or Path(rosetta_seed_name(m))
+    _write_rosetta_tar(m, dest)
+    return dest
+
+
+def restore_rosetta() -> str:
+    """Verify the Rosetta cache, or fill it from the release seed. Does not contact Rosetta Code."""
+    m = load()
+    name = rosetta_seed_name(m)
+    if not _rosetta_problems(m):
+        return f"rosetta cache ok ({name})"
+    shutil.rmtree(cache_dir() / "rosetta", ignore_errors=True)
+    try:
+        blob = _get(_seed_url(name), retries=2)
+    except RuntimeError as exc:
+        raise RuntimeError(seed_instructions(name) + f"\nDownload failed: {exc}") from exc
+    try:
+        _extract_rosetta_tar(blob)
+        problems = _rosetta_problems(m)
+        if problems:
+            sample = "; ".join(f"{k}: {v}" for k, v in list(problems.items())[:3])
+            raise RuntimeError(
+                f"Rosetta seed {name} does not match the manifest ({len(problems)} entries; {sample})")
+    except Exception:
+        shutil.rmtree(cache_dir() / "rosetta", ignore_errors=True)
+        raise
+    return f"restored {name}"
+
+
 def fetch(m: Optional[Manifest] = None) -> Dict[str, str]:
-    """Populate the cache at the pinned revisions and verify hashes. Returns ``{entry id: problem}``."""
+    """Populate the cache at the pinned revisions and verify hashes. Returns ``{entry id: problem}``.
+
+    Network and HTTP failures raise. On GitHub Actions, missing Rosetta files raise with seed
+    instructions instead of calling rosettacode.org.
+    """
     m = m or load()
     problems: Dict[str, str] = {}
     S = m.sources
     _gh_tarball("chebfun/chebfun", S["chebfun"]["pin"], cache_dir() / "chebfun")
     _gh_tarball("matlab2tikz/matlab2tikz", S["matlab2tikz"]["pin"], cache_dir() / "matlab2tikz")
-    need = sorted({e.revid for e in m.entries if e.source == "rosetta" and not (cache_dir() / e.file).is_file()})
-    texts: Dict[str, str] = {}
-    rosetta_err = ""
-    for i in range(0, len(need), 50):  # the API by revision id (index.php?action=raw rejects scripted clients)
-        q = {"action": "query", "prop": "revisions", "rvprop": "ids|content", "rvslots": "main", "format": "json",
-             "formatversion": "2", "revids": "|".join(need[i:i + 50])}
-        try:
-            d = json.loads(_get(_RC_API + "?" + urllib.parse.urlencode(q)))
-        except RuntimeError as exc:
-            rosetta_err = str(exc)
-            if "HTTP Error" in rosetta_err:
-                rosetta_err = rosetta_err[rosetta_err.rfind("HTTP Error"):].split(" for http", 1)[0][:160]
-            continue
-        for pg in d["query"].get("pages", []):
-            for r in pg.get("revisions", []):
-                texts[str(r["revid"])] = r["slots"]["main"]["content"]
+    missing_rosetta = any(e.source == "rosetta" and not (cache_dir() / e.file).is_file() for e in m.entries)
+    if missing_rosetta:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            raise RuntimeError(seed_instructions())
+        _fetch_rosetta_live(m)
     for e in m.entries:
-        p = cache_dir() / e.file
-        if e.source == "rosetta" and not p.is_file() and e.revid in texts:
-            blocks = rosetta_blocks(texts[e.revid])
-            k = int(e.id.rsplit("/", 1)[1])
-            if k <= len(blocks):
-                _cache_write(e.file, blocks[k - 1])
-        elif e.source == "octave" and not p.is_file():
-            try:
-                _cache_write(e.file, _get(f"https://raw.githubusercontent.com/gnu-octave/octave/{e.revid}/{e.title}"))
-            except RuntimeError:
-                pass
-        if not p.is_file():
-            why = "missing after fetch"
-            if e.source == "rosetta" and rosetta_err and e.revid not in texts:
-                why = "missing after fetch: " + rosetta_err[:160]
-            problems[e.id] = why
-            continue
-        code = p.read_text(encoding="utf-8", errors="replace")
-        if e.kind == "acid-scene":
-            code += "\n%scene " + str(int(e.id.rsplit("/", 1)[1].split("_")[0]))
-        if sha256(code) != e.sha256:
-            problems[e.id] = "sha256 mismatch"
+        if e.source == "octave" and not (cache_dir() / e.file).is_file():
+            _cache_write(e.file, _get(f"https://raw.githubusercontent.com/gnu-octave/octave/{e.revid}/{e.title}"))
+        problem = _cached_problem(e)
+        if problem:
+            problems[e.id] = problem
     return problems
