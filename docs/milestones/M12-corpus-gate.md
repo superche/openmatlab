@@ -43,7 +43,7 @@ Tiers: **T0** parses; **T1** runs (exit 0, no error, no timeout); **T2** self-ch
 | C07 | T2 self-check pass rate ≥ 75 % (locked at the proposal value: no T2 oracle existed in the first full run; C-E5 #765 builds it) | m12_c07_tier2 | p1 | #765 | **met** (Epic #765, [design](../design/EPIC-765-oracles.md), [acceptance](../acceptance/EPIC-765.md); 2026-10-17: full run on `20145ad` (tree of `main` `2104b1c`) T2 82.3 % (3426/4161); 128 dialect-excluded Octave blocks are outside the rate, never passes (79.9 % if they were counted as failures); first run on `3567779` 64.1 %) |
 | C08 | T3 golden pass rate ≥ 70 % (locked at the proposal value: no T3 oracle existed in the first full run; C-E5 #765 builds it); every Octave-sourced golden links MATLAB docs | m12_c08_tier3 | p1 | #765 | met (T3 75.3 % (55/73) on tip `5d9513a` full run; MATLAB-transcript goldens; Shaw 2026-10-17; [acceptance](../acceptance/EPIC-765.md)) |
 | C09 | `internal-crash` = 0 in the full run | m12_c09_no_crash | p0 | #766 | met (Epic #766 PR: `*` width/precision in `sprintf`/`fprintf`, `display` inside functions; residual #838) |
-| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764; CI workflow install pending #833, residuals #832) |
+| C10 | `REPORT.md` (docs corpus folder) generated; failure groups deduplicated and filed as `corpus` issues; pass→fail regression fails CI | m12_c10_report_triage | p1 | #764 | met (Epic #764; CI workflow `.github/workflows/corpus.yml`, residuals #832) |
 
 ## Threshold calibration
 
