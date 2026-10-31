@@ -129,6 +129,13 @@ use_cases:
     features: [libs.labeloverlay, libs.regionprops]
     priority: p0
 
+  - id: uc.analyst_missing
+    title: Find, remove, and fill missing values in vectors and tables
+    actor: scientific user
+    goal: ismissing, rmmissing, and fillmissing constant/previous/next on the analyst path
+    features: [libs.missing_values]
+    priority: p1
+
   - id: uc.bbbc038_v07
     title: Export the BBBC038 lab figure as PNG and PDF
     actor: scientific user
@@ -2543,4 +2550,22 @@ test_cases:
     impl: tests/conformance/test_m16_v07.py
     status: active
     env: conformance
+
+  - id: tc.missing_values
+    kind: unit
+    title: ismissing, rmmissing, and fillmissing constant/previous/next (Epic #1033)
+    features: [libs.missing_values]
+    use_cases: [uc.analyst_missing]
+    impl: tests/unit/test_missing_values.py
+    status: active
+    env: unit
+
+  - id: tc.missing_values_bdd
+    kind: unit
+    title: missing-value Gherkin for vectors and tables (Epic #1033)
+    features: [libs.missing_values]
+    use_cases: [uc.analyst_missing]
+    impl: tests/bdd/test_missing_values_bdd.py
+    status: active
+    env: unit
 

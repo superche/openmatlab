@@ -1435,3 +1435,4 @@ __import__("openmatlab.libs.labeloverlay", fromlist=["register"]).register(BUILT
 __import__("openmatlab.libs.filtfilt", fromlist=["register"]).register(BUILTINS)  # M15 B-E2 (#1009)
 __import__("openmatlab.libs.findpeaks", fromlist=["register"]).register(BUILTINS)  # M15 B-E3 (#1010)
 __import__("openmatlab.libs.smoothdata", fromlist=["register"]).register(BUILTINS)  # M14 V-E2 (#995)
+__import__("openmatlab.libs.missing_builtins", fromlist=["register"]).register(BUILTINS)  # M17 (#1033)
