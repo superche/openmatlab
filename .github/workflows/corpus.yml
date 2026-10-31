@@ -18,8 +18,6 @@ jobs:
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      OPENMATLAB_CORPUS_CACHE: ${{ runner.temp }}/openmatlab-corpus
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,6 +30,9 @@ jobs:
       - name: Rosetta pin hash
         id: rosetta-key
         run: echo "key=$(python -m openmatlab.qa.corpus rosetta-key)" >> "$GITHUB_OUTPUT"
+      # runner.temp is a step context, not a job-env context. Later steps read this from GITHUB_ENV.
+      - name: Corpus cache directory
+        run: echo "OPENMATLAB_CORPUS_CACHE=${{ runner.temp }}/openmatlab-corpus" >> "$GITHUB_ENV"
       # Rosetta Code answers GitHub-hosted runners with HTTP 403. Restore the pinned
       # entries from the cache, or from the corpus-rosetta release asset on a miss.
       - name: Restore pinned Rosetta cache
@@ -50,7 +51,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then S=10; else S=0; fi
           python -m openmatlab.qa.corpus run --sample "$S" --out /tmp/corpus-results.json
       - name: Report
-        if: always() && steps.fetch.conclusion == 'success'
+        if: ${{ always() && steps.fetch.conclusion == 'success' }}
         run: python -m openmatlab.qa.corpus report --results /tmp/corpus-results.json --baseline docs/corpus/results.json --out /tmp/REPORT.md
       - uses: actions/upload-artifact@v4
         if: always()
