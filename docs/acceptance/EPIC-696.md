@@ -103,6 +103,8 @@ libs.table_join_group            libs       done     joins and grouping — join
 | join KeepOneCopy/row-name keys, cross-type key matching, IncludeEmptyGroups, group bins, groupsummary on arrays, grouptransform/groupfilter | [#742](https://github.com/superche/openmatlab/issues/742) |
 | char matrix + string internal error (unrelated, Core) | [#743](https://github.com/superche/openmatlab/issues/743) |
 
+M17 later took `groupsummary` IncludeEmptyGroups out of #742. The other bullets are #1052, #1053, #1054, #1055, and #1056 on the Core backlog.
+
 ## Milestone progress (M10)
 
 - Criteria met: **9 / 10** (T01, T02, T03, T04, T05, T06, T07, T08, T09)

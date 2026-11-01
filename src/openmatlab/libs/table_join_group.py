@@ -5,9 +5,16 @@ sorted by key (inner/outer) or keep the left table's order (join). Unmatched out
 with each type's missing value (NaN, NaT, '', <missing>, <undefined>, 0 for integers, false for
 logical). ``findgroups``/``splitapply``/``groupsummary``/``groupcounts`` number groups by the sorted
 unique combinations of the grouping variables (rank keys from ``table_utils``).
+
+``groupsummary(..., 'IncludeEmptyGroups', true)`` (M17 #742) also emits empty groups: every
+category of a categorical grouping variable, both ``false`` and ``true`` of a logical one, and
+every combination of those possible values. A missing grouping value stays its own group at the
+end when ``'IncludeMissingGroups'`` is true (the default).
 """
 
 from __future__ import annotations
+
+import itertools
 
 import numpy as np
 
@@ -444,14 +451,139 @@ def _numeric_data(c, name, fn):
     return np.asarray(c.backend_buffer()).astype(float)
 
 
-def _group_table(T, gvars, fn, opts):
-    include_missing = True
-    if "includemissinggroups" in opts:
-        include_missing = bool(np.asarray(opts["includemissinggroups"].backend_buffer()).reshape(-1)[0])
-    if "includeemptygroups" in opts and bool(np.asarray(opts["includeemptygroups"].backend_buffer()).reshape(-1)[0]):
+_FLAG_LABEL = {"includemissinggroups": "IncludeMissingGroups", "includeemptygroups": "IncludeEmptyGroups"}
+
+
+def _flag(opts, key, default, fn):
+    """Name-value logical. Absent returns ``default``. Anything other than scalar 0/1 is an error."""
+    if key not in opts:
+        return default
+    v = opts[key]
+    label = _FLAG_LABEL[key]
+    if is_text(v) or getattr(v, "is_object", False) or not hasattr(v, "backend_buffer"):
+        raise _err(f"{fn}: '{label}' must be 1 (true) or 0 (false).", f"MATLAB:{fn}:InvalidOption")
+    a = np.asarray(v.backend_buffer()).reshape(-1)
+    if a.size != 1 or np.iscomplexobj(a):
+        raise _err(f"{fn}: '{label}' must be 1 (true) or 0 (false).", f"MATLAB:{fn}:InvalidOption")
+    if a.dtype == np.bool_:
+        return bool(a[0])
+    if np.issubdtype(a.dtype, np.number):
+        x = float(a[0])
+        if x == 0.0 or x == 1.0:
+            return bool(x)
+    raise _err(f"{fn}: '{label}' must be 1 (true) or 0 (false).", f"MATLAB:{fn}:InvalidOption")
+
+
+def _is_logical_col(col):
+    return hasattr(col, "backend_buffer") and not getattr(col, "is_object", False) \
+        and np.asarray(col.backend_buffer()).dtype == np.bool_
+
+
+def _one_row(col, ranks, rank, synthesize):
+    hit = np.flatnonzero(ranks == rank)
+    if hit.size:
+        return _col_rows(col, hit[:1])
+    return synthesize()
+
+
+def _possible_levels(col, ranks):
+    """Non-missing group values in output order, as ``(rank, one-row value)``."""
+    if getattr(col, "is_categorical", False):
+        return [(float(code), _one_row(col, ranks, float(code), lambda c=code: col.like(np.array([[c]], dtype=np.int64))))
+                for code in range(1, len(col.cats) + 1)]
+    if _is_logical_col(col):
+        return [(float(val), _one_row(col, ranks, float(val),
+                                       lambda v=val: NDArrayValue(np.array([[v]], dtype=bool))))
+                for val in (False, True)]
+    present = ranks[~np.isnan(ranks)]
+    if present.size == 0:
+        return []
+    levels = []
+    for u in np.unique(present):
+        hit = np.flatnonzero(ranks == u)
+        levels.append((float(u), _col_rows(col, hit[:1])))
+    return levels
+
+
+def _stack_rows(parts, col):
+    if not parts:
+        return _col_rows(col, np.zeros(0, dtype=int))
+    if len(parts) == 1:
+        return parts[0]
+    return _ev().concat_values([[p] for p in parts])
+
+
+def _ranks_of(col, n, fn):
+    """The single rank vector of a grouping variable.
+
+    ``rank_columns`` turns an empty numeric column into no rank columns, and it cannot
+    reshape an empty categorical (``reshape(0, -1)``). A 0-row column vector is still
+    one grouping variable.
+    """
+    if n == 0 and getattr(col, "is_categorical", False):
+        width = col.codes.shape[1] if col.codes.ndim == 2 else 1
+        if width not in (0, 1):
+            raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported for a multi-column grouping variable.",
+                       f"MATLAB:{fn}:Unsupported")
+        return np.zeros(0)
+    one = rank_columns(col, n)
+    if len(one) == 1:
+        return one[0]
+    if n == 0 and not one:
+        return np.zeros(0)
+    raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported for a multi-column grouping variable.",
+               f"MATLAB:{fn}:Unsupported")
+
+
+def _groups_including_empty(cols, n, include_missing, fn):
+    """Observed groups plus empty ones, in groupsummary order. Missing groups stay last."""
+    if not cols:
+        # product() of no variables yields one empty tuple, which is not a group.
+        G, firsts = group_numbers(cols, n, include_missing)
+        return G, firsts, [], np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
+    ranks = [_ranks_of(col, n, fn) for col in cols]
+    levels = [_possible_levels(col, r) for col, r in zip(cols, ranks)]
+    combos = list(itertools.product(*levels)) if all(levels) else []
+    index = {tuple(rank for rank, _row in combo): i for i, combo in enumerate(combos)}
+    R = np.column_stack(ranks)
+    miss = np.any(np.isnan(R), axis=1) if n else np.zeros(0, dtype=bool)
+    G = np.full(n, np.nan)
+    for i in range(n):
+        if miss[i]:
+            continue
+        key = tuple(float(R[i, j]) for j in range(R.shape[1]))
+        slot = index.get(key)
+        if slot is None:
+            raise _err(f"{fn}: could not match a row to a group.", f"MATLAB:{fn}:Internal")
+        G[i] = slot + 1
+    missing_first = []
+    if include_missing and n and np.any(miss):
+        Gobs, firsts = group_numbers(cols, n, True)
+        for fi in firsts:
+            if not miss[fi]:
+                continue
+            missing_first.append(int(fi))
+            G[np.flatnonzero(Gobs == Gobs[fi])] = len(combos) + len(missing_first)
+    ng = len(combos) + len(missing_first)
+    keycols = []
+    for j, col in enumerate(cols):
+        parts = [combo[j][1] for combo in combos]
+        parts += [_col_rows(col, np.array([fi])) for fi in missing_first]
+        keycols.append(_stack_rows(parts, col))
+    counts = np.array([np.sum(G == g + 1) for g in range(ng)], float)
+    return G, np.arange(ng), keycols, counts
+
+
+def _group_table(T, gvars, fn, opts, *, allow_empty=False):
+    include_missing = _flag(opts, "includemissinggroups", True, fn)
+    include_empty = _flag(opts, "includeemptygroups", False, fn)
+    if include_empty and not allow_empty:
         raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported yet.", f"MATLAB:{fn}:Unsupported")
-    G, firsts = group_numbers([T.cols[i] for i in gvars], T.nrows, include_missing)
-    keycols = [_col_rows(T.cols[i], firsts) for i in gvars]
+    cols = [T.cols[i] for i in gvars]
+    if include_empty:
+        return _groups_including_empty(cols, T.nrows, include_missing, fn)
+    G, firsts = group_numbers(cols, T.nrows, include_missing)
+    keycols = [_col_rows(c, firsts) for c in cols]
     counts = np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
     return G, firsts, keycols, counts
 
@@ -459,12 +591,16 @@ def _group_table(T, gvars, fn, opts):
 def _groupsummary(args, *, nargout=1):
     from openmatlab.runtime.function_handle import FunctionHandleValue
 
-    data, opts = _opts(args, ("includemissinggroups", "includeemptygroups"), "groupsummary")
+    data, opts = _opts(args, ("includemissinggroups", "includeemptygroups", "variablenamingrule", "includededge"),
+                       "groupsummary")
     if len(data) < 2 or not _is_table(data[0]):
         raise _err("groupsummary: expected groupsummary(T, groupvars, method, datavars) with a table input.",
                    "MATLAB:groupsummary:InvalidInput")
     if len(data) > 4:
         raise _err("groupsummary: group bins are not supported yet.", "MATLAB:groupsummary:Unsupported")
+    for key, label in (("variablenamingrule", "VariableNamingRule"), ("includededge", "IncludedEdge")):
+        if key in opts:
+            raise _err(f"groupsummary: '{label}' is not supported.", "MATLAB:groupsummary:Unsupported")
     T = data[0]
     gvars = T.var_sel(data[1])
     methods = []
@@ -497,7 +633,7 @@ def _groupsummary(args, *, nargout=1):
         dvars = T.var_sel(data[3])
     else:
         dvars = [i for i in range(len(T.names)) if i not in gvars] if methods else []
-    G, firsts, keycols, counts = _group_table(T, gvars, "groupsummary", opts)
+    G, firsts, keycols, counts = _group_table(T, gvars, "groupsummary", opts, allow_empty=True)
     names = [T.names[i] for i in gvars] + ["GroupCount"]
     cols = keycols + [_num_col(counts)]
     nf = 0
@@ -516,9 +652,17 @@ def _groupsummary(args, *, nargout=1):
                 cols.append(_ev().concat_values([[v] for v in vals]) if vals else NDArrayValue(np.zeros((0, 1))))
                 names.append(f"fun{nf if len([x for x in methods if not isinstance(x, str)]) > 1 else 1}_{T.names[d]}")
                 continue
-            a = _numeric_data(T.cols[d], T.names[d], "groupsummary").reshape(T.nrows, -1)
-            out = np.array([[_apply_method(m, a[G == g + 1, j]) for j in range(a.shape[1])]
-                            for g in range(len(firsts))], float).reshape(len(firsts), -1)
+            buf = _numeric_data(T.cols[d], T.names[d], "groupsummary")
+            # reshape(0, -1) cannot infer a width; an empty column vector is one column.
+            if T.nrows:
+                a = buf.reshape(T.nrows, -1)
+            else:
+                a = np.zeros((0, buf.shape[1] if buf.ndim == 2 else 1))
+            if len(firsts):
+                out = np.array([[_apply_method(m, a[G == g + 1, j]) for j in range(a.shape[1])]
+                                for g in range(len(firsts))], float).reshape(len(firsts), -1)
+            else:
+                out = np.zeros((0, a.shape[1]))
             cols.append(NDArrayValue(out))
             names.append(f"{m}_{T.names[d]}")
     return (TableValue(names, cols, len(firsts)),)

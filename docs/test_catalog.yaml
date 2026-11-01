@@ -143,6 +143,13 @@ use_cases:
     features: [libs.table_io, libs.missing_values]
     priority: p1
 
+  - id: uc.analyst_groupsummary
+    title: Summarize a cleaned table by group, including empty groups
+    actor: scientific user
+    goal: groupsummary IncludeEmptyGroups with mean, sum, min, max, std, and GroupCount
+    features: [libs.table_join_group]
+    priority: p1
+
   - id: uc.bbbc038_v07
     title: Export the BBBC038 lab figure as PNG and PDF
     actor: scientific user
@@ -2591,6 +2598,24 @@ test_cases:
     features: [libs.table_io, libs.missing_values]
     use_cases: [uc.analyst_csv_missing]
     impl: tests/bdd/test_treat_as_missing_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.groupsummary_empty
+    kind: unit
+    title: groupsummary IncludeEmptyGroups and story methods (Epic #1032, #742)
+    features: [libs.table_join_group]
+    use_cases: [uc.analyst_groupsummary]
+    impl: tests/unit/test_groupsummary_empty.py
+    status: active
+    env: unit
+
+  - id: tc.groupsummary_empty_bdd
+    kind: bdd
+    title: groupsummary empty-group Gherkin (Epic #1032, #742)
+    features: [libs.table_join_group]
+    use_cases: [uc.analyst_groupsummary]
+    impl: tests/bdd/test_groupsummary_empty_bdd.py
     status: active
     env: unit
 
