@@ -8,8 +8,8 @@ unique combinations of the grouping variables (rank keys from ``table_utils``).
 
 ``groupsummary(..., 'IncludeEmptyGroups', true)`` (M17 #742) also emits empty groups: every
 category of a categorical grouping variable, both ``false`` and ``true`` of a logical one, and
-every combination of those possible values. A missing grouping value stays its own group at the
-end when ``'IncludeMissingGroups'`` is true (the default).
+every combination of those possible values. Groups are ordered like the default path:
+column by column, with a missing value sorting last inside that column.
 """
 
 from __future__ import annotations
@@ -535,8 +535,18 @@ def _ranks_of(col, n, fn):
                f"MATLAB:{fn}:Unsupported")
 
 
+def _nan_last(key):
+    """Sort key: a missing rank sorts after every real value in that column."""
+    return tuple(np.inf if np.isnan(x) else float(x) for x in key)
+
+
 def _groups_including_empty(cols, n, include_missing, fn):
-    """Observed groups plus empty ones, in groupsummary order. Missing groups stay last."""
+    """Observed groups plus empty ones, in the same order as the default path.
+
+    Sort column by column. A missing value sorts last inside its own column, so a
+    group that contains a missing key stays where the default sort puts it. Empty
+    combinations are inserted into that sequence.
+    """
     if not cols:
         # product() of no variables yields one empty tuple, which is not a group.
         G, firsts = group_numbers(cols, n, include_missing)
@@ -544,34 +554,34 @@ def _groups_including_empty(cols, n, include_missing, fn):
     ranks = [_ranks_of(col, n, fn) for col in cols]
     levels = [_possible_levels(col, r) for col, r in zip(cols, ranks)]
     combos = list(itertools.product(*levels)) if all(levels) else []
-    index = {tuple(rank for rank, _row in combo): i for i, combo in enumerate(combos)}
-    R = np.column_stack(ranks)
-    miss = np.any(np.isnan(R), axis=1) if n else np.zeros(0, dtype=bool)
+    R = np.column_stack(ranks) if n else np.zeros((0, len(cols)))
+    items = []
+    seen = set()
+    Gobs = np.full(n, np.nan)
+    if n:
+        Gobs, firsts = group_numbers(cols, n, include_missing)
+        for fi in firsts:
+            fi = int(fi)
+            key = tuple(float(R[fi, j]) for j in range(len(cols)))
+            parts = tuple(_col_rows(col, np.array([fi])) for col in cols)
+            items.append((key, parts, float(Gobs[fi])))
+            if not any(np.isnan(x) for x in key):
+                seen.add(key)
+    for combo in combos:
+        key = tuple(rank for rank, _row in combo)
+        if key in seen:
+            continue
+        items.append((key, tuple(row for _rank, row in combo), None))
+    items.sort(key=lambda it: _nan_last(it[0]))
+    slot = {gobs: i for i, (_key, _parts, gobs) in enumerate(items) if gobs is not None}
     G = np.full(n, np.nan)
     for i in range(n):
-        if miss[i]:
-            continue
-        key = tuple(float(R[i, j]) for j in range(R.shape[1]))
-        slot = index.get(key)
-        if slot is None:
-            raise _err(f"{fn}: could not match a row to a group.", f"MATLAB:{fn}:Internal")
-        G[i] = slot + 1
-    missing_first = []
-    if include_missing and n and np.any(miss):
-        Gobs, firsts = group_numbers(cols, n, True)
-        for fi in firsts:
-            if not miss[fi]:
-                continue
-            missing_first.append(int(fi))
-            G[np.flatnonzero(Gobs == Gobs[fi])] = len(combos) + len(missing_first)
-    ng = len(combos) + len(missing_first)
-    keycols = []
-    for j, col in enumerate(cols):
-        parts = [combo[j][1] for combo in combos]
-        parts += [_col_rows(col, np.array([fi])) for fi in missing_first]
-        keycols.append(_stack_rows(parts, col))
-    counts = np.array([np.sum(G == g + 1) for g in range(ng)], float)
-    return G, np.arange(ng), keycols, counts
+        g = Gobs[i]
+        if not np.isnan(g):
+            G[i] = slot[float(g)] + 1
+    keycols = [_stack_rows([it[1][j] for it in items], col) for j, col in enumerate(cols)]
+    counts = np.array([np.sum(G == g + 1) for g in range(len(items))], float)
+    return G, np.arange(len(items)), keycols, counts
 
 
 def _group_table(T, gvars, fn, opts, *, allow_empty=False):

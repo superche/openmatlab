@@ -10,12 +10,12 @@ The analyst story groups a cleaned table and needs groups that the rows never me
 
 `libs/table_join_group.py` still owns `groupsummary`. The flag is accepted only there. `groupcounts` still raises `groupcounts: 'IncludeEmptyGroups' is not supported yet.`
 
-With the flag on, the output groups are the Cartesian product of each grouping variable's possible values, in the same order as a sort of those values, then any missing groups:
+With the flag on, the output groups are the Cartesian product of each grouping variable's possible values, merged with any missing groups, in the same order as the default path (column by column, missing last inside that column):
 
 - A categorical contributes every category, in category order, including ones with no rows. `<undefined>` is not a category.
 - A logical contributes `false` and `true`.
 - Anything else contributes the non-missing values that actually occur.
-- A row whose grouping value is missing stays in its own group at the end when `'IncludeMissingGroups'` is true (the default), and is dropped when it is false. Empty groups are not invented for a missing value that never occurs.
+- A row whose grouping value is missing stays in its own group when `'IncludeMissingGroups'` is true (the default), and is dropped when it is false. The group is sorted with the others: column by column, missing last inside that column. It is not moved after every complete group. Empty groups are not invented for a missing value that never occurs.
 
 `GroupCount` is the number of rows in the group, including rows whose data is NaN. Named methods omit NaN. An empty group therefore has count 0, `sum` 0, and `mean` / `min` / `max` / `std` NaN. The story methods are the ones already implemented: `mean`, `sum`, `min`, `max`, `std`, plus `GroupCount`. There is no `numel` method.
 

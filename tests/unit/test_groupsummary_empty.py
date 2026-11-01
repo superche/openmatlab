@@ -124,6 +124,18 @@ def test_empty_category_and_undefined_group_stay_distinct():
     assert run(dropped).workspace.get("S").cols[0].labels() == ["a", "a", "b", "b"]
 
 
+def test_missing_key_keeps_its_place_among_the_other_groups():
+    # A missing value sorts last inside its own column. IncludeEmptyGroups must not
+    # move that group to the end of the table.
+    base = "T = table([1;1;2;2], [10;NaN;20;10], [1;2;3;4], 'VariableNames', {'A','B','y'});"
+    without = base + "S = groupsummary(T, {'A','B'}, 'sum', 'y'); v = [S.A S.B S.sum_y];"
+    with_empty = base + "S = groupsummary(T, {'A','B'}, 'sum', 'y', 'IncludeEmptyGroups', true); v = [S.A S.B S.sum_y S.GroupCount];"
+    assert_rows(without, [[1, 10, 1], [1, np.nan, 2], [2, 10, 4], [2, 20, 3]])
+    assert_rows(with_empty, [[1, 10, 1, 1], [1, 20, 0, 0], [1, np.nan, 2, 1], [2, 10, 4, 1], [2, 20, 3, 1]])
+    present = rows(with_empty)[rows(with_empty)[:, 3] > 0][:, :3]
+    assert np.allclose(present, rows(without), equal_nan=True)
+
+
 def test_unobserved_numeric_combination_is_an_empty_group():
     code = (
         "T = table([1;1;2], [10;20;10], [1;2;3], 'VariableNames', {'a','b','x'});"
