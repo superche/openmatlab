@@ -2553,7 +2553,7 @@ test_cases:
 
   - id: tc.missing_values
     kind: unit
-    title: ismissing, rmmissing, and fillmissing constant/previous/next (Epic #1033)
+    title: ismissing, rmmissing, and fillmissing constant/previous/next (Epic #1033, #1039)
     features: [libs.missing_values]
     use_cases: [uc.analyst_missing]
     impl: tests/unit/test_missing_values.py
@@ -2562,7 +2562,7 @@ test_cases:
 
   - id: tc.missing_values_bdd
     kind: unit
-    title: missing-value Gherkin for vectors and tables (Epic #1033)
+    title: missing-value Gherkin for vectors, tables, char blanks, and empty inputs (Epic #1033, #1039)
     features: [libs.missing_values]
     use_cases: [uc.analyst_missing]
     impl: tests/bdd/test_missing_values_bdd.py

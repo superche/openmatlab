@@ -33,3 +33,27 @@ Feature: missing values on the analyst path (Epic #1033)
     Given a fresh session
     When I evaluate "a = [true false true]; m = double(ismissing(a)); r = double(rmmissing(a)); f = double(fillmissing(a, 'constant', false)); s = [m r f];"
     Then variable "s" equals row [0, 0, 0, 1, 0, 1, 1, 0, 1]
+
+  @needs_numpy
+  Scenario: a char blank is missing and stays char through remove and fill
+    Given a fresh session
+    When I evaluate "m = double(ismissing('a b')); r = double(rmmissing('a b')); p = double(fillmissing('a b', 'previous')); n = double(fillmissing('a b', 'next')); c = double(fillmissing('a b', 'constant', 'x')); s = [m r p n c];"
+    Then variable "s" equals row [0, 1, 0, 97, 98, 97, 97, 98, 97, 98, 98, 97, 120, 98]
+
+  @needs_numpy
+  Scenario: empty arrays and a 0-row table keep their shape
+    Given a fresh session
+    When I evaluate "a = rmmissing([]); b = rmmissing(zeros(0,3)); c = rmmissing(zeros(1,0)); ia = ismissing([]); ib = ismissing(zeros(0,3)); ic = ismissing(zeros(1,0)); fa = fillmissing([], 'next'); fb = fillmissing(zeros(0,3), 'previous'); fc = fillmissing(zeros(1,0), 'constant', 0); T = table(zeros(0,1), zeros(0,3), 'VariableNames', {'a','b'}); m = ismissing(T); R = rmmissing(T); F = fillmissing(T, 'next'); s = [size(a) size(b) size(c) size(ia) size(ib) size(ic) size(fa) size(fb) size(fc) size(m) height(R) width(R) height(F) size(F.a)];"
+    Then variable "s" equals row [0, 0, 0, 3, 1, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 3, 1, 0, 0, 2, 0, 2, 0, 0, 1]
+
+  @needs_numpy
+  Scenario: rmmissing along dimension 2 reports a row of removed columns
+    Given a fresh session
+    When I evaluate "A = [1 NaN 3; NaN 5 NaN]; [R, tf] = rmmissing(A, 2); s = [size(tf) double(tf) size(R)];"
+    Then variable "s" equals row [1, 3, 1, 1, 1, 2, 0]
+
+  @needs_numpy
+  Scenario: a single-row table fills down each variable
+    Given a fresh session
+    When I evaluate "T = table([NaN 5], 'VariableNames', {'x'}); F = fillmissing(T, 'next'); m = double(ismissing(F.x)); s = [m size(F.x) F.x(2)];"
+    Then variable "s" equals row [1, 0, 1, 2, 5]

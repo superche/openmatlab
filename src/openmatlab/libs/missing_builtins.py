@@ -10,9 +10,10 @@
 
 Standard missing values follow the public definitions used by the rest of this
 tree: NaN (double, single, duration), NaT (datetime), ``<missing>`` (string),
-``<undefined>`` (categorical), and ``{''}`` (cell of character vectors). Integer
-and logical arrays have none. Tables and timetables are handled one variable at
-a time, down the rows.
+``<undefined>`` (categorical), a blank (char), and ``{''}`` (cell of character
+vectors). Integer and logical arrays have none. Tables and timetables are
+handled one variable at a time, down the rows, including a table with one row.
+A char result stays char. Empty inputs keep their size.
 
 Out of this issue: every other fill method (including ``movmean``), ``EndValues``,
 ``SamplePoints``, custom missing indicators, and ``standardizeMissing``.
@@ -80,6 +81,22 @@ def _none_mask(data: np.ndarray) -> np.ndarray:
     return np.array([x is None for x in data.reshape(-1)], dtype=bool).reshape(data.shape)
 
 
+_CHAR_MISSING = ord(" ")
+
+
+def _char_codes(v) -> np.ndarray:
+    """Character codes for a char array. A blank (``' '``) is the standard missing value."""
+    r, c = v.shape
+    if r == 0 or c == 0:
+        return np.zeros((r, c), dtype=np.int32)
+    return np.array([[ord(ch) for ch in row] for row in v.rows], dtype=np.int32)
+
+
+def _flat_width(shape) -> int:
+    """Trailing-dimension product. Explicit, so a 0 leading size does not ask NumPy to infer it."""
+    return int(np.prod(shape[1:], dtype=int))
+
+
 def _logical(mask: np.ndarray) -> NDArrayValue:
     a = np.asarray(mask, dtype=bool)
     if a.ndim == 0:
@@ -98,7 +115,7 @@ def _default_axis(shape) -> int:
 
 def _row_any(mask: np.ndarray, nrows: int) -> np.ndarray:
     if mask.shape[:1] == (nrows,):
-        return np.any(mask.reshape(nrows, -1), axis=1)
+        return np.any(mask.reshape(nrows, _flat_width(mask.shape)), axis=1)
     if mask.size == nrows:
         return np.asarray(mask, dtype=bool).reshape(nrows)
     raise _err("A table variable must have one row for each row of the table.",
@@ -109,6 +126,7 @@ def missing_mask(v) -> np.ndarray:
     """Boolean mask of standard missing entries. A table yields one column per variable."""
     from openmatlab.runtime import string_array as sa
     from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
     from openmatlab.runtime.objects import DatetimeValue, DurationValue
 
     if getattr(v, "is_table", False):
@@ -131,6 +149,8 @@ def missing_mask(v) -> np.ndarray:
             for j in range(c):
                 out[i, j] = _element_missing(v.rows[i][j])
         return out
+    if isinstance(v, CharValue) and not getattr(v, "is_string", False):
+        return np.equal(_char_codes(v), _CHAR_MISSING)
     if hasattr(v, "backend_buffer") and not getattr(v, "is_object", False):
         a = np.asarray(v.backend_buffer())
         if a.dtype == np.bool_ or np.issubdtype(a.dtype, np.integer):
@@ -154,6 +174,25 @@ class _Buf:
 def _bad_const(const, what: str):
     raise _err(f"Cannot fill {what} with a value of class '{_class_name(const)}'.",
                "OpenMATLAB:fillmissing:ConstantType")
+
+
+def _char_from_codes(data: np.ndarray):
+    from openmatlab.runtime.char_value import CharValue
+
+    a = np.asarray(data)
+    if a.shape[0] == 0:
+        return CharValue("")
+    return CharValue(rows=["".join(chr(int(ch)) for ch in row) for row in a])
+
+
+def _accept_char(const):
+    from openmatlab.runtime.char_value import CharValue
+
+    if isinstance(const, CharValue) and not getattr(const, "is_string", False):
+        if const.numel() != 1:
+            raise _err("The fill constant must be a scalar.", "OpenMATLAB:fillmissing:ConstantSize")
+        return ord(const.text)
+    _bad_const(const, "char data")
 
 
 def _buffer(v):
@@ -241,6 +280,9 @@ def _buffer(v):
             return CellValue(rows=rows, nd=_v.nd)
 
         return _Buf(data, missing, "cell", rebuild, accept)
+    if isinstance(v, CharValue) and not getattr(v, "is_string", False):
+        data = _char_codes(v)
+        return _Buf(data, np.equal(data, _CHAR_MISSING), "char", _char_from_codes, _accept_char)
     if hasattr(v, "backend_buffer") and not getattr(v, "is_object", False):
         a = np.asarray(v.backend_buffer())
         sparse = bool(getattr(v, "issparse", False))
@@ -275,6 +317,8 @@ def _mask_of(kind: str, data: np.ndarray) -> np.ndarray:
         return np.equal(data, 0)
     if kind == "cell":
         return np.array([_element_missing(x) for x in data.reshape(-1)], dtype=bool).reshape(data.shape)
+    if kind == "char":
+        return np.equal(data, _CHAR_MISSING)
     if data.dtype == np.bool_ or np.issubdtype(data.dtype, np.integer):
         return np.zeros(data.shape, dtype=bool)
     return np.isnan(data)
@@ -303,7 +347,7 @@ def _propagate(col: np.ndarray, miss: np.ndarray, method: str) -> np.ndarray:
 
 def _fill_moved(data: np.ndarray, miss: np.ndarray, method: str, value) -> np.ndarray:
     n = data.shape[0]
-    rest = int(np.prod(data.shape[1:], dtype=int))
+    rest = _flat_width(data.shape)
     flat = data.reshape(n, rest).copy()
     m = miss.reshape(n, rest)
     vector = isinstance(value, np.ndarray) and value.ndim == 1 and value.size > 1
@@ -379,7 +423,8 @@ def _fill_table(v, method: str, const, indices):
     tf = np.zeros((v.nrows, len(v.names)), dtype=bool)
     for k, j in enumerate(indices):
         try:
-            filled, mask = _fill_one(v.cols[j], method, consts[k], None)
+            # Dimension 1 of the variable. A one-row table must not fill across its columns.
+            filled, mask = _fill_one(v.cols[j], method, consts[k], 0)
         except EvalError as exc:
             if exc.identifier == "OpenMATLAB:fillmissing:ConstantType":
                 raise _err(f"{exc} (variable '{v.names[j]}').", exc.identifier) from exc
@@ -509,7 +554,7 @@ def _counts_along(mask: np.ndarray, axis: int) -> np.ndarray:
     while work.ndim <= axis:
         work = work.reshape(work.shape + (1,))
     moved = np.moveaxis(work, axis, 0)
-    return np.sum(moved.reshape(moved.shape[0], -1), axis=1)
+    return np.sum(moved.reshape(moved.shape[0], _flat_width(moved.shape)), axis=1)
 
 
 def _take_axis(data: np.ndarray, keep: np.ndarray, axis: int) -> np.ndarray:
@@ -537,8 +582,9 @@ def _rm_array(v, axis: int, min_num: int):
     return buf.rebuild(_take_axis(buf.data, keep, axis)), drop
 
 
-def _tf_along(drop: np.ndarray, shape, axis: int) -> np.ndarray:
-    if len(shape) >= 2 and shape[0] == 1 and axis == 1:
+def _tf_along(drop: np.ndarray, axis: int) -> np.ndarray:
+    """Removed positions. Dimension 2 yields a row; every other dimension yields a column."""
+    if axis == 1:
         return drop.reshape(1, -1)
     return drop.reshape(-1, 1)
 
@@ -579,7 +625,7 @@ def _rmmissing(args, *, nargout=1):
         shape = getattr(src, "shape", (1, 1))
         axis = _default_axis(shape) if dim is None else dim
         src, drop = _rm_array(src, axis, min_num)
-        tf = _tf_along(drop, shape, axis)
+        tf = _tf_along(drop, axis)
     if nargout > 1:
         return (src, _logical(tf))
     return (src,)
