@@ -18,7 +18,7 @@
 
 **Ready for user acceptance.** M12 criterion C10 is **met**. Epic #764 stays **open** until the user accepts it.
 
-`python -m openmatlab.qa.corpus report` generates `docs/corpus/REPORT.md` (first full run: T0 87.5 % (850/971), T1 26.1 % (184/706), T2/T3 no oracle yet). `gate` exits 1 on any pass->fail regression against the committed results. `triage --file` filed 39 failure groups as deduplicated `corpus` issues (#793-#831); a re-run reports all 39 as already filed. Thresholds are calibrated and locked in the M12 doc: T0 95 %, T1 65 %, T2 75 %, T3 70 %. The CI workflow (nightly full run, PR sample) is staged at `docs/corpus/ci/corpus.yml` because the agent token lacks the workflow scope (#833).
+`python -m openmatlab.qa.corpus report` generates `docs/corpus/REPORT.md` (first full run: T0 87.5 % (850/971), T1 26.1 % (184/706), T2/T3 no oracle yet). `gate` exits 1 on any pass->fail regression against the committed results. `triage --file` filed 39 failure groups as deduplicated `corpus` issues (#793-#831); a re-run reports all 39 as already filed. Thresholds are calibrated and locked in the M12 doc: T0 95 %, T1 65 %, T2 75 %, T3 70 %. The CI workflow (nightly full run, PR sample) is `.github/workflows/corpus.yml` (#833).
 
 ## Traceability: scope → PR → CI
 

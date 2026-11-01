@@ -75,6 +75,100 @@ def test_fetch_detects_hash_mismatch(tmp_path, monkeypatch):
     assert M.fetch(m) == {e.id: "sha256 mismatch"}
 
 
+def _one(source: str):
+    m = M.load()
+    e = copy.deepcopy(next(x for x in m.entries if x.source == source))
+    m.entries = [e]
+    return m, e
+
+
+def test_fetch_raises_on_rosetta_http_failure(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENMATLAB_CORPUS_CACHE", str(tmp_path))
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setattr(M, "_gh_tarball", lambda *a, **k: None)
+    m, _e = _one("rosetta")
+
+    def boom(url, retries=4):
+        raise RuntimeError("fetch failed: HTTP Error 403: Forbidden")
+
+    monkeypatch.setattr(M, "_get", boom)
+    with pytest.raises(RuntimeError, match="403"):
+        M.fetch(m)
+
+
+def test_fetch_raises_on_octave_http_failure(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENMATLAB_CORPUS_CACHE", str(tmp_path))
+    monkeypatch.setattr(M, "_gh_tarball", lambda *a, **k: None)
+    m, _e = _one("octave")
+
+    def boom(url, retries=4):
+        raise RuntimeError("fetch failed: HTTP Error 503: Service Unavailable")
+
+    monkeypatch.setattr(M, "_get", boom)
+    with pytest.raises(RuntimeError, match="503"):
+        M.fetch(m)
+
+
+def test_actions_missing_rosetta_does_not_fetch_live(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENMATLAB_CORPUS_CACHE", str(tmp_path))
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setattr(M, "_gh_tarball", lambda *a, **k: None)
+    m, _e = _one("rosetta")
+
+    def boom(url, retries=4):
+        raise AssertionError(url)
+
+    monkeypatch.setattr(M, "_get", boom)
+    with pytest.raises(RuntimeError, match="corpus-rosetta"):
+        M.fetch(m)
+
+
+def test_rosetta_seed_roundtrip_checks_sha256(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    monkeypatch.setenv("OPENMATLAB_CORPUS_CACHE", str(tmp_path))
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    m, e = _one("rosetta")
+    code = "disp(1)\n"
+    e.sha256 = M.sha256(code)
+    (tmp_path / e.file).parent.mkdir(parents=True)
+    (tmp_path / e.file).write_text(code)
+    dest = tmp_path / "seed.tar.gz"
+    M._write_rosetta_tar(m, dest)
+    (tmp_path / e.file).unlink()
+    monkeypatch.setattr(M, "load", lambda path=None: m)
+    monkeypatch.setattr(M, "_get", lambda url, retries=4: dest.read_bytes())
+    assert M.restore_rosetta().startswith("restored ")
+    assert (tmp_path / e.file).read_text() == code
+
+    def boom(url, retries=4):
+        raise AssertionError(url)
+
+    monkeypatch.setattr(M, "_get", boom)
+    assert M.restore_rosetta().startswith("rosetta cache ok")
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+        info = tarfile.TarInfo("../evil.m")
+        info.size = 2
+        tf.addfile(info, io.BytesIO(b"x\n"))
+    (tmp_path / e.file).unlink()
+    monkeypatch.setattr(M, "_get", lambda url, retries=4: buf.getvalue())
+    with pytest.raises(RuntimeError, match="refusing seed path"):
+        M.restore_rosetta()
+    assert not (tmp_path / "rosetta").exists()
+    assert not (tmp_path.parent / "evil.m").exists()
+
+
+def test_rosetta_key_cli(capsys):
+    from openmatlab.qa.corpus.__main__ import main
+
+    assert main(["rosetta-key"]) == 0
+    out = capsys.readouterr().out.strip()
+    assert len(out) == 64 and set(out) <= set("0123456789abcdef")
+
+
 def test_check_cli_offline(capsys):
     from openmatlab.qa.corpus.__main__ import main
 
