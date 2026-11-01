@@ -136,6 +136,13 @@ use_cases:
     features: [libs.missing_values]
     priority: p1
 
+  - id: uc.analyst_csv_missing
+    title: Read a messy CSV and wash its missing values
+    actor: scientific user
+    goal: readtable TreatAsMissing turns NA, -999, and empty fields into missing values that rmmissing and fillmissing already understand
+    features: [libs.table_io, libs.missing_values]
+    priority: p1
+
   - id: uc.bbbc038_v07
     title: Export the BBBC038 lab figure as PNG and PDF
     actor: scientific user
@@ -2566,6 +2573,24 @@ test_cases:
     features: [libs.missing_values]
     use_cases: [uc.analyst_missing]
     impl: tests/bdd/test_missing_values_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.treat_as_missing
+    kind: unit
+    title: readtable TreatAsMissing on delimited text (M17 slice of #721)
+    features: [libs.table_io, libs.missing_values]
+    use_cases: [uc.analyst_csv_missing]
+    impl: tests/unit/test_treat_as_missing.py
+    status: active
+    env: unit
+
+  - id: tc.treat_as_missing_bdd
+    kind: bdd
+    title: readtable TreatAsMissing Gherkin (M17 slice of #721)
+    features: [libs.table_io, libs.missing_values]
+    use_cases: [uc.analyst_csv_missing]
+    impl: tests/bdd/test_treat_as_missing_bdd.py
     status: active
     env: unit
 

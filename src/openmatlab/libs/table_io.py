@@ -1,9 +1,14 @@
 """readtable / writetable / readcell / writecell for delimited text (M10 T-E4, Epic #694).
 
 Fields are split with Python's ``csv`` module (quoted fields, embedded delimiters).
-Each column is typed from its non-empty fields: all numeric -> double (empty -> NaN),
-all dates -> datetime (empty -> NaT), otherwise text (cellstr, or string with
-``'TextType','string'``).
+Each column is typed from its non-placeholder fields: all numeric -> double (empty
+-> NaN), all dates -> datetime (empty -> NaT), otherwise text (cellstr, or string
+with ``'TextType','string'``).
+
+``'TreatAsMissing'`` (M17 CSV slice of #721) adds placeholder texts. A field whose
+stripped text is one of those tokens is left out of typing and stored as the
+standard missing value: NaN, NaT, ``''`` (cellstr), or ``<missing>`` (string).
+The match is exact and case-sensitive. Spreadsheet files still raise.
 """
 
 from __future__ import annotations
@@ -110,32 +115,81 @@ def _valid_name(s, k):
     return n[:63]
 
 
-def _column(fields, text_type):
+def _placeholders(v):
+    """``'TreatAsMissing'`` tokens. Exact match after stripping; case-sensitive."""
+    from openmatlab.runtime import string_array as sa
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    def bad():
+        raise _err("TreatAsMissing must be a character vector, a string array, or a cell array of "
+                   "character vectors.", "MATLAB:readtable:InvalidTreatAsMissing")
+
+    def piece(e):
+        if isinstance(e, CharValue) and not getattr(e, "is_string", False):
+            if len(e.rows) > 1:
+                bad()
+            return e.text.strip()
+        if getattr(e, "is_string", False):
+            if e.numel() != 1:
+                bad()
+            g = sa.to_grid(e).reshape(-1)[0]
+            if g is None:
+                bad()
+            return str(g).strip()
+        bad()
+
+    if isinstance(v, CharValue) and not getattr(v, "is_string", False):
+        if len(v.rows) > 1:
+            bad()
+        return frozenset({v.text.strip()})
+    if getattr(v, "is_string", False):
+        out = []
+        for g in sa.to_grid(v).reshape(-1, order="F"):
+            if g is None:
+                bad()
+            out.append(str(g).strip())
+        return frozenset(out)
+    if isinstance(v, CellValue):
+        return frozenset(piece(v.rows[r][c]) for c in range(v.shape[1]) for r in range(v.shape[0]))
+    bad()
+
+
+def _column(fields, text_type, tokens=None):
     from openmatlab.runtime.cell_value import CellValue
 
+    tokens = frozenset() if tokens is None else tokens
     vals = [f.strip() for f in fields]
-    present = [v for v in vals if v != ""]
+
+    def absent(v):
+        return v == "" or v in tokens
+
+    present = [v for v in vals if not absent(v)]
     if present and all(_NUM.match(v) for v in present):
-        return NDArrayValue(np.array([float(v) if v else np.nan for v in vals], dtype=float).reshape(-1, 1))
+        return NDArrayValue(np.array([np.nan if absent(v) else float(v) for v in vals], dtype=float).reshape(-1, 1))
     if present:
         dates = [_date(v) for v in present]
         if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
             from openmatlab.runtime.objects import DatetimeValue
 
-            dn = [(_date(v)[0] if v else np.nan) for v in vals]
+            dn = [np.nan if absent(v) else _date(v)[0] for v in vals]
             return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), dates[0][1])
     if not present and vals:
         return NDArrayValue(np.full((len(vals), 1), np.nan))
+    hit = [f.strip() in tokens for f in fields]
     if text_type == "string":
         from openmatlab.runtime import string_array as sa
 
-        return sa.make(np.array(list(fields), dtype=object).reshape(-1, 1))
-    return CellValue(rows=tuple((_cv(f),) for f in fields)) if fields else CellValue(rows=())
+        data = [None if h else f for h, f in zip(hit, fields)]
+        return sa.make(np.array(data, dtype=object).reshape(-1, 1))
+    if not fields:
+        return CellValue(rows=())
+    return CellValue(rows=tuple((_cv(""),) if h else (_cv(f),) for h, f in zip(hit, fields)))
 
 
 def _readtable(args, *, nargout=1):
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
-                                         "texttype", "filetype", "headerlines"))
+                                         "texttype", "filetype", "headerlines", "treatasmissing"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
     delim = _delim(o["delimiter"]) if "delimiter" in o else None
@@ -145,6 +199,7 @@ def _readtable(args, *, nargout=1):
     tt = text(o["texttype"]).lower() if "texttype" in o else "char"
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
+    tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
     rows = _read_rows(name, "readtable", delim, hdr)
     header = rows.pop(0) if (readnames and rows) else None
     ncol = max([len(r) for r in rows] + [len(header) if header else 0])
@@ -175,7 +230,7 @@ def _readtable(args, *, nargout=1):
                     "VariableDescriptions property.", "MATLAB:table:ModifiedAndSavedVarnames")
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    cols = [_column([r[k] for r in rows], tt) for k in range(ncol)]
+    cols = [_column([r[k] for r in rows], tt, tokens) for k in range(ncol)]
     return (TableValue(names, cols, len(rows)),)
 
 
