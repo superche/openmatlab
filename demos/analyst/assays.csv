@@ -1,0 +1,13 @@
+site,shift,moisture_pct,temp_c,qc
+North,Day,18.4,21.0,pass
+North,Day,NA,21.6,pass
+North,Night,19.2,,pass
+South,Day,-999,18.0,pass
+South,Day,22.0,18.0,
+South,Night,21.0,18.4,fail
+East,Day,15.0,24.0,pass
+East,Night,,24.4,pass
+East,Night,16.0,NA,
+,Day,30.0,20.0,pass
+NA,Night,12.2,19.5,pass
+North,Day,17.6,21.0,pass

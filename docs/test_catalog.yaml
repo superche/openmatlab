@@ -150,6 +150,13 @@ use_cases:
     features: [libs.table_join_group]
     priority: p1
 
+  - id: uc.analyst_story
+    title: Wash a messy assay CSV and write the group summary
+    actor: scientific user
+    goal: readtable TreatAsMissing, ismissing, rmmissing, fillmissing, groupsummary IncludeEmptyGroups, writetable CSV
+    features: [libs.analyst_story]
+    priority: p1
+
   - id: uc.bbbc038_v07
     title: Export the BBBC038 lab figure as PNG and PDF
     actor: scientific user
@@ -2616,6 +2623,24 @@ test_cases:
     features: [libs.table_join_group]
     use_cases: [uc.analyst_groupsummary]
     impl: tests/bdd/test_groupsummary_empty_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.analyst_story
+    kind: unit
+    title: analyst field-assay story writes a CSV summary (issue #1034)
+    features: [libs.analyst_story]
+    use_cases: [uc.analyst_story]
+    impl: tests/unit/test_analyst_story.py
+    status: active
+    env: unit
+
+  - id: tc.analyst_story_bdd
+    kind: bdd
+    title: analyst story Gherkin keeps the empty West group (issue #1034)
+    features: [libs.analyst_story]
+    use_cases: [uc.analyst_story]
+    impl: tests/bdd/test_analyst_story_bdd.py
     status: active
     env: unit
 
