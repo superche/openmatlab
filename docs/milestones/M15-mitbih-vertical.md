@@ -16,7 +16,7 @@ A scientist who already writes MATLAB finishes one pass over MIT-BIH record 100 
 
 The gate is that story. Corpus pass rate, a full WFDB toolbox, and an empty Core backlog are outside it.
 
-Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **MIT-BIH Arrhythmia vertical**. Epics #1008–#1013 are open on milestone/15.
+Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **MIT-BIH Arrhythmia vertical**. Epics #1008–#1013 shipped on milestone/15; the milestone closed 2026-10-23.
 
 ## Exit criteria (measurable)
 
@@ -44,7 +44,7 @@ There is no conformance manifest and no corpus-% threshold on this milestone. Go
 
 ## Epics
 
-Approved order. Each epic moves the story one step and can be accepted on its own. Epics stay open until Shaw accepts them.
+Approved order. Each epic moves the story one step and can be accepted on its own. Shaw accepted them; milestone/15 closed 2026-10-23.
 
 1. **B-E1 [#1008](https://github.com/superche/openmatlab/issues/1008) (p0, M):** runtime download + clean-room WFDB loader for record 100 — V01, V02. URLs and sizes locked, cache `downloads/mitbih/` gitignored, mV at 360 Hz. Other records, the full zip, and a WFDB toolbox stay out. Evidence: [EPIC-1008](../acceptance/EPIC-1008.md).
 2. **B-E2 [#1009](https://github.com/superche/openmatlab/issues/1009) (p0, M):** `filtfilt` / `bandpass` (~0.5–40 Hz) — V03. Depends on B-E1. Full `designfilt`, dsp System objects, and GPU stay out. Evidence: [EPIC-1009](../acceptance/EPIC-1009.md).
@@ -53,7 +53,7 @@ Approved order. Each epic moves the story one step and can be accepted on its ow
 5. **B-E5 [#1012](https://github.com/superche/openmatlab/issues/1012) (p0, S):** `exportgraphics` / `print` quality — V07. Depends on B-E4. PNG and PDF at the story's 300 dpi. Third-party `export_fig`, animation, and pixel-identical glyphs stay out. Evidence: [EPIC-1012](../acceptance/EPIC-1012.md).
 6. **B-E6 [#1013](https://github.com/superche/openmatlab/issues/1013) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on B-E1…B-E5. Corpus residuals and the rest of MIT-BIH stay out. Evidence: [EPIC-1013](../acceptance/EPIC-1013.md).
 
-**Work order:** #1008, then #1009 ∥ #1010, then #1011, #1012, #1013. V01 and V02 are met by #1008 ([EPIC-1008](../acceptance/EPIC-1008.md)). V03 is met by #1009 ([EPIC-1009](../acceptance/EPIC-1009.md)). V04 and V05 are met by #1010 ([EPIC-1010](../acceptance/EPIC-1010.md)). V06 is met by #1011 ([EPIC-1011](../acceptance/EPIC-1011.md)). V07 is met by #1012 ([EPIC-1012](../acceptance/EPIC-1012.md)). V08, V09, and V10 are met by #1013 ([EPIC-1013](../acceptance/EPIC-1013.md)). Epics stay open until Shaw accepts them.
+**Work order:** #1008, then #1009 ∥ #1010, then #1011, #1012, #1013. V01 and V02 are met by #1008 ([EPIC-1008](../acceptance/EPIC-1008.md)). V03 is met by #1009 ([EPIC-1009](../acceptance/EPIC-1009.md)). V04 and V05 are met by #1010 ([EPIC-1010](../acceptance/EPIC-1010.md)). V06 is met by #1011 ([EPIC-1011](../acceptance/EPIC-1011.md)). V07 is met by #1012 ([EPIC-1012](../acceptance/EPIC-1012.md)). V08, V09, and V10 are met by #1013 ([EPIC-1013](../acceptance/EPIC-1013.md)). Shaw accepted them; milestone/15 closed 2026-10-23.
 
 ## Defaults
 
@@ -85,6 +85,6 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. A full WFDB or S
 
 ## Progress snapshot
 
-M15 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). Epics #1008–#1013 stay open until accepted. Milestone/15 stays open until that batch acceptance. B-E1 evidence: [EPIC-1008](../acceptance/EPIC-1008.md). B-E2 evidence: [EPIC-1009](../acceptance/EPIC-1009.md). B-E3 evidence: [EPIC-1010](../acceptance/EPIC-1010.md). B-E4 evidence: [EPIC-1011](../acceptance/EPIC-1011.md). B-E5 evidence: [EPIC-1012](../acceptance/EPIC-1012.md). B-E6 evidence: [EPIC-1013](../acceptance/EPIC-1013.md). The package is [M15-mitbih-vertical.md](../acceptance/M15-mitbih-vertical.md). /9 and corpus residuals do not block close (V10). No `m15-blocker` issue is open.
+M15 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). GitHub milestone/15 **closed** 2026-10-23. Epics #1008–#1013 are closed. B-E1 evidence: [EPIC-1008](../acceptance/EPIC-1008.md). B-E2 evidence: [EPIC-1009](../acceptance/EPIC-1009.md). B-E3 evidence: [EPIC-1010](../acceptance/EPIC-1010.md). B-E4 evidence: [EPIC-1011](../acceptance/EPIC-1011.md). B-E5 evidence: [EPIC-1012](../acceptance/EPIC-1012.md). B-E6 evidence: [EPIC-1013](../acceptance/EPIC-1013.md). The package is [M15-mitbih-vertical.md](../acceptance/M15-mitbih-vertical.md). /9 and corpus residuals do not block close (V10). No `m15-blocker` issue is open.
 
 No unmet row remains in the table.

@@ -17,7 +17,7 @@ A scientist who already writes MATLAB finishes one pass over a BBBC038 test fiel
 
 The gate is that story. Corpus pass rate, a full Image Processing Toolbox, and an empty Core backlog are outside it.
 
-Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **BBBC038 nuclei image vertical**. Epics #1020–#1025 are open on milestone/16.
+Approved by Shaw on 2026-10-23 (Defaults, as a block). Milestone title: **BBBC038 nuclei image vertical**. Epics #1020–#1025 shipped on milestone/16; the milestone closed 2026-10-25.
 
 ## Exit criteria (measurable)
 
@@ -45,7 +45,7 @@ There is no conformance manifest and no corpus-% threshold on this milestone. Go
 
 ## Epics
 
-Approved order. Each epic moves the story one step and can be accepted on its own. Epics stay open until Shaw accepts them.
+Approved order. Each epic moves the story one step and can be accepted on its own. Shaw accepted them; milestone/16 closed 2026-10-25.
 
 1. **I-E1 [#1020](https://github.com/superche/openmatlab/issues/1020) (p0, M):** runtime download + `imread` — V01, V02. URL and size locked, cache `downloads/bbbc038/` gitignored, one FOV. `stage1_train` and the `imread` option matrix stay out. Evidence: [EPIC-1020](../acceptance/EPIC-1020.md).
 2. **I-E2 [#1021](https://github.com/superche/openmatlab/issues/1021) (p0, M):** `imbinarize` / `bwareaopen` — V03. Depends on I-E1. The adaptive-threshold zoo, deep-learning segmentation, and GPU stay out. Evidence: [EPIC-1021](../acceptance/EPIC-1021.md).
@@ -54,7 +54,7 @@ Approved order. Each epic moves the story one step and can be accepted on its ow
 5. **I-E5 [#1024](https://github.com/superche/openmatlab/issues/1024) (p0, S):** `exportgraphics` / `print` quality — V07. Depends on I-E4. PNG and PDF at the story's 300 dpi. Third-party `export_fig`, animation, and pixel-identical glyphs stay out. Evidence: [EPIC-1024](../acceptance/EPIC-1024.md).
 6. **I-E6 [#1025](https://github.com/superche/openmatlab/issues/1025) (p0, S):** Workbench recording + acceptance package — V08, V09, V10. Depends on I-E1…I-E5. Corpus residuals and the training zip stay out. Evidence: [EPIC-1025](../acceptance/EPIC-1025.md).
 
-**Work order:** #1020, then #1021, then #1022, then #1023, #1024, #1025. V01 and V02 are met by #1020 ([EPIC-1020](../acceptance/EPIC-1020.md)). V03 is met by #1021 ([EPIC-1021](../acceptance/EPIC-1021.md)). V04 and V05 are met by #1022 ([EPIC-1022](../acceptance/EPIC-1022.md)). V06 is met by #1023 ([EPIC-1023](../acceptance/EPIC-1023.md)). V07 is met by #1024 ([EPIC-1024](../acceptance/EPIC-1024.md)). V08, V09, and V10 are met by #1025 ([EPIC-1025](../acceptance/EPIC-1025.md)). Epics stay open until Shaw accepts them.
+**Work order:** #1020, then #1021, then #1022, then #1023, #1024, #1025. V01 and V02 are met by #1020 ([EPIC-1020](../acceptance/EPIC-1020.md)). V03 is met by #1021 ([EPIC-1021](../acceptance/EPIC-1021.md)). V04 and V05 are met by #1022 ([EPIC-1022](../acceptance/EPIC-1022.md)). V06 is met by #1023 ([EPIC-1023](../acceptance/EPIC-1023.md)). V07 is met by #1024 ([EPIC-1024](../acceptance/EPIC-1024.md)). V08, V09, and V10 are met by #1025 ([EPIC-1025](../acceptance/EPIC-1025.md)). Shaw accepted them; milestone/16 closed 2026-10-25.
 
 ## Defaults
 
@@ -86,6 +86,6 @@ Simulink, Stateflow, App Designer, `uifigure`, and UI controls. A full Image Pro
 
 ## Progress snapshot
 
-M16 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). Epics #1020–#1025 stay open until accepted. Milestone/16 stays open until that batch acceptance. I-E1 evidence: [EPIC-1020](../acceptance/EPIC-1020.md). I-E2 evidence: [EPIC-1021](../acceptance/EPIC-1021.md). I-E3 evidence: [EPIC-1022](../acceptance/EPIC-1022.md). I-E4 evidence: [EPIC-1023](../acceptance/EPIC-1023.md). I-E5 evidence: [EPIC-1024](../acceptance/EPIC-1024.md). I-E6 evidence: [EPIC-1025](../acceptance/EPIC-1025.md). The package is [M16-bbbc038-vertical.md](../acceptance/M16-bbbc038-vertical.md). /9 and corpus residuals do not block close (V10). No `m16-blocker` issue is open.
+M16 opened 2026-10-23. **10 / 10** criteria marked met in the table (V01–V10). GitHub milestone/16 **closed** 2026-10-25. Epics #1020–#1025 are closed. I-E1 evidence: [EPIC-1020](../acceptance/EPIC-1020.md). I-E2 evidence: [EPIC-1021](../acceptance/EPIC-1021.md). I-E3 evidence: [EPIC-1022](../acceptance/EPIC-1022.md). I-E4 evidence: [EPIC-1023](../acceptance/EPIC-1023.md). I-E5 evidence: [EPIC-1024](../acceptance/EPIC-1024.md). I-E6 evidence: [EPIC-1025](../acceptance/EPIC-1025.md). The package is [M16-bbbc038-vertical.md](../acceptance/M16-bbbc038-vertical.md). /9 and corpus residuals do not block close (V10). No `m16-blocker` issue is open.
 
 No unmet row remains in the table.

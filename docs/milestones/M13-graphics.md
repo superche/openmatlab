@@ -80,4 +80,8 @@ MATLAB `.fig` binary compatibility; `uifigure`/App Designer/UI controls; interac
 
 ## Progress snapshot
 
-M13 opened 2026-10-16. **10 / 10** criteria met on tip `47afebc` (2026-10-17): G01 (#768), G02 (#769), G03 (#770), G04/G07 (#772), G05 (#771 + Shaw #866/#982), G06 (#771), G08 (#773 + Shaw #979/#982), G09 (#767 + #774), G10 (#774). Conformance: `pytest tests/conformance/test_m13_conformance.py` → **11 passed, 0 xfail**. No open `p0` on milestone/13 for G05/G08/G09 blockers (#866/#977/#979 closed). Epics #767–#774 stay **open** until Shaw accepts their `docs/acceptance/EPIC-NNN.md`. Next: M12 C08 T3 (#765); corpus T0/T1/T2 re-run REPORT; cheap #766/#797 burn-down.
+M13 opened 2026-10-16. **10 / 10** criteria met on tip `47afebc` (2026-10-17): G01 (#768), G02 (#769), G03 (#770), G04/G07 (#772), G05 (#771 + Shaw #866/#982), G06 (#771), G08 (#773 + Shaw #979/#982), G09 (#767 + #774), G10 (#774). Conformance: `pytest tests/conformance/test_m13_conformance.py` → **11 passed, 0 xfail**. No open `p0` on milestone/13 for G05/G08/G09 blockers (#866/#977/#979 closed). GitHub milestone/13 **closed** 2026-10-23. Epics #767–#774 are closed.
+
+## Close-out (2026-10-23)
+
+**Status: closed.** GitHub milestone/13 closed 2026-10-23 (`closed_at` 2026-10-23T06:06:47Z). Criteria 10/10 (G01–G10). Epics #767–#774 are closed.
