@@ -170,3 +170,106 @@ def test_cli_eval_and_unsupported_method(capsys):
     assert bad.value.code == 1
     err = capsys.readouterr().err
     assert "Traceback" not in err and "movmean" in err and "constant" in err
+
+
+def test_char_blank_is_missing():
+    ws = _ws(
+        "m = ismissing('a b');"
+        "r = rmmissing('a b');"
+        "[rp, tfp] = fillmissing('a b', 'previous');"
+        "rn = fillmissing('a b', 'next');"
+        "rc = fillmissing('a b', 'constant', 'x');"
+        "[lead, tlead] = fillmissing(' a', 'previous');"
+        "[blank, tblank] = fillmissing('a b', 'constant', ' ');"
+        "col = ['a'; ' '; 'b'];"
+        "cp = fillmissing(col, 'previous');"
+        "[cr, tcr] = rmmissing(col);"
+        "tab = ismissing(char([97 9 98]));"
+        "gone = rmmissing('  ');"
+        "zcol = rmmissing([' '; ' ']);"
+    )
+    assert ws.get("m").matlab_class() == "logical"
+    assert _n(ws, "m").tolist() == [[False, True, False]]
+    assert ws.get("r").matlab_class() == "char" and ws.get("r").shape == (1, 2) and ws.get("r").text == "ab"
+    assert ws.get("rp").matlab_class() == "char" and ws.get("rp").text == "aab"
+    assert _n(ws, "tfp").tolist() == [[False, True, False]]
+    assert ws.get("rn").text == "abb" and ws.get("rc").text == "axb"
+    assert ws.get("lead").text == " a" and _n(ws, "tlead").tolist() == [[False, False]]
+    assert ws.get("blank").text == "a b" and _n(ws, "tblank").tolist() == [[False, False, False]]
+    assert ws.get("cp").rows == ("a", "a", "b")
+    assert ws.get("cr").rows == ("a", "b") and _n(ws, "tcr").shape == (3, 1)
+    assert _n(ws, "tcr").tolist() == [[False], [True], [False]]
+    assert _n(ws, "tab").tolist() == [[False, False, False]]
+    assert ws.get("gone").matlab_class() == "char" and ws.get("gone").shape == (0, 0)
+    assert ws.get("zcol").matlab_class() == "char" and ws.get("zcol").shape == (0, 0)
+    for code, text, ident in (
+        ("fillmissing('a b', 'constant', 'xy')", "scalar", "OpenMATLAB:fillmissing:ConstantSize"),
+        ("fillmissing('a b', 'constant', 120)", "double", "OpenMATLAB:fillmissing:ConstantType"),
+    ):
+        with pytest.raises(EvalError) as ei:
+            _ws(code)
+        assert text in str(ei.value) and "Traceback" not in str(ei.value)
+        assert ei.value.identifier == ident
+
+
+def test_empty_missing_values_keep_their_shape():
+    ws = _ws(
+        "[a, tfa] = rmmissing([]);"
+        "[b, tfb] = rmmissing(zeros(0,3));"
+        "[c, tfc] = rmmissing(zeros(1,0));"
+        "[d, tfd] = rmmissing(zeros(3,0));"
+        "ia = ismissing([]); ib = ismissing(zeros(0,3)); ic = ismissing(zeros(1,0));"
+        "fa = fillmissing([], 'next');"
+        "fb = fillmissing(zeros(0,3), 'previous');"
+        "fc = fillmissing(zeros(1,0), 'constant', 0);"
+        "ea = rmmissing(''); em = ismissing(''); ef = fillmissing('', 'constant', 'z');"
+        "T = table(zeros(0,1), zeros(0,3), 'VariableNames', {'a','b'});"
+        "M = ismissing(T); R = rmmissing(T); F = fillmissing(T, 'next');"
+        "h = height(R); w = width(R); hf = height(F);"
+    )
+    assert _n(ws, "a").shape == (0, 0) and _n(ws, "tfa").shape == (0, 1)
+    assert _n(ws, "b").shape == (0, 3) and _n(ws, "tfb").shape == (0, 1)
+    assert _n(ws, "c").shape == (1, 0) and _n(ws, "tfc").shape == (1, 0)
+    assert _n(ws, "d").shape == (3, 0) and _n(ws, "tfd").tolist() == [[False], [False], [False]]
+    assert _n(ws, "ia").shape == (0, 0) and _n(ws, "ib").shape == (0, 3) and _n(ws, "ic").shape == (1, 0)
+    assert _n(ws, "fa").shape == (0, 0) and _n(ws, "fb").shape == (0, 3) and _n(ws, "fc").shape == (1, 0)
+    assert ws.get("ea").shape == (0, 0) and ws.get("ea").matlab_class() == "char"
+    assert _n(ws, "em").shape == (0, 0) and ws.get("ef").shape == (0, 0) and ws.get("ef").matlab_class() == "char"
+    assert ws.get("M").matlab_class() == "logical" and _n(ws, "M").shape == (0, 2)
+    assert ws.get("R").matlab_class() == "table" and _n(ws, "h").tolist() == [[0]] and _n(ws, "w").tolist() == [[2]]
+    assert ws.get("F").matlab_class() == "table" and _n(ws, "hf").tolist() == [[0]]
+    assert _buf(ws.get("F").cols[0]).shape == (0, 1) and _buf(ws.get("R").cols[1]).shape == (0, 3)
+
+
+def test_rmmissing_dim2_tf_is_a_row():
+    ws = _ws(
+        "A = [1 NaN 3; NaN 5 NaN];"
+        "[R, tf] = rmmissing(A, 2);"
+        "B = [1 NaN 3; 4 5 NaN];"
+        "[Rb, tb] = rmmissing(B, 2);"
+    )
+    assert _n(ws, "tf").shape == (1, 3) and _n(ws, "tf").tolist() == [[True, True, True]]
+    assert _n(ws, "R").shape == (2, 0)
+    assert _n(ws, "tb").shape == (1, 3) and _n(ws, "tb").tolist() == [[False, True, True]]
+    assert _n(ws, "Rb").tolist() == [[1], [4]]
+
+
+def test_fillmissing_single_row_table_fills_down():
+    ws = _ws(
+        "T = table([NaN 5], 'VariableNames', {'x'});"
+        "[F, tf] = fillmissing(T, 'next');"
+        "P = fillmissing(table([5 NaN], 'VariableNames', {'x'}), 'previous');"
+        "U = table([1 NaN; NaN 4], 'VariableNames', {'x'});"
+        "N = fillmissing(U, 'next');"
+        "S = table([\"a\" missing], 'VariableNames', {'s'});"
+        "G = fillmissing(S, 'previous');"
+    )
+    fx = _buf(ws.get("F").cols[0])
+    assert fx.shape == (1, 2) and np.isnan(fx[0, 0]) and fx[0, 1] == 5
+    assert _n(ws, "tf").shape == (1, 1) and _n(ws, "tf").tolist() == [[False]]
+    px = _buf(ws.get("P").cols[0])
+    assert px.shape == (1, 2) and px[0, 0] == 5 and np.isnan(px[0, 1])
+    nx = _buf(ws.get("N").cols[0])
+    assert nx.shape == (2, 2) and nx[0, 0] == 1 and nx[1, 1] == 4
+    assert np.isnan(nx[1, 0]) and nx[0, 1] == 4
+    assert _strings(ws.get("G").cols[0]) == [["a", None]]
