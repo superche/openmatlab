@@ -5,7 +5,7 @@
 **Chinese note (outside repo):** `/workspace/proposals/M12-M13-acceptance-evidence.md`  
 **Copies for Shaw:** `/workspace/recordings/showcase_m12_corpus.mp4`, `/workspace/recordings/showcase_m13_graphics.mp4`
 
-Epics **#765–#774** remain **OPEN** until Shaw accepts. Milestones M12 / M13 stay open.
+Epics **#765–#774** and milestones M12 / M13 later **closed** on GitHub (milestone close 2026-10-23). This file is the 2026-10-23 recording package.
 
 ## Videos
 
@@ -46,7 +46,7 @@ Detail: [`EPIC-765.md`](EPIC-765.md). Re-record: `DISPLAY=:2 ./demos/corpus/reco
 
 Detail: [`EPIC-774.md`](EPIC-774.md) (covers G09 halves from #767+#774). Re-record: `DISPLAY=:2 ./demos/workbench/record_m13_graphics_showcase.sh`.
 
-## Related acceptance packages (still open)
+## Related acceptance packages
 
 M12: #765 (this video), #761–#764, #766.  
 M13: #767–#774 (this video anchors G09/G05/G03/G08/G10; other epics keep their written packages).
