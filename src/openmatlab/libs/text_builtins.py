@@ -1,6 +1,7 @@
-"""String residuals (#483): missing/ismissing, sort/unique on strings, split of
-string columns, sprintf/compose, regexp family, extract*/insert*/pad/reverse,
-num2str/str2double."""
+"""String residuals (#483): missing, sort/unique on strings, split of string
+columns, sprintf/compose, regexp family, extract*/insert*/pad/reverse,
+num2str/str2double. ``ismissing`` lives with ``rmmissing`` / ``fillmissing``
+(#1033)."""
 
 from __future__ import annotations
 
@@ -31,24 +32,6 @@ def _missing(args, *, nargout=1):
     from openmatlab.runtime.missing_value import MissingValue
 
     return (MissingValue(),)  # class 'missing'; converts by context (#504)
-
-
-def _ismissing(args, *, nargout=1):
-    if len(args) != 1:
-        raise _err("ismissing: expected 1 argument")
-    v = args[0]
-    if getattr(v, "is_missing_value", False):
-        return (NDArrayValue(np.array([[True]])),)
-    if sa.is_string(v):
-        g = sa.to_grid(v)
-        return (NDArrayValue(np.array([x is None for x in g.reshape(-1)], dtype=bool).reshape(g.shape)),)
-    if isinstance(v, Array):
-        b = np.asarray(v.backend_buffer())
-        if b.dtype == np.bool_ or np.issubdtype(b.dtype, np.integer):
-            return (NDArrayValue(np.zeros(b.shape, dtype=bool)),)
-        return (NDArrayValue(np.isnan(b)),)
-    shape = getattr(v, "shape", (1, 1))
-    return (NDArrayValue(np.zeros(shape, dtype=bool)),)
 
 
 # ----- sort / unique on strings -----
@@ -608,7 +591,7 @@ def _str2double(args, *, nargout=1):
 
 def register(builtins: Dict[str, Callable]) -> None:
     builtins.update(
-        missing=_missing, ismissing=_ismissing, sprintf=_sprintf, compose=_compose,
+        missing=_missing, sprintf=_sprintf, compose=_compose,
         regexp=_regexp("regexp", 0), regexpi=_regexp("regexpi", re.IGNORECASE),
         regexprep=_regexprep("regexprep", 0),
         extractBetween=_textfn("extractBetween", (3,), _between),

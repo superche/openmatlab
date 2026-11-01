@@ -685,6 +685,16 @@ features:
     notes: "typed row-key matching, key-sorted inner/outer joins with per-type missing fill and MergeKeys, findgroups/splitapply, groupsummary/groupcounts; T06, T07 (Epic #696). Residual #742: IncludeEmptyGroups, bins, KeepOneCopy"
     tests: [tests/unit/test_table_join_group.py, tests/bdd/test_table_join_group_bdd.py]
 
+  - id: libs.missing_values
+    layer: libs
+    name: ismissing, rmmissing, and fillmissing constant/previous/next
+    status: partial
+    depends_on: [runtime.table_core]
+    spec: docs/design/EPIC-1033-missing.md
+    notes: "M17 analyst slice (Epic #1032, #1033). ismissing reports standard missing values (NaN, NaT, <missing>, <undefined>, empty char in a cell) for vectors and tables. rmmissing drops missing vector entries or table rows; MinNumMissing and DataVariables are accepted. fillmissing methods are constant, previous, and next. A leading previous gap and a trailing next gap stay missing. Non-goals: every other fill method (nearest, linear, spline, pchip, makima, movmean, movmedian, knn), EndValues, SamplePoints, custom indicators, standardizeMissing, sparse matrices, xlsx."
+    tests: [tests/unit/test_missing_values.py, tests/bdd/test_missing_values_bdd.py]
+    cases: [tc.missing_values, tc.missing_values_bdd]
+
   - id: host.variable_editor
     layer: host
     name: Variable editor panel
