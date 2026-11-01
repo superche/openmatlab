@@ -3,13 +3,13 @@
 **Milestone:** [MIT-BIH Arrhythmia vertical](https://github.com/superche/openmatlab/milestone/15) · [`docs/milestones/M15-mitbih-vertical.md`](../milestones/M15-mitbih-vertical.md)  
 **Opened:** 2026-10-23 (Asia/Shanghai), Shaw approved the Defaults as a block.  
 **Captured:** 2026-10-23  
-**Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. Raw PhysioNet files are not in the repository. Epics #1008–#1013 stay open until Shaw accepts them. Milestone/15 stays open.
+**Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. Raw PhysioNet files are not in the repository.
 
-**Ready for batch acceptance.** The milestone table is **10 / 10** (V01–V10 met). This file is the package a reviewer can read once. Each epic still has its own evidence file. Closing the epics and the milestone is Shaw's step.
+**Closed 2026-10-23.** The milestone table is **10 / 10** (V01–V10 met). GitHub milestone/15 and epics #1008–#1013 are closed. This file is the acceptance package.
 
 ## 中文摘要
 
-记录 100 的故事在 Workbench 里跑通：Current Folder 打开 `story_record100.m`，Command Window 打出 `Fs=360`、峰数 2273、平均 RR 0.794594 s，以及 V03–V07。Figures 面板先显示 2×2 实验室图，再显示原始对滤波的最后一张图。录屏是 [`demos/workbench/showcase_m15_mitbih.mp4`](../../demos/workbench/showcase_m15_mitbih.mp4)（122.6 秒，1920×1200）。数据 ODC-By 1.0，DOI 10.13026/C2F305，引用 Moody & Mark IEEE EMB 2001 和 Goldberger 等 Circulation 2000。`.hea` / `.dat` / `.atr` 不入库。语料残留和 milestone/9 不挡住关闭。没有 `m15-blocker`。门禁表 **10 / 10**。Epic #1008–#1013 与 milestone/15 保持打开，等 Shaw 批量验收。
+记录 100 的故事在 Workbench 里跑通：Current Folder 打开 `story_record100.m`，Command Window 打出 `Fs=360`、峰数 2273、平均 RR 0.794594 s，以及 V03–V07。Figures 面板先显示 2×2 实验室图，再显示原始对滤波的最后一张图。录屏是 [`demos/workbench/showcase_m15_mitbih.mp4`](../../demos/workbench/showcase_m15_mitbih.mp4)（122.6 秒，1920×1200）。数据 ODC-By 1.0，DOI 10.13026/C2F305，引用 Moody & Mark IEEE EMB 2001 和 Goldberger 等 Circulation 2000。`.hea` / `.dat` / `.atr` 不入库。语料残留和 milestone/9 不挡住关闭。没有 `m15-blocker`。门禁表 **10 / 10**。Epic #1008–#1013 与 milestone/15 已于 2026-10-23 关闭。
 
 ## Video (V08)
 
@@ -35,7 +35,7 @@ Scene clock from the driver log in [EPIC-1013](EPIC-1013.md). Frames read back f
 | [#1012](https://github.com/superche/openmatlab/issues/1012) B-E5 | V07 | [EPIC-1012](EPIC-1012.md) |
 | [#1013](https://github.com/superche/openmatlab/issues/1013) B-E6 | V08, V09, V10 | [EPIC-1013](EPIC-1013.md) |
 
-The milestone table marks **10 / 10** met (V01–V10). The epics stay open.
+The milestone table marks **10 / 10** met (V01–V10). Epics #1008–#1013 and milestone/15 closed 2026-10-23.
 
 ## Licence and citation
 
@@ -83,7 +83,7 @@ The headless proof printed the same V01–V07 lines, `png bytes 636564`, `pdf by
 | 2026-10-23 | B-E3 landed. V04 and V05 evidence: [EPIC-1010](EPIC-1010.md). |
 | 2026-10-23 | B-E4 landed. V06 evidence: [EPIC-1011](EPIC-1011.md). |
 | 2026-10-23 | B-E5 landed. V07 evidence: [EPIC-1012](EPIC-1012.md). |
-| 2026-10-23 | B-E6 landed. V08, V09, and V10 evidence: [EPIC-1013](EPIC-1013.md). Workbench recording is `showcase_m15_mitbih.mp4`. Epics stay open. |
+| 2026-10-23 | B-E6 landed. V08, V09, and V10 evidence: [EPIC-1013](EPIC-1013.md). Workbench recording is `showcase_m15_mitbih.mp4`. Epics and milestone/15 closed 2026-10-23. |
 
 ## Out of scope, confirmed
 

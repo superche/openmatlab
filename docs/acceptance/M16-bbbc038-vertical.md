@@ -3,13 +3,13 @@
 **Milestone:** [BBBC038 nuclei image vertical](https://github.com/superche/openmatlab/milestone/16) · [`docs/milestones/M16-bbbc038-vertical.md`](../milestones/M16-bbbc038-vertical.md)  
 **Opened:** 2026-10-23 (Asia/Shanghai), Shaw approved the Defaults as a block.  
 **Captured:** 2026-10-23  
-**Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. The Broad zip and the PNGs are not in the repository. Epics #1020–#1025 stay open until Shaw accepts them. Milestone/16 stays open.
+**Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. The Broad zip and the PNGs are not in the repository.
 
-**Ready for batch acceptance.** The milestone table is **10 / 10** (V01–V10 met). This file is the package a reviewer can read once. Each epic still has its own evidence file. Closing the epics and the milestone is Shaw's step.
+**Closed 2026-10-25.** The milestone table is **10 / 10** (V01–V10 met). GitHub milestone/16 and epics #1020–#1025 are closed. This file is the acceptance package.
 
 ## 中文摘要
 
-`stage1_test` 的一个 FOV 在 Workbench 里跑通：Current Folder 打开 `story_stage1_test.m`，Command Window 打出 `count=6`、平均面积 163、中位数 153，以及 V01–V07。Figures 面板先显示原图对掩膜，再显示面积直方图，然后显示重新打开的 2×2 组会图（叠加、直方图、计数摘要）。录屏是 [`demos/workbench/showcase_m16_bbbc038.mp4`](../../demos/workbench/showcase_m16_bbbc038.mp4)（140.1 秒，1920×1200）。数据 CC0 1.0，引用 Caicedo 等 Nature Methods 2019（doi:10.1038/s41592-019-0612-7）和 BBBC038v1。`stage1_test.zip` 和 FOV PNG 不入库。语料残留和 milestone/9 不挡住关闭。没有 `m16-blocker`。门禁表 **10 / 10**。Epic #1020–#1025 与 milestone/16 保持打开，等 Shaw 批量验收。
+`stage1_test` 的一个 FOV 在 Workbench 里跑通：Current Folder 打开 `story_stage1_test.m`，Command Window 打出 `count=6`、平均面积 163、中位数 153，以及 V01–V07。Figures 面板先显示原图对掩膜，再显示面积直方图，然后显示重新打开的 2×2 组会图（叠加、直方图、计数摘要）。录屏是 [`demos/workbench/showcase_m16_bbbc038.mp4`](../../demos/workbench/showcase_m16_bbbc038.mp4)（140.1 秒，1920×1200）。数据 CC0 1.0，引用 Caicedo 等 Nature Methods 2019（doi:10.1038/s41592-019-0612-7）和 BBBC038v1。`stage1_test.zip` 和 FOV PNG 不入库。语料残留和 milestone/9 不挡住关闭。没有 `m16-blocker`。门禁表 **10 / 10**。Epic #1020–#1025 与 milestone/16 已于 2026-10-25 关闭。
 
 ## Video (V08)
 
@@ -35,7 +35,7 @@ Scene clock from the driver log in [EPIC-1025](EPIC-1025.md). Frames read back f
 | [#1024](https://github.com/superche/openmatlab/issues/1024) I-E5 | V07 | [EPIC-1024](EPIC-1024.md) |
 | [#1025](https://github.com/superche/openmatlab/issues/1025) I-E6 | V08, V09, V10 | [EPIC-1025](EPIC-1025.md) |
 
-The milestone table marks **10 / 10** met (V01–V10). The epics stay open.
+The milestone table marks **10 / 10** met (V01–V10). Epics #1020–#1025 and milestone/16 closed 2026-10-25.
 
 ## Licence and citation
 
@@ -84,7 +84,7 @@ The headless proof printed the same V01–V07 lines, `png bytes 258791`, `pdf by
 | 2026-10-23 | I-E3 landed. V04 and V05 evidence: [EPIC-1022](EPIC-1022.md). Count 6, mean area 163, median 153, area histogram on its own figure. |
 | 2026-10-23 | I-E4 landed. V06 evidence: [EPIC-1023](EPIC-1023.md). 2×2 lab figure with `labeloverlay`, area histogram, summary, and the CC0 / Caicedo 2019 / BBBC038v1 footnote. |
 | 2026-10-23 | I-E5 landed. V07 evidence: [EPIC-1024](EPIC-1024.md). 300 dpi PNG and PDF of that lab figure. The crop keeps the title and the footnote. |
-| 2026-10-23 | I-E6 landed. V08, V09, and V10 evidence: [EPIC-1025](EPIC-1025.md). Workbench recording is `showcase_m16_bbbc038.mp4`. Epics stay open. |
+| 2026-10-23 | I-E6 landed. V08, V09, and V10 evidence: [EPIC-1025](EPIC-1025.md). Workbench recording is `showcase_m16_bbbc038.mp4`. Epics and milestone/16 closed 2026-10-25. |
 
 ## Out of scope, confirmed
 

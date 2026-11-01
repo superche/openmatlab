@@ -63,11 +63,12 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - **Plugins:** VS Code–style host contract is locked in `docs/design/PLUGIN-CONTRACT.md`; exit criteria in `docs/milestones/M-plugins.md`. Community plugins only (no MathWorks proprietary toolboxes). Historical options: `docs/design/PLUGIN-OPTIONS.md`.
 - **Domain gate:** business-conformance reference vectors — `docs/milestones/M-domain-conformance.md` (milestone/5).
 - **Tables / Debugger:** `docs/milestones/M10-tables.md` (milestone/10), `docs/milestones/M11-debugger-workbench.md` (milestone/11), both closed.
-- **Corpus gate / Graphics:** `docs/milestones/M12-corpus-gate.md` (milestone/12), `docs/milestones/M13-graphics.md` (milestone/13). Corpus licensing: GPL/GFDL sources are fetched at runtime only, never committed.
-- **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14, closed). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. /9 and corpus residuals do not block close.
-- **MIT-BIH Arrhythmia vertical:** `docs/milestones/M15-mitbih-vertical.md` (milestone/15). PhysioNet record 100 only (`100.hea` / `100.dat` / `100.atr`), ODC-By 1.0, runtime-only, never committed. /9 and corpus residuals do not block close.
-- **BBBC038 nuclei image vertical:** `docs/milestones/M16-bbbc038-vertical.md` (milestone/16). Broad `stage1_test.zip` only (9545388 bytes), CC0 1.0, runtime-only, never committed. /9 and corpus residuals do not block close.
-- **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6).
+- **Corpus gate / Graphics:** `docs/milestones/M12-corpus-gate.md` (milestone/12, closed 2026-10-23), `docs/milestones/M13-graphics.md` (milestone/13, closed 2026-10-23). Corpus licensing: GPL/GFDL sources are fetched at runtime only, never committed.
+- **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14, closed 2026-10-23). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. Demo `demos/cmapss`. /9 and corpus residuals do not block close.
+- **MIT-BIH Arrhythmia vertical:** `docs/milestones/M15-mitbih-vertical.md` (milestone/15, closed 2026-10-23). PhysioNet record 100 only (`100.hea` / `100.dat` / `100.atr`), ODC-By 1.0, runtime-only, never committed. Demo `demos/mitbih`. /9 and corpus residuals do not block close.
+- **BBBC038 nuclei image vertical:** `docs/milestones/M16-bbbc038-vertical.md` (milestone/16, closed 2026-10-25). Broad `stage1_test.zip` only (9545388 bytes), CC0 1.0, runtime-only, never committed. Demo `demos/bbbc038`. /9 and corpus residuals do not block close.
+- **Analyst pipeline:** M17 (milestone/17, open). Missing values × CSV import slice × groupsummary story cut × `demos/analyst`. Not a fourth vertical; does not clear Core backlog (milestone/9).
+- **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6, closed).
 
 ## Residual Issues（强制）
 
