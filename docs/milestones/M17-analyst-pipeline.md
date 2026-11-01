@@ -30,7 +30,7 @@ M17 is **done** only when **all** of A01–A06 hold on `main`. There is no confo
 
 ## Progress snapshot
 
-**6 / 6** criteria are evidenced on branch `cursor/analyst-story-acceptance-1a5c`. **2 / 6** are on `main` today (A01, A02). A03 is the unmerged PR #1057. A04 and A05 are this branch. A06 is the close rule and holds.
+**6 / 6** criteria are evidenced on branch `cursor/analyst-story-acceptance-1a5c` (story commit `cfcfca2b9b6e1d3c9a4e8d9e4ceb39a4ae736e00`). **2 / 6** are on `main` today (A01, A02). A03 is the unmerged PR #1057. A04 and A05 are this branch. A06 is the close rule and holds.
 
 GitHub milestone/17 stays **open**. Epic #1032 is the open `p0`. #742 stays open for the bullets that moved to the Core backlog (#1052, #1053, #1054, #1055, #1056). This table does not close them.
 
