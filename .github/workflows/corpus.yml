@@ -45,6 +45,9 @@ jobs:
       - name: Fetch corpus at the pins (runtime only)
         id: fetch
         run: python -m openmatlab.qa.corpus fetch
+      # Default per-entry budget is 20s. matlab2tikz/ACID/005_markerSizes2 has a
+      # 60s floor in pipeline.timeout_for (#1059): 130 single-point plot() redraws
+      # finish near 19s on ubuntu-latest and flap the 20s wall. Not a sample skip.
       - name: Run (sample on PRs, full nightly)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then S=10; else S=0; fi

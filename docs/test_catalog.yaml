@@ -2077,6 +2077,15 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.corpus_entry_timeout
+    kind: unit
+    title: "Per-entry corpus timeout floor for matlab2tikz/ACID/005_markerSizes2 (#1059)"
+    features: [qa.corpus_report]
+    use_cases: [uc.matrix_first_repl]
+    impl: tests/unit/test_corpus_entry_timeout.py
+    status: active
+    env: unit
+
   - id: tc.corpus_report_bdd
     kind: bdd
     title: Corpus report and triage Gherkin scenarios (Epic #764)
