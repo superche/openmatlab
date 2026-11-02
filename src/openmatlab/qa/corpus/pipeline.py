@@ -32,6 +32,29 @@ from .runner import DEFAULT_TIMEOUT, run_one
 MSG_CAP = 240
 SELF_CHECKING = ("selftest", "acid-scene")  # chebfun tests assert all(pass); matlab2tikz ACID scenes
 
+# CLI `run --timeout` default. Real hangs still die here. One entry has a higher
+# floor (below); it applies only when the caller left the timeout at this default.
+DEFAULT_CORPUS_TIMEOUT = 20.0
+
+# #1059. matlab2tikz ACID scene markerSizes2 issues 13 marker styles × 10
+# single-point plot() calls (130). Each plot autoscales and redraws the figure,
+# so the entry is slow, not hung: the committed full run records 7.703 s (pass),
+# and GitHub-hosted runners finished it in 18.67 s (#1050) and 18.79 s (#1038)
+# or killed it at this 20 s wall (20.05 s on #1051). That pass->fail flaps the
+# corpus gate on unrelated PRs, because the entry sits on the 1-in-10 PR sample
+# (manifest index 330). 60 s is about 3× the observed GitHub completion. An
+# explicit `--timeout` still applies to every entry, including this one.
+ENTRY_TIMEOUT_FLOOR = {
+    "matlab2tikz/ACID/005_markerSizes2": 60.0,
+}
+
+
+def timeout_for(entry_id: str, timeout: float) -> float:
+    """Wall-clock budget for one entry. Floors apply only at the default timeout."""
+    if timeout != DEFAULT_CORPUS_TIMEOUT:
+        return timeout
+    return ENTRY_TIMEOUT_FLOOR.get(entry_id, timeout)
+
 
 def _fn_name(code: str) -> str:
     m = re.search(r"^\s*function\s+(?:\[[^\]]*\]\s*=\s*|\w+\s*=\s*)?([A-Za-z_]\w*)", code, re.M)
@@ -47,6 +70,7 @@ class _Job:
         self.e, self.cache, self.siblings = e, cache, siblings
 
     def run(self, timeout: float) -> dict:
+        timeout = timeout_for(self.e.id, timeout)
         e, rec = self.e, {"id": self.e.id, "source": self.e.source, "kind": self.e.kind}
         src = self.cache / e.file
         if not src.is_file():

@@ -862,8 +862,8 @@ features:
     name: Corpus REPORT dashboard, regression gate, deduplicated corpus issue filing
     status: done
     depends_on: [qa.corpus_classifier]
-    notes: "M12 C10, Epic #764; thresholds locked; .github/workflows/corpus.yml (PR sample, nightly full)"
-    tests: [tests/unit/test_corpus_report_triage.py, tests/bdd/test_corpus_report_bdd.py]
+    notes: "M12 C10, Epic #764; thresholds locked; .github/workflows/corpus.yml (PR sample, nightly full). Default per-entry timeout 20s; matlab2tikz/ACID/005_markerSizes2 floor 60s at that default only (#1059), not a sample exclusion."
+    tests: [tests/unit/test_corpus_report_triage.py, tests/unit/test_corpus_entry_timeout.py, tests/bdd/test_corpus_report_bdd.py]
 
   - id: qa.corpus_no_crash
     layer: qa

@@ -22,4 +22,4 @@ Milestone: [M12 Real-script compatibility gate](../milestones/M12-corpus-gate.md
 | REPORT.md drifts from results | A unit test re-renders it and compares |
 | Issue spam on the first run | `--min 2` and `--limit 50`; dry run by default |
 | Missing results file / gh failure | One-line error, exit 1, no traceback |
-| Timeouts on a slower CI runner flap the gate | Residual (filed) |
+| Timeouts on a slower CI runner flap the gate | Default budget stays 20 s. `matlab2tikz/ACID/005_markerSizes2` (130 single-point `plot` calls, ~19 s on ubuntu-latest, on the PR 1-in-10 sample) has a 60 s floor at that default only (#1059). An explicit `--timeout` still applies to every entry. |

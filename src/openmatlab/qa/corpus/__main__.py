@@ -9,6 +9,7 @@ import sys
 
 def main(argv=None) -> int:
     from openmatlab.qa.corpus import manifest as M
+    from openmatlab.qa.corpus.pipeline import DEFAULT_CORPUS_TIMEOUT
 
     ap = argparse.ArgumentParser(prog="python -m openmatlab.qa.corpus")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -20,7 +21,7 @@ def main(argv=None) -> int:
     sd.add_argument("--out", default=None, help="archive path (default ./rosetta-<pin hash>.tar.gz)")
     sub.add_parser("restore-rosetta", help="verify the Rosetta cache or download the release seed (no Rosetta Code)")
     rp = sub.add_parser("run", help="preprocess, run and classify every cached entry; write the results JSON")
-    rp.add_argument("--timeout", type=float, default=20.0)
+    rp.add_argument("--timeout", type=float, default=DEFAULT_CORPUS_TIMEOUT)
     rp.add_argument("--jobs", type=int, default=None)
     rp.add_argument("--sample", type=int, default=0, help="run every N-th entry only (PR sample); 0 = full run")
     rp.add_argument("--out", default=None, help="results path (default docs/corpus/results.json)")
