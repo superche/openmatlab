@@ -109,6 +109,103 @@ def test_missing_group_is_last_unless_excluded():
     )
 
 
+def _text_keys(col):
+    """Cellstr or string grouping column, top to bottom. ``None`` is ``<missing>``."""
+    from openmatlab.runtime import string_array as sa
+    from openmatlab.runtime.cell_value import CellValue
+
+    if isinstance(col, CellValue):
+        return [col.rows[i][0].text for i in range(col.shape[0])]
+    if getattr(col, "is_string", False):
+        return [None if x is None else str(x) for x in sa.to_grid(col).reshape(-1)]
+    raise AssertionError(type(col).__name__)
+
+
+def _summary(code, name="S"):
+    s = run(code)
+    return s.workspace.get(name)
+
+
+def test_cellstr_empty_is_a_missing_group_key():
+    # '' in a cellstr is the standard missing value. It is its own group, last,
+    # unless IncludeMissingGroups is false. A space is a real key.
+    kept = _summary("T = table({'b';'';'a';'';' '}, [1;2;3;4;5]); S = groupsummary(T, 'Var1', 'sum');")
+    assert _text_keys(kept.cols[0]) == [" ", "a", "b", ""]
+    assert_rows(
+        "T = table({'b';'';'a';'';' '}, [1;2;3;4;5]); S = groupsummary(T, 'Var1', 'sum'); v = [S.sum_Var2 S.GroupCount];",
+        [[5, 1], [3, 1], [1, 1], [6, 2]],
+    )
+    dropped = _summary(
+        "T = table({'a';'b';''}, [1;2;3]); S = groupsummary(T, 'Var1', 'sum', 'IncludeMissingGroups', false);"
+    )
+    assert _text_keys(dropped.cols[0]) == ["a", "b"]
+    assert_rows(
+        "T = table({'a';'b';''}, [1;2;3]); S = groupsummary(T, 'Var1', 'sum', 'IncludeMissingGroups', false);"
+        "v = [S.sum_Var2 S.GroupCount];",
+        [[1, 1], [2, 1]],
+    )
+    only = _summary("T = table({'';''}, [1;2]); S = groupsummary(T, 'Var1', 'sum', 'IncludeMissingGroups', false);")
+    assert only.nrows == 0
+    # Same ranks when IncludeEmptyGroups is on: '' is not an invented level, and it stays last.
+    both = _summary(
+        "T = table({'a';'';'a'}, [1;2;3], 'VariableNames', {'g','x'});"
+        "S = groupsummary(T, 'g', 'sum', 'x', 'IncludeEmptyGroups', true);"
+    )
+    assert _text_keys(both.cols[0]) == ["a", ""]
+    assert_rows(
+        "T = table({'a';'';'a'}, [1;2;3], 'VariableNames', {'g','x'});"
+        "S = groupsummary(T, 'g', 'sum', 'x', 'IncludeEmptyGroups', true, 'IncludeMissingGroups', false);"
+        "v = [S.sum_x S.GroupCount];",
+        [[4, 2]],
+    )
+    # groupcounts uses the same ranks.
+    counted = _summary("T = table({'a';'b';''}, [1;2;3]); C = groupcounts(T, 'Var1');", name="C")
+    assert _text_keys(counted.cols[0]) == ["a", "b", ""]
+    dropped_counts = _summary(
+        "T = table({'a';'b';''}, [1;2;3]); C = groupcounts(T, 'Var1', 'IncludeMissingGroups', false);",
+        name="C",
+    )
+    assert _text_keys(dropped_counts.cols[0]) == ["a", "b"]
+
+
+def test_string_missing_group_key_follows_ismissing():
+    # <missing> is a missing group key. "" is not, and it sorts first.
+    kept = _summary('T = table(["b"; missing; "a"; ""], [1;2;3;4]); S = groupsummary(T, "Var1", "sum");')
+    assert _text_keys(kept.cols[0]) == ["", "a", "b", None]
+    assert_rows(
+        'T = table(["b"; missing; "a"; ""], [1;2;3;4]); S = groupsummary(T, "Var1", "sum");'
+        "v = [S.sum_Var2 S.GroupCount];",
+        [[4, 1], [3, 1], [1, 1], [2, 1]],
+    )
+    dropped = _summary(
+        'T = table(["a"; missing; ""], [1;2;3]);'
+        'S = groupsummary(T, "Var1", "sum", "IncludeMissingGroups", false);'
+    )
+    assert _text_keys(dropped.cols[0]) == ["", "a"]
+    assert_rows(
+        'T = table(["a"; missing; ""], [1;2;3]);'
+        'S = groupsummary(T, "Var1", "sum", "IncludeMissingGroups", false);'
+        "v = [S.sum_Var2 S.GroupCount];",
+        [[3, 1], [1, 1]],
+    )
+
+
+def test_cellstr_missing_sorts_last_inside_its_column():
+    # Column 1 missing stays after every 'a' row, including an 'a' whose other key is NaN.
+    code = (
+        "T = table({'a';'';'a'}, [1;1;NaN], [10;20;30], 'VariableNames', {'g','n','x'});"
+        "S = groupsummary(T, {'g','n'}, 'sum', 'x');"
+    )
+    s = _summary(code)
+    assert _text_keys(s.cols[0]) == ["a", "a", ""]
+    assert_rows(code + "v = [S.n S.sum_x S.GroupCount];", [[1, 10, 1], [np.nan, 30, 1], [1, 20, 1]])
+    assert_rows(
+        "T = table({'a';'';'a'}, [1;1;NaN], [10;20;30], 'VariableNames', {'g','n','x'});"
+        "S = groupsummary(T, {'g','n'}, 'sum', 'x', 'IncludeMissingGroups', false); v = [S.sum_x S.GroupCount];",
+        [[10, 1]],
+    )
+
+
 def test_empty_category_and_undefined_group_stay_distinct():
     code = (
         "T = table(categorical({'a';'a';''}, {'a','b'}), [1;2;1], [10;20;30], 'VariableNames', {'g','n','x'});"

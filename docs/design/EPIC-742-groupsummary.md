@@ -16,6 +16,7 @@ With the flag on, the output groups are the Cartesian product of each grouping v
 - A logical contributes `false` and `true`.
 - Anything else contributes the non-missing values that actually occur.
 - A row whose grouping value is missing stays in its own group when `'IncludeMissingGroups'` is true (the default), and is dropped when it is false. The group is sorted with the others: column by column, missing last inside that column. It is not moved after every complete group. Empty groups are not invented for a missing value that never occurs.
+- For these two functions, a missing text key is whatever `ismissing` reports (#1060). Cellstr `''` is missing. String `<missing>` is missing. String `""` is a real key and sorts with the other strings. A cell containing `' '` is a real key. Char blanks are not adjusted here (#1058). `findgroups` still ranks with `rank_columns` and does not take this path (#1054). `groupcounts` uses the same ranks, so the same flag drops or keeps the empty cellstr group.
 
 `GroupCount` is the number of rows in the group, including rows whose data is NaN. Named methods omit NaN. An empty group therefore has count 0, `sum` 0, and `mean` / `min` / `max` / `std` NaN. The story methods are the ones already implemented: `mean`, `sum`, `min`, `max`, `std`, plus `GroupCount`. There is no `numel` method.
 
@@ -27,4 +28,4 @@ One existing assertion had to move. `test_errors_are_matlab_errors` listed `Incl
 
 ## Non-goals
 
-Group bins. `groupsummary` on arrays. Multi-output function methods. `groupcounts` empty groups. `grouptransform` / `groupfilter`. `findgroups` missing-group options. `splitapply` of a table-valued function. Join key options. `'VariableNamingRule'`.
+Group bins. `groupsummary` on arrays. Multi-output function methods. `groupcounts` empty groups. `grouptransform` / `groupfilter`. `findgroups` missing-group options. `splitapply` of a table-valued function. Join key options. `'VariableNamingRule'`. Char-matrix blanks as missing group keys (#1058).

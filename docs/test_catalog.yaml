@@ -2619,7 +2619,7 @@ test_cases:
 
   - id: tc.groupsummary_empty
     kind: unit
-    title: groupsummary IncludeEmptyGroups and story methods (Epic #1032, #742)
+    title: groupsummary IncludeEmptyGroups, story methods, and cellstr/string missing keys (#742, #1060)
     features: [libs.table_join_group]
     use_cases: [uc.analyst_groupsummary]
     impl: tests/unit/test_groupsummary_empty.py
@@ -2628,7 +2628,7 @@ test_cases:
 
   - id: tc.groupsummary_empty_bdd
     kind: bdd
-    title: groupsummary empty-group Gherkin (Epic #1032, #742)
+    title: groupsummary empty-group and cellstr missing-key Gherkin (#742, #1060)
     features: [libs.table_join_group]
     use_cases: [uc.analyst_groupsummary]
     impl: tests/bdd/test_groupsummary_empty_bdd.py
