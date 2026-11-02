@@ -93,7 +93,6 @@ def test_groupsummary_and_groupcounts():
     "groupsummary(table([1;1;2],[4;5;6]), 'Var1', 'banana')",
     "groupsummary(table([1;1;2],{'a';'b';'c'}), 'Var1', 'mean', 'Var2')",
     "groupsummary(5, 'x', 'sum')",
-    "groupsummary(table([1;1;2],[4;5;6]), 'Var1', 'sum', 'Var2', 'IncludeEmptyGroups', true)",
     "groupcounts(table([1;2]), 'nope')",
 ])
 def test_errors_are_matlab_errors(code):

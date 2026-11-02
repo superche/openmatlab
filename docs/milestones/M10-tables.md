@@ -85,5 +85,5 @@ M10 opened 2026-10-16. **10 / 10** criteria met: T01, T02 (Epic #691, [design](.
 | #721 | p2 | T-E4 residual (import options, encodings, spreadsheets, …) |
 | #733 | p2 | T-E5 residual (dateshift edge cases, calendarDuration Format, …) |
 | #738 | p2 | T-E3 residual (grouped varfun/rowfun, summary layout, …) |
-| #742 | p2 | T-E6 residual (join options, IncludeEmptyGroups, …) |
+| #742 | p2 | T-E6 residual. M17 took groupsummary IncludeEmptyGroups; the rest is #1052 #1053 #1054 #1055 #1056 on Core backlog |
 | #755 | p2 | T-E7 residual (calendar retime, spline/pchip, more verbs, …) |
