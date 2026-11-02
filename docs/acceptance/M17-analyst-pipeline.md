@@ -6,7 +6,7 @@
 **Captured:** 2026-11-01  
 **Rule:** The recording is a real Workbench window (`ffmpeg` `x11grab`). Numbers are copied from command output. The assay CSV in the repository is synthetic.
 
-**Not closed.** The criteria table is **6 / 6** evidenced on this branch and **2 / 6** on `main` (A01, A02). A03 waits on PR #1057. A04 and A05 wait on this branch merging after that. Epic #1032 stays open.
+**Not closed.** The criteria table is **6 / 6** evidenced on this branch and **4 / 6** on `main` (A01, A02, A03, A06). A03 is on `main` via #1057 (`2540807`). A04 and A05 wait on this branch. Epic #1032 stays open.
 
 ## 中文摘要
 
@@ -32,13 +32,13 @@ Per-issue evidence for the story: [EPIC-1034](EPIC-1034.md).
 |---|---|---|
 | [#1033](https://github.com/superche/openmatlab/issues/1033) | `ismissing` / `rmmissing` / `fillmissing` `constant` `previous` `next`. Review fixes [#1039](https://github.com/superche/openmatlab/issues/1039). | yes, closed |
 | [#721](https://github.com/superche/openmatlab/issues/721) | CSV `'TreatAsMissing'`. xlsx stays an error ([#1049](https://github.com/superche/openmatlab/issues/1049)). | yes, closed |
-| [#742](https://github.com/superche/openmatlab/issues/742) | `IncludeEmptyGroups` for the story. Other bullets are #1052 #1053 #1054 #1055 #1056 on the Core backlog. | no, PR [#1057](https://github.com/superche/openmatlab/pull/1057) |
+| [#742](https://github.com/superche/openmatlab/issues/742) | `IncludeEmptyGroups` for the story. Other bullets are #1052 #1053 #1054 #1055 #1056 on the Core backlog. | yes, squash-merged [#1057](https://github.com/superche/openmatlab/pull/1057) as `2540807`. The issue stays open for those leftovers. |
 | [#1034](https://github.com/superche/openmatlab/issues/1034) | `demos/analyst`, `out/` convention, this package. | no, this branch |
 | [#1035](https://github.com/superche/openmatlab/issues/1035) | Docs sync. Does not block exit. | yes, closed |
 
 ## Reproduce
 
-A third party needs the tip that contains this branch and #1057, and a Python 3.10+ environment. No MathWorks binary. No network. Story: [`demos/analyst/story_assays.m`](../../demos/analyst/story_assays.m). Data: [`demos/analyst/assays.csv`](../../demos/analyst/assays.csv) (synthetic, MIT, committed).
+A third party needs tip `main` after this branch merges (it already contains #1057), and a Python 3.10+ environment. No MathWorks binary. No network. Story: [`demos/analyst/story_assays.m`](../../demos/analyst/story_assays.m). Data: [`demos/analyst/assays.csv`](../../demos/analyst/assays.csv) (synthetic, MIT, committed).
 
 ```text
 python3 -m venv .venv
@@ -62,7 +62,7 @@ The measured lines are in [EPIC-1034](EPIC-1034.md). West's `GroupCount` is 0 an
 | xlsx | No. Explicit non-goal. `readtable` still rejects a spreadsheet. |
 | `fillmissing` beyond `constant` / `previous` / `next` | No. Explicit non-goal. |
 | #742 leftovers (#1052–#1056) | No. They are on the Core backlog, outside this epic's In list. |
-| #1057 not merged | Yes, for a `main` one-shot. A03 is not on `main` until that PR merges. This branch is based on it. |
+| #1057 | No. Squash-merged as `2540807`. A03 is on `main`. |
 | This branch not merged | Yes, for a `main` one-shot. A04 and A05 land with it. |
 
 ## Out of scope, confirmed
