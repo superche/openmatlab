@@ -1927,7 +1927,7 @@ test_cases:
 
   - id: tc.corpus_tier2
     kind: unit
-    title: Corpus T2 self-check oracle and dialect exclusions (Epic #765)
+    title: Corpus T2 self-check oracle, dialect exclusions, and blanks(0) 1×0 expected char (Epic #765, #1058)
     features: [qa.corpus_tier2]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_corpus_selfcheck.py
