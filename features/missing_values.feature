@@ -41,6 +41,18 @@ Feature: missing values on the analyst path (Epic #1033)
     Then variable "s" equals row [0, 1, 0, 97, 98, 97, 97, 98, 97, 98, 98, 97, 120, 98]
 
   @needs_numpy
+  Scenario: rmmissing of a blank char keeps the empty shape
+    Given a fresh session
+    When I evaluate "a = size(rmmissing('   ')); b = size(rmmissing(['a ';'  '])); c = size(''); s = [a b c];"
+    Then variable "s" equals row [1, 0, 0, 2, 0, 0]
+
+  @needs_numpy
+  Scenario: indexing a char keeps an empty shape
+    Given a fresh session
+    When I evaluate "x = 'abc'; y = ['ab'; 'cd']; s = [size(x(:,[])) size(x([],:)) size(y(:,[])) size(y([],:)) size(char(zeros(0,3))) size(blanks(0))];"
+    Then variable "s" equals row [1, 0, 0, 3, 2, 0, 0, 2, 0, 3, 1, 0]
+
+  @needs_numpy
   Scenario: empty arrays and a 0-row table keep their shape
     Given a fresh session
     When I evaluate "a = rmmissing([]); b = rmmissing(zeros(0,3)); c = rmmissing(zeros(1,0)); ia = ismissing([]); ib = ismissing(zeros(0,3)); ic = ismissing(zeros(1,0)); fa = fillmissing([], 'next'); fb = fillmissing(zeros(0,3), 'previous'); fc = fillmissing(zeros(1,0), 'constant', 0); T = table(zeros(0,1), zeros(0,3), 'VariableNames', {'a','b'}); m = ismissing(T); R = rmmissing(T); F = fillmissing(T, 'next'); s = [size(a) size(b) size(c) size(ia) size(ib) size(ic) size(fa) size(fb) size(fc) size(m) height(R) width(R) height(F) size(F.a)];"

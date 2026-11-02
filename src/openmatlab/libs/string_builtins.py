@@ -45,14 +45,18 @@ def _text_in(name: str, v, *, charmat: bool = False):
     return k, sa.to_grid(v, numbers=False, cells=True)
 
 
-def _text_out(kind: str, g: np.ndarray):
+def _text_out(kind: str, g: np.ndarray, src=None):
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.char_value import CharValue
 
     if kind == "string":
         return sa.make(g)
     if kind == "char":
-        return CharValue(g.flat[0] if g.size else "")
+        text = g.flat[0] if g.size else ""
+        # upper/strtrim of an already-empty char must not collapse 1×0 or 0×N to 0×0 (#1058).
+        if text == "" and isinstance(src, CharValue) and not getattr(src, "is_string", False) and src.numel() == 0:
+            return CharValue(rows=src.rows, ncols=src.ncols)
+        return CharValue(text)
     if kind == "charmat":
         return CharValue(rows=[x for x in g.reshape(-1)])
     r, c = g.shape
@@ -190,7 +194,7 @@ def _case(name: str, fn):
         if len(args) != 1:
             raise _err(f"{name}: expected 1 argument")
         k, g = _text_in(name, args[0], charmat=True)
-        return (_text_out(k, _map(g, fn)),)
+        return (_text_out(k, _map(g, fn), args[0]),)
 
     return _f
 
@@ -209,14 +213,14 @@ def _strip(args, *, nargout=1):
     fn = {"both": lambda x: x.strip(chars), "left": lambda x: x.lstrip(chars),
           "leading": lambda x: x.lstrip(chars), "right": lambda x: x.rstrip(chars),
           "trailing": lambda x: x.rstrip(chars)}[side]
-    return (_text_out(k, _map(g, fn)),)
+    return (_text_out(k, _map(g, fn), args[0]),)
 
 
 def _strtrim(args, *, nargout=1):
     if len(args) != 1:
         raise _err("strtrim: expected 1 argument")
     k, g = _text_in("strtrim", args[0])
-    return (_text_out(k, _map(g, lambda x: x.strip(_WS))),)
+    return (_text_out(k, _map(g, lambda x: x.strip(_WS)), args[0]),)
 
 
 def _replace(name: str):
@@ -233,7 +237,7 @@ def _replace(name: str):
                     x = x.replace(o, new)
             return x
 
-        return (_text_out(k, _map(g, fn)),)
+        return (_text_out(k, _map(g, fn), args[0]),)
 
     return _f
 
@@ -303,7 +307,7 @@ def _join(args, *, nargout=1):
     else:
         flat = list(g.flat)
         out = np.array([[None if None in flat else delim.join(flat)]], dtype=object)
-    return (_text_out("string" if k == "string" else "char", out),)
+    return (_text_out("string" if k == "string" else "char", out, args[0]),)
 
 
 def _strcmp(name: str, fold: bool, prefix: bool = False):

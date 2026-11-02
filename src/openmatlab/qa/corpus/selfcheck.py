@@ -12,7 +12,9 @@ Sources of self-checks (all fetched into the local cache, never committed):
   :func:`octave_to_matlab` (``#`` comments, ``!``/``!=``, ``endif``-style keywords, ``"..."``
   char strings, ``x += y``, ``printf``), and Octave test vocabulary used *inside* test code
   (``NA``, ``e``, ``I``, ``rows``, ``columns``, ``resize``, ``fail``) is provided by small own shims
-  in ``t2lib/`` that exist only on the harness path.
+  in ``t2lib/`` that exist only on the harness path. An empty ``"..."`` is spelled ``''`` (0×0).
+  :func:`spell_expected` rewrites one pinned block whose expected empty string is the 1×0
+  shape MATLAB documents for ``blanks(0)``; that block still runs.
 * **chebfun** ``tests/`` (BSD-3-Clause): the driver asserts ``all(pass(:))`` of the test's
   own result vector, so T2 = T1 for ``selftest`` entries.
 * **matlab2tikz** bundled ACID test suite (BSD-2-Clause): a scene's own status, so T2 = T1
@@ -68,6 +70,26 @@ def dialect_exclusions(path: Path = None) -> dict:
         return {}
     doc = json.loads(f.read_text(encoding="utf-8"))
     return {(x["id"], x["sha256"]): x["reason"] for x in doc.get("exclusions", [])}
+
+
+# Octave "" is 1×0. The normaliser spells it as MATLAB '' (0×0). These blocks compare
+# that expected value to a result MATLAB documents as 1×0, so only the expected
+# spelling changes. The assertion still runs; the block is not excluded.
+# blanks(0): https://www.mathworks.com/help/matlab/ref/blanks.html
+_EXPECTED_EMPTY_ROW = {
+    ("octave/strings/blanks#1", "f56aecbfb649d801fb49df624e2c4548f00ceee81ab4a30940b68b1315c3f1a2"): (
+        "t2_assert (blanks (0), '')",
+        "t2_assert (blanks (0), char(zeros(1, 0)))",
+    ),
+}
+
+
+def spell_expected(block_id: str, digest: str, body: str) -> str:
+    """Spell one pinned block's expected empty char as 1×0. Other blocks are unchanged."""
+    pair = _EXPECTED_EMPTY_ROW.get((block_id, digest))
+    if not pair or pair[0] not in body:
+        return body
+    return body.replace(pair[0], pair[1], 1)
 
 
 T2LIB = Path(__file__).with_name("t2lib")
@@ -339,7 +361,7 @@ def run_octave_file(e: M.Entry, cache: Path, timeout: float) -> List[dict]:
         for b in p.blocks:
             io = ", ".join(b.names)
             outs = f"[{io}] = " if b.names else ""
-            body = octave_to_matlab(b.text)
+            body = spell_expected(f"{e.id}#{b.index}", M.sha256(b.text), octave_to_matlab(b.text))
             (stage / f"t2blk_{b.index}.m").write_text(f"function {outs}t2blk_{b.index}({io})\n{body}\nend\n",
                                                      encoding="utf-8")
             if b.names and not (stage / f"t2sh_{b.group}.m").exists():

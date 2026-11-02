@@ -110,10 +110,12 @@ def _matrix_body(v, name: str) -> bytes:
     if getattr(v, "is_string", False):
         raise MatError("save: string arrays need MAT v7.3 objects; convert with char() first")
     if isinstance(v, CharValue):
-        rows = list(v.rows)
-        width = max([len(r) for r in rows] + [0])
-        grid = np.array([[ord(ch) for ch in r.ljust(width)] for r in rows], dtype=np.uint16).reshape(len(rows), width)
-        return _header(mxCHAR, 0, grid.shape if rows else (0, 0), name) + _arr(miUINT16, _colmajor(grid))
+        r, c = v.shape
+        if r == 0 or c == 0:
+            grid = np.zeros((r, c), dtype=np.uint16)
+        else:
+            grid = np.array([[ord(ch) for ch in row] for row in v.rows], dtype=np.uint16)
+        return _header(mxCHAR, 0, (r, c), name) + _arr(miUINT16, _colmajor(grid))
     if getattr(v, "issparse", False):
         st = v.store
         m, n = v.shape
@@ -240,8 +242,10 @@ def _parse_matrix(data: bytes, endian: str):
         else:
             codes = _num(t, ch_b, endian).astype(np.int64).tolist()
         r, c = dims[0], int(np.prod(dims[1:])) if len(dims) > 1 else 1
-        if r * c == 0:
-            return name, CharValue("")
+        if r == 0:
+            return name, CharValue(rows=(), ncols=c)
+        if c == 0:
+            return name, CharValue(rows=tuple("" for _ in range(r)))
         grid = np.array(codes, dtype=np.int64).reshape((r, c), order="F")
         return name, CharValue(rows=tuple("".join(chr(x) for x in row) for row in grid))
     if mx == mxSPARSE:

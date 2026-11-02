@@ -131,7 +131,10 @@ def _isspace(args, *, nargout=1):
         a = _num(v, "isspace")
         return (NDArrayValue(np.zeros(a.shape, dtype=bool)),)
     rows = v.rows
-    out = np.array([[ch in " \t\n\v\f\r" for ch in r] for r in rows], dtype=bool) if rows else np.zeros((0, 0), bool)
+    if rows:
+        out = np.array([[ch in " \t\n\v\f\r" for ch in r] for r in rows], dtype=bool)
+    else:
+        out = np.zeros(v.shape, dtype=bool)
     return (NDArrayValue(out),)
 
 
@@ -261,7 +264,7 @@ def _repelem(args, *, nargout=1):
     is_char = _is_text(v)
     a = np.array([list(r) for r in v.rows]) if is_char else _num(v, "repelem")
     if is_char and not v.rows:
-        a = np.zeros((0, 0), dtype="<U1")
+        a = np.zeros((0, v.ncols), dtype="<U1")
     reps = [_num(r, "repelem").reshape(-1) for r in args[1:]]
     if len(reps) == 1:
         r = reps[0]
@@ -285,6 +288,8 @@ def _repelem(args, *, nargout=1):
     if is_char:
         from openmatlab.runtime.char_value import CharValue
 
+        if out.shape[0] == 0:
+            return (CharValue(rows=(), ncols=int(out.shape[1])),)
         return (CharValue(rows=["".join(row) for row in out]),)
     return (NDArrayValue(out),)
 

@@ -1927,7 +1927,7 @@ test_cases:
 
   - id: tc.corpus_tier2
     kind: unit
-    title: Corpus T2 self-check oracle and dialect exclusions (Epic #765)
+    title: Corpus T2 self-check oracle, dialect exclusions, and blanks(0) 1×0 expected char (Epic #765, #1058)
     features: [qa.corpus_tier2]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_corpus_selfcheck.py
@@ -2583,7 +2583,7 @@ test_cases:
 
   - id: tc.missing_values
     kind: unit
-    title: ismissing, rmmissing, and fillmissing constant/previous/next (Epic #1033, #1039)
+    title: ismissing, rmmissing, and fillmissing constant/previous/next, including empty char shapes (Epic #1033, #1039, #1058)
     features: [libs.missing_values]
     use_cases: [uc.analyst_missing]
     impl: tests/unit/test_missing_values.py
@@ -2592,7 +2592,7 @@ test_cases:
 
   - id: tc.missing_values_bdd
     kind: unit
-    title: missing-value Gherkin for vectors, tables, char blanks, and empty inputs (Epic #1033, #1039)
+    title: missing-value Gherkin for vectors, tables, char blanks, and empty char shapes (Epic #1033, #1039, #1058)
     features: [libs.missing_values]
     use_cases: [uc.analyst_missing]
     impl: tests/bdd/test_missing_values_bdd.py

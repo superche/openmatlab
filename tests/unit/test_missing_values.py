@@ -200,8 +200,9 @@ def test_char_blank_is_missing():
     assert ws.get("cr").rows == ("a", "b") and _n(ws, "tcr").shape == (3, 1)
     assert _n(ws, "tcr").tolist() == [[False], [True], [False]]
     assert _n(ws, "tab").tolist() == [[False, False, False]]
-    assert ws.get("gone").matlab_class() == "char" and ws.get("gone").shape == (0, 0)
-    assert ws.get("zcol").matlab_class() == "char" and ws.get("zcol").shape == (0, 0)
+    # MATLAB: a blank row becomes 1×0, and a blank column becomes 0×1 (#1058).
+    assert ws.get("gone").matlab_class() == "char" and ws.get("gone").shape == (1, 0)
+    assert ws.get("zcol").matlab_class() == "char" and ws.get("zcol").shape == (0, 1)
     for code, text, ident in (
         ("fillmissing('a b', 'constant', 'xy')", "scalar", "OpenMATLAB:fillmissing:ConstantSize"),
         ("fillmissing('a b', 'constant', 120)", "double", "OpenMATLAB:fillmissing:ConstantType"),
@@ -210,6 +211,23 @@ def test_char_blank_is_missing():
             _ws(code)
         assert text in str(ei.value) and "Traceback" not in str(ei.value)
         assert ei.value.identifier == ident
+
+
+def test_rmmissing_blank_char_keeps_empty_shape():
+    """Blank char keeps a real empty shape. A string of spaces is not missing (#1058)."""
+    ws = _ws(
+        "row = rmmissing('   ');"
+        "mat = rmmissing(['a ';'  ']);"
+        "wide = rmmissing(['a '; ' b'], 2);"
+        "empty = rmmissing('');"
+        's = rmmissing("   "); m = rmmissing(["a ";"  "]); ss = size(s); ms = size(m);'
+    )
+    assert ws.get("row").matlab_class() == "char" and ws.get("row").shape == (1, 0)
+    assert ws.get("mat").matlab_class() == "char" and ws.get("mat").shape == (0, 2)
+    assert ws.get("wide").shape == (2, 0)
+    assert ws.get("empty").shape == (0, 0)
+    assert ws.get("s").matlab_class() == "string" and _n(ws, "ss").tolist() == [[1, 1]]
+    assert ws.get("m").matlab_class() == "string" and _n(ws, "ms").tolist() == [[2, 1]]
 
 
 def test_empty_missing_values_keep_their_shape():

@@ -694,7 +694,7 @@ features:
     status: partial
     depends_on: [runtime.table_core]
     spec: docs/design/EPIC-1033-missing.md
-    notes: "M17 analyst slice (Epic #1032, #1033; review fixes #1039). ismissing reports standard missing values (NaN, NaT, <missing>, <undefined>, char blank ' ', empty char in a cell) for vectors and tables. Empty arrays and 0-row tables keep their size. rmmissing drops missing vector entries or table rows; MinNumMissing and DataVariables are accepted. Its second output is a column along dimension 1 and a row along dimension 2. fillmissing methods are constant, previous, and next, and a char result stays char. A leading previous gap and a trailing next gap stay missing. Each table variable is filled down its rows, including a single-row table. Non-goals: every other fill method (nearest, linear, spline, pchip, makima, movmean, movmedian, knn), EndValues, SamplePoints, custom indicators, standardizeMissing, sparse matrices, xlsx."
+    notes: "M17 analyst slice (Epic #1032, #1033; review fixes #1039). ismissing reports standard missing values (NaN, NaT, <missing>, <undefined>, char blank ' ', empty char in a cell) for vectors and tables. Empty arrays and 0-row tables keep their size. rmmissing drops missing vector entries or table rows; MinNumMissing and DataVariables are accepted. Its second output is a column along dimension 1 and a row along dimension 2. fillmissing methods are constant, previous, and next, and a char result stays char. A leading previous gap and a trailing next gap stay missing. Each table variable is filled down its rows, including a single-row table. #1058: rmmissing of a blank char row is 1×0 and of a blank char matrix is 0×N; '' stays 0×0. A string of spaces is not missing. Non-goals: every other fill method (nearest, linear, spline, pchip, makima, movmean, movmedian, knn), EndValues, SamplePoints, custom indicators, standardizeMissing, sparse matrices, xlsx."
     tests: [tests/unit/test_missing_values.py, tests/bdd/test_missing_values_bdd.py]
     cases: [tc.missing_values, tc.missing_values_bdd]
 
@@ -878,7 +878,7 @@ features:
     name: Corpus T2 self-check oracle and dialect exclusions
     status: done
     depends_on: [qa.corpus_report]
-    notes: "M12 C07 met (Epic #765): GNU Octave %!assert/%!test blocks run at run time (pass/fail, hashes and counts only; no Octave source or expected values committed), chebfun and matlab2tikz own checks; corpus/dialect.json excludes blocks where documented MATLAB differs from Octave (outside the rate, never a pass); full run T2 82.7 %"
+    notes: "M12 C07 met (Epic #765): GNU Octave %!assert/%!test blocks run at run time (pass/fail, hashes and counts only; no Octave source or expected values committed), chebfun and matlab2tikz own checks; corpus/dialect.json excludes blocks where documented MATLAB differs from Octave (outside the rate, never a pass); full run T2 82.7 %. octave/strings/blanks#1 still runs: its expected empty char is spelled 1×0, matching documented MATLAB blanks(0), instead of '' (0×0)."
     tests: [tests/unit/test_corpus_selfcheck.py]
   - id: qa.corpus_tier3
     layer: qa
@@ -1058,7 +1058,7 @@ features:
     name: CharValue carrier for ' and \" literals
     status: done
     depends_on: [lang.array_assign, numerics.array_set]
-    notes: "CharValue for ' literals [done per ITER-067]; multi-row char matrices ['ab';'cd'], char() padding, double() (#427); char indexing/assign/delete/transpose and 'a'+'b' numeric (Epic #457); double-quoted literals are StringValue (runtime.string_class)"
+    notes: "CharValue for ' literals [done per ITER-067]; multi-row char matrices ['ab';'cd'], char() padding, double() (#427); char indexing/assign/delete/transpose and 'a'+'b' numeric (Epic #457); double-quoted literals are StringValue (runtime.string_class). #1058: empty char keeps its shape (1×0, 0×N, M×0); '' stays 0×0."
     tests: [tests/unit/test_char_literal.py, tests/unit/test_char_matrix.py, tests/unit/test_int_string_classes.py]
 
   - id: lang.cell_literal

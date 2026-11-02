@@ -434,7 +434,9 @@ def _fread(args, *, nargout=1):
     if pout == "char" or (pin.startswith("char") and pout == "char"):
         from openmatlab.runtime.char_value import CharValue
 
-        return (CharValue(rows=tuple("".join(chr(int(x)) for x in row) for row in shaped.T.T) if shaped.size else ()), _num(count))
+        if shaped.size == 0:
+            return (CharValue.from_codes(shaped), _num(count))
+        return (CharValue(rows=tuple("".join(chr(int(x)) for x in row) for row in shaped.T.T)), _num(count))
     if pout == "double":
         out = shaped.astype(np.float64)
     else:

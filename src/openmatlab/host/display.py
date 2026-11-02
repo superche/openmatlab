@@ -298,6 +298,9 @@ def _format_value(value: object) -> str:
                 return format_string_array(value.data)
             return f'"{value.text}"'
         if isinstance(value, CharValue):
+            if value.numel() == 0:
+                r, c = value.shape
+                return f"  {r}\u00d7{c} empty char array"
             return "\n".join(value.rows)
     except Exception:
         pass

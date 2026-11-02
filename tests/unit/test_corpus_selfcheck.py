@@ -99,6 +99,26 @@ def test_paren_continuation_and_bug_tags():
     assert S.parse_blocks("%!test <*123>\n%! x = 1;").blocks[0].text.strip() == "x = 1;"
 
 
+def test_blanks0_expected_spelling_is_1x0_char():
+    """blanks(0) is 1×0 (MATLAB blanks docs). Only this block's expected '' becomes that shape."""
+    sha = "f56aecbfb649d801fb49df624e2c4548f00ceee81ab4a30940b68b1315c3f1a2"
+    src = "t2_assert (blanks (0), '')"
+    got = S.spell_expected("octave/strings/blanks#1", sha, src)
+    assert got == "t2_assert (blanks (0), char(zeros(1, 0)))"
+    assert S.spell_expected("octave/strings/blanks#1", "0" * 64, src) == src
+    assert S.spell_expected("octave/strings/blanks#2", sha, src) == src
+    assert S.spell_expected("octave/strings/other#1", sha, "t2_assert (1, 1)") == "t2_assert (1, 1)"
+
+
+def test_blanks0_matches_1x0_not_0x0():
+    r = ReplSession()
+    r.run_line(f"addpath('{S.T2LIB.as_posix()}');")
+    r.run_line("try, t2_assert(blanks(0), char(zeros(1, 0))); ok__ = 1; catch, ok__ = 0; end")
+    assert bool(r.session.workspace.get("ok__").backend_buffer().item()) is True
+    r.run_line("try, t2_assert(blanks(0), ''); ok__ = 1; catch, ok__ = 0; end")
+    assert bool(r.session.workspace.get("ok__").backend_buffer().item()) is False
+
+
 def test_dialect_exclusions_are_keyed_by_id_and_hash(tmp_path):
     from openmatlab.qa.corpus.selfcheck import dialect_exclusions
 

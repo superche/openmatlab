@@ -260,7 +260,10 @@ def _blanks(args, *, nargout=1):
     n = _scalar(args[0], "blanks") if args else 0
     if n < 0 or n != math.floor(n):
         raise _err("blanks: N must be a non-negative integer.", "MATLAB:blanks:invalidInput")
-    return (_cv(" " * int(n)),)
+    n = int(n)
+    if n == 0:
+        return (_cv(rows=("",)),)  # 1×0, not '' (0×0) (#1058)
+    return (_cv(" " * n),)
 
 
 _WS = " \t\n\v\f\r\0"
@@ -275,6 +278,8 @@ def _deblank(args, *, nargout=1):
     if len(a.rows) > 1:
         w = max([len(r.rstrip(_WS)) for r in a.rows] + [0])
         return (_cv(rows=[r[:w] for r in a.rows]),)
+    if a.shape[0] == 0 or a.ncols == 0:
+        return (a,)  # '' , 1×0, and 0×N stay empty with their shape (#1058)
     return (_cv(a.text.rstrip(_WS)),)
 
 
