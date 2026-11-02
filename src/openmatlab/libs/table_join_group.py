@@ -6,6 +6,11 @@ with each type's missing value (NaN, NaT, '', <missing>, <undefined>, 0 for inte
 logical). ``findgroups``/``splitapply``/``groupsummary``/``groupcounts`` number groups by the sorted
 unique combinations of the grouping variables (rank keys from ``table_utils``).
 
+``groupsummary`` and ``groupcounts`` treat a cellstr ``''`` and a string ``<missing>`` as
+missing group keys, the same entries ``ismissing`` reports (#1060). A string ``""`` is a
+real key. ``findgroups`` still uses ``rank_columns`` directly. Char blanks are not part of
+this path.
+
 ``groupsummary(..., 'IncludeEmptyGroups', true)`` (M17 #742) also emits empty groups: every
 category of a categorical grouping variable, both ``false`` and ``true`` of a logical one, and
 every combination of those possible values. Groups are ordered like the default path:
@@ -291,11 +296,41 @@ def _join(args, *, nargout=1):
 # =====================================================================
 # grouping
 # =====================================================================
-def group_numbers(cols, n, include_missing):
-    """(G as float array with NaN for missing groups, first-row index per group in group order)."""
+def _grouping_ranks(col, n):
+    """``rank_columns``, with cellstr ``''`` and string ``<missing>`` marked NaN.
+
+    ``rank_columns`` already ranks string ``<missing>`` last. A cell array of character
+    vectors ranks ``''`` as a real key, so it sorts first. ``ismissing`` is the rule for
+    both. A blank char vector inside a cell (``' '``) stays present. Char columns are
+    left to ``rank_columns`` (#1058).
+    """
+    ranks = rank_columns(col, n)
+    if n == 0 or not ranks:
+        return ranks
+    from openmatlab.runtime.cell_value import CellValue
+
+    if not isinstance(col, CellValue) and not getattr(col, "is_string", False):
+        return ranks
+    from openmatlab.libs.missing_builtins import missing_mask
+
+    mask = np.asarray(missing_mask(col), dtype=bool).reshape(n, len(ranks))
+    out = []
+    for j, r in enumerate(ranks):
+        r = np.array(r, dtype=float, copy=True)
+        r[mask[:, j]] = np.nan
+        out.append(r)
+    return out
+
+
+def group_numbers(cols, n, include_missing, ranker=rank_columns):
+    """(G as float array with NaN for missing groups, first-row index per group in group order).
+
+    ``findgroups`` uses ``rank_columns``. ``groupsummary`` and ``groupcounts`` pass
+    ``_grouping_ranks`` so a cellstr ``''`` is a missing key.
+    """
     keys = []
     for c in cols:
-        keys += rank_columns(c, n)
+        keys += ranker(c, n)
     if not keys:
         return np.ones(n), np.array([0]) if n else np.zeros(0, dtype=int)
     K = np.column_stack([np.where(np.isnan(k), np.inf, k) for k in keys])
@@ -513,7 +548,7 @@ def _stack_rows(parts, col):
     return _ev().concat_values([[p] for p in parts])
 
 
-def _ranks_of(col, n, fn):
+def _ranks_of(col, n, fn, ranker=rank_columns):
     """The single rank vector of a grouping variable.
 
     ``rank_columns`` turns an empty numeric column into no rank columns, and it cannot
@@ -526,7 +561,7 @@ def _ranks_of(col, n, fn):
             raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported for a multi-column grouping variable.",
                        f"MATLAB:{fn}:Unsupported")
         return np.zeros(0)
-    one = rank_columns(col, n)
+    one = ranker(col, n)
     if len(one) == 1:
         return one[0]
     if n == 0 and not one:
@@ -540,18 +575,19 @@ def _nan_last(key):
     return tuple(np.inf if np.isnan(x) else float(x) for x in key)
 
 
-def _groups_including_empty(cols, n, include_missing, fn):
+def _groups_including_empty(cols, n, include_missing, fn, ranker=_grouping_ranks):
     """Observed groups plus empty ones, in the same order as the default path.
 
     Sort column by column. A missing value sorts last inside its own column, so a
     group that contains a missing key stays where the default sort puts it. Empty
-    combinations are inserted into that sequence.
+    combinations are inserted into that sequence. ``ranker`` must be the same
+    function ``group_numbers`` uses, or a missing cellstr key and its sort key diverge.
     """
     if not cols:
         # product() of no variables yields one empty tuple, which is not a group.
-        G, firsts = group_numbers(cols, n, include_missing)
+        G, firsts = group_numbers(cols, n, include_missing, ranker)
         return G, firsts, [], np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
-    ranks = [_ranks_of(col, n, fn) for col in cols]
+    ranks = [_ranks_of(col, n, fn, ranker) for col in cols]
     levels = [_possible_levels(col, r) for col, r in zip(cols, ranks)]
     combos = list(itertools.product(*levels)) if all(levels) else []
     R = np.column_stack(ranks) if n else np.zeros((0, len(cols)))
@@ -559,7 +595,7 @@ def _groups_including_empty(cols, n, include_missing, fn):
     seen = set()
     Gobs = np.full(n, np.nan)
     if n:
-        Gobs, firsts = group_numbers(cols, n, include_missing)
+        Gobs, firsts = group_numbers(cols, n, include_missing, ranker)
         for fi in firsts:
             fi = int(fi)
             key = tuple(float(R[fi, j]) for j in range(len(cols)))
@@ -590,9 +626,10 @@ def _group_table(T, gvars, fn, opts, *, allow_empty=False):
     if include_empty and not allow_empty:
         raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported yet.", f"MATLAB:{fn}:Unsupported")
     cols = [T.cols[i] for i in gvars]
+    # groupsummary and groupcounts. findgroups calls group_numbers on its own.
     if include_empty:
-        return _groups_including_empty(cols, T.nrows, include_missing, fn)
-    G, firsts = group_numbers(cols, T.nrows, include_missing)
+        return _groups_including_empty(cols, T.nrows, include_missing, fn, _grouping_ranks)
+    G, firsts = group_numbers(cols, T.nrows, include_missing, _grouping_ranks)
     keycols = [_col_rows(c, firsts) for c in cols]
     counts = np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
     return G, firsts, keycols, counts
