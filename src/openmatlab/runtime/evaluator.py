@@ -2201,32 +2201,50 @@ class Evaluator:
             if len(flat_vals) == 1:
                 return flat_vals[0]
             raise EvalError("string arrays are not supported yet (#457 residual)")
-        texts = []
+        # 0×0 ('') is dropped, like []. 1×0 and 0×N keep their shape (#1058).
+        horz: list = []
         for r in rows:
-            # each bracket row is a list of row-blocks; char matrices stack
-            block: list = [""]
+            block = None
+            width = 0
+            saw = False
             for v in r:
                 if isinstance(v, CharValue):
-                    if not v.rows:
+                    if v.shape == (0, 0):
                         continue
-                    if block == [""]:
-                        block = [""] * len(v.rows)
-                    if len(v.rows) != len(block):
+                    nrows = v.shape[0]
+                    if block is None:
+                        block = [""] * nrows
+                    if len(block) != nrows:
                         raise EvalError(self._CONCAT_ERR)
-                    block = [a + b for a, b in zip(block, v.rows)]
+                    if nrows == 0:
+                        width += v.ncols
+                    else:
+                        block = [a + b for a, b in zip(block, v.rows)]
+                    saw = True
                     continue
                 b = np.asarray(self._require_array(v, "matrix").backend_buffer())
                 if b.ndim == 2 and min(b.shape) > 1:
                     raise EvalError(self._CONCAT_ERR)
                 if b.size == 0:
                     continue
+                if block is None:
+                    block = [""]
                 if len(block) != 1:
                     raise EvalError(self._CONCAT_ERR)
                 block = [block[0] + "".join(chr(int(x)) for x in b.reshape(-1))]
-            texts.extend(t for t in block if t or len(block) > 1)
-        if len({len(t) for t in texts}) > 1:
+                saw = True
+            if not saw:
+                continue
+            if not block:
+                horz.append(((), width))
+            else:
+                horz.append((tuple(block), len(block[0])))
+        if not horz:
+            return CharValue("")
+        ncols = horz[0][1]
+        if any(w != ncols for _, w in horz):
             raise EvalError(self._CONCAT_ERR)
-        return CharValue(rows=texts)
+        return CharValue(rows=tuple(t for rs, _ in horz for t in rs), ncols=ncols)
 
     def _eval_colon(self, expr: ast.ColonExpr) -> Array:
         if expr.start is None or expr.stop is None:
@@ -2485,30 +2503,27 @@ def np_bool(b: bool):
 
 
 def _char_codes(v):
-    """char matrix → double code matrix (r x c); '' → 0x0."""
+    """char matrix → double code matrix, including empty shapes (1×0, 0×N)."""
     import numpy as np
     from openmatlab.numerics.ndarray_value import NDArrayValue
 
     r, c = v.shape
-    if r == 0:
-        return NDArrayValue(np.zeros((0, 0), dtype=np.float64))
-    return NDArrayValue(
-        np.array([[float(ord(ch)) for ch in row] for row in v.rows], dtype=np.float64).reshape(r, c)
-    )
+    if r == 0 or c == 0:
+        return NDArrayValue(np.zeros((r, c), dtype=np.float64))
+    return NDArrayValue(np.array([[float(ord(ch)) for ch in row] for row in v.rows], dtype=np.float64))
 
 
 def _codes_char(arr):
-    """double code matrix → CharValue (2-D only)."""
+    """double code matrix → CharValue (2-D only). Empty inputs keep their size."""
     import numpy as np
     from openmatlab.runtime.char_value import CharValue
 
     b = np.asarray(arr.backend_buffer())
     if b.ndim > 2:
         raise EvalError("N-D char arrays are not supported")
-    if b.size == 0:
-        return CharValue("")
-    b = b.reshape(b.shape if b.ndim == 2 else (1, -1))
-    return CharValue(rows=["".join(chr(int(x)) for x in row) for row in b.real])
+    if np.iscomplexobj(b):
+        b = b.real
+    return CharValue.from_codes(b)
 
 
 def _string_text(v):

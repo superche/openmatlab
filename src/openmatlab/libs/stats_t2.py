@@ -40,7 +40,11 @@ def _parse(fn, args):
     from openmatlab.runtime.char_value import CharValue
 
     if isinstance(a, CharValue):
-        x = np.array([[ord(c) for c in r] for r in a.rows], dtype=float).reshape(len(a.rows), -1) if a.rows else np.zeros((0, 0))
+        r, c = a.shape
+        if r == 0 or c == 0:
+            x = np.zeros((r, c), dtype=float)
+        else:
+            x = np.array([[ord(ch) for ch in row] for row in a.rows], dtype=float)
     else:
         x = np.asarray(a.backend_buffer())
     dims, outtype, omit, weights = None, "default", False, None

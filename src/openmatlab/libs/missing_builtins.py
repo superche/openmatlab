@@ -73,7 +73,9 @@ def _element_missing(e) -> bool:
             return False
         return sa.to_grid(e).reshape(-1)[0] is None
     if isinstance(e, CharValue):
-        return e.shape[0] == 0 and e.text == ""
+        # Empty character vector: '' (0×0) or a 1×0 row. A 0×N matrix is not one.
+        r, c = e.shape
+        return c == 0 and r <= 1
     return False
 
 
@@ -177,12 +179,10 @@ def _bad_const(const, what: str):
 
 
 def _char_from_codes(data: np.ndarray):
+    """Rebuild a char array. Empty inputs keep their size (1×0, 0×N, …)."""
     from openmatlab.runtime.char_value import CharValue
 
-    a = np.asarray(data)
-    if a.shape[0] == 0:
-        return CharValue("")
-    return CharValue(rows=["".join(chr(int(ch)) for ch in row) for row in a])
+    return CharValue.from_codes(data)
 
 
 def _accept_char(const):

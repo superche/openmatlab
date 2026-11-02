@@ -59,18 +59,19 @@ def _col(idx):
 
 
 def _codes(v):
-    rows = list(v.rows)
-    w = max([len(r) for r in rows] + [0])
-    return np.array([[ord(c) for c in r.ljust(w)] for r in rows], dtype=float).reshape(len(rows), w)
+    r, c = v.shape
+    if r == 0 or c == 0:
+        return np.zeros((r, c), dtype=float)
+    return np.array([[ord(ch) for ch in row] for row in v.rows], dtype=float)
 
 
 def _from_codes(a):
     from openmatlab.runtime.char_value import CharValue
 
-    a = np.atleast_2d(a)
-    if a.size == 0:
-        return CharValue("")
-    return CharValue(rows=tuple("".join(chr(int(x)) for x in row) for row in a))
+    a = np.asarray(a)
+    if a.ndim < 2:
+        a = np.atleast_2d(a)
+    return CharValue.from_codes(a)
 
 
 def _cell_grid(v):

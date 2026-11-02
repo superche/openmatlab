@@ -185,6 +185,18 @@ def _char(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
             items.extend(a.get(i, j) for j in range(c) for i in range(r))
         else:
             items.append(a)
+    if len(items) == 1:
+        v = items[0]
+        if isinstance(v, CharValue) and not getattr(v, "is_string", False):
+            return (CharValue(rows=v.rows, ncols=v.ncols),)
+        if isinstance(v, Array):
+            b = np.asarray(v.backend_buffer(), dtype=float)
+            if b.ndim <= 2:
+                if b.ndim < 2:
+                    b = b.reshape(1, -1)
+                if b.size and (np.any(b < 0) or np.any(b != np.floor(b))):
+                    raise BuiltinError("char: codes must be non-negative integers")
+                return (CharValue.from_codes(b),)
     rows: list = []
     for v in items:
         if isinstance(v, CharValue):
@@ -211,7 +223,10 @@ def _double(args: Sequence[Value], *, nargout: int = 1) -> Sequence[Value]:
         return (NDArrayValue(np.array([[np.nan]])),)
     if isinstance(v, CharValue):
         r, c = v.shape
-        out = np.array([[float(ord(ch)) for ch in row] for row in v.rows]).reshape(r, c)
+        if r == 0 or c == 0:
+            out = np.zeros((r, c), dtype=float)
+        else:
+            out = np.array([[float(ord(ch)) for ch in row] for row in v.rows], dtype=float)
         return (NDArrayValue(out),)
     if isinstance(v, Array):
         b = np.asarray(v.backend_buffer())
