@@ -24,6 +24,12 @@ MATLAB-aligned Host workbench window recording for milestone/6.
   `DISPLAY=:2 ./demos/workbench/record_m16_bbbc038_showcase.sh`
   (driver: [`m16_driver.py`](m16_driver.py)). No display:
   `./demos/workbench/record_m16_bbbc038_showcase.sh --headless` (no mp4).
+- [`showcase_m17_analyst.mp4`](showcase_m17_analyst.mp4) — M17 capture of
+  `demos/analyst/story_assays.m` (Command Window missing counts, West group,
+  CSV paths). Re-record:
+  `DISPLAY=:2 ./demos/workbench/record_m17_analyst_showcase.sh`
+  (driver: [`m17_driver.py`](m17_driver.py)). No display:
+  `./demos/workbench/record_m17_analyst_showcase.sh --headless` (no mp4).
 
 ## Re-record
 

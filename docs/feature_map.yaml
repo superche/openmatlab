@@ -698,6 +698,16 @@ features:
     tests: [tests/unit/test_missing_values.py, tests/bdd/test_missing_values_bdd.py]
     cases: [tc.missing_values, tc.missing_values_bdd]
 
+  - id: libs.analyst_story
+    layer: libs
+    name: analyst field-assay story (read, wash, groupsummary, writetable CSV)
+    status: partial
+    depends_on: [libs.table_io, libs.missing_values, libs.table_join_group]
+    spec: docs/design/EPIC-1034-analyst.md
+    notes: "M17 last slice (epic #1032, issue #1034). demos/analyst/story_assays.m reads a synthetic 12-row CSV with TreatAsMissing, prints ismissing, rmmissing, fillmissing previous and constant, groupsummary IncludeEmptyGroups (unused category West), and writetable to demos/analyst/out/. out/README.md is tracked; generated CSV is gitignored. xlsx is not a path. writematrix stays the numeric-matrix writer. Non-goals: other fill methods, detectImportOptions, a fourth vertical, corpus %, Core backlog."
+    tests: [tests/unit/test_analyst_story.py, tests/bdd/test_analyst_story_bdd.py]
+    cases: [tc.analyst_story, tc.analyst_story_bdd]
+
   - id: host.variable_editor
     layer: host
     name: Variable editor panel

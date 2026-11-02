@@ -67,7 +67,7 @@ Roadmaps live in GitHub Milestones (see `docs/PROCESS.md` § Milestones). Assign
 - **C-MAPSS PHM vertical:** `docs/milestones/M14-cmapss-vertical.md` (milestone/14, closed 2026-10-23). NASA C-MAPSS FD001, Zenodo CC BY 4.0, runtime-only, never committed. Demo `demos/cmapss`. /9 and corpus residuals do not block close.
 - **MIT-BIH Arrhythmia vertical:** `docs/milestones/M15-mitbih-vertical.md` (milestone/15, closed 2026-10-23). PhysioNet record 100 only (`100.hea` / `100.dat` / `100.atr`), ODC-By 1.0, runtime-only, never committed. Demo `demos/mitbih`. /9 and corpus residuals do not block close.
 - **BBBC038 nuclei image vertical:** `docs/milestones/M16-bbbc038-vertical.md` (milestone/16, closed 2026-10-25). Broad `stage1_test.zip` only (9545388 bytes), CC0 1.0, runtime-only, never committed. Demo `demos/bbbc038`. /9 and corpus residuals do not block close.
-- **Analyst pipeline:** M17 (milestone/17, open). Missing values × CSV import slice × groupsummary story cut × `demos/analyst`. Not a fourth vertical; does not clear Core backlog (milestone/9).
+- **Analyst pipeline:** M17 (milestone/17, open). Missing values × CSV import slice × groupsummary story cut × `demos/analyst`. Criteria: `docs/milestones/M17-analyst-pipeline.md`. Not a fourth vertical; does not clear Core backlog (milestone/9).
 - **Workbench product:** MATLAB-aligned Host chrome — `docs/milestones/M-workbench-aligned.md` (milestone/6, closed).
 
 ## Residual Issues（强制）
