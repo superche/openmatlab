@@ -684,7 +684,7 @@ features:
     status: done
     depends_on: [libs.table_utils]
     spec: docs/design/EPIC-742-groupsummary.md
-    notes: "typed row-key matching, key-sorted inner/outer joins with per-type missing fill and MergeKeys, findgroups/splitapply, groupsummary/groupcounts; T06, T07 (Epic #696). M17 #742 slice: groupsummary IncludeEmptyGroups (unused categories, both logical values, unobserved combinations), story methods mean/sum/min/max/std plus GroupCount, variable-major method_var columns, NaN omitted in the data. Core backlog residuals: #1052 #1053 #1054 #1055 #1056. groupcounts IncludeEmptyGroups, group bins, and array groupsummary stay unsupported."
+    notes: "typed row-key matching, key-sorted inner/outer joins with per-type missing fill and MergeKeys, findgroups/splitapply, groupsummary/groupcounts; T06, T07 (Epic #696). M17 #742 slice: groupsummary IncludeEmptyGroups (unused categories, both logical values, unobserved combinations), story methods mean/sum/min/max/std plus GroupCount, variable-major method_var columns, NaN omitted in the data. #1060: groupsummary and groupcounts use ismissing for cellstr '' and string <missing> group keys (own group, sorted last; dropped when IncludeMissingGroups is false). String \"\" is a real key. findgroups still uses rank_columns. Char blanks stay on #1058. Core backlog residuals: #1052 #1053 #1054 #1055 #1056. groupcounts IncludeEmptyGroups, group bins, and array groupsummary stay unsupported."
     tests: [tests/unit/test_table_join_group.py, tests/bdd/test_table_join_group_bdd.py, tests/unit/test_groupsummary_empty.py, tests/bdd/test_groupsummary_empty_bdd.py]
     cases: [tc.groupsummary_empty, tc.groupsummary_empty_bdd]
 
