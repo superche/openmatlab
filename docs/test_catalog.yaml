@@ -185,6 +185,13 @@ use_cases:
     features: [libs.table_io, libs.import_options]
     priority: p1
 
+  - id: uc.readtable_column_types
+    title: Import duration, categorical, and logical columns, and more dates
+    actor: scientific user
+    goal: delimited-text readtable and detectImportOptions type duration text and a wider set of dates, and import categorical and logical columns when the type or format says so
+    features: [libs.table_io, libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2771,6 +2778,24 @@ test_cases:
     features: [libs.table_io, libs.import_options]
     use_cases: [uc.readtable_variabledescriptions]
     impl: tests/bdd/test_readtable_variabledescriptions_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_column_types
+    kind: unit
+    title: readtable duration, categorical, logical, and more date formats (#1046)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_column_types]
+    impl: tests/unit/test_readtable_column_types.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_column_types_bdd
+    kind: bdd
+    title: readtable duration and typed logical/categorical Gherkin (#1046)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_column_types]
+    impl: tests/bdd/test_readtable_column_types_bdd.py
     status: active
     env: unit
 

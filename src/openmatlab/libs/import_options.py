@@ -8,8 +8,9 @@ subset, the names line, and per-variable ``TreatAsMissing``.
 
 Detection uses the same strict column rule as ``readtable`` (see ``_kind``),
 so ``readtable(file, detectImportOptions(file))`` matches ``readtable(file)``.
-``setvaropts`` accepts ``Type`` (double, char, string, datetime) and
-``TreatAsMissing``. Any other variable option is an error.
+``setvaropts`` accepts ``Type`` (double, char, string, datetime, duration,
+categorical, logical) and ``TreatAsMissing``. Any other variable option is
+an error.
 
 ``Range`` (#1041) is a name-value of ``detectImportOptions`` and ``readtable``.
 The window is stored as internal line and column bounds, not as a ``Range`` or
@@ -32,6 +33,11 @@ internally and ``readtable(file, opts)`` stores it on
 ``Properties.VariableDescriptions``. It is not a property of this object, and
 the read does not emit the modified-name warning again. See
 ``docs/design/ISSUE-1045-readtable-variabledescriptions.md``.
+
+``detectImportOptions`` accepts ``DurationType`` (#1046). ``'text'`` records
+a detected duration column as ``char`` or ``string``. There is no
+``DurationType`` property. Logical and categorical columns stay text until
+``Type`` is set. See ``docs/design/ISSUE-1046-readtable-column-types.md``.
 """
 
 from __future__ import annotations
@@ -47,6 +53,7 @@ from openmatlab.libs.table_io import (
     _flag,
     _dated_kind,
     _datetime_type_for,
+    _duration_type_for,
     _kind,
     _headers_when_modified,
     _names_from_header,
@@ -71,8 +78,9 @@ _PARAM_NAMES = {
     "whitespacerule", "exponentcharacter", "decimalseparator", "thousandsseparator", "trimnonnumeric",
     "numbersystem", "truesymbols", "falsesymbols", "casesensitive", "datetimetype", "datetimeformat", "inputformat",
     "datetimelocale", "timezone", "categories", "protected", "ordinal", "durationformat", "fieldseparator",
+    "durationtype",
 }
-_TYPES = ("double", "char", "string", "datetime")
+_TYPES = ("double", "char", "string", "datetime", "duration", "categorical", "logical")
 _IDENT = re.compile(r"[A-Za-z]\w{0,62}\Z")
 
 
@@ -245,7 +253,8 @@ def _one_delim(v):
 def _type_name(s):
     t = s.lower()
     if t not in _TYPES:
-        raise _err(f"Variable type '{s}' is not supported. Supported types are double, char, string, and datetime.",
+        raise _err("Variable type '{0}' is not supported. Supported types are double, char, string, "
+                   "datetime, duration, categorical, and logical.".format(s),
                    "MATLAB:setvaropts:InvalidType")
     return t
 
@@ -321,7 +330,7 @@ def _locate(o, lines):
     raise _err("The file contains no variables.", "MATLAB:detectImportOptions:NoData")
 
 
-def _detect_ranged(name, o, tt, rng, dt, rule):
+def _detect_ranged(name, o, tt, rng, dt, rule, du):
     if "variablenamesline" in o:
         raise _err("Range cannot be combined with VariableNamesLine.",
                    "MATLAB:detectImportOptions:InconsistentOptions")
@@ -347,7 +356,7 @@ def _detect_ranged(name, o, tt, rng, dt, rule):
         descriptions = _headers_when_modified(changed, originals)
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in body], tokens, tt), dt, tt), tokens)
+    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in body], tokens, tt), dt, tt, du), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(
         delim, variables, list(range(ncol)), vline, data_line, c1, c2, data_end, rule, descriptions),)
@@ -357,7 +366,7 @@ def _detect(args, *, nargout=1):
     name, o = _opts(args, "detectImportOptions", (
         "delimiter", "readvariablenames", "numheaderlines", "headerlines",
         "texttype", "filetype", "variablenamesline", "treatasmissing", "range",
-        "datetimetype", "variablenamingrule"))
+        "datetimetype", "durationtype", "variablenamingrule"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("detectImportOptions: only delimited text files are supported.",
                    "MATLAB:detectImportOptions:UnsupportedFileType")
@@ -365,13 +374,14 @@ def _detect(args, *, nargout=1):
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
     dt = _datetime_type_for(name, "detectImportOptions", o)
+    du = _duration_type_for(name, "detectImportOptions", o)
     rule = _naming_rule_for(name, "detectImportOptions", o)
     rng = None
     if "range" in o:
         _check_text_file(name, "detectImportOptions")
         rng = _parse_range(o["range"])
     if rng is not None:
-        return _detect_ranged(name, o, tt, rng, dt, rule)
+        return _detect_ranged(name, o, tt, rng, dt, rule, du)
     p, lines = _text_lines(name, "detectImportOptions")
     vline, data_line = _locate(o, lines)
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
@@ -399,7 +409,7 @@ def _detect(args, *, nargout=1):
         descriptions = _headers_when_modified(changed, originals)
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in rows], tokens, tt), dt, tt), tokens)
+    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in rows], tokens, tt), dt, tt, du), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(delim, variables, list(range(ncol)), vline, data_line,
                                        variable_naming_rule=rule, variable_descriptions=descriptions),)
