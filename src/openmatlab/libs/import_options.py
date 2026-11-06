@@ -15,8 +15,11 @@ so ``readtable(file, detectImportOptions(file))`` matches ``readtable(file)``.
 The window is stored as internal line and column bounds, not as a ``Range`` or
 ``DataLines`` property. ``readtable(file, opts)`` honors those bounds.
 ``readtable`` ``'Format'`` is #1042 and is not a property of this object.
-``detectImportOptions`` and ``readtable(file, opts)`` still reject ``Format``,
-``DatetimeType``, and ``VariableNamingRule``.
+``detectImportOptions`` accepts ``DatetimeType`` (#1043) and stores the result
+in ``VariableTypes``: ``'text'`` makes a detected datetime column ``char`` or
+``string``. There is no ``DatetimeType`` property. ``readtable(file, opts)``
+still rejects ``Format``, ``DatetimeType``, and ``VariableNamingRule``.
+``setvaropts`` does not accept ``DatetimeType``.
 """
 
 from __future__ import annotations
@@ -30,6 +33,8 @@ from openmatlab.libs.table_io import (
     _column_as,
     _delim_text,
     _flag,
+    _dated_kind,
+    _datetime_type_for,
     _kind,
     _names_from_header,
     _opts,
@@ -49,7 +54,7 @@ from openmatlab.runtime.table_value import TableValue, _err, cellstr_row, check_
 _PARAM_NAMES = {
     "type", "fillvalue", "treatasmissing", "quoterule", "emptyfieldrule", "prefixes", "suffixes",
     "whitespacerule", "exponentcharacter", "decimalseparator", "thousandsseparator", "trimnonnumeric",
-    "numbersystem", "truesymbols", "falsesymbols", "casesensitive", "datetimeformat", "inputformat",
+    "numbersystem", "truesymbols", "falsesymbols", "casesensitive", "datetimetype", "datetimeformat", "inputformat",
     "datetimelocale", "timezone", "categories", "protected", "ordinal", "durationformat", "fieldseparator",
 }
 _TYPES = ("double", "char", "string", "datetime")
@@ -287,7 +292,7 @@ def _locate(o, lines):
     raise _err("The file contains no variables.", "MATLAB:detectImportOptions:NoData")
 
 
-def _detect_ranged(name, o, tt, rng):
+def _detect_ranged(name, o, tt, rng, dt):
     if "variablenamesline" in o:
         raise _err("Range cannot be combined with VariableNamesLine.",
                    "MATLAB:detectImportOptions:InconsistentOptions")
@@ -313,7 +318,7 @@ def _detect_ranged(name, o, tt, rng):
             _warn_modified_names()
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    variables = [VariableImportOptions(nm, _kind([r[k] for r in body], tokens, tt), tokens)
+    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in body], tokens, tt), dt, tt), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(
         delim, variables, list(range(ncol)), vline, data_line, c1, c2, data_end),)
@@ -322,19 +327,21 @@ def _detect_ranged(name, o, tt, rng):
 def _detect(args, *, nargout=1):
     name, o = _opts(args, "detectImportOptions", (
         "delimiter", "readvariablenames", "numheaderlines", "headerlines",
-        "texttype", "filetype", "variablenamesline", "treatasmissing", "range"))
+        "texttype", "filetype", "variablenamesline", "treatasmissing", "range",
+        "datetimetype"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("detectImportOptions: only delimited text files are supported.",
                    "MATLAB:detectImportOptions:UnsupportedFileType")
     tt = text(o["texttype"]).lower() if "texttype" in o else "char"
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
+    dt = _datetime_type_for(name, "detectImportOptions", o)
     rng = None
     if "range" in o:
         _check_text_file(name, "detectImportOptions")
         rng = _parse_range(o["range"])
     if rng is not None:
-        return _detect_ranged(name, o, tt, rng)
+        return _detect_ranged(name, o, tt, rng, dt)
     p, lines = _text_lines(name, "detectImportOptions")
     vline, data_line = _locate(o, lines)
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
@@ -362,7 +369,7 @@ def _detect(args, *, nargout=1):
             _warn_modified_names()
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    variables = [VariableImportOptions(nm, _kind([r[k] for r in rows], tokens, tt), tokens)
+    variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in rows], tokens, tt), dt, tt), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(delim, variables, list(range(ncol)), vline, data_line),)
 

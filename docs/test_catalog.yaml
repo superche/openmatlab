@@ -164,6 +164,13 @@ use_cases:
     features: [libs.table_io]
     priority: p1
 
+  - id: uc.readtable_datetimetype
+    title: Choose how delimited text imports datetime columns
+    actor: scientific user
+    goal: readtable and detectImportOptions DatetimeType keep dates as datetime or import them as text
+    features: [libs.table_io, libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2696,6 +2703,24 @@ test_cases:
     features: [libs.table_io]
     use_cases: [uc.readtable_format]
     impl: tests/bdd/test_readtable_format_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_datetimetype
+    kind: unit
+    title: readtable and detectImportOptions DatetimeType for delimited text (#1043)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_datetimetype]
+    impl: tests/unit/test_readtable_datetimetype.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_datetimetype_bdd
+    kind: bdd
+    title: readtable DatetimeType Gherkin for delimited text (#1043)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_datetimetype]
+    impl: tests/bdd/test_readtable_datetimetype_bdd.py
     status: active
     env: unit
 

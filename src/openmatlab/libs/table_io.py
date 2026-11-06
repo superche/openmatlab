@@ -19,6 +19,12 @@ files are not. See ``docs/design/ISSUE-1041-readtable-range.md``.
 
 ``'Format'`` (#1042) is ``'auto'`` or a textscan column format on ``readtable``
 for delimited text. See ``docs/design/ISSUE-1042-readtable-format.md``.
+
+``'DatetimeType'`` (#1043) is ``'datetime'`` (default) or ``'text'`` on
+``readtable`` and ``detectImportOptions`` for delimited text. ``'text'`` stores
+a detected datetime column as char or string, following ``TextType``.
+``'exceldatenum'`` is rejected for text. See
+``docs/design/ISSUE-1043-readtable-datetimetype.md``.
 """
 
 from __future__ import annotations
@@ -380,6 +386,41 @@ def _kind(fields, tokens, text_type):
     return "string" if text_type == "string" else "char"
 
 
+_DATETIME_TYPES = ("datetime", "text", "exceldatenum")
+
+
+def _datetime_type(o):
+    """``'datetime'`` or ``'text'``. ``'exceldatenum'`` is not valid for text files.
+
+    Call :func:`_check_text_file` first when the name is present, so a spreadsheet
+    extension still raises ``UnsupportedFileType`` before this check.
+    """
+    if "datetimetype" not in o:
+        return "datetime"
+    v = o["datetimetype"]
+    if not is_text(v) or text(v).lower() not in _DATETIME_TYPES:
+        raise _err("DatetimeType must be 'datetime', 'text', or 'exceldatenum'.",
+                   "MATLAB:readtable:InvalidDatetimeType")
+    if text(v).lower() == "exceldatenum":
+        raise _err("DatetimeType 'exceldatenum' is valid only for spreadsheet files.",
+                   "MATLAB:readtable:ExcelDateNumText")
+    return text(v).lower()
+
+
+def _datetime_type_for(name, fn, o):
+    if "datetimetype" not in o:
+        return "datetime"
+    _check_text_file(name, fn)
+    return _datetime_type(o)
+
+
+def _dated_kind(kind, datetime_type, text_type):
+    """A detected datetime column becomes text when ``DatetimeType`` is ``'text'``."""
+    if kind == "datetime" and datetime_type == "text":
+        return "string" if text_type == "string" else "char"
+    return kind
+
+
 def _column_as(fields, kind, tokens):
     """Import one column as ``kind``. Tokens and blank numeric/datetime fields are standard missing.
 
@@ -419,9 +460,10 @@ def _column_as(fields, kind, tokens):
     return CellValue(rows=tuple((_cv(""),) if h else (_cv(f),) for h, f in zip(hit, fields)))
 
 
-def _column(fields, text_type, tokens=None):
+def _column(fields, text_type, tokens=None, datetime_type="datetime"):
     tokens = frozenset() if tokens is None else tokens
-    return _column_as(fields, _kind(fields, tokens, text_type), tokens)
+    kind = _dated_kind(_kind(fields, tokens, text_type), datetime_type, text_type)
+    return _column_as(fields, kind, tokens)
 
 
 # ----------------------------------------------------------------- Format (#1042)
@@ -646,12 +688,14 @@ def _format_datetime(fields, fmt, tokens):
     return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), used or "yyyy-MM-dd")
 
 
-def _convert_fields(fields, conv, tokens, text_type):
+def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime"):
     if conv.kind == "char":
         return _column_as(fields, "string" if text_type == "string" else "char", tokens)
     if conv.kind == "single":
         return _single_column(fields, tokens)
     if conv.kind == "datetime":
+        if datetime_type == "text":
+            return _column_as(fields, "string" if text_type == "string" else "char", tokens)
         return _format_datetime(fields, conv.fmt, tokens)
     if conv.base != 10 or conv.kind != "double":
         return _int_column(fields, conv, tokens)
@@ -806,19 +850,20 @@ def _window_rows(rows, rng):
     return [_slice_fields(r, *bounds) for r in rows]
 
 
-def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied):
+def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt):
     rows = _window_rows(_split_fields(kept, delim), rng)
     header = rows.pop(0) if (readnames and rows) else None
     nspec = len(spec)
     data = [(list(r) + [""] * (nspec - len(r)))[:nspec] for r in rows]
     out_idx = [i for i, conv in enumerate(spec) if not conv.skip]
-    cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt) for i in out_idx]
+    cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt, dt)
+            for i in out_idx]
     picked = None if header is None else [header[i] if i < len(header) else "" for i in out_idx]
     names = _names_for(picked, len(out_idx), supplied)
     return (TableValue(names, cols, len(data)),)
 
 
-def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied):
+def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt):
     """``'Format','auto'``. A blank or a quoted field forces text. Unequal field counts are an error.
 
     ``12abc`` stays one field. Splitting the numeric prefix off the trailing text would insert a
@@ -837,7 +882,8 @@ def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied):
         raise _err("readtable: lines do not have the same number of delimiters.",
                    "MATLAB:readtable:UnequalDelimiters")
     header = [t for t, _q in detailed.pop(0)] if readnames else None
-    cols = [_column_as([r[k][0] for r in detailed], _auto_kind([r[k] for r in detailed], tokens, tt), tokens)
+    cols = [_column_as([r[k][0] for r in detailed],
+                       _dated_kind(_auto_kind([r[k] for r in detailed], tokens, tt), dt, tt), tokens)
             for k in range(width)]
     return (TableValue(_names_for(header, width, supplied), cols, len(detailed)),)
 
@@ -847,10 +893,11 @@ def _read_formatted(name, o):
     _check_text_file(name, "readtable")
     spec = _format_value(o["format"])
     delim, hdr, readnames, tt, tokens, rng, supplied = _read_opts(o)
+    dt = _datetime_type(o)
     kept, delim = _kept_lines(name, "readtable", delim, hdr, rng)
     if spec == "auto":
-        return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied)
-    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied)
+        return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt)
+    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt)
 
 
 def _readtable(args, *, nargout=1):
@@ -859,7 +906,8 @@ def _readtable(args, *, nargout=1):
 
         return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
-                                         "texttype", "filetype", "headerlines", "treatasmissing", "range", "format"))
+                                         "texttype", "filetype", "headerlines", "treatasmissing", "range", "format",
+                                         "datetimetype"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
     if "format" in o:
@@ -871,6 +919,7 @@ def _readtable(args, *, nargout=1):
     tt = text(o["texttype"]).lower() if "texttype" in o else "char"
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
+    dt = _datetime_type_for(name, "readtable", o)
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
     rng = None
     if "range" in o:
@@ -894,7 +943,7 @@ def _readtable(args, *, nargout=1):
             _warn_modified_names()
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
-    cols = [_column([r[k] for r in rows], tt, tokens) for k in range(ncol)]
+    cols = [_column([r[k] for r in rows], tt, tokens, dt) for k in range(ncol)]
     return (TableValue(names, cols, len(rows)),)
 
 
