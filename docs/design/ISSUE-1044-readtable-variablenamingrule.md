@@ -9,7 +9,7 @@
 
 The public pages do not publish an identifier for a bad value. Anything that is not one of those two strings raises `MATLAB:readtable:InvalidVariableNamingRule`. The message states the documented constraint. The match is case-insensitive, same as `DatetimeType`. It is an `EvalError`.
 
-A repeated header still gets the `_1`, `_2` suffix the modify path already appends, because table variable names have to be unique. A blank header still becomes `VarN`, because a variable name has to be nonempty. That suffix is applied after the rule, and it is the same step for both values. Original headers are not written to `VariableDescriptions` (#1045). The existing modified-name warning still fires only when the modify / blank-header step changes a name. `'preserve'` of a non-blank header does not fire it.
+A repeated header still gets the `_1`, `_2` suffix the modify path already appends, because table variable names have to be unique. A blank header still becomes `VarN`, because a variable name has to be nonempty. That suffix is applied after the rule, and it is the same step for both values. When the modify / blank-header step changes a name, the original headers are written to `VariableDescriptions` (#1045, [ISSUE-1045-readtable-variabledescriptions.md](ISSUE-1045-readtable-variabledescriptions.md)). The modified-name warning still fires only on that step. `'preserve'` of a non-blank header does not fire it.
 
 ## Where the name is accepted
 
@@ -25,4 +25,4 @@ An explicit `'VariableNames'` on `readtable` is still the names to use. The rule
 
 ## What still rejects the file
 
-A spreadsheet extension (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`) raises `UnsupportedFileType` before the file is opened, including when `VariableNamingRule` is `'preserve'` or not a legal value. `'FileType','spreadsheet'` does the same, and it is checked before the value. `VariableDescriptions` for the original headers stays #1045. Duration, categorical, and logical columns stay #1046.
+A spreadsheet extension (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`) raises `UnsupportedFileType` before the file is opened, including when `VariableNamingRule` is `'preserve'` or not a legal value. `'FileType','spreadsheet'` does the same, and it is checked before the value. Duration, categorical, and logical columns stay #1046.

@@ -302,7 +302,8 @@ def _removevars(args, *, nargout=1):
     T = _need_table(args[0], "removevars")
     drop = set(T.var_sel(args[1]))
     keep = [i for i in range(len(T.names)) if i not in drop]
-    return (T.copy(names=[T.names[i] for i in keep], cols=[T.cols[i] for i in keep]),)
+    return (T.copy(names=[T.names[i] for i in keep], cols=[T.cols[i] for i in keep],
+                   variable_descriptions=T.descriptions_for(keep)),)
 
 
 def _renamevars(args, *, nargout=1):
@@ -353,7 +354,8 @@ def _movevars(args, *, nargout=1):
         else:
             rest_pos = rest.index(at) + (0 if where == "before" else 1)
         order = rest[:rest_pos] + moving + rest[rest_pos:]
-    return (T.copy(names=[T.names[i] for i in order], cols=[T.cols[i] for i in order]),)
+    return (T.copy(names=[T.names[i] for i in order], cols=[T.cols[i] for i in order],
+                   variable_descriptions=T.descriptions_for(order)),)
 
 
 def _addvars(args, *, nargout=1):
@@ -378,7 +380,12 @@ def _addvars(args, *, nargout=1):
                        "MATLAB:table:addvars:RowMismatch")
     where, at = _location(T, opts, "addvars")
     pos = len(T.names) if where == "end" else (at if where == "before" else at + 1)
-    return (T.copy(names=T.names[:pos] + names + T.names[pos:], cols=T.cols[:pos] + new + T.cols[pos:]),)
+    descs = None
+    if T.variable_descriptions is not None:
+        blank = [""] * len(new)
+        descs = T.variable_descriptions[:pos] + blank + T.variable_descriptions[pos:]
+    return (T.copy(names=T.names[:pos] + names + T.names[pos:], cols=T.cols[:pos] + new + T.cols[pos:],
+                   variable_descriptions=descs),)
 
 
 # =====================================================================

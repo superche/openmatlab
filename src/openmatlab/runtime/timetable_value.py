@@ -124,8 +124,9 @@ class TimetableValue(TableValue):
     is_timetable = True
 
     def __init__(self, names: Sequence[str], cols: Sequence, nrows: int, rowtimes=None,
-                 dimnames: Optional[Sequence[str]] = None, description: str = "", rownames=None):
-        super().__init__(names, cols, nrows, None, description)
+                 dimnames: Optional[Sequence[str]] = None, description: str = "", rownames=None,
+                 variable_descriptions=None):
+        super().__init__(names, cols, nrows, None, description, variable_descriptions)
         self.rowtimes = rowtimes
         self.dimnames = list(dimnames) if dimnames else ["Time", "Variables"]
         if self.dimnames[0] in self.names:
@@ -138,7 +139,8 @@ class TimetableValue(TableValue):
     def copy(self, **kw) -> "TimetableValue":
         kw.pop("rownames", None)
         d = dict(names=self.names, cols=self.cols, nrows=self.nrows, rowtimes=self.rowtimes,
-                 dimnames=self.dimnames, description=self.description)
+                 dimnames=self.dimnames, description=self.description,
+                 variable_descriptions=self.variable_descriptions)
         d.update(kw)
         if d["nrows"] != self.nrows and "rowtimes" not in kw:
             t = days(self.rowtimes)

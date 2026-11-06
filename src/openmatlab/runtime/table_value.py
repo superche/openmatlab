@@ -107,12 +107,19 @@ class TableValue:
     native_subs = True
 
     def __init__(self, names: Sequence[str], cols: Sequence, nrows: int, rownames: Optional[Sequence[str]] = None,
-                 description: str = ""):
+                 description: str = "", variable_descriptions: Optional[Sequence[str]] = None):
         self.names = list(names)
         self.cols = list(cols)
         self.nrows = int(nrows)
         self.rownames = list(rownames) if rownames else None
         self.description = description
+        # None is the default {}. A list is the 1-by-N cell readtable saves.
+        if variable_descriptions is None:
+            self.variable_descriptions = None
+        else:
+            self.variable_descriptions = list(variable_descriptions)
+            if len(self.variable_descriptions) != len(self.names):
+                raise ValueError("variable_descriptions must have one entry per variable")
         check_names(self.names)
 
     # -- value protocol -------------------------------------------------------
@@ -131,7 +138,7 @@ class TableValue:
 
     def copy(self, **kw) -> "TableValue":
         d = dict(names=self.names, cols=self.cols, nrows=self.nrows, rownames=self.rownames,
-                 description=self.description)
+                 description=self.description, variable_descriptions=self.variable_descriptions)
         d.update(kw)
         return TableValue(**d)
 
@@ -158,7 +165,8 @@ class TableValue:
             ("Description", _cv(self.description)),
             ("DimensionNames", cellstr_row(["Row", "Variables"])),
             ("VariableNames", cellstr_row(self.names)),
-            ("VariableDescriptions", CellValue(rows=())),
+            ("VariableDescriptions", cellstr_row(self.variable_descriptions)
+             if self.variable_descriptions is not None else CellValue(rows=())),
             ("VariableUnits", CellValue(rows=())),
             ("RowNames", cellstr_col(self.rownames) if self.rownames else CellValue(rows=())),
         ])
@@ -240,7 +248,14 @@ class TableValue:
     def take_vars(self, idx: List[int]) -> "TableValue":
         if len(set(idx)) != len(idx):
             raise _err("Duplicate table variable name.", "MATLAB:table:DuplicateVarNames")
-        return self.copy(names=[self.names[i] for i in idx], cols=[self.cols[i] for i in idx])
+        return self.copy(names=[self.names[i] for i in idx], cols=[self.cols[i] for i in idx],
+                         variable_descriptions=self.descriptions_for(idx))
+
+    def descriptions_for(self, idx):
+        """Descriptions for a new variable order. None stays the empty property."""
+        if self.variable_descriptions is None:
+            return None
+        return [self.variable_descriptions[i] for i in idx]
 
     def delete_rows(self, ev, rows: np.ndarray) -> "TableValue":
         keep = np.setdiff1d(np.arange(self.nrows), rows)

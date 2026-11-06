@@ -216,6 +216,9 @@ def set_var(ev, T: TableValue, name: str, v) -> TableValue:
         check_names(names + [name])
         names.append(name)
         cols.append(v)
+        if T.variable_descriptions is not None:
+            return T.copy(names=names, cols=cols, nrows=n,
+                          variable_descriptions=T.variable_descriptions + [""])
     return T.copy(names=names, cols=cols, nrows=n)
 
 
@@ -282,7 +285,9 @@ def asgn(ev, T: TableValue, lv: list, val) -> TableValue:
             return set_var(ev, T, sub, dasgn(ev, cur, rest, val))
         if _is_empty_double(val) and sub in T.names:
             k = T.names.index(sub)
-            return T.copy(names=T.names[:k] + T.names[k + 1:], cols=T.cols[:k] + T.cols[k + 1:])
+            keep = [i for i in range(len(T.names)) if i != k]
+            return T.copy(names=[T.names[i] for i in keep], cols=[T.cols[i] for i in keep],
+                          variable_descriptions=T.descriptions_for(keep))
         return set_var(ev, T, sub, val)
     r, c = _rc(sub)
     if rest:
@@ -344,7 +349,13 @@ def _hcat(ev, items) -> TableValue:
         dup = [n for n in t.names if n in out.names]
         if dup:
             raise _err(f"Duplicate table variable name: '{dup[0]}'.", "MATLAB:table:DuplicateVarNames")
-        out = out.copy(names=out.names + t.names, cols=out.cols + t.cols)
+        if out.variable_descriptions is None and t.variable_descriptions is None:
+            descs = None
+        else:
+            left = out.variable_descriptions if out.variable_descriptions is not None else [""] * len(out.names)
+            right = t.variable_descriptions if t.variable_descriptions is not None else [""] * len(t.names)
+            descs = left + right
+        out = out.copy(names=out.names + t.names, cols=out.cols + t.cols, variable_descriptions=descs)
     return out
 
 

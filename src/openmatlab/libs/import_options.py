@@ -26,6 +26,12 @@ still rejects ``Format`` and ``DatetimeType``. ``setvaropts`` does not accept
 ``readtable(file, opts)`` imports those names. Changing the property does not
 rewrite them. ``readtable(file, opts, 'VariableNamingRule', ...)`` is still an
 unknown parameter.
+
+When detection rewrites a header (#1045), the original header text is kept
+internally and ``readtable(file, opts)`` stores it on
+``Properties.VariableDescriptions``. It is not a property of this object, and
+the read does not emit the modified-name warning again. See
+``docs/design/ISSUE-1045-readtable-variabledescriptions.md``.
 """
 
 from __future__ import annotations
@@ -42,6 +48,7 @@ from openmatlab.libs.table_io import (
     _dated_kind,
     _datetime_type_for,
     _kind,
+    _headers_when_modified,
     _names_from_header,
     _naming_rule_for,
     _naming_rule_value,
@@ -53,7 +60,6 @@ from openmatlab.libs.table_io import (
     _sniff,
     _split_fields,
     _text_lines,
-    _warn_modified_names,
 )
 from openmatlab.numerics.ndarray_value import NDArrayValue
 from openmatlab.runtime.char_value import CharValue
@@ -89,7 +95,8 @@ class DelimitedTextImportOptions:
     is_import_options = True
 
     def __init__(self, delimiter, variables, selected_idx, variable_names_line, data_line,
-                 col_start=1, col_end=None, data_end=None, variable_naming_rule="modify"):
+                 col_start=1, col_end=None, data_end=None, variable_naming_rule="modify",
+                 variable_descriptions=None):
         self.delimiter = delimiter
         self.variables = list(variables)
         self.selected_idx = list(selected_idx)
@@ -101,6 +108,8 @@ class DelimitedTextImportOptions:
         self.col_end = None if col_end is None else int(col_end)
         self.data_end = None if data_end is None else int(data_end)
         self.variable_naming_rule = variable_naming_rule
+        # Original headers when detection rewrote a name. Not a public property.
+        self.variable_descriptions = None if variable_descriptions is None else list(variable_descriptions)
 
     def matlab_class(self):
         return "DelimitedTextImportOptions"
@@ -122,7 +131,7 @@ class DelimitedTextImportOptions:
         return DelimitedTextImportOptions(
             self.delimiter, [v.copy() for v in self.variables], self.selected_idx,
             self.variable_names_line, self.data_line, self.col_start, self.col_end, self.data_end,
-            self.variable_naming_rule)
+            self.variable_naming_rule, self.variable_descriptions)
 
     @property
     def names(self):
@@ -332,16 +341,16 @@ def _detect_ranged(name, o, tt, rng, dt, rule):
         vline, data_line = 0, line_nos[0]
         header, body = None, rows
     ncol = c2 - c1 + 1
+    descriptions = None
     if header is not None:
-        names, changed = _names_from_header(header, ncol, rule)
-        if changed:
-            _warn_modified_names()
+        names, changed, originals = _names_from_header(header, ncol, rule)
+        descriptions = _headers_when_modified(changed, originals)
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
     variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in body], tokens, tt), dt, tt), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(
-        delim, variables, list(range(ncol)), vline, data_line, c1, c2, data_end, rule),)
+        delim, variables, list(range(ncol)), vline, data_line, c1, c2, data_end, rule, descriptions),)
 
 
 def _detect(args, *, nargout=1):
@@ -384,16 +393,16 @@ def _detect(args, *, nargout=1):
     if ncol == 0:
         raise _err("The file contains no variables.", "MATLAB:detectImportOptions:NoData")
     rows = [r + [""] * (ncol - len(r)) for r in rows]
+    descriptions = None
     if header is not None:
-        names, changed = _names_from_header(header, ncol, rule)
-        if changed:
-            _warn_modified_names()
+        names, changed, originals = _names_from_header(header, ncol, rule)
+        descriptions = _headers_when_modified(changed, originals)
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
     variables = [VariableImportOptions(nm, _dated_kind(_kind([r[k] for r in rows], tokens, tt), dt, tt), tokens)
                  for k, nm in enumerate(names)]
     return (DelimitedTextImportOptions(delim, variables, list(range(ncol)), vline, data_line,
-                                       variable_naming_rule=rule),)
+                                       variable_naming_rule=rule, variable_descriptions=descriptions),)
 
 
 def _apply(opts, indices, shown, value):
@@ -453,7 +462,10 @@ def _import(name, opts, data_line):
     names = [opts.variables[i].name for i in opts.selected_idx]
     cols = [_column_as([r[i] for r in rows], opts.variables[i].type, opts.variables[i].tokens)
             for i in opts.selected_idx]
-    return TableValue(names, cols, len(rows))
+    descs = opts.variable_descriptions
+    if descs is not None:
+        descs = [descs[i] for i in opts.selected_idx]
+    return TableValue(names, cols, len(rows), variable_descriptions=descs)
 
 
 def read_with_options(args):
