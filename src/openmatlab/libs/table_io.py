@@ -2,8 +2,10 @@
 
 Fields are split with Python's ``csv`` module (quoted fields, embedded delimiters).
 Each column is typed from its non-placeholder fields: all numeric -> double (empty
--> NaN), all dates -> datetime (empty -> NaT), otherwise text (cellstr, or string
-with ``'TextType','string'``).
+-> NaN), all dates in one supported form -> datetime (empty -> NaT), all
+``hh:mm:ss`` or ``dd:hh:mm:ss`` duration text -> duration (empty -> NaN),
+otherwise text (cellstr, or string with ``'TextType','string'``). Logical and
+categorical text stay text until ``'Format'`` or ``VariableTypes`` says otherwise.
 
 ``'TreatAsMissing'`` (M17 CSV slice of #721) adds placeholder texts. A field whose
 stripped text is one of those tokens is left out of typing and stored as the
@@ -35,6 +37,13 @@ When that rewrite changes a header (#1045), the original column headers are
 stored as ``Properties.VariableDescriptions``, a 1-by-N cell of the file text,
 including headers that were already valid identifiers. No rewrite leaves the
 property empty. See ``docs/design/ISSUE-1045-readtable-variabledescriptions.md``.
+
+``'DurationType'`` (#1046) is ``'duration'`` (default) or ``'text'`` on
+``readtable`` and ``detectImportOptions``. Duration text is
+``hh:mm:ss`` or ``dd:hh:mm:ss`` (optional fraction, optional leading minus).
+``setvaropts`` ``Type`` also accepts ``duration``, ``categorical``, and
+``logical``. ``%T`` / ``%{fmt}T`` and ``%C`` are the textscan specifiers for
+duration and categorical. See ``docs/design/ISSUE-1046-readtable-column-types.md``.
 """
 
 from __future__ import annotations
@@ -51,12 +60,23 @@ from openmatlab.numerics.ndarray_value import NDArrayValue
 from openmatlab.runtime.table_value import TableValue, _cv, _err, is_text, text, texts
 
 _NUM = re.compile(r"^[+-]?((\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?|Inf|NaN)$", re.I)
-_DATE_FORMS = [
-    (re.compile(r"^\d{4}-\d{2}-\d{2}$"), "%Y-%m-%d", "yyyy-MM-dd"),
-    (re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$"), None, "yyyy-MM-dd HH:mm:ss"),
-    (re.compile(r"^\d{2}-[A-Za-z]{3}-\d{4}$"), "%d-%b-%Y", "dd-MMM-yyyy"),
-    (re.compile(r"^\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2}$"), "%d-%b-%Y %H:%M:%S", "dd-MMM-yyyy HH:mm:ss"),
+# One family per pattern. Longer clock forms are listed before the shorter ones
+# so ``HH:mm:ss`` is not read as ``HH:mm``.
+_FIXED_DATES = [
+    (re.compile(r"^\d{4}-\d{1,2}-\d{1,2}[ T]\d{1,2}:\d{2}:\d{2}$"), "%Y-%m-%d %H:%M:%S", "yyyy-MM-dd HH:mm:ss"),
+    (re.compile(r"^\d{4}-\d{1,2}-\d{1,2}[ T]\d{1,2}:\d{2}$"), "%Y-%m-%d %H:%M", "yyyy-MM-dd HH:mm"),
+    (re.compile(r"^\d{4}-\d{1,2}-\d{1,2}$"), "%Y-%m-%d", "yyyy-MM-dd"),
+    (re.compile(r"^\d{1,2}-[A-Za-z]{3}-\d{4} \d{1,2}:\d{2}:\d{2}$"), "%d-%b-%Y %H:%M:%S", "dd-MMM-yyyy HH:mm:ss"),
+    (re.compile(r"^\d{1,2}-[A-Za-z]{3}-\d{4} \d{1,2}:\d{2}$"), "%d-%b-%Y %H:%M", "dd-MMM-yyyy HH:mm"),
+    (re.compile(r"^\d{1,2}-[A-Za-z]{3}-\d{4}$"), "%d-%b-%Y", "dd-MMM-yyyy"),
+    (re.compile(r"^\d{4}/\d{1,2}/\d{1,2} \d{1,2}:\d{2}:\d{2}$"), "%Y/%m/%d %H:%M:%S", "yyyy/MM/dd HH:mm:ss"),
+    (re.compile(r"^\d{4}/\d{1,2}/\d{1,2} \d{1,2}:\d{2}$"), "%Y/%m/%d %H:%M", "yyyy/MM/dd HH:mm"),
+    (re.compile(r"^\d{4}/\d{1,2}/\d{1,2}$"), "%Y/%m/%d", "yyyy/MM/dd"),
 ]
+_SLASH_DATE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})(?: (\d{1,2}):(\d{2})(?::(\d{2}))?)?$")
+# duration(TimeStrings): hh:mm:ss or dd:hh:mm:ss. A leading '+' is not a duration.
+_DUR_AUTO = re.compile(r"^(-)?(\d+):(\d+):(\d+)(?::(\d+))?(?:\.(\d+))?$")
+_TRUE_SYMBOLS = frozenset({"true", "t"})
 _DELIMS = {"comma": ",", "tab": "\t", "\\t": "\t", "semi": ";", "semicolon": ";", "bar": "|", "space": " "}
 
 
@@ -362,18 +382,189 @@ def _ranged_rows(name, fn, delim, nheader, rng):
     return [_slice_fields(r, c1, c2) for r in rows], [i + 1 for i in idxs], delim, c1, c2, rng.r2
 
 
-def _date(s):
+def _ymd_dn(y, mo, d, h=0, mi=0, s=0):
     from openmatlab.runtime.objects import datenum_from_parts
     import datetime as _dt
 
-    for rx, pyfmt, mfmt in _DATE_FORMS:
-        if rx.match(s):
-            try:
-                t = _dt.datetime.strptime(s.replace("T", " "), pyfmt or "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                return None
-            return datenum_from_parts(t.year, t.month, t.day, t.hour, t.minute, t.second), mfmt
+    try:
+        _dt.datetime(int(y), int(mo), int(d), int(h), int(mi), int(s))
+    except ValueError:
+        return None
+    return datenum_from_parts(int(y), int(mo), int(d), int(h), int(mi), float(s))
+
+
+def _date_hit(s):
+    """One field as a fixed format, or as both slash readings.
+
+    A slash hit is ``('slash', suffix, month_first, day_first)``. Either reading
+    is ``None`` when that month/day pair is not a real date. ``suffix`` is the
+    clock part of the format, shared by both readings.
+    """
+    from openmatlab.runtime.objects import datenum_from_parts
+    import datetime as _dt
+
+    for rx, pyfmt, mfmt in _FIXED_DATES:
+        if not rx.match(s):
+            continue
+        raw = s.replace("T", " ", 1) if pyfmt.startswith("%Y-%m-%d") else s
+        try:
+            t = _dt.datetime.strptime(raw, pyfmt)
+        except ValueError:
+            return None
+        dn = datenum_from_parts(t.year, t.month, t.day, t.hour, t.minute, t.second + t.microsecond / 1e6)
+        return ("fixed", mfmt, dn)
+    m = _SLASH_DATE.match(s)
+    if not m:
+        return None
+    a, b, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if m.group(4) is None:
+        h = mi = sec = 0
+        suffix = ""
+    else:
+        h, mi = int(m.group(4)), int(m.group(5))
+        sec = 0 if m.group(6) is None else int(m.group(6))
+        if not (0 <= h <= 23 and 0 <= mi <= 59 and 0 <= sec <= 59):
+            return None
+        suffix = " HH:mm" if m.group(6) is None else " HH:mm:ss"
+    month_first, day_first = _ymd_dn(y, a, b, h, mi, sec), _ymd_dn(y, b, a, h, mi, sec)
+    if month_first is None and day_first is None:
+        return None
+    return ("slash", suffix, month_first, day_first)
+
+
+def _dates_one_format(hits):
+    """True when every hit is the same fixed format, or one slash order."""
+    if not hits or len({h[0] for h in hits}) != 1:
+        return False
+    if hits[0][0] == "fixed":
+        return len({h[1] for h in hits}) == 1
+    if len({h[1] for h in hits}) != 1:
+        return False
+    month_only = any(h[2] is not None and h[3] is None for h in hits)
+    day_only = any(h[3] is not None and h[2] is None for h in hits)
+    return not (month_only and day_only)
+
+
+def _prefer_day_first(hits):
+    month_only = any(h[2] is not None and h[3] is None for h in hits)
+    day_only = any(h[3] is not None and h[2] is None for h in hits)
+    return day_only and not month_only
+
+
+def _hit_value(hit, day_first):
+    if hit[0] == "fixed":
+        return hit[2], hit[1]
+    suffix = hit[1]
+    if day_first:
+        return hit[3], "dd/MM/yyyy" + suffix
+    return hit[2], "MM/dd/yyyy" + suffix
+
+
+def _date(s):
+    """``(datenum, format)`` for one field. An ambiguous slash date is month-first."""
+    hit = _date_hit(s)
+    if hit is None:
+        return None
+    return _hit_value(hit, hit[0] == "slash" and hit[2] is None)
+
+
+def _is_one_date(values):
+    hits = [_date_hit(v) for v in values]
+    return bool(hits) and all(h is not None for h in hits) and _dates_one_format(hits)
+
+
+def _datetime_column_values(vals, tokens):
+    """Datenums for a column, using one slash order when the column agrees."""
+    hits, present, failed = [], [], False
+    for v in vals:
+        if v == "" or v in tokens:
+            hits.append(None)
+            continue
+        hit = _date_hit(v)
+        hits.append(hit)
+        if hit is None:
+            failed = True
+        else:
+            present.append(hit)
+    agree = bool(present) and not failed and _dates_one_format(present)
+    day_first = _prefer_day_first(present) if agree and present[0][0] == "slash" else False
+    dns, fmt = [], None
+    for v, hit in zip(vals, hits):
+        if v == "" or v in tokens or hit is None:
+            dns.append(np.nan)
+            continue
+        if agree:
+            dn, fmt = _hit_value(hit, day_first)
+        else:
+            dn, one = _hit_value(hit, hit[0] == "slash" and hit[2] is None)
+            fmt = fmt or one
+        dns.append(dn)
+    return dns, fmt or "yyyy-MM-dd"
+
+
+def _duration_days_auto(s):
+    """Days for ``hh:mm:ss`` or ``dd:hh:mm:ss``, or None.
+
+    ``duration(TimeStrings)`` accepts those two forms, an optional fractional
+    second, and a leading minus. A leading ``+`` is not accepted. Two-part
+    text (``hh:mm`` or ``mm:ss``) needs an input format.
+    """
+    if not s or s[0] == "+":
+        return None
+    m = _DUR_AUTO.fullmatch(s)
+    if not m:
+        return None
+    sign = -1.0 if m.group(1) else 1.0
+    first, second, third = (int(m.group(i)) for i in (2, 3, 4))
+    extra = float(f"0.{m.group(6)}") if m.group(6) else 0.0
+    if m.group(5) is None:
+        days, hour, minute, sec = 0, first, second, third + extra
+    else:
+        days, hour, minute, sec = first, second, third, int(m.group(5)) + extra
+    return sign * (days + hour / 24.0 + minute / 1440.0 + sec / 86400.0)
+
+
+def _split_duration_format(fmt):
+    """``(base, fractional digits)`` for a duration ``InputFormat``, or None."""
+    if fmt == "hh:mm":
+        return "hh:mm", 0
+    matched = re.fullmatch(r"(dd:hh:mm:ss|hh:mm:ss|mm:ss)\.(S{1,9})", fmt)
+    if matched:
+        return matched.group(1), len(matched.group(2))
+    if fmt in ("dd:hh:mm:ss", "hh:mm:ss", "mm:ss"):
+        return fmt, 0
     return None
+
+
+def _parse_formatted_duration(s, base, frac_n):
+    if not s or s[0] == "+":
+        return None
+    sign = -1.0 if s[0] == "-" else 1.0
+    body = s[1:] if s[0] == "-" else s
+    if frac_n:
+        matched = re.fullmatch(r"(\d+(?::\d+)*)\.(\d+)", body)
+        if not matched or not (1 <= len(matched.group(2)) <= frac_n):
+            return None
+        bits = matched.group(1).split(":")
+        extra = float("0." + matched.group(2))
+    else:
+        if "." in body or not re.fullmatch(r"\d+(?::\d+)+", body):
+            return None
+        bits = body.split(":")
+        extra = 0.0
+    need = {"dd:hh:mm:ss": 4, "hh:mm:ss": 3, "mm:ss": 2, "hh:mm": 2}[base]
+    if len(bits) != need:
+        return None
+    nums = [int(p) for p in bits]
+    if base == "dd:hh:mm:ss":
+        days, hour, minute, sec = nums[0], nums[1], nums[2], nums[3] + extra
+    elif base == "hh:mm:ss":
+        days, hour, minute, sec = 0, nums[0], nums[1], nums[2] + extra
+    elif base == "mm:ss":
+        days, hour, minute, sec = 0, 0, nums[0], nums[1] + extra
+    else:
+        days, hour, minute, sec = 0, nums[0], nums[1], extra
+    return sign * (days + hour / 24.0 + minute / 1440.0 + sec / 86400.0)
 
 
 def _valid_name(s, k):
@@ -427,15 +618,19 @@ def _placeholders(v):
 
 
 def _kind(fields, tokens, text_type):
-    """Column type ``readtable`` would pick: double, datetime, char, or string."""
+    """Column type ``readtable`` would pick.
+
+    double, datetime, duration, char, or string. Logical words and repeated
+    labels stay text; those types are selected with ``Type`` or ``Format``.
+    """
     vals = [f.strip() for f in fields]
     present = [v for v in vals if v != "" and v not in tokens]
     if present and all(_NUM.match(v) for v in present):
         return "double"
-    if present:
-        dates = [_date(v) for v in present]
-        if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
-            return "datetime"
+    if present and _is_one_date(present):
+        return "datetime"
+    if present and all(_duration_days_auto(v) is not None for v in present):
+        return "duration"
     if not present and vals:
         return "double"
     return "string" if text_type == "string" else "char"
@@ -469,18 +664,49 @@ def _datetime_type_for(name, fn, o):
     return _datetime_type(o)
 
 
-def _dated_kind(kind, datetime_type, text_type):
-    """A detected datetime column becomes text when ``DatetimeType`` is ``'text'``."""
+def _dated_kind(kind, datetime_type, text_type, duration_type="duration"):
+    """Datetime or duration becomes text when that name-value is ``'text'``."""
+    text_kind = "string" if text_type == "string" else "char"
     if kind == "datetime" and datetime_type == "text":
-        return "string" if text_type == "string" else "char"
+        return text_kind
+    if kind == "duration" and duration_type == "text":
+        return text_kind
     return kind
+
+
+_DURATION_TYPES = ("duration", "text")
+
+
+def _duration_type(o):
+    """``'duration'`` or ``'text'``.
+
+    Call :func:`_check_text_file` first when the name is present, so a spreadsheet
+    extension still raises ``UnsupportedFileType`` before this check.
+    """
+    if "durationtype" not in o:
+        return "duration"
+    v = o["durationtype"]
+    if not is_text(v) or text(v).lower() not in _DURATION_TYPES:
+        raise _err("DurationType must be 'duration' or 'text'.",
+                   "MATLAB:readtable:InvalidDurationType")
+    return text(v).lower()
+
+
+def _duration_type_for(name, fn, o):
+    if "durationtype" not in o:
+        return "duration"
+    _check_text_file(name, fn)
+    return _duration_type(o)
 
 
 def _column_as(fields, kind, tokens):
     """Import one column as ``kind``. Tokens and blank numeric/datetime fields are standard missing.
 
     A forced ``double`` or ``datetime`` stores NaN or NaT when a field does not convert.
-    Text keeps the original field unless its stripped text is a token.
+    A forced ``duration`` stores NaN. A forced ``logical`` stores false for a blank,
+    a placeholder, or any text that is not a true symbol. A forced ``categorical``
+    stores ``<undefined>`` for a blank or a placeholder. Text keeps the original
+    field unless its stripped text is a token.
     """
     from openmatlab.runtime.cell_value import CellValue
 
@@ -492,18 +718,15 @@ def _column_as(fields, kind, tokens):
     if kind == "datetime":
         from openmatlab.runtime.objects import DatetimeValue
 
-        dn, fmt = [], None
-        for v in vals:
-            if v == "" or v in tokens:
-                dn.append(np.nan)
-                continue
-            hit = _date(v)
-            if hit is None:
-                dn.append(np.nan)
-            else:
-                fmt = fmt or hit[1]
-                dn.append(hit[0])
-        return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), fmt or "yyyy-MM-dd")
+        dn, fmt = _datetime_column_values(vals, tokens)
+        return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), fmt)
+    if kind == "duration":
+        return _duration_value(vals, tokens, None)
+    if kind == "logical":
+        bits = [v.lower() in _TRUE_SYMBOLS and v != "" and v not in tokens for v in vals]
+        return NDArrayValue(np.array(bits, dtype=bool).reshape(-1, 1))
+    if kind == "categorical":
+        return _categorical_value(fields, tokens)
     hit = [f.strip() in tokens for f in fields]
     if kind == "string":
         from openmatlab.runtime import string_array as sa
@@ -515,9 +738,40 @@ def _column_as(fields, kind, tokens):
     return CellValue(rows=tuple((_cv(""),) if h else (_cv(f),) for h, f in zip(hit, fields)))
 
 
-def _column(fields, text_type, tokens=None, datetime_type="datetime"):
+def _duration_value(vals, tokens, fmt):
+    from openmatlab.runtime.objects import DurationValue
+
+    spec = None if not fmt else _split_duration_format(fmt)
+    days = []
+    for v in vals:
+        if v == "" or v in tokens:
+            days.append(np.nan)
+            continue
+        got = _duration_days_auto(v) if spec is None else _parse_formatted_duration(v, spec[0], spec[1])
+        days.append(np.nan if got is None else got)
+    return DurationValue(np.array(days, dtype=float).reshape(-1, 1), "hh:mm:ss")
+
+
+def _categorical_value(fields, tokens):
+    """Categories are the sorted nonempty labels, the same order ``categorical`` uses."""
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    labels = []
+    for f in fields:
+        v = f.strip()
+        if v == "" or v in tokens or v == "<undefined>":
+            labels.append(None)
+        else:
+            labels.append(v)
+    cats = sorted({x for x in labels if x is not None})
+    index = {c: i + 1 for i, c in enumerate(cats)}
+    codes = [0 if x is None else index[x] for x in labels]
+    return CategoricalValue(np.array(codes, dtype=np.int64).reshape(-1, 1), cats)
+
+
+def _column(fields, text_type, tokens=None, datetime_type="datetime", duration_type="duration"):
     tokens = frozenset() if tokens is None else tokens
-    kind = _dated_kind(_kind(fields, tokens, text_type), datetime_type, text_type)
+    kind = _dated_kind(_kind(fields, tokens, text_type), datetime_type, text_type, duration_type)
     return _column_as(fields, kind, tokens)
 
 
@@ -545,8 +799,8 @@ _INT_SPEC = {
     "bs8": ("int8", 2), "bs16": ("int16", 2), "bs32": ("int32", 2), "bs64": ("int64", 2),
 }
 _TEXT_SPEC = {"s": False, "q": True}
-_REJECT_SPEC = {"c": "%c", "C": "%C", "T": "%T"}
-_CONV_KEYS = sorted([*_FLOAT_SPEC, *_INT_SPEC, *_TEXT_SPEC, *_REJECT_SPEC, "D"], key=len, reverse=True)
+_REJECT_SPEC = {"c": "%c"}
+_CONV_KEYS = sorted([*_FLOAT_SPEC, *_INT_SPEC, *_TEXT_SPEC, *_REJECT_SPEC, "D", "T", "C"], key=len, reverse=True)
 
 
 def _bad_format(detail):
@@ -613,9 +867,12 @@ def _match_conv(s, i):
         j = s.find("}", i + 1)
         if j < 0 or j + 1 >= len(s) or s[j + 1] not in "DT":
             _bad_format("a %{...} conversion must end with D or T.")
+        body = s[i + 1:j]
         if s[j + 1] == "T":
-            _bad_format("Format specifier '%{...}T' is not supported for delimited text.")
-        return _Conv(kind="datetime", fmt=s[i + 1:j], unquote=True), j + 2
+            if _split_duration_format(body) is None:
+                _bad_format(f"duration format '{body}' is not a duration InputFormat.")
+            return _Conv(kind="duration", fmt=body, unquote=True), j + 2
+        return _Conv(kind="datetime", fmt=body, unquote=True), j + 2
     if s[i] == "[":
         _bad_format("Format scansets are not supported for delimited text.")
     for key in _CONV_KEYS:
@@ -624,6 +881,10 @@ def _match_conv(s, i):
                 _bad_format(f"Format specifier '%{key}' is not supported for delimited text.")
             if key == "D":
                 return _Conv(kind="datetime", unquote=True), i + 1
+            if key == "T":
+                return _Conv(kind="duration", unquote=True), i + 1
+            if key == "C":
+                return _Conv(kind="categorical", unquote=True), i + 1
             if key in _FLOAT_SPEC:
                 return _Conv(kind=_FLOAT_SPEC[key]), i + len(key)
             if key in _TEXT_SPEC:
@@ -719,20 +980,19 @@ def _format_datetime(fields, fmt, tokens):
     from openmatlab.runtime.objects import DatetimeValue, datenum_from_parts
     import datetime as _dt
 
+    if not fmt:
+        vals = []
+        for f in fields:
+            v = f.strip()
+            vals.append("" if v.lower() == "nat" else v)
+        dn, used = _datetime_column_values(vals, tokens)
+        return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), used)
     dn, used = [], fmt
-    py = java_to_strptime(fmt) if fmt else None
+    py = java_to_strptime(fmt)
     for f in fields:
         v = f.strip()
         if v == "" or v.lower() == "nat" or v in tokens:
             dn.append(np.nan)
-            continue
-        if py is None:
-            hit = _date(v)
-            if hit is None:
-                dn.append(np.nan)
-            else:
-                used = used or hit[1]
-                dn.append(hit[0])
             continue
         try:
             t = _dt.datetime.strptime(v, py)
@@ -743,7 +1003,7 @@ def _format_datetime(fields, fmt, tokens):
     return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), used or "yyyy-MM-dd")
 
 
-def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime"):
+def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime", duration_type="duration"):
     if conv.kind == "char":
         return _column_as(fields, "string" if text_type == "string" else "char", tokens)
     if conv.kind == "single":
@@ -752,6 +1012,12 @@ def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime"):
         if datetime_type == "text":
             return _column_as(fields, "string" if text_type == "string" else "char", tokens)
         return _format_datetime(fields, conv.fmt, tokens)
+    if conv.kind == "duration":
+        if duration_type == "text":
+            return _column_as(fields, "string" if text_type == "string" else "char", tokens)
+        return _duration_value([f.strip() for f in fields], tokens, conv.fmt)
+    if conv.kind == "categorical":
+        return _categorical_value(fields, tokens)
     if conv.base != 10 or conv.kind != "double":
         return _int_column(fields, conv, tokens)
     return _column_as(fields, "double", tokens)
@@ -872,10 +1138,8 @@ def _auto_kind(pairs, tokens, text_type):
         return text_kind
     if present and all(_NUM.match(v) for v in present):
         return "double"
-    if present:
-        dates = [_date(v) for v in present]
-        if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
-            return "datetime"
+    if present and _is_one_date(present):
+        return "datetime"
     if not present:
         return "double"
     return text_kind
@@ -904,13 +1168,13 @@ def _window_rows(rows, rng):
     return [_slice_fields(r, *bounds) for r in rows]
 
 
-def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule="modify"):
+def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule="modify", du="duration"):
     rows = _window_rows(_split_fields(kept, delim), rng)
     header = rows.pop(0) if (readnames and rows) else None
     nspec = len(spec)
     data = [(list(r) + [""] * (nspec - len(r)))[:nspec] for r in rows]
     out_idx = [i for i, conv in enumerate(spec) if not conv.skip]
-    cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt, dt)
+    cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt, dt, du)
             for i in out_idx]
     picked = None if header is None else [header[i] if i < len(header) else "" for i in out_idx]
     names, descs = _names_for(picked, len(out_idx), supplied, rule)
@@ -950,10 +1214,11 @@ def _read_formatted(name, o):
     spec = _format_value(o["format"])
     delim, hdr, readnames, tt, tokens, rng, supplied = _read_opts(o)
     dt = _datetime_type(o)
+    du = _duration_type(o)
     kept, delim = _kept_lines(name, "readtable", delim, hdr, rng)
     if spec == "auto":
         return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt, rule)
-    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule)
+    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule, du)
 
 
 def _readtable(args, *, nargout=1):
@@ -963,7 +1228,7 @@ def _readtable(args, *, nargout=1):
         return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
                                          "texttype", "filetype", "headerlines", "treatasmissing", "range", "format",
-                                         "datetimetype", "variablenamingrule"))
+                                         "datetimetype", "durationtype", "variablenamingrule"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
     if "format" in o:
@@ -977,6 +1242,7 @@ def _readtable(args, *, nargout=1):
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
     dt = _datetime_type_for(name, "readtable", o)
+    du = _duration_type_for(name, "readtable", o)
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
     rng = None
     if "range" in o:
@@ -990,7 +1256,7 @@ def _readtable(args, *, nargout=1):
     ncol = max([len(r) for r in rows] + [len(header) if header else 0])
     rows = [r + [""] * (ncol - len(r)) for r in rows]
     names, descs = _names_for(header, ncol, o.get("variablenames"), rule)
-    cols = [_column([r[k] for r in rows], tt, tokens, dt) for k in range(ncol)]
+    cols = [_column([r[k] for r in rows], tt, tokens, dt, du) for k in range(ncol)]
     return (TableValue(names, cols, len(rows), variable_descriptions=descs),)
 
 
