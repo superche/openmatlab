@@ -157,6 +157,13 @@ use_cases:
     features: [libs.table_io, libs.import_options]
     priority: p1
 
+  - id: uc.readtable_format
+    title: Read delimited text with a column format
+    actor: scientific user
+    goal: readtable Format applies textscan conversion specifiers, or auto, to a delimited text file
+    features: [libs.table_io]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2671,6 +2678,24 @@ test_cases:
     features: [libs.table_io, libs.import_options]
     use_cases: [uc.readtable_range]
     impl: tests/bdd/test_readtable_range_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_format
+    kind: unit
+    title: readtable Format for delimited text (#1042)
+    features: [libs.table_io]
+    use_cases: [uc.readtable_format]
+    impl: tests/unit/test_readtable_format.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_format_bdd
+    kind: bdd
+    title: readtable Format Gherkin for delimited text (#1042)
+    features: [libs.table_io]
+    use_cases: [uc.readtable_format]
+    impl: tests/bdd/test_readtable_format_bdd.py
     status: active
     env: unit
 

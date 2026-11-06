@@ -16,6 +16,9 @@ object and ``readtable(file, opts)`` imports with it. See ``libs/import_options.
 ``'Range'`` (#1041) selects rows and columns of a delimited text file. The same
 name-value is accepted by ``detectImportOptions``. Named ranges and spreadsheet
 files are not. See ``docs/design/ISSUE-1041-readtable-range.md``.
+
+``'Format'`` (#1042) is ``'auto'`` or a textscan column format on ``readtable``
+for delimited text. See ``docs/design/ISSUE-1042-readtable-format.md``.
 """
 
 from __future__ import annotations
@@ -421,15 +424,446 @@ def _column(fields, text_type, tokens=None):
     return _column_as(fields, _kind(fields, tokens, text_type), tokens)
 
 
+# ----------------------------------------------------------------- Format (#1042)
+class _Conv:
+    """One textscan conversion in a ``readtable`` ``Format`` string."""
+
+    def __init__(self, skip=False, width=None, prec=None, kind="double", fmt=None, unquote=False, base=10):
+        self.skip = skip
+        self.width = width
+        self.prec = prec
+        self.kind = kind
+        self.fmt = fmt
+        self.unquote = unquote
+        self.base = base
+
+
+_FLOAT_SPEC = {"f": "double", "f32": "single", "f64": "double", "n": "double"}
+_INT_SPEC = {
+    "d": ("int32", 10), "d8": ("int8", 10), "d16": ("int16", 10), "d32": ("int32", 10), "d64": ("int64", 10),
+    "u": ("uint32", 10), "u8": ("uint8", 10), "u16": ("uint16", 10), "u32": ("uint32", 10), "u64": ("uint64", 10),
+    "x": ("uint64", 16), "xu8": ("uint8", 16), "xu16": ("uint16", 16), "xu32": ("uint32", 16), "xu64": ("uint64", 16),
+    "xs8": ("int8", 16), "xs16": ("int16", 16), "xs32": ("int32", 16), "xs64": ("int64", 16),
+    "b": ("uint64", 2), "bu8": ("uint8", 2), "bu16": ("uint16", 2), "bu32": ("uint32", 2), "bu64": ("uint64", 2),
+    "bs8": ("int8", 2), "bs16": ("int16", 2), "bs32": ("int32", 2), "bs64": ("int64", 2),
+}
+_TEXT_SPEC = {"s": False, "q": True}
+_REJECT_SPEC = {"c": "%c", "C": "%C", "T": "%T"}
+_CONV_KEYS = sorted([*_FLOAT_SPEC, *_INT_SPEC, *_TEXT_SPEC, *_REJECT_SPEC, "D"], key=len, reverse=True)
+
+
+def _bad_format(detail):
+    raise _err(f"Invalid 'Format' value. {detail}", "MATLAB:readtable:InvalidFormat")
+
+
+def _format_value(v):
+    if not is_text(v):
+        _bad_format("Format must be 'auto' or a character vector or string scalar of textscan conversion specifiers.")
+    s = text(v).strip()
+    if s.lower() == "auto":
+        return "auto"
+    return _parse_format(s)
+
+
+def _parse_format(s):
+    """Whitespace-separated textscan conversions. Literal text between them is rejected."""
+    out, i, n = [], 0, len(s)
+    while i < n:
+        if s[i].isspace():
+            i += 1
+            continue
+        if s[i] != "%":
+            _bad_format(f"unrecognized text at '{s[i:i + 12]}'.")
+        i += 1
+        skip = False
+        if i < n and s[i] == "*":
+            skip = True
+            i += 1
+        width = None
+        if i < n and s[i].isdigit():
+            j = i
+            while j < n and s[j].isdigit():
+                j += 1
+            width = int(s[i:j])
+            if width < 1:
+                _bad_format("a field width must be a positive integer.")
+            i = j
+        prec = None
+        if i < n and s[i] == ".":
+            j = i + 1
+            if j >= n or not s[j].isdigit():
+                _bad_format("a precision must be digits after the decimal point.")
+            while j < n and s[j].isdigit():
+                j += 1
+            prec = int(s[i + 1:j])
+            i = j
+        conv, i = _match_conv(s, i)
+        conv.skip, conv.width, conv.prec = skip, width, prec
+        if prec is not None and conv.kind not in ("double", "single"):
+            _bad_format("precision is only valid on a floating-point conversion.")
+        out.append(conv)
+    if not out:
+        _bad_format("Format has no conversion specifiers.")
+    if all(c.skip for c in out):
+        _bad_format("Format has no output columns.")
+    return out
+
+
+def _match_conv(s, i):
+    if i >= len(s):
+        _bad_format("Format ends at a '%'.")
+    if s[i] == "{":
+        j = s.find("}", i + 1)
+        if j < 0 or j + 1 >= len(s) or s[j + 1] not in "DT":
+            _bad_format("a %{...} conversion must end with D or T.")
+        if s[j + 1] == "T":
+            _bad_format("Format specifier '%{...}T' is not supported for delimited text.")
+        return _Conv(kind="datetime", fmt=s[i + 1:j], unquote=True), j + 2
+    if s[i] == "[":
+        _bad_format("Format scansets are not supported for delimited text.")
+    for key in _CONV_KEYS:
+        if s.startswith(key, i):
+            if key in _REJECT_SPEC:
+                _bad_format(f"Format specifier '%{key}' is not supported for delimited text.")
+            if key == "D":
+                return _Conv(kind="datetime", unquote=True), i + 1
+            if key in _FLOAT_SPEC:
+                return _Conv(kind=_FLOAT_SPEC[key]), i + len(key)
+            if key in _TEXT_SPEC:
+                return _Conv(kind="char", unquote=_TEXT_SPEC[key]), i + len(key)
+            kind, base = _INT_SPEC[key]
+            return _Conv(kind=kind, base=base), i + len(key)
+    _bad_format(f"unrecognized conversion at '{s[i:i + 8]}'.")
+
+
+def _limit_decimals(raw, prec):
+    m = re.match(r"^(\s*[+-]?)(\d*)(?:\.(\d*))?(.*)$", raw)
+    if not m or m.group(3) is None:
+        return raw
+    sign, whole, frac, rest = m.group(1), m.group(2), m.group(3), m.group(4)
+    kept = frac[:prec]
+    exp = ""
+    if len(frac) <= prec:
+        em = re.match(r"\s*([eE][+-]?\d+)", rest)
+        if em:
+            exp = em.group(1)
+    if prec == 0:
+        return f"{sign}{whole}{exp}"
+    return f"{sign}{whole}.{kept}{exp}"
+
+
+def _unquote(s):
+    """``%q`` / ``%D``: drop a wrapping quote pair and turn ``""`` into ``"``."""
+    if not s.startswith('"'):
+        return s
+    out, i = [], 1
+    while i < len(s):
+        if s[i] == '"':
+            if i + 1 < len(s) and s[i + 1] == '"':
+                out.append('"')
+                i += 2
+                continue
+            return "".join(out) + s[i + 1:].replace('"', "")
+        out.append(s[i])
+        i += 1
+    return "".join(out)
+
+
+def _field_text(raw, conv):
+    if conv.width is not None:
+        raw = raw[:conv.width]
+    if conv.prec is not None:
+        raw = _limit_decimals(raw, conv.prec)
+    if conv.unquote:
+        raw = _unquote(raw)
+    return raw
+
+
+def _int_literal(s, base):
+    t = s.strip()
+    sign = -1.0 if t[:1] == "-" else 1.0
+    if t[:1] in "+-":
+        t = t[1:]
+    pref = "0x" if base == 16 else "0b"
+    if base != 10 and t.lower().startswith(pref):
+        t = t[2:]
+    digits = "0123456789abcdef" if base == 16 else "01"
+    if not t or any(c not in digits for c in t.lower()):
+        return np.nan
+    return sign * int(t, base)
+
+
+def _single_column(fields, tokens):
+    out = []
+    for f in fields:
+        v = f.strip()
+        out.append(np.nan if (v == "" or v in tokens or not _NUM.match(v)) else float(v))
+    return NDArrayValue(np.array(out, dtype=np.float32).reshape(-1, 1))
+
+
+def _int_column(fields, conv, tokens):
+    from openmatlab.numerics.intclass import INT_CLASSES, saturate
+
+    vals = []
+    for f in fields:
+        v = f.strip()
+        if v == "" or v in tokens:
+            vals.append(np.nan)
+        elif conv.base == 10:
+            vals.append(float(v) if _NUM.match(v) else np.nan)
+        else:
+            vals.append(_int_literal(v, conv.base))
+    arr = saturate(np.array(vals, dtype=float), INT_CLASSES[conv.kind]).reshape(-1, 1)
+    return NDArrayValue(arr)
+
+
+def _format_datetime(fields, fmt, tokens):
+    from openmatlab.libs.datetime_arrays import java_to_strptime
+    from openmatlab.runtime.objects import DatetimeValue, datenum_from_parts
+    import datetime as _dt
+
+    dn, used = [], fmt
+    py = java_to_strptime(fmt) if fmt else None
+    for f in fields:
+        v = f.strip()
+        if v == "" or v.lower() == "nat" or v in tokens:
+            dn.append(np.nan)
+            continue
+        if py is None:
+            hit = _date(v)
+            if hit is None:
+                dn.append(np.nan)
+            else:
+                used = used or hit[1]
+                dn.append(hit[0])
+            continue
+        try:
+            t = _dt.datetime.strptime(v, py)
+        except ValueError:
+            dn.append(np.nan)
+            continue
+        dn.append(datenum_from_parts(t.year, t.month, t.day, t.hour, t.minute, t.second + t.microsecond / 1e6))
+    return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), used or "yyyy-MM-dd")
+
+
+def _convert_fields(fields, conv, tokens, text_type):
+    if conv.kind == "char":
+        return _column_as(fields, "string" if text_type == "string" else "char", tokens)
+    if conv.kind == "single":
+        return _single_column(fields, tokens)
+    if conv.kind == "datetime":
+        return _format_datetime(fields, conv.fmt, tokens)
+    if conv.base != 10 or conv.kind != "double":
+        return _int_column(fields, conv, tokens)
+    return _column_as(fields, "double", tokens)
+
+
+def _names_for(header, n, supplied):
+    if supplied is not None:
+        names = texts(supplied)
+        if names is None or len(names) != n:
+            raise _err("The VariableNames property must contain one name for each variable in the table.",
+                       "MATLAB:table:IncorrectNumberOfVarNames")
+        return names
+    if header is not None:
+        names, changed = _names_from_header(list(header) + [""] * (n - len(header)), n)
+        if changed:
+            _warn_modified_names()
+        return names
+    return [f"Var{k + 1}" for k in range(n)]
+
+
+def _kept_lines(name, fn, delim, hdr, rng):
+    p, lines = _text_lines(name, fn)
+    if rng is None:
+        kept = [ln for ln in lines[hdr:] if ln.strip()]
+    else:
+        kept = [lines[i] for i in _row_indexes(lines, rng, hdr, fn)]
+    if delim is None:
+        delim = "," if p.suffix.lower() == ".csv" else _sniff(kept)
+    return kept, delim
+
+
+def _quote_flags(line, delim):
+    """True when a csv field starts with a quote. Length matches ``csv.reader`` for ordinary lines."""
+    flags, i, n = [], 0, len(line)
+    if n == 0:
+        return [False]
+    while i <= n:
+        if i == n:
+            flags.append(False)
+            break
+        if line[i] == '"':
+            flags.append(True)
+            i += 1
+            while i < n:
+                if line[i] == '"':
+                    if i + 1 < n and line[i + 1] == '"':
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            while i < n and line[i] != delim:
+                i += 1
+            if i >= n:
+                break
+            i += 1
+            continue
+        flags.append(False)
+        j = line.find(delim, i)
+        if j < 0:
+            break
+        i = j + 1
+        if i == n:
+            flags.append(False)
+            break
+    return flags
+
+
+def _split_detailed(lines, delim):
+    """Field text plus whether that field was quoted. Text matches the ordinary splitter."""
+    if not lines:
+        return []
+    if delim == " ":
+        out = []
+        for ln in lines:
+            row = []
+            for tok in ln.split():
+                row.append((tok, len(tok) >= 2 and tok[0] == '"' and tok[-1] == '"'))
+            out.append(row)
+        return out
+    values = _split_fields(lines, delim)
+    out = []
+    for ln, vals in zip(lines, values):
+        flags = _quote_flags(ln, delim)
+        if len(flags) != len(vals):
+            flags = [False] * len(vals)
+        out.append(list(zip(vals, flags)))
+    return out
+
+
+def _slice_pairs(rows, c1, c2):
+    need = c2 - c1 + 1
+    out = []
+    for r in rows:
+        part = list(r[c1 - 1:c2])
+        if len(part) < need:
+            part.extend([("", False)] * (need - len(part)))
+        out.append(part)
+    return out
+
+
+def _auto_kind(pairs, tokens, text_type):
+    """Previous ``readtable`` rule: a blank or a quoted field makes the column text."""
+    text_kind = "string" if text_type == "string" else "char"
+    if not pairs:
+        return text_kind  # no data rows: same empty column as readtable without Format
+    present, saw_blank, saw_quote = [], False, False
+    for f, q in pairs:
+        v = f.strip()
+        if q:
+            saw_quote = True
+        if v in tokens:
+            continue
+        if v == "":
+            saw_blank = True
+            continue
+        present.append(v)
+    if saw_quote or saw_blank:
+        return text_kind
+    if present and all(_NUM.match(v) for v in present):
+        return "double"
+    if present:
+        dates = [_date(v) for v in present]
+        if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
+            return "datetime"
+    if not present:
+        return "double"
+    return text_kind
+
+
+def _read_opts(o):
+    delim = _delim(o["delimiter"]) if "delimiter" in o else None
+    hdr = int(np.asarray(o.get("numheaderlines", o.get("headerlines")).backend_buffer()).reshape(-1)[0]) \
+        if ("numheaderlines" in o or "headerlines" in o) else 0
+    readnames = _flag(o["readvariablenames"]) if "readvariablenames" in o else True
+    tt = text(o["texttype"]).lower() if "texttype" in o else "char"
+    if tt not in ("char", "string"):
+        raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
+    tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
+    rng = _parse_range(o["range"]) if "range" in o else None
+    supplied = o["variablenames"] if "variablenames" in o else None
+    return delim, hdr, readnames, tt, tokens, rng, supplied
+
+
+def _window_rows(rows, rng):
+    if rng is None:
+        return rows
+    bounds = _resolve_cols(rows, rng)
+    if bounds is None:
+        _range_err("readtable: the specified range contains no data.")
+    return [_slice_fields(r, *bounds) for r in rows]
+
+
+def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied):
+    rows = _window_rows(_split_fields(kept, delim), rng)
+    header = rows.pop(0) if (readnames and rows) else None
+    nspec = len(spec)
+    data = [(list(r) + [""] * (nspec - len(r)))[:nspec] for r in rows]
+    out_idx = [i for i, conv in enumerate(spec) if not conv.skip]
+    cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt) for i in out_idx]
+    picked = None if header is None else [header[i] if i < len(header) else "" for i in out_idx]
+    names = _names_for(picked, len(out_idx), supplied)
+    return (TableValue(names, cols, len(data)),)
+
+
+def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied):
+    """``'Format','auto'``. A blank or a quoted field forces text. Unequal field counts are an error.
+
+    ``12abc`` stays one field. Splitting the numeric prefix off the trailing text would insert a
+    column the header row cannot name; the R2020a note's split is not reproduced.
+    """
+    detailed = _split_detailed(kept, delim)
+    if rng is not None:
+        bounds = _resolve_cols([[t for t, _q in r] for r in detailed], rng)
+        if bounds is None:
+            _range_err("readtable: the specified range contains no data.")
+        detailed = _slice_pairs(detailed, *bounds)
+    if not detailed:
+        raise _err("readtable: the file has no data to import with 'Format','auto'.", "MATLAB:readtable:NoData")
+    width = len(detailed[0])
+    if any(len(r) != width for r in detailed):
+        raise _err("readtable: lines do not have the same number of delimiters.",
+                   "MATLAB:readtable:UnequalDelimiters")
+    header = [t for t, _q in detailed.pop(0)] if readnames else None
+    cols = [_column_as([r[k][0] for r in detailed], _auto_kind([r[k] for r in detailed], tokens, tt), tokens)
+            for k in range(width)]
+    return (TableValue(_names_for(header, width, supplied), cols, len(detailed)),)
+
+
+def _read_formatted(name, o):
+    """``readtable(file, 'Format', ...)`` for delimited text. The file is not opened for a spreadsheet extension."""
+    _check_text_file(name, "readtable")
+    spec = _format_value(o["format"])
+    delim, hdr, readnames, tt, tokens, rng, supplied = _read_opts(o)
+    kept, delim = _kept_lines(name, "readtable", delim, hdr, rng)
+    if spec == "auto":
+        return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied)
+    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied)
+
+
 def _readtable(args, *, nargout=1):
     if len(args) >= 2 and getattr(args[1], "is_import_options", False):
         from openmatlab.libs.import_options import read_with_options
 
         return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
-                                         "texttype", "filetype", "headerlines", "treatasmissing", "range"))
+                                         "texttype", "filetype", "headerlines", "treatasmissing", "range", "format"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
+    if "format" in o:
+        return _read_formatted(name, o)
     delim = _delim(o["delimiter"]) if "delimiter" in o else None
     hdr = int(np.asarray(o.get("numheaderlines", o.get("headerlines")).backend_buffer()).reshape(-1)[0]) \
         if ("numheaderlines" in o or "headerlines" in o) else 0
