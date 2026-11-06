@@ -143,6 +143,13 @@ use_cases:
     features: [libs.table_io, libs.missing_values]
     priority: p1
 
+  - id: uc.import_options
+    title: Detect delimited-text import options and reuse them
+    actor: scientific user
+    goal: detectImportOptions, setvaropts Type and TreatAsMissing, and readtable with that options object
+    features: [libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2621,6 +2628,24 @@ test_cases:
     features: [libs.table_io, libs.missing_values]
     use_cases: [uc.analyst_csv_missing]
     impl: tests/bdd/test_treat_as_missing_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.import_options
+    kind: unit
+    title: detectImportOptions, setvaropts, and readtable(file, opts) for delimited text (#1040)
+    features: [libs.import_options]
+    use_cases: [uc.import_options]
+    impl: tests/unit/test_import_options.py
+    status: active
+    env: unit
+
+  - id: tc.import_options_bdd
+    kind: bdd
+    title: detectImportOptions and setvaropts Gherkin (#1040)
+    features: [libs.import_options]
+    use_cases: [uc.import_options]
+    impl: tests/bdd/test_import_options_bdd.py
     status: active
     env: unit
 

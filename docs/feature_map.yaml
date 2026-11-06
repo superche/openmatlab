@@ -503,16 +503,26 @@ features:
     name: readtable/writetable/readcell/writecell for delimited text
     status: done
     depends_on: [runtime.table_core]
-    notes: "csv-module splitting, per-column typing (double/datetime/text), makeValidName headers; T08 (Epic #694). M17 CSV slice of #721: readtable 'TreatAsMissing' (case-sensitive text tokens, including '') becomes NaN/NaT/''/<missing> and is visible to ismissing/rmmissing/fillmissing. A column of only placeholders is double NaN. Still out: detectImportOptions/setvaropts #1040, Range #1041, Format #1042, DatetimeType #1043, VariableNamingRule preserve #1044, VariableDescriptions #1045, duration/categorical/logical and more dates #1046, QuoteStrings #1047, WriteMode append #1048, xlsx non-goal #1049. Encodings stay on #577."
+    notes: "csv-module splitting, per-column typing (double/datetime/text), makeValidName headers; T08 (Epic #694). M17 CSV slice of #721: readtable 'TreatAsMissing' (case-sensitive text tokens, including '') becomes NaN/NaT/''/<missing> and is visible to ismissing/rmmissing/fillmissing. A column of only placeholders is double NaN. Delimited-text detectImportOptions, setvaropts, and readtable(file, opts) are libs.import_options (#1040). Still out: Range #1041, Format #1042, DatetimeType #1043, VariableNamingRule preserve #1044, VariableDescriptions #1045, duration/categorical/logical and more dates #1046, QuoteStrings #1047, WriteMode append #1048, xlsx non-goal #1049. Encodings stay on #577."
     tests: [tests/unit/test_table_io.py, tests/bdd/test_table_io_bdd.py, tests/unit/test_treat_as_missing.py, tests/bdd/test_treat_as_missing_bdd.py]
     cases: [tc.table_io, tc.table_io_bdd, tc.treat_as_missing, tc.treat_as_missing_bdd]
+
+  - id: libs.import_options
+    layer: libs
+    name: detectImportOptions and setvaropts for delimited text
+    status: partial
+    depends_on: [libs.table_io]
+    spec: docs/design/ISSUE-1040-import-options.md
+    notes: "Issue #1040. detectImportOptions returns DelimitedTextImportOptions for delimited text; setvaropts sets Type (double, char, string, datetime) and TreatAsMissing; readtable(file, opts) imports with Delimiter, VariableNames, VariableTypes, SelectedVariableNames, and VariableNamesLine. Detection matches readtable, including TreatAsMissing tokens. Other setvaropts names, including FillValue, raise UnknownParameter. DataLines is not a property. Spreadsheet extensions and FileType spreadsheet/fixedwidth raise. Non-goals tracked on their own issues: Range #1041, Format #1042, DatetimeType #1043, VariableNamingRule #1044, VariableDescriptions #1045, duration/categorical/logical #1046, xlsx #1049, encodings #577."
+    tests: [tests/unit/test_import_options.py, tests/bdd/test_import_options_bdd.py]
+    cases: [tc.import_options, tc.import_options_bdd]
 
   - id: libs.cmapss_fd001
     layer: libs
     name: C-MAPSS FD001 runtime download and readtable load
     status: partial
     depends_on: [libs.table_io]
-    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, full detectImportOptions (#721). Unit-1 smoothing is libs.smoothdata (Epic #995). Degradation metrics are libs.cmapss_metrics (Epic #996). The lab figure's heatmap is libs.graphics.heatmap (Epic #997)."
+    notes: "Zenodo CC BY 4.0 zip verified by size and sha256, cached under downloads/cmapss/ (never committed). load_fd001 uses readtable with a space delimiter, no header, and PHM08 names. V01/V02 of M14 (Epic #994). Non-goals: FD002-004, import options beyond the delimited-text slice (#1040). Unit-1 smoothing is libs.smoothdata (Epic #995). Degradation metrics are libs.cmapss_metrics (Epic #996). The lab figure's heatmap is libs.graphics.heatmap (Epic #997)."
     tests: [tests/unit/test_cmapss_fd001.py, tests/bdd/test_cmapss_fd001_bdd.py, tests/conformance/test_m14_v01_v02.py]
     cases: [tc.cmapss_fd001, tc.cmapss_fd001_bdd, tc.cmapss_v01_v02]
 

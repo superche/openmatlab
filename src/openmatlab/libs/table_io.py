@@ -9,6 +9,9 @@ with ``'TextType','string'``).
 stripped text is one of those tokens is left out of typing and stored as the
 standard missing value: NaN, NaT, ``''`` (cellstr), or ``<missing>`` (string).
 The match is exact and case-sensitive. Spreadsheet files still raise.
+
+``detectImportOptions`` / ``setvaropts`` (#1040) build a ``DelimitedTextImportOptions``
+object and ``readtable(file, opts)`` imports with it. See ``libs/import_options.py``.
 """
 
 from __future__ import annotations
@@ -54,9 +57,44 @@ def _flag(v):
     return bool(np.asarray(v.backend_buffer()).reshape(-1)[0]) if hasattr(v, "backend_buffer") else bool(v)
 
 
+def _delim_text(s):
+    return _DELIMS.get(s.lower(), s.replace("\\t", "\t"))
+
+
 def _delim(v):
-    d = text(v)
-    return _DELIMS.get(d.lower(), d.replace("\\t", "\t"))
+    return _delim_text(text(v))
+
+
+def _split_fields(lines, delim):
+    if not lines:
+        return []
+    if delim == " ":
+        return [ln.split() for ln in lines]
+    return [list(r) for r in csv.reader(io.StringIO("\n".join(lines)), delimiter=delim)]
+
+
+def _names_from_header(header, ncol):
+    """makeValidName headers, with ``_1`` suffixes for duplicates. ``changed`` is true when any name differs from the file."""
+    header = list(header) + [""] * (ncol - len(header))
+    names, seen, changed = [], set(), False
+    for k, h in enumerate(header[:ncol]):
+        n = _valid_name(h, k)
+        changed = changed or n != h
+        base, j = n, 1
+        while n in seen:
+            n = f"{base}_{j}"
+            j += 1
+        seen.add(n)
+        names.append(n)
+    return names, changed
+
+
+def _warn_modified_names():
+    from openmatlab.runtime import warnings as _w
+
+    _w.emit("Column headers from the file were modified to make them valid MATLAB identifiers before "
+            "creating variable names for the table. The original column headers are saved in the "
+            "VariableDescriptions property.", "MATLAB:table:ModifiedAndSavedVarnames")
 
 
 def _check_text_file(name, fn):
@@ -77,9 +115,7 @@ def _read_rows(name, fn, delim, header_lines):
     lines = [ln for ln in lines if ln.strip()]
     if delim is None:
         delim = "," if p.suffix.lower() == ".csv" else _sniff(lines)
-    if delim == " ":
-        return [ln.split() for ln in lines]
-    return [list(r) for r in csv.reader(io.StringIO("\n".join(lines)), delimiter=delim)]
+    return _split_fields(lines, delim)
 
 
 def _sniff(lines):
@@ -155,29 +191,51 @@ def _placeholders(v):
     bad()
 
 
-def _column(fields, text_type, tokens=None):
+def _kind(fields, tokens, text_type):
+    """Column type ``readtable`` would pick: double, datetime, char, or string."""
+    vals = [f.strip() for f in fields]
+    present = [v for v in vals if v != "" and v not in tokens]
+    if present and all(_NUM.match(v) for v in present):
+        return "double"
+    if present:
+        dates = [_date(v) for v in present]
+        if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
+            return "datetime"
+    if not present and vals:
+        return "double"
+    return "string" if text_type == "string" else "char"
+
+
+def _column_as(fields, kind, tokens):
+    """Import one column as ``kind``. Tokens and blank numeric/datetime fields are standard missing.
+
+    A forced ``double`` or ``datetime`` stores NaN or NaT when a field does not convert.
+    Text keeps the original field unless its stripped text is a token.
+    """
     from openmatlab.runtime.cell_value import CellValue
 
     tokens = frozenset() if tokens is None else tokens
     vals = [f.strip() for f in fields]
+    if kind == "double":
+        out = [np.nan if (v == "" or v in tokens or not _NUM.match(v)) else float(v) for v in vals]
+        return NDArrayValue(np.array(out, dtype=float).reshape(-1, 1))
+    if kind == "datetime":
+        from openmatlab.runtime.objects import DatetimeValue
 
-    def absent(v):
-        return v == "" or v in tokens
-
-    present = [v for v in vals if not absent(v)]
-    if present and all(_NUM.match(v) for v in present):
-        return NDArrayValue(np.array([np.nan if absent(v) else float(v) for v in vals], dtype=float).reshape(-1, 1))
-    if present:
-        dates = [_date(v) for v in present]
-        if all(d is not None for d in dates) and len({d[1] for d in dates}) == 1:
-            from openmatlab.runtime.objects import DatetimeValue
-
-            dn = [np.nan if absent(v) else _date(v)[0] for v in vals]
-            return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), dates[0][1])
-    if not present and vals:
-        return NDArrayValue(np.full((len(vals), 1), np.nan))
+        dn, fmt = [], None
+        for v in vals:
+            if v == "" or v in tokens:
+                dn.append(np.nan)
+                continue
+            hit = _date(v)
+            if hit is None:
+                dn.append(np.nan)
+            else:
+                fmt = fmt or hit[1]
+                dn.append(hit[0])
+        return DatetimeValue(np.array(dn, dtype=float).reshape(-1, 1), fmt or "yyyy-MM-dd")
     hit = [f.strip() in tokens for f in fields]
-    if text_type == "string":
+    if kind == "string":
         from openmatlab.runtime import string_array as sa
 
         data = [None if h else f for h, f in zip(hit, fields)]
@@ -187,7 +245,16 @@ def _column(fields, text_type, tokens=None):
     return CellValue(rows=tuple((_cv(""),) if h else (_cv(f),) for h, f in zip(hit, fields)))
 
 
+def _column(fields, text_type, tokens=None):
+    tokens = frozenset() if tokens is None else tokens
+    return _column_as(fields, _kind(fields, tokens, text_type), tokens)
+
+
 def _readtable(args, *, nargout=1):
+    if len(args) >= 2 and getattr(args[1], "is_import_options", False):
+        from openmatlab.libs.import_options import read_with_options
+
+        return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
                                          "texttype", "filetype", "headerlines", "treatasmissing"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
@@ -210,24 +277,9 @@ def _readtable(args, *, nargout=1):
             raise _err("The VariableNames property must contain one name for each variable in the table.",
                        "MATLAB:table:IncorrectNumberOfVarNames")
     elif header:
-        header = header + [""] * (ncol - len(header))
-        names, seen = [], set()
-        changed = False
-        for k, h in enumerate(header):
-            n = _valid_name(h, k)
-            changed = changed or n != h
-            base, j = n, 1
-            while n in seen:
-                n = f"{base}_{j}"
-                j += 1
-            seen.add(n)
-            names.append(n)
+        names, changed = _names_from_header(header, ncol)
         if changed:
-            from openmatlab.runtime import warnings as _w
-
-            _w.emit("Column headers from the file were modified to make them valid MATLAB identifiers before "
-                    "creating variable names for the table. The original column headers are saved in the "
-                    "VariableDescriptions property.", "MATLAB:table:ModifiedAndSavedVarnames")
+            _warn_modified_names()
     else:
         names = [f"Var{k + 1}" for k in range(ncol)]
     cols = [_column([r[k] for r in rows], tt, tokens) for k in range(ncol)]
@@ -397,3 +449,6 @@ def _writecell(args, *, nargout=1):
 
 def register(builtins) -> None:
     builtins.update(readtable=_readtable, writetable=_writetable, readcell=_readcell, writecell=_writecell)
+    from openmatlab.libs.import_options import register as _register_import_options
+
+    _register_import_options(builtins)
