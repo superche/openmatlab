@@ -15,6 +15,11 @@ this path.
 category of a categorical grouping variable, both ``false`` and ``true`` of a logical one, and
 every combination of those possible values. Groups are ordered like the default path:
 column by column, with a missing value sorting last inside that column.
+
+A multi-column grouping variable is one key — the whole row — so the flag does not invent a
+Cartesian product of its columns (#1053). Numeric bin edges, a positive bin count, and the
+datetime schemes whose labels the documentation names (``dayname``, ``monthname``, and the
+``*of*`` units) run before that grouping. Array input returns ``[B,BG,BC]``.
 """
 
 from __future__ import annotations
@@ -514,30 +519,49 @@ def _is_logical_col(col):
         and np.asarray(col.backend_buffer()).dtype == np.bool_
 
 
-def _one_row(col, ranks, rank, synthesize):
-    hit = np.flatnonzero(ranks == rank)
-    if hit.size:
-        return _col_rows(col, hit[:1])
-    return synthesize()
+def _var_rank_list(col, n, ranker):
+    """One rank vector per column of a grouping variable. A 0-row variable keeps its width."""
+    if n == 0 and getattr(col, "is_categorical", False):
+        width = col.codes.shape[1] if col.codes.ndim == 2 else 1
+        return [np.zeros(0) for _ in range(max(int(width), 1))]
+    one = list(ranker(col, n))
+    if one:
+        return one
+    if n == 0:
+        sh = getattr(col, "shape", (0, 1))
+        width = int(sh[1]) if len(sh) > 1 else 1
+        if width <= 0:
+            return []
+        return [np.zeros(0) for _ in range(width)]
+    return one
 
 
-def _possible_levels(col, ranks):
-    """Non-missing group values in output order, as ``(rank, one-row value)``."""
-    if getattr(col, "is_categorical", False):
-        return [(float(code), _one_row(col, ranks, float(code), lambda c=code: col.like(np.array([[c]], dtype=np.int64))))
+def _var_levels(col, ranks, n):
+    """Possible non-missing values of one grouping variable, as ``(rank tuple, one row)``.
+
+    A column vector uses the closed domain when it has one: every categorical category, or both
+    logical values. A wider variable is a single row-key, so only rows that actually occur are
+    possible. Missing rows are not levels; the caller adds them from the data.
+    """
+    width = len(ranks)
+    if width <= 1 and getattr(col, "is_categorical", False):
+        return [(tuple([float(code)]), col.like(np.array([[code]], dtype=np.int64)))
                 for code in range(1, len(col.cats) + 1)]
-    if _is_logical_col(col):
-        return [(float(val), _one_row(col, ranks, float(val),
-                                       lambda v=val: NDArrayValue(np.array([[v]], dtype=bool))))
-                for val in (False, True)]
-    present = ranks[~np.isnan(ranks)]
-    if present.size == 0:
+    if width <= 1 and _is_logical_col(col):
+        return [(tuple([float(val)]), NDArrayValue(np.array([[val]], dtype=bool))) for val in (False, True)]
+    if n == 0 or width == 0:
         return []
-    levels = []
-    for u in np.unique(present):
-        hit = np.flatnonzero(ranks == u)
-        levels.append((float(u), _col_rows(col, hit[:1])))
-    return levels
+    R = np.column_stack(ranks)
+    out, seen = [], set()
+    for i in range(n):
+        if np.any(np.isnan(R[i])):
+            continue
+        key = tuple(float(x) for x in R[i])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((key, _col_rows(col, np.array([i]))))
+    return out
 
 
 def _stack_rows(parts, col):
@@ -548,66 +572,45 @@ def _stack_rows(parts, col):
     return _ev().concat_values([[p] for p in parts])
 
 
-def _ranks_of(col, n, fn, ranker=rank_columns):
-    """The single rank vector of a grouping variable.
-
-    ``rank_columns`` turns an empty numeric column into no rank columns, and it cannot
-    reshape an empty categorical (``reshape(0, -1)``). A 0-row column vector is still
-    one grouping variable.
-    """
-    if n == 0 and getattr(col, "is_categorical", False):
-        width = col.codes.shape[1] if col.codes.ndim == 2 else 1
-        if width not in (0, 1):
-            raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported for a multi-column grouping variable.",
-                       f"MATLAB:{fn}:Unsupported")
-        return np.zeros(0)
-    one = ranker(col, n)
-    if len(one) == 1:
-        return one[0]
-    if n == 0 and not one:
-        return np.zeros(0)
-    raise _err(f"{fn}: 'IncludeEmptyGroups' is not supported for a multi-column grouping variable.",
-               f"MATLAB:{fn}:Unsupported")
-
-
 def _nan_last(key):
     """Sort key: a missing rank sorts after every real value in that column."""
     return tuple(np.inf if np.isnan(x) else float(x) for x in key)
 
 
-def _groups_including_empty(cols, n, include_missing, fn, ranker=_grouping_ranks):
+def _groups_including_empty(cols, n, include_missing, ranker=_grouping_ranks):
     """Observed groups plus empty ones, in the same order as the default path.
 
     Sort column by column. A missing value sorts last inside its own column, so a
     group that contains a missing key stays where the default sort puts it. Empty
     combinations are inserted into that sequence. ``ranker`` must be the same
     function ``group_numbers`` uses, or a missing cellstr key and its sort key diverge.
+    A multi-column variable contributes one factor: its row, not a product of its columns.
     """
     if not cols:
         # product() of no variables yields one empty tuple, which is not a group.
         G, firsts = group_numbers(cols, n, include_missing, ranker)
         return G, firsts, [], np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
-    ranks = [_ranks_of(col, n, fn, ranker) for col in cols]
-    levels = [_possible_levels(col, r) for col, r in zip(cols, ranks)]
-    combos = list(itertools.product(*levels)) if all(levels) else []
-    R = np.column_stack(ranks) if n else np.zeros((0, len(cols)))
-    items = []
-    seen = set()
+    rank_lists = [_var_rank_list(col, n, ranker) for col in cols]
+    levels = [_var_levels(col, ranks, n) for col, ranks in zip(cols, rank_lists)]
+    combos = list(itertools.product(*levels)) if levels and all(levels) else []
+    items, seen = [], set()
     Gobs = np.full(n, np.nan)
     if n:
         Gobs, firsts = group_numbers(cols, n, include_missing, ranker)
+        flat = [r for ranks in rank_lists for r in ranks]
+        R = np.column_stack(flat) if flat else np.zeros((n, 0))
         for fi in firsts:
             fi = int(fi)
-            key = tuple(float(R[fi, j]) for j in range(len(cols)))
+            key = tuple(float(R[fi, j]) for j in range(R.shape[1]))
             parts = tuple(_col_rows(col, np.array([fi])) for col in cols)
             items.append((key, parts, float(Gobs[fi])))
             if not any(np.isnan(x) for x in key):
                 seen.add(key)
     for combo in combos:
-        key = tuple(rank for rank, _row in combo)
+        key = tuple(x for level_key, _row in combo for x in level_key)
         if key in seen:
             continue
-        items.append((key, tuple(row for _rank, row in combo), None))
+        items.append((key, tuple(row for _key, row in combo), None))
     items.sort(key=lambda it: _nan_last(it[0]))
     slot = {gobs: i for i, (_key, _parts, gobs) in enumerate(items) if gobs is not None}
     G = np.full(n, np.nan)
@@ -628,91 +631,599 @@ def _group_table(T, gvars, fn, opts, *, allow_empty=False):
     cols = [T.cols[i] for i in gvars]
     # groupsummary and groupcounts. findgroups calls group_numbers on its own.
     if include_empty:
-        return _groups_including_empty(cols, T.nrows, include_missing, fn, _grouping_ranks)
+        return _groups_including_empty(cols, T.nrows, include_missing, _grouping_ranks)
     G, firsts = group_numbers(cols, T.nrows, include_missing, _grouping_ranks)
     keycols = [_col_rows(c, firsts) for c in cols]
     counts = np.array([np.sum(G == g + 1) for g in range(len(firsts))], float)
     return G, firsts, keycols, counts
 
 
-def _groupsummary(args, *, nargout=1):
+_BIN_NAMES = frozenset((
+    "none", "second", "minute", "hour", "day", "week", "month", "quarter", "year", "decade", "century",
+    "secondofminute", "minuteofhour", "hourofday", "dayofweek", "dayname", "dayofmonth", "dayofyear",
+    "weekofmonth", "weekofyear", "monthname", "monthofyear", "quarterofyear",
+))
+# Schemes whose category labels are fixed by the public groupsummary table.
+_TIME_CATEGORICAL = frozenset((
+    "dayname", "monthname", "secondofminute", "minuteofhour", "hourofday", "dayofweek",
+    "dayofmonth", "dayofyear", "monthofyear", "quarterofyear",
+))
+_DAYNAMES = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+_MONTHNAMES = ("January", "February", "March", "April", "May", "June", "July", "August",
+               "September", "October", "November", "December")
+
+
+def _cell_items(v):
+    from openmatlab.runtime.cell_value import CellValue
+
+    if isinstance(v, CellValue):
+        return [x for r in v.rows for x in r]
+    return None
+
+
+def _is_method_spec(v):
     from openmatlab.runtime.function_handle import FunctionHandleValue
 
+    if isinstance(v, FunctionHandleValue):
+        return True
+    items = _cell_items(v)
+    if items is not None:
+        return bool(items) and all(_is_method_spec(x) for x in items)
+    t = texts(v)
+    return t is not None and all(s.lower() == "all" or s.lower() in _METHODS for s in t)
+
+
+def _is_bin_spec(v):
+    from openmatlab.runtime.objects import DatetimeValue, DurationValue
+
+    if _is_method_spec(v):
+        return False
+    items = _cell_items(v)
+    if items is not None:
+        return bool(items) and all(_is_bin_spec(x) for x in items)
+    t = texts(v)
+    if t is not None:
+        return len(t) == 1 and t[0].lower() in _BIN_NAMES
+    if isinstance(v, (DatetimeValue, DurationValue)):
+        return True
+    if getattr(v, "is_object", False) or is_text(v) or getattr(v, "is_string", False) or not hasattr(v, "backend_buffer"):
+        return False
+    a = np.asarray(v.backend_buffer())
+    return a.dtype != np.bool_ and not np.iscomplexobj(a)
+
+
+def _parse_methods(m):
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    if m is None:
+        return []
+    items = _cell_items(m)
+    items = items if items is not None else [m]
+    methods = []
+    for it in items:
+        if isinstance(it, FunctionHandleValue):
+            methods.append(it)
+            continue
+        t = texts(it)
+        if t is None:
+            raise _err("groupsummary: methods must be names or function handles.", "MATLAB:groupsummary:InvalidMethod")
+        for s in t:
+            s = s.lower()
+            if s == "all":
+                methods += ["mean", "sum", "min", "max", "range", "median", "mode", "var", "std",
+                            "nummissing", "nnz", "numunique"]
+            elif s not in _METHODS:
+                raise _err(f"groupsummary: '{s}' is not a valid method.", "MATLAB:groupsummary:InvalidMethod")
+            else:
+                methods.append(s)
+    return methods
+
+
+def _split_gs_args(data, is_table):
+    rest = list(data[2:])
+    bins = None
+    if rest and _is_bin_spec(rest[0]):
+        bins = rest.pop(0)
+    methods = rest.pop(0) if rest else None
+    datavars = None
+    if rest:
+        if not is_table:
+            raise _err("groupsummary: array input does not take data-variable arguments.",
+                       "MATLAB:groupsummary:TooManyInputs")
+        datavars = rest.pop(0)
+    if rest:
+        raise _err("groupsummary: too many input arguments.", "MATLAB:TooManyInputs")
+    if not is_table and methods is None:
+        raise _err("groupsummary: array input requires a computation method.", "MATLAB:groupsummary:InvalidMethod")
+    return bins, methods, datavars
+
+
+def _included_edge(opts, has_bins):
+    if "includededge" not in opts:
+        return "left"
+    if not has_bins:
+        raise _err("groupsummary: 'IncludedEdge' is only supported when group bins are specified.",
+                   "MATLAB:groupsummary:IncludedEdge")
+    t = texts(opts["includededge"])
+    if t is None or len(t) != 1 or t[0].lower() not in ("left", "right"):
+        raise _err("groupsummary: 'IncludedEdge' must be 'left' or 'right'.", "MATLAB:groupsummary:IncludedEdge")
+    return t[0].lower()
+
+
+def _naming_rule(opts, is_table):
+    if "variablenamingrule" not in opts:
+        return "numbered"
+    if not is_table:
+        raise _err("groupsummary: 'VariableNamingRule' is only supported for table input.",
+                   "MATLAB:groupsummary:VariableNamingRule")
+    t = texts(opts["variablenamingrule"])
+    if t is None or len(t) != 1 or t[0].lower() not in ("numbered", "methodname", "noprefix"):
+        raise _err("groupsummary: 'VariableNamingRule' must be 'numbered', 'methodname', or 'noprefix'.",
+                   "MATLAB:groupsummary:VariableNamingRule")
+    return t[0].lower()
+
+
+def _expand_schemes(spec, nvars):
+    if spec is None:
+        return [None] * nvars
+    items = _cell_items(spec)
+    if items is None:
+        return [spec] * nvars
+    if len(items) == 1:
+        return items * nvars
+    if len(items) != nvars:
+        raise _err("groupsummary: group bins must be one scheme, or one scheme per grouping variable. "
+                   "Several schemes for a single variable are not supported.",
+                   "MATLAB:groupsummary:InvalidBins")
+    return items
+
+
+def _fmt_edge(x):
+    x = float(x)
+    if np.isnan(x):
+        return "NaN"
+    if np.isinf(x):
+        return "Inf" if x > 0 else "-Inf"
+    if x == 0 or (abs(x) < 1e15 and x == int(x)):
+        return str(int(x))
+    return np.format_float_positional(x, trim="-")
+
+
+def _interval_labels(edges, which):
+    labels = []
+    nb = len(edges) - 1
+    for i in range(nb):
+        a, b = _fmt_edge(edges[i]), _fmt_edge(edges[i + 1])
+        if which == "left":
+            labels.append(f"[{a}, {b}]" if i == nb - 1 else f"[{a}, {b})")
+        else:
+            labels.append(f"[{a}, {b}]" if i == 0 else f"({a}, {b}]")
+    return labels
+
+
+def _numeric_edges(v):
+    a = np.asarray(v.backend_buffer(), float).reshape(-1)
+    if a.size == 1:
+        n = a[0]
+        if not np.isfinite(n) or n != int(n) or n < 1:
+            raise _err("groupsummary: the number of bins must be a positive integer.",
+                       "MATLAB:groupsummary:InvalidBins")
+        return ("count", int(n))
+    if a.size < 2 or not np.all(np.isfinite(a)) or np.any(np.diff(a) <= 0):
+        raise _err("groupsummary: bin edges must be a finite, strictly increasing vector.",
+                   "MATLAB:groupsummary:InvalidBins")
+    return ("edges", a)
+
+
+def _equal_edges(x, nb):
+    finite = np.asarray(x, float).reshape(-1)
+    finite = finite[np.isfinite(finite)]
+    if finite.size == 0:
+        raise _err("groupsummary: cannot bin a grouping variable that has no finite values.",
+                   "MATLAB:groupsummary:InvalidBins")
+    lo, hi = float(finite.min()), float(finite.max())
+    if lo == hi:
+        lo, hi = lo - 0.5, hi + 0.5
+    return np.linspace(lo, hi, nb + 1)
+
+
+def _codes_for_edges(x, edges, which):
+    flat = np.asarray(x, float).reshape(-1)
+    nb = edges.size - 1
+    if which == "left":
+        idx = np.searchsorted(edges, flat, side="right") - 1
+        on_end = flat == edges[-1]
+        idx = np.where(on_end, nb - 1, idx)
+    else:
+        idx = np.searchsorted(edges, flat, side="left") - 1
+        idx = np.where(flat == edges[0], 0, idx)
+    bad = (~np.isfinite(flat)) | (idx < 0) | (idx >= nb)
+    codes = np.zeros(flat.shape, dtype=np.int64)
+    codes[~bad] = idx[~bad] + 1
+    return codes.reshape(np.shape(np.asarray(x, float)))
+
+
+def _bin_numeric(col, name, edges, which):
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    x = np.asarray(col.backend_buffer(), float)
+    if x.size == 0:
+        x = np.zeros((height_of(col), _width(col, height_of(col)) or 1))
+    codes = _codes_for_edges(x, edges, which)
+    return CategoricalValue(codes, _interval_labels(edges, which), ordinal=True), "disc_" + name
+
+
+def _time_codes(col, scheme):
+    """Integer category codes (0 = missing) and the full category list for one time unit."""
+    import datetime as _dt
+
+    from openmatlab.runtime.objects import parts_from_datenum
+
+    v = np.asarray(col.v, float)
+    flat = v.reshape(-1)
+    if scheme == "dayname":
+        cats = list(_DAYNAMES)
+        wd = np.mod(np.floor(flat) - 2, 7) + 1
+        raw = wd
+        lo = 1
+    elif scheme == "monthname":
+        cats = list(_MONTHNAMES)
+        raw = np.array([np.nan if np.isnan(x) else parts_from_datenum(x)[1] for x in flat], float)
+        lo = 1
+    elif scheme == "dayofyear":
+        cats = [str(k) for k in range(1, 367)]
+
+        def yday(x):
+            if np.isnan(x):
+                return np.nan
+            y, mo, d = parts_from_datenum(x)[:3]
+            return float(_dt.date(int(y), int(mo), int(d)).timetuple().tm_yday)
+
+        raw = np.array([yday(x) for x in flat], float)
+        lo = 1
+    else:
+        spec = {
+            "hourofday": (0, 23, 3), "minuteofhour": (0, 59, 4), "secondofminute": (0, 59, 5),
+            "dayofweek": (1, 7, None), "dayofmonth": (1, 31, 2), "monthofyear": (1, 12, 1),
+            "quarterofyear": (1, 4, "q"),
+        }[scheme]
+        lo, hi, part = spec
+        cats = [str(k) for k in range(lo, hi + 1)]
+        if scheme == "dayofweek":
+            raw = np.mod(np.floor(flat) - 2, 7) + 1
+        else:
+            raw = np.empty(flat.shape, float)
+            for i, x in enumerate(flat):
+                if np.isnan(x):
+                    raw[i] = np.nan
+                    continue
+                p = parts_from_datenum(x)
+                if part == "q":
+                    raw[i] = (p[1] - 1) // 3 + 1
+                elif part == 5:
+                    raw[i] = np.floor(p[5])
+                else:
+                    raw[i] = p[part]
+    codes = np.zeros(flat.shape, dtype=np.int64)
+    ok = np.isfinite(raw)
+    codes[ok] = (raw[ok] - lo + 1).astype(np.int64)
+    return codes.reshape(v.shape), cats
+
+
+def _apply_bin(col, name, scheme, which):
+    """Return ``(binned column, output name)``. ``scheme`` None or ``'none'`` keeps the column."""
+    from openmatlab.runtime.objects import DatetimeValue, DurationValue
+
+    if scheme is None:
+        return col, name
+    if isinstance(scheme, DurationValue) or isinstance(scheme, DatetimeValue):
+        raise _err("groupsummary: duration bin widths and datetime bin edges are not supported yet.",
+                   "MATLAB:groupsummary:Unsupported")
+    t = texts(scheme)
+    if t is not None:
+        key = t[0].lower()
+        if key == "none":
+            return col, name
+        if key not in _TIME_CATEGORICAL:
+            raise _err(f"groupsummary: binning scheme '{key}' is not supported yet.",
+                       "MATLAB:groupsummary:Unsupported")
+        if not isinstance(col, DatetimeValue):
+            raise _err(f"groupsummary: binning scheme '{key}' requires a datetime grouping variable.",
+                       "MATLAB:groupsummary:InvalidBins")
+        from openmatlab.runtime.categorical_value import CategoricalValue
+
+        codes, cats = _time_codes(col, key)
+        return CategoricalValue(codes, cats, ordinal=True), f"{key}_{name}"
+    kind, payload = _numeric_edges(scheme)
+    if isinstance(col, DatetimeValue) or getattr(col, "is_object", False) or is_text(col) or not hasattr(col, "backend_buffer"):
+        raise _err("groupsummary: numeric bin edges require a numeric grouping variable.",
+                   "MATLAB:groupsummary:InvalidBins")
+    if kind == "count":
+        x = np.asarray(col.backend_buffer(), float)
+        payload = _equal_edges(x, payload)
+    return _bin_numeric(col, name, payload, which)
+
+
+def _take_col(v, j):
+    from openmatlab.runtime.table_subs import ix
+    from openmatlab.runtime.table_value import _idx_value
+
+    return ix(_ev(), v, [None, _idx_value(np.array([j]))])
+
+
+def _matrix_columns(v):
+    """Columns of one array. A row vector is one column. Char stays one key per row."""
+    if is_text(v):
+        return [v]
+    sh = getattr(v, "shape", None)
+    if sh is not None and len(sh) == 2 and sh[0] == 1 and sh[1] > 1:
+        v = _transpose(v)
+    n = height_of(v)
+    w = _width(v, n) if n else (int(v.shape[1]) if len(getattr(v, "shape", ())) > 1 else 1)
+    if w <= 1:
+        return [v]
+    return [_take_col(v, j) for j in range(w)]
+
+
+def _flatten_columns(v):
+    items = _cell_items(v)
+    if items is None:
+        return _matrix_columns(v)
+    out = []
+    for it in items:
+        out.extend(_matrix_columns(it))
+    return out
+
+
+def _method_nargout(fh):
+    defn = getattr(fh.fn, "defn", None)
+    if defn is None:
+        return 1
+    outs = [o for o in defn.outputs if o != "varargout"]
+    if not outs or (defn.outputs and defn.outputs[-1] == "varargout"):
+        return 1
+    return max(1, len(outs))
+
+
+def _method_nargin(fh):
+    defn = getattr(fh.fn, "defn", None)
+    if defn is not None:
+        return len([i for i in defn.inputs if i != "varargin"])
+    name = getattr(fh, "name", "") or ""
+    if name.startswith("@("):
+        end = name.find(")")
+        if end > 2:
+            return len([p for p in name[2:end].split(",") if p.strip()])
+    return 1
+
+
+def _fun_row(fh, slices):
+    nout = _method_nargout(fh)
+    outs = list(fh.call(slices, nargout=nout))
+    if len(outs) < nout:
+        raise _err("groupsummary: the function returned too few outputs.", "MATLAB:groupsummary:FunctionOutputSize")
+    row = outs[0] if nout == 1 else _ev().concat_values([outs[:nout]])
+    if height_of(row) != 1:
+        raise _err("groupsummary: a function method must return one row per group.",
+                   "MATLAB:groupsummary:FunctionOutputSize")
+    return row
+
+
+def _stack_group_rows(vals):
+    from openmatlab.runtime.evaluator import EvalError
+
+    if not vals:
+        return NDArrayValue(np.zeros((0, 1)))
+    try:
+        return _ev().concat_values([[v] for v in vals])
+    except EvalError:
+        raise
+    except (TypeError, ValueError):
+        raise _err("groupsummary: a function method must return one row of the same width for every group.",
+                   "MATLAB:groupsummary:FunctionOutputSize") from None
+
+
+def _named_block(method, col, G, n_groups, nrows, label):
+    buf = _numeric_data(col, label, "groupsummary")
+    # reshape(0, -1) cannot infer a width; an empty column vector is one column.
+    if nrows:
+        a = buf.reshape(nrows, -1)
+    else:
+        a = np.zeros((0, buf.shape[1] if getattr(buf, "ndim", 1) == 2 else 1))
+    width = a.shape[1]
+    if n_groups:
+        out = np.array([[_apply_method(method, a[G == g + 1, j]) for j in range(width)]
+                        for g in range(n_groups)], float).reshape(n_groups, width)
+    else:
+        out = np.zeros((0, width))
+    return NDArrayValue(out)
+
+
+def _fun_block(fh, arg_cols, G, n_groups):
+    vals = []
+    for g in range(n_groups):
+        rows = np.flatnonzero(G == g + 1)
+        vals.append(_fun_row(fh, [_col_rows(c, rows) for c in arg_cols]))
+    return _stack_group_rows(vals)
+
+
+def _stat_name(method, var, fun_i, rule):
+    if rule == "noprefix":
+        return var
+    if isinstance(method, str):
+        return f"{method}_{var}"
+    if rule == "methodname":
+        from openmatlab.libs.function_intrinsics import _canonical
+
+        return f"{_canonical(method.name)}_{var}"
+    return f"fun{fun_i}_{var}"
+
+
+def _fun_indexes(methods):
+    out, k = [], 0
+    for m in methods:
+        if isinstance(m, str):
+            out.append(None)
+        else:
+            k += 1
+            out.append(k)
+    return out
+
+
+def _multi_arity(methods):
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    multi = [m for m in methods if isinstance(m, FunctionHandleValue) and _method_nargin(m) > 1]
+    if not multi:
+        return 1
+    if len(methods) != 1:
+        raise _err("groupsummary: a function with multiple inputs must be the only method.",
+                   "MATLAB:groupsummary:InvalidMethod")
+    return _method_nargin(methods[0])
+
+
+def _same_height(cols, n, what):
+    for c in cols:
+        if height_of(c) != n:
+            raise _err(f"groupsummary: the {what} must have the same number of rows as the data.",
+                       "MATLAB:groupsummary:InvalidSize")
+
+
+def _summary_pairs(pairs, methods, G, n_groups, nrows, rule):
+    """Variable-major summary columns: each data pair, then each method."""
+    if rule == "noprefix" and len(methods) != 1:
+        raise _err("groupsummary: 'VariableNamingRule','noprefix' requires exactly one computation method.",
+                   "MATLAB:groupsummary:VariableNamingRule")
+    from openmatlab.runtime.function_handle import FunctionHandleValue
+
+    names, cols = [], []
+    fun_i = _fun_indexes(methods)
+    for arg_cols, var in pairs:
+        for m, fi in zip(methods, fun_i):
+            if isinstance(m, FunctionHandleValue):
+                cols.append(_fun_block(m, arg_cols, G, n_groups))
+            else:
+                if len(arg_cols) != 1:
+                    raise _err("groupsummary: a named method takes one data argument.",
+                               "MATLAB:groupsummary:InvalidMethod")
+                cols.append(_named_block(m, arg_cols[0], G, n_groups, nrows, var))
+            names.append(_stat_name(m, var, fi, rule))
+    return names, cols
+
+
+def _pair_table(T, spec, arity):
+    items = _cell_items(spec)
+    if items is None or len(items) != arity:
+        raise _err("groupsummary: a function with multiple inputs needs datavars as a cell array "
+                   "with one selection per input.", "MATLAB:groupsummary:InvalidDataVars")
+    sels = [T.var_sel(it) for it in items]
+    widths = {len(s) for s in sels}
+    if len(widths) != 1 or not widths or 0 in widths:
+        raise _err("groupsummary: each datavars selection must name the same nonzero number of variables.",
+                   "MATLAB:groupsummary:InvalidDataVars")
+    n = len(sels[0])
+    pairs = []
+    for j in range(n):
+        cols = [T.cols[s[j]] for s in sels]
+        pairs.append((cols, "_".join(T.names[s[j]] for s in sels)))
+    return pairs
+
+
+def _table_pairs(T, gvars, datavars, methods):
+    arity = _multi_arity(methods)
+    if not methods:
+        return []
+    if arity > 1:
+        if datavars is None:
+            raise _err("groupsummary: a function with multiple inputs needs datavars as a cell array.",
+                       "MATLAB:groupsummary:InvalidDataVars")
+        return _pair_table(T, datavars, arity)
+    idx = T.var_sel(datavars) if datavars is not None else [i for i in range(len(T.names)) if i not in gvars]
+    return [([T.cols[i]], T.names[i]) for i in idx]
+
+
+def _array_pairs(A, methods):
+    arity = _multi_arity(methods)
+    if arity == 1:
+        cols = _flatten_columns(A)
+        return [([c], f"Var{k + 1}") for k, c in enumerate(cols)]
+    items = _cell_items(A)
+    if items is None or len(items) != arity:
+        raise _err("groupsummary: a function with multiple inputs needs the data as a cell array "
+                   "with one array per input.", "MATLAB:groupsummary:InvalidInput")
+    splits = [_matrix_columns(it) for it in items]
+    widths = {len(s) for s in splits}
+    if len(widths) != 1 or not widths or 0 in widths:
+        raise _err("groupsummary: each data array must have the same nonzero number of columns.",
+                   "MATLAB:groupsummary:InvalidInput")
+    n = len(splits[0])
+    return [([splits[a][j] for a in range(arity)], f"Var{j + 1}") for j in range(n)]
+
+
+def _bin_columns(cols, names, bins, which):
+    schemes = _expand_schemes(bins, len(cols))
+    out_c, out_n = [], []
+    for c, n, s in zip(cols, names, schemes):
+        bc, bn = _apply_bin(c, n, s, which)
+        out_c.append(bc)
+        out_n.append(bn)
+    return out_c, out_n
+
+
+def _groupsummary(args, *, nargout=1):
     data, opts = _opts(args, ("includemissinggroups", "includeemptygroups", "variablenamingrule", "includededge"),
                        "groupsummary")
-    if len(data) < 2 or not _is_table(data[0]):
-        raise _err("groupsummary: expected groupsummary(T, groupvars, method, datavars) with a table input.",
-                   "MATLAB:groupsummary:InvalidInput")
-    if len(data) > 4:
-        raise _err("groupsummary: group bins are not supported yet.", "MATLAB:groupsummary:Unsupported")
-    for key, label in (("variablenamingrule", "VariableNamingRule"), ("includededge", "IncludedEdge")):
-        if key in opts:
-            raise _err(f"groupsummary: '{label}' is not supported.", "MATLAB:groupsummary:Unsupported")
-    T = data[0]
-    gvars = T.var_sel(data[1])
-    methods = []
-    if len(data) >= 3:
-        m = data[2]
-        items = []
-        from openmatlab.runtime.cell_value import CellValue
+    if len(data) < 2:
+        raise _err("groupsummary: not enough input arguments.", "MATLAB:narginchk:notEnoughInputs")
+    is_table = _is_table(data[0])
+    bins, method_v, datavars = _split_gs_args(data, is_table)
+    which = _included_edge(opts, bins is not None)
+    rule = _naming_rule(opts, is_table)
+    methods = _parse_methods(method_v)
+    if is_table:
+        T = data[0]
+        gvars = T.var_sel(data[1])
+        gcols, gnames = _bin_columns([T.cols[i] for i in gvars], [T.names[i] for i in gvars], bins, which)
+        GT = TableValue(gnames, gcols, T.nrows)
+        G, firsts, keycols, counts = _group_table(GT, list(range(len(gnames))), "groupsummary", opts, allow_empty=True)
+        pairs = _table_pairs(T, gvars, datavars, methods)
+        snames, scols = _summary_pairs(pairs, methods, G, len(firsts), T.nrows, rule)
+        return (TableValue(gnames + ["GroupCount"] + snames, keycols + [_num_col(counts)] + scols, len(firsts)),)
+    pairs = _array_pairs(data[0], methods)
+    data_cols = [c for cols, _name in pairs for c in cols]
+    if not data_cols:
+        raise _err("groupsummary: the data input is empty.", "MATLAB:groupsummary:InvalidInput")
+    n = height_of(data_cols[0])
+    _same_height(data_cols, n, "data")
+    gcols = _flatten_columns(data[1])
+    if not gcols:
+        raise _err("groupsummary: grouping variables are required.", "MATLAB:groupsummary:InvalidInput")
+    _same_height(gcols, n, "grouping variables")
+    gcols, _gnames = _bin_columns(gcols, [f"g{i + 1}" for i in range(len(gcols))], bins, which)
+    GT = TableValue([f"g{i + 1}" for i in range(len(gcols))], gcols, n)
+    G, firsts, keycols, counts = _group_table(GT, list(range(len(gcols))), "groupsummary", opts, allow_empty=True)
+    _snames, scols = _summary_pairs(pairs, methods, G, len(firsts), n, "numbered")
+    B = _horz_summary(scols, len(firsts))
+    outs = [B]
+    if nargout >= 2:
+        outs.append(keycols[0] if len(keycols) == 1 else _cell_row(keycols))
+    if nargout >= 3:
+        outs.append(_num_col(counts))
+    return tuple(outs[:max(1, nargout)])
 
-        if isinstance(m, CellValue):
-            items = [x for r in m.rows for x in r]
-        else:
-            items = [m]
-        for it in items:
-            if isinstance(it, FunctionHandleValue):
-                methods.append(it)
-                continue
-            t = texts(it)
-            if t is None:
-                raise _err("groupsummary: methods must be names or function handles.", "MATLAB:groupsummary:InvalidMethod")
-            for s in t:
-                s = s.lower()
-                if s == "all":
-                    methods += [x for x in ("mean", "sum", "min", "max", "range", "median", "mode", "var", "std",
-                                            "nummissing", "nnz", "numunique")]
-                elif s not in _METHODS:
-                    raise _err(f"groupsummary: '{s}' is not a valid method.", "MATLAB:groupsummary:InvalidMethod")
-                else:
-                    methods.append(s)
-    if len(data) >= 4:
-        dvars = T.var_sel(data[3])
-    else:
-        dvars = [i for i in range(len(T.names)) if i not in gvars] if methods else []
-    G, firsts, keycols, counts = _group_table(T, gvars, "groupsummary", opts, allow_empty=True)
-    names = [T.names[i] for i in gvars] + ["GroupCount"]
-    cols = keycols + [_num_col(counts)]
-    nf = 0
-    for d in dvars:
-        for m in methods:
-            if isinstance(m, FunctionHandleValue):
-                nf += 1
-                vals = []
-                for g in range(len(firsts)):
-                    rows = np.flatnonzero(G == g + 1)
-                    r = m.call([_col_rows(T.cols[d], rows)], nargout=1)
-                    if not r or height_of(r[0]) != 1:
-                        raise _err("groupsummary: a function method must return one row per group.",
-                                   "MATLAB:groupsummary:FunctionOutputSize")
-                    vals.append(r[0])
-                cols.append(_ev().concat_values([[v] for v in vals]) if vals else NDArrayValue(np.zeros((0, 1))))
-                names.append(f"fun{nf if len([x for x in methods if not isinstance(x, str)]) > 1 else 1}_{T.names[d]}")
-                continue
-            buf = _numeric_data(T.cols[d], T.names[d], "groupsummary")
-            # reshape(0, -1) cannot infer a width; an empty column vector is one column.
-            if T.nrows:
-                a = buf.reshape(T.nrows, -1)
-            else:
-                a = np.zeros((0, buf.shape[1] if buf.ndim == 2 else 1))
-            if len(firsts):
-                out = np.array([[_apply_method(m, a[G == g + 1, j]) for j in range(a.shape[1])]
-                                for g in range(len(firsts))], float).reshape(len(firsts), -1)
-            else:
-                out = np.zeros((0, a.shape[1]))
-            cols.append(NDArrayValue(out))
-            names.append(f"{m}_{T.names[d]}")
-    return (TableValue(names, cols, len(firsts)),)
+
+def _horz_summary(cols, n_groups):
+    if not cols:
+        return NDArrayValue(np.zeros((n_groups, 0)))
+    if len(cols) == 1:
+        return cols[0]
+    return _ev().concat_values([cols])
+
+
+def _cell_row(items):
+    from openmatlab.runtime.cell_value import CellValue
+
+    return CellValue(rows=(tuple(items),)) if items else CellValue(rows=())
 
 
 def _groupcounts(args, *, nargout=1):

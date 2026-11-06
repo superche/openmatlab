@@ -2635,6 +2635,24 @@ test_cases:
     status: active
     env: unit
 
+  - id: tc.groupsummary_1053
+    kind: unit
+    title: groupsummary bins, array input, VariableNamingRule, and multi-output methods (#1053)
+    features: [libs.table_join_group]
+    use_cases: [uc.analyst_groupsummary]
+    impl: tests/unit/test_groupsummary_1053.py
+    status: active
+    env: unit
+
+  - id: tc.groupsummary_1053_bdd
+    kind: bdd
+    title: groupsummary bins and array-input Gherkin (#1053)
+    features: [libs.table_join_group]
+    use_cases: [uc.analyst_groupsummary]
+    impl: tests/bdd/test_groupsummary_1053_bdd.py
+    status: active
+    env: unit
+
   - id: tc.analyst_story
     kind: unit
     title: analyst field-assay story writes a CSV summary (issue #1034)
