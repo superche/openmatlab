@@ -150,6 +150,13 @@ use_cases:
     features: [libs.table_join_group]
     priority: p1
 
+  - id: uc.grouping_1054
+    title: Number missing groups, count arrays, transform, and filter
+    actor: scientific user
+    goal: findgroups IncludeMissing, splitapply of a table, groupcounts on arrays and empty groups, grouptransform, and groupfilter
+    features: [libs.table_join_group]
+    priority: p1
+
   - id: uc.analyst_story
     title: Wash a messy assay CSV and write the group summary
     actor: scientific user
@@ -2650,6 +2657,24 @@ test_cases:
     features: [libs.table_join_group]
     use_cases: [uc.analyst_groupsummary]
     impl: tests/bdd/test_groupsummary_1053_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.grouping_1054_1055
+    kind: unit
+    title: findgroups IncludeMissing, splitapply table output, groupcounts arrays, grouptransform, groupfilter (#1054, #1055)
+    features: [libs.table_join_group]
+    use_cases: [uc.grouping_1054]
+    impl: tests/unit/test_grouping_1054_1055.py
+    status: active
+    env: unit
+
+  - id: tc.grouping_1054_1055_bdd
+    kind: bdd
+    title: findgroups IncludeMissing, splitapply, groupcounts, grouptransform, and groupfilter Gherkin (#1054, #1055)
+    features: [libs.table_join_group]
+    use_cases: [uc.grouping_1054]
+    impl: tests/bdd/test_grouping_1054_1055_bdd.py
     status: active
     env: unit
 

@@ -8,7 +8,7 @@ The analyst story groups a cleaned table and needs groups that the rows never me
 
 ## Design
 
-`libs/table_join_group.py` still owns `groupsummary`. The flag is accepted only there. `groupcounts` still raises `groupcounts: 'IncludeEmptyGroups' is not supported yet.`
+`libs/table_join_group.py` still owns `groupsummary`. This slice accepts the flag only on `groupsummary`. #1055 later accepts the same flag on `groupcounts` (`docs/design/EPIC-1054-grouping.md`).
 
 With the flag on, the output groups are the Cartesian product of each grouping variable's possible values, merged with any missing groups, in the same order as the default path (column by column, missing last inside that column):
 
