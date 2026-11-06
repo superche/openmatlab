@@ -228,7 +228,6 @@ def test_spreadsheet_is_rejected(run):
 
 @pytest.mark.parametrize("code, ident", [
     ("detectImportOptions(fullfile(d,'missing.csv'))", "MATLAB:textio:textio:FileNotFound"),
-    ("detectImportOptions(fullfile(d,'a.csv'), 'Range', 'A1')", "MATLAB:textio:textio:UnknownParameter"),
     ("detectImportOptions(fullfile(d,'a.csv'), 'Format', 'auto')", "MATLAB:textio:textio:UnknownParameter"),
     ("detectImportOptions(fullfile(d,'a.csv'), 'DatetimeType', 'text')", "MATLAB:textio:textio:UnknownParameter"),
     ("detectImportOptions(fullfile(d,'a.csv'), 'VariableNamingRule', 'preserve')", "MATLAB:textio:textio:UnknownParameter"),

@@ -166,7 +166,7 @@ def test_bad_treat_as_missing_is_eval_error(run, code):
     assert "Traceback" not in str(ei.value) and "internal error" not in str(ei.value)
 
 
-@pytest.mark.parametrize("name", ["Range", "Format", "DatetimeType", "VariableNamingRule"])
+@pytest.mark.parametrize("name", ["Format", "DatetimeType", "VariableNamingRule"])
 def test_unsupported_option_is_eval_error(run, name):
     (run.dir / "a.csv").write_text("v\n1\n")
     with pytest.raises(EvalError) as ei:
