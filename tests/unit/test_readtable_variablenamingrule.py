@@ -50,8 +50,7 @@ def test_preserve_keeps_header_text_and_modify_matches_the_default(run):
             "C = readtable(fullfile(d,'cafe.csv'), 'VariableNamingRule', 'preserve');"
             "E = readtable(fullfile(d,'cafe.csv'));"
             "k = double(strcmp(P.Properties.VariableNames{1}, 'Last Name'));"
-            "emptyDesc = double(isempty(P.Properties.VariableDescriptions) && "
-            "isempty(M.Properties.VariableDescriptions));")
+            "emptyDesc = double(isempty(P.Properties.VariableDescriptions));")
     assert _names(s, "M") == _names(s, "D")
     assert _names(s, "P") == ["Last Name", "2nd", "a/b", "Smoker (1 or 0)"]
     assert _names(s, "U") == _names(s, "P")

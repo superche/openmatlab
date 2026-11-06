@@ -38,7 +38,7 @@ The delimited-text `detectImportOptions` / `setvaropts` slice has since landed (
 | `'Format'` | #1042 |
 | `'DatetimeType'` | #1043 (delimited text; see [ISSUE-1043-readtable-datetimetype.md](ISSUE-1043-readtable-datetimetype.md)) |
 | `'VariableNamingRule','preserve'` | #1044 |
-| original headers not saved in `VariableDescriptions` | #1045 |
+| original headers saved in `VariableDescriptions` when a header is rewritten | [#1045](https://github.com/superche/openmatlab/issues/1045), [ISSUE-1045-readtable-variabledescriptions.md](ISSUE-1045-readtable-variabledescriptions.md) |
 | duration, categorical, logical, and further date formats | #1046 |
 | `writetable` `'QuoteStrings'` (accepted, no effect) | #1047 |
 | `writetable` `'WriteMode','append'` | #1048 |

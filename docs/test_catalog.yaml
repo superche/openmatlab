@@ -178,6 +178,13 @@ use_cases:
     features: [libs.table_io, libs.import_options]
     priority: p1
 
+  - id: uc.readtable_variabledescriptions
+    title: Keep the original delimited-text headers after readtable rewrites them
+    actor: scientific user
+    goal: when readtable rewrites a column header, Properties.VariableDescriptions holds every original header from that row
+    features: [libs.table_io, libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2746,6 +2753,24 @@ test_cases:
     features: [libs.table_io, libs.import_options]
     use_cases: [uc.readtable_variablenamingrule]
     impl: tests/bdd/test_readtable_variablenamingrule_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_variabledescriptions
+    kind: unit
+    title: readtable stores rewritten headers in VariableDescriptions (#1045)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_variabledescriptions]
+    impl: tests/unit/test_readtable_variabledescriptions.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_variabledescriptions_bdd
+    kind: bdd
+    title: readtable VariableDescriptions Gherkin for delimited text (#1045)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_variabledescriptions]
+    impl: tests/bdd/test_readtable_variabledescriptions_bdd.py
     status: active
     env: unit
 

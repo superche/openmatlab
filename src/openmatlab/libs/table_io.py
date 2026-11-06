@@ -30,6 +30,11 @@ a detected datetime column as char or string, following ``TextType``.
 on ``readtable`` and ``detectImportOptions`` for delimited text. ``'preserve'``
 keeps the header text, including names that are not valid identifiers. See
 ``docs/design/ISSUE-1044-readtable-variablenamingrule.md``.
+
+When that rewrite changes a header (#1045), the original column headers are
+stored as ``Properties.VariableDescriptions``, a 1-by-N cell of the file text,
+including headers that were already valid identifiers. No rewrite leaves the
+property empty. See ``docs/design/ISSUE-1045-readtable-variabledescriptions.md``.
 """
 
 from __future__ import annotations
@@ -127,11 +132,12 @@ def _names_from_header(header, ncol, rule="modify"):
     ``'modify'`` (the default) is the existing makeValidName path. ``'preserve'``
     keeps the header text, including names that are not valid identifiers.
     ``changed`` is true when that step differs from the file, before the suffix.
+    The third value is the header text for each variable, before that step.
     """
-    header = list(header) + [""] * (ncol - len(header))
+    header = (list(header) + [""] * (ncol - len(header)))[:ncol]
     names, seen, changed = [], set(), False
     pick = _valid_name if rule != "preserve" else _preserved_name
-    for k, h in enumerate(header[:ncol]):
+    for k, h in enumerate(header):
         n = pick(h, k)
         changed = changed or n != h
         base, j = n, 1
@@ -140,7 +146,15 @@ def _names_from_header(header, ncol, rule="modify"):
             j += 1
         seen.add(n)
         names.append(n)
-    return names, changed
+    return names, changed, header
+
+
+def _headers_when_modified(changed, originals):
+    """Original headers when a name was rewritten, and the warning that says so."""
+    if not changed:
+        return None
+    _warn_modified_names()
+    return list(originals)
 
 
 def _warn_modified_names():
@@ -744,18 +758,17 @@ def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime"):
 
 
 def _names_for(header, n, supplied, rule="modify"):
+    """Variable names, and original headers when a name was rewritten."""
     if supplied is not None:
         names = texts(supplied)
         if names is None or len(names) != n:
             raise _err("The VariableNames property must contain one name for each variable in the table.",
                        "MATLAB:table:IncorrectNumberOfVarNames")
-        return names
-    if header is not None:
-        names, changed = _names_from_header(list(header) + [""] * (n - len(header)), n, rule)
-        if changed:
-            _warn_modified_names()
-        return names
-    return [f"Var{k + 1}" for k in range(n)]
+        return names, None
+    if header:
+        names, changed, originals = _names_from_header(header, n, rule)
+        return names, _headers_when_modified(changed, originals)
+    return [f"Var{k + 1}" for k in range(n)], None
 
 
 def _kept_lines(name, fn, delim, hdr, rng):
@@ -900,8 +913,8 @@ def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule
     cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt, dt)
             for i in out_idx]
     picked = None if header is None else [header[i] if i < len(header) else "" for i in out_idx]
-    names = _names_for(picked, len(out_idx), supplied, rule)
-    return (TableValue(names, cols, len(data)),)
+    names, descs = _names_for(picked, len(out_idx), supplied, rule)
+    return (TableValue(names, cols, len(data), variable_descriptions=descs),)
 
 
 def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt, rule="modify"):
@@ -926,7 +939,8 @@ def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt, rule="modi
     cols = [_column_as([r[k][0] for r in detailed],
                        _dated_kind(_auto_kind([r[k] for r in detailed], tokens, tt), dt, tt), tokens)
             for k in range(width)]
-    return (TableValue(_names_for(header, width, supplied, rule), cols, len(detailed)),)
+    names, descs = _names_for(header, width, supplied, rule)
+    return (TableValue(names, cols, len(detailed), variable_descriptions=descs),)
 
 
 def _read_formatted(name, o):
@@ -975,19 +989,9 @@ def _readtable(args, *, nargout=1):
     header = rows.pop(0) if (readnames and rows) else None
     ncol = max([len(r) for r in rows] + [len(header) if header else 0])
     rows = [r + [""] * (ncol - len(r)) for r in rows]
-    if "variablenames" in o:
-        names = texts(o["variablenames"])
-        if names is None or len(names) != ncol:
-            raise _err("The VariableNames property must contain one name for each variable in the table.",
-                       "MATLAB:table:IncorrectNumberOfVarNames")
-    elif header:
-        names, changed = _names_from_header(header, ncol, rule)
-        if changed:
-            _warn_modified_names()
-    else:
-        names = [f"Var{k + 1}" for k in range(ncol)]
+    names, descs = _names_for(header, ncol, o.get("variablenames"), rule)
     cols = [_column([r[k] for r in rows], tt, tokens, dt) for k in range(ncol)]
-    return (TableValue(names, cols, len(rows)),)
+    return (TableValue(names, cols, len(rows), variable_descriptions=descs),)
 
 
 # ----------------------------------------------------------------- writing
