@@ -14,7 +14,9 @@ so ``readtable(file, detectImportOptions(file))`` matches ``readtable(file)``.
 ``Range`` (#1041) is a name-value of ``detectImportOptions`` and ``readtable``.
 The window is stored as internal line and column bounds, not as a ``Range`` or
 ``DataLines`` property. ``readtable(file, opts)`` honors those bounds.
-``Format``, ``DatetimeType``, and ``VariableNamingRule`` stay rejected.
+``readtable`` ``'Format'`` is #1042 and is not a property of this object.
+``detectImportOptions`` and ``readtable(file, opts)`` still reject ``Format``,
+``DatetimeType``, and ``VariableNamingRule``.
 """
 
 from __future__ import annotations
