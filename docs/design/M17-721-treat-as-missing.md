@@ -19,7 +19,7 @@ A matching field is ignored while the column is typed, then stored as the standa
 
 A blank field is already missing for double and datetime. Listing `''` also makes a blank or whitespace-only text field missing (`''` or `<missing>`). A column whose every field is blank or a placeholder stays double NaN, the same fallback an all-blank column already used.
 
-There is no `detectImportOptions` object. The name-value is read in `libs/table_io.py` on the existing delimited-text path (the csv module, so a `.csv` keeps empty fields). `.xls` / `.xlsx` / `.xlsm` / `.xlsb` / `.ods` still raise `MATLAB:readtable:UnsupportedFileType`.
+The name-value is read in `libs/table_io.py` on the delimited-text path (the csv module, so a `.csv` keeps empty fields). `.xls` / `.xlsx` / `.xlsm` / `.xlsb` / `.ods` still raise `MATLAB:readtable:UnsupportedFileType`. Delimited-text `detectImportOptions` / `setvaropts` is a later slice: [`ISSUE-1040-import-options.md`](ISSUE-1040-import-options.md).
 
 A value that is not text, a multi-row char matrix, or a `<missing>` string raises `MATLAB:readtable:InvalidTreatAsMissing`. Name-value options this slice does not implement (`'Range'`, `'Format'`, `'DatetimeType'`, `'VariableNamingRule'`, …) stay unknown parameters and raise `MATLAB:textio:textio:UnknownParameter`. Both are `EvalError`s.
 
@@ -29,9 +29,11 @@ This slice does not depend on #1039 and does not touch `missing_builtins.py`. Th
 
 ## Left on the backlog
 
+The delimited-text `detectImportOptions` / `setvaropts` slice has since landed ([`ISSUE-1040-import-options.md`](ISSUE-1040-import-options.md)). The other rows are unchanged.
+
 | Item | Issue |
 |---|---|
-| `detectImportOptions` / `setvaropts` | #1040 |
+| `detectImportOptions` / `setvaropts` for delimited text | [#1040](https://github.com/superche/openmatlab/issues/1040), [`ISSUE-1040-import-options.md`](ISSUE-1040-import-options.md) |
 | `'Range'` | #1041 |
 | `'Format'` | #1042 |
 | `'DatetimeType'` | #1043 |
