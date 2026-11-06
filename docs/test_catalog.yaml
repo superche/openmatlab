@@ -1828,7 +1828,7 @@ test_cases:
 
   - id: tc.table_join_group
     kind: unit
-    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts (Epic #696)
+    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts (Epic #696; #1052 KeepOneCopy/KeepKeys, row-name keys, cross-type keys; #1056 expression suffixes)
     features: [libs.table_join_group]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_table_join_group.py
@@ -1837,7 +1837,7 @@ test_cases:
 
   - id: tc.table_join_group_bdd
     kind: bdd
-    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts Gherkin scenarios (Epic #696)
+    title: joins and grouping — join, innerjoin, outerjoin, findgroups, splitapply, groupsummary, groupcounts Gherkin scenarios (Epic #696; #1052 KeepOneCopy/KeepKeys, row-name keys, cross-type keys; #1056 expression suffixes)
     features: [libs.table_join_group]
     use_cases: [uc.matrix_first_repl]
     impl: tests/bdd/test_table_join_group_bdd.py

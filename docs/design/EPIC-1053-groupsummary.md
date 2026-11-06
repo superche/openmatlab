@@ -24,4 +24,4 @@ Milestone: M18 Analysis stack deepen (epic #1063). Parent residual of #742 / epi
 
 ## Non-goals
 
-`groupcounts` on arrays, `grouptransform`, `groupfilter` (#1055). `findgroups` missing-group options and `splitapply` of a table (#1054). Join options (#1052, #1056). Calendar bin widths, datetime edges, and more than one bin scheme on one variable.
+`groupcounts` on arrays, `grouptransform`, `groupfilter` (#1055). `findgroups` missing-group options and `splitapply` of a table (#1054). Join options landed later (`docs/design/EPIC-1052-join-options.md`, #1052, #1056). Calendar bin widths, datetime edges, and more than one bin scheme on one variable.
