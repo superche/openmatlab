@@ -1,6 +1,6 @@
 # #1040: detectImportOptions and setvaropts for delimited text
 
-Parent residual of #721. Spreadsheet files stay #1049. This slice does not add `Range` (#1041), `Format` (#1042), `DatetimeType` (#1043), `VariableNamingRule` (#1044), `VariableDescriptions` (#1045), duration/categorical/logical columns (#1046), or the writetable options (#1047, #1048).
+Parent residual of #721. Spreadsheet files stay #1049. This slice does not add `Format` (#1042), `DatetimeType` (#1043), `VariableNamingRule` (#1044), `VariableDescriptions` (#1045), duration/categorical/logical columns (#1046), or the writetable options (#1047, #1048). `Range` landed later in #1041 ([ISSUE-1041-readtable-range.md](ISSUE-1041-readtable-range.md)); the rejection described below is the #1040 slice only.
 
 ## What landed
 
@@ -28,6 +28,6 @@ The two classes are ordinary Python objects, not a closed property bag. A later 
 
 `setvaropts` names other than `Type` and `TreatAsMissing` raise `MATLAB:setvaropts:UnknownParameter`. That includes `FillValue`, `QuoteRule`, and `InputFormat`. Types other than the four above raise `MATLAB:setvaropts:InvalidType` (duration, categorical, and logical are #1046).
 
-`detectImportOptions` and `readtable(file, opts)` reject `'Range'`, `'Format'`, `'DatetimeType'`, and `'VariableNamingRule'` as unknown parameters. `'FileType','spreadsheet'` and a spreadsheet extension raise `UnsupportedFileType`. A row that is wider than the options object raises `MATLAB:readtable:ExtraColumns` instead of inventing variables (`ExtraColumnsRule` is not implemented). An empty file raises `MATLAB:detectImportOptions:NoData`.
+`detectImportOptions` and `readtable(file, opts)` reject `'Format'`, `'DatetimeType'`, and `'VariableNamingRule'` as unknown parameters. `'Range'` was rejected in this slice and is accepted by #1041. `'FileType','spreadsheet'` and a spreadsheet extension raise `UnsupportedFileType`. A row that is wider than the options object raises `MATLAB:readtable:ExtraColumns` instead of inventing variables (`ExtraColumnsRule` is not implemented). An empty file raises `MATLAB:detectImportOptions:NoData`.
 
 `getvaropts`, `setvartype`, and `delimitedTextImportOptions` (the constructor that does not read a file) are not this issue.

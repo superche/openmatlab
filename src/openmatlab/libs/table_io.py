@@ -12,6 +12,10 @@ The match is exact and case-sensitive. Spreadsheet files still raise.
 
 ``detectImportOptions`` / ``setvaropts`` (#1040) build a ``DelimitedTextImportOptions``
 object and ``readtable(file, opts)`` imports with it. See ``libs/import_options.py``.
+
+``'Range'`` (#1041) selects rows and columns of a delimited text file. The same
+name-value is accepted by ``detectImportOptions``. Named ranges and spreadsheet
+files are not. See ``docs/design/ISSUE-1041-readtable-range.md``.
 """
 
 from __future__ import annotations
@@ -104,15 +108,18 @@ def _check_text_file(name, fn):
                    f"MATLAB:{fn}:UnsupportedFileType")
 
 
-def _read_rows(name, fn, delim, header_lines):
+def _text_lines(name, fn):
     _check_text_file(name, fn)
     p = Path(name).expanduser()
     if not p.is_file():
         raise _err(f"Unable to find or open '{name}'. Check the path and filename or file permissions.",
                    "MATLAB:textio:textio:FileNotFound")
-    raw = p.read_text(encoding=ENC)
-    lines = raw.splitlines()[header_lines:]
-    lines = [ln for ln in lines if ln.strip()]
+    return p, p.read_text(encoding=ENC).splitlines()
+
+
+def _read_rows(name, fn, delim, header_lines):
+    p, lines = _text_lines(name, fn)
+    lines = [ln for ln in lines[header_lines:] if ln.strip()]
     if delim is None:
         delim = "," if p.suffix.lower() == ".csv" else _sniff(lines)
     return _split_fields(lines, delim)
@@ -125,6 +132,170 @@ def _sniff(lines):
         if head and len(counts) == 1 and counts != {0}:
             return d
     return " "
+
+
+class _TextRange:
+    """One ``Range`` window. Rows and columns are 1-based; a None end reads through the data."""
+
+    def __init__(self, r1, r2, c1, c2, trim_leading, columns_only):
+        self.r1 = r1
+        self.r2 = r2
+        self.c1 = c1
+        self.c2 = c2
+        self.trim_leading = trim_leading
+        self.columns_only = columns_only
+
+
+_RANGE_FORMS = ("Range must be of the form 'A1' (cell), 'A:B' (column-select), '1:5' (row-select), "
+                "'A1:B5' (rectangle-select), [row col], or [r1 c1 r2 c2]. "
+                "Named ranges are spreadsheet-only.")
+_CELL_RE = re.compile(r"^([A-Za-z]+)(\d+)$")
+_RECT_RE = re.compile(r"^([A-Za-z]+)(\d+):([A-Za-z]+)(\d+)$")
+_COLS_RE = re.compile(r"^([A-Za-z]+):([A-Za-z]+)$")
+_ROWS_RE = re.compile(r"^(\d+):(\d+)$")
+
+
+def _range_err(msg=None):
+    raise _err(msg or _RANGE_FORMS, "MATLAB:textio:textio:InvalidRange")
+
+
+def _col_number(letters):
+    n = 0
+    for ch in letters:
+        if not ch.isalpha():
+            return None
+        n = n * 26 + (ord(ch.upper()) - 64)
+    return n or None
+
+
+def _ordered(a, b):
+    return (a, b) if a <= b else (b, a)
+
+
+def _parse_range_text(s):
+    m = _RECT_RE.match(s)
+    if m:
+        c1, r1 = _col_number(m.group(1)), int(m.group(2))
+        c2, r2 = _col_number(m.group(3)), int(m.group(4))
+        if not c1 or not c2 or r1 < 1 or r2 < 1:
+            _range_err()
+        r1, r2 = _ordered(r1, r2)
+        c1, c2 = _ordered(c1, c2)
+        return _TextRange(r1, r2, c1, c2, False, False)
+    m = _CELL_RE.match(s)
+    if m:
+        c, r = _col_number(m.group(1)), int(m.group(2))
+        if not c or r < 1:
+            _range_err()
+        return _TextRange(r, None, c, None, False, False)
+    m = _COLS_RE.match(s)
+    if m:
+        c1, c2 = _col_number(m.group(1)), _col_number(m.group(2))
+        if not c1 or not c2:
+            _range_err()
+        c1, c2 = _ordered(c1, c2)
+        return _TextRange(None, None, c1, c2, False, True)
+    m = _ROWS_RE.match(s)
+    if m:
+        r1, r2 = int(m.group(1)), int(m.group(2))
+        if r1 < 1 or r2 < 1:
+            _range_err()
+        r1, r2 = _ordered(r1, r2)
+        return _TextRange(r1, r2, 1, None, True, False)
+    _range_err()
+
+
+def _parse_range(v):
+    """``None`` is an empty range, the same as omitting ``Range``."""
+    if is_text(v):
+        s = text(v).strip()
+        return None if s == "" else _parse_range_text(s)
+    if hasattr(v, "backend_buffer") and not getattr(v, "is_object", False):
+        a = np.asarray(v.backend_buffer()).reshape(-1)
+        if a.dtype == np.bool_ or np.iscomplexobj(a) or a.size not in (2, 4):
+            _range_err()
+        try:
+            a = np.asarray(a, dtype=float)
+        except (TypeError, ValueError):
+            _range_err()
+        if not np.all(np.isfinite(a)) or np.any(a != np.trunc(a)) or np.any(a < 1):
+            _range_err()
+        nums = [int(x) for x in a]
+        if len(nums) == 2:
+            return _TextRange(nums[0], None, nums[1], None, False, False)
+        r1, c1, r2, c2 = nums
+        return _TextRange(*_ordered(r1, r2), *_ordered(c1, c2), False, False)
+    _range_err()
+
+
+def _col_has(rows, col):
+    return any(col < len(r) and r[col].strip() != "" for r in rows)
+
+
+def _resolve_cols(rows, rng):
+    width = max((len(r) for r in rows), default=0)
+    if rng.c2 is not None:
+        return rng.c1, rng.c2
+    if rng.trim_leading:
+        start = rng.c1 - 1
+        while start < width and not _col_has(rows, start):
+            start += 1
+        if start >= width:
+            return None
+        end = width - 1
+        while end > start and not _col_has(rows, end):
+            end -= 1
+        return start + 1, end + 1
+    end = width - 1
+    while end >= rng.c1 - 1 and not _col_has(rows, end):
+        end -= 1
+    if end < rng.c1 - 1:
+        return None
+    return rng.c1, end + 1
+
+
+def _slice_fields(row, c1, c2):
+    part = list(row[c1 - 1:c2])
+    need = c2 - c1 + 1
+    if len(part) < need:
+        part.extend([""] * (need - len(part)))
+    return part
+
+
+def _row_indexes(lines, rng, nheader, fn):
+    if rng.columns_only:
+        idxs = [i for i in range(max(nheader, 0), len(lines)) if lines[i].strip()]
+    else:
+        if nheader:
+            _range_err("Supplying 'NumHeaderLines' with 'Range' is only supported when the range "
+                       "value is of the form 'A:B' (column-select).")
+        if rng.r1 > len(lines):
+            _range_err(f"{fn}: range starts past the end of the file.")
+        last = len(lines) if rng.r2 is None else min(rng.r2, len(lines))
+        idxs = [i for i in range(rng.r1 - 1, last) if lines[i].strip()]
+    if not idxs:
+        _range_err(f"{fn}: the specified range contains no data.")
+    return idxs
+
+
+def _ranged_rows(name, fn, delim, nheader, rng):
+    """Content rows inside ``rng``. Blank lines are skipped, then columns are sliced.
+
+    Returns ``(rows, line_numbers, delim, c1, c2, data_end)``. Line numbers are
+    1-based. ``data_end`` is the last physical line of a bounded window, or None
+    to read through the end of the file.
+    """
+    p, lines = _text_lines(name, fn)
+    idxs = _row_indexes(lines, rng, nheader, fn)
+    kept = [lines[i] for i in idxs]
+    if delim is None:
+        delim = "," if p.suffix.lower() == ".csv" else _sniff(kept)
+    rows = _split_fields(kept, delim)
+    bounds = _resolve_cols(rows, rng)
+    if bounds is None:
+        _range_err(f"{fn}: the specified range contains no data.")
+    c1, c2 = bounds
+    return [_slice_fields(r, c1, c2) for r in rows], [i + 1 for i in idxs], delim, c1, c2, rng.r2
 
 
 def _date(s):
@@ -256,7 +427,7 @@ def _readtable(args, *, nargout=1):
 
         return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
-                                         "texttype", "filetype", "headerlines", "treatasmissing"))
+                                         "texttype", "filetype", "headerlines", "treatasmissing", "range"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
     delim = _delim(o["delimiter"]) if "delimiter" in o else None
@@ -267,7 +438,14 @@ def _readtable(args, *, nargout=1):
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
-    rows = _read_rows(name, "readtable", delim, hdr)
+    rng = None
+    if "range" in o:
+        _check_text_file(name, "readtable")
+        rng = _parse_range(o["range"])
+    if rng is None:
+        rows = _read_rows(name, "readtable", delim, hdr)
+    else:
+        rows = _ranged_rows(name, "readtable", delim, hdr, rng)[0]
     header = rows.pop(0) if (readnames and rows) else None
     ncol = max([len(r) for r in rows] + [len(header) if header else 0])
     rows = [r + [""] * (ncol - len(r)) for r in rows]

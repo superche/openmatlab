@@ -150,6 +150,13 @@ use_cases:
     features: [libs.import_options]
     priority: p1
 
+  - id: uc.readtable_range
+    title: Read a row and column window of a delimited text file
+    actor: scientific user
+    goal: readtable Range, and the same Range on detectImportOptions, selects cells of a csv or other delimited text file
+    features: [libs.table_io, libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2646,6 +2653,24 @@ test_cases:
     features: [libs.import_options]
     use_cases: [uc.import_options]
     impl: tests/bdd/test_import_options_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_range
+    kind: unit
+    title: readtable Range for delimited text (#1041)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_range]
+    impl: tests/unit/test_readtable_range.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_range_bdd
+    kind: bdd
+    title: readtable Range Gherkin for delimited text (#1041)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_range]
+    impl: tests/bdd/test_readtable_range_bdd.py
     status: active
     env: unit
 

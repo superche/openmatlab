@@ -11,18 +11,18 @@ so ``readtable(file, detectImportOptions(file))`` matches ``readtable(file)``.
 ``setvaropts`` accepts ``Type`` (double, char, string, datetime) and
 ``TreatAsMissing``. Any other variable option is an error.
 
-Spreadsheet files, ``Range``, ``Format``, ``DatetimeType``, and
-``VariableNamingRule`` stay on their own issues and are rejected here.
+``Range`` (#1041) is a name-value of ``detectImportOptions`` and ``readtable``.
+The window is stored as internal line and column bounds, not as a ``Range`` or
+``DataLines`` property. ``readtable(file, opts)`` honors those bounds.
+``Format``, ``DatetimeType``, and ``VariableNamingRule`` stay rejected.
 """
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import numpy as np
 
-from openmatlab.libs.file_builtins import ENC
 from openmatlab.libs.table_io import (
     _check_text_file,
     _column_as,
@@ -31,9 +31,13 @@ from openmatlab.libs.table_io import (
     _kind,
     _names_from_header,
     _opts,
+    _parse_range,
     _placeholders,
+    _ranged_rows,
+    _slice_fields,
     _sniff,
     _split_fields,
+    _text_lines,
     _warn_modified_names,
 )
 from openmatlab.numerics.ndarray_value import NDArrayValue
@@ -68,12 +72,18 @@ class DelimitedTextImportOptions:
     is_object = True
     is_import_options = True
 
-    def __init__(self, delimiter, variables, selected_idx, variable_names_line, data_line):
+    def __init__(self, delimiter, variables, selected_idx, variable_names_line, data_line,
+                 col_start=1, col_end=None, data_end=None):
         self.delimiter = delimiter
         self.variables = list(variables)
         self.selected_idx = list(selected_idx)
         self.variable_names_line = int(variable_names_line)
         self.data_line = int(data_line)
+        # Internal window from a Range name-value. Not properties: col_end None
+        # means every field, data_end None means through the end of the file.
+        self.col_start = int(col_start)
+        self.col_end = None if col_end is None else int(col_end)
+        self.data_end = None if data_end is None else int(data_end)
 
     def matlab_class(self):
         return "DelimitedTextImportOptions"
@@ -94,7 +104,7 @@ class DelimitedTextImportOptions:
     def copy(self):
         return DelimitedTextImportOptions(
             self.delimiter, [v.copy() for v in self.variables], self.selected_idx,
-            self.variable_names_line, self.data_line)
+            self.variable_names_line, self.data_line, self.col_start, self.col_end, self.data_end)
 
     @property
     def names(self):
@@ -275,26 +285,55 @@ def _locate(o, lines):
     raise _err("The file contains no variables.", "MATLAB:detectImportOptions:NoData")
 
 
-def _open_text(name, fn):
-    _check_text_file(name, fn)
-    p = Path(name).expanduser()
-    if not p.is_file():
-        raise _err(f"Unable to find or open '{name}'. Check the path and filename or file permissions.",
-                   "MATLAB:textio:textio:FileNotFound")
-    return p, p.read_text(encoding=ENC).splitlines()
+def _detect_ranged(name, o, tt, rng):
+    if "variablenamesline" in o:
+        raise _err("Range cannot be combined with VariableNamesLine.",
+                   "MATLAB:detectImportOptions:InconsistentOptions")
+    nheader = 0
+    if "numheaderlines" in o or "headerlines" in o:
+        nheader = _nonneg_int(o.get("numheaderlines", o.get("headerlines")), "NumHeaderLines")
+    readnames = _flag(o["readvariablenames"]) if "readvariablenames" in o else True
+    tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
+    delim = _one_delim(o["delimiter"]) if "delimiter" in o else None
+    rows, line_nos, delim, c1, c2, data_end = _ranged_rows(
+        name, "detectImportOptions", delim, nheader, rng)
+    if readnames:
+        vline = line_nos[0]
+        data_line = vline + 1
+        header, body = rows[0], rows[1:]
+    else:
+        vline, data_line = 0, line_nos[0]
+        header, body = None, rows
+    ncol = c2 - c1 + 1
+    if header is not None:
+        names, changed = _names_from_header(header, ncol)
+        if changed:
+            _warn_modified_names()
+    else:
+        names = [f"Var{k + 1}" for k in range(ncol)]
+    variables = [VariableImportOptions(nm, _kind([r[k] for r in body], tokens, tt), tokens)
+                 for k, nm in enumerate(names)]
+    return (DelimitedTextImportOptions(
+        delim, variables, list(range(ncol)), vline, data_line, c1, c2, data_end),)
 
 
 def _detect(args, *, nargout=1):
     name, o = _opts(args, "detectImportOptions", (
         "delimiter", "readvariablenames", "numheaderlines", "headerlines",
-        "texttype", "filetype", "variablenamesline", "treatasmissing"))
+        "texttype", "filetype", "variablenamesline", "treatasmissing", "range"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("detectImportOptions: only delimited text files are supported.",
                    "MATLAB:detectImportOptions:UnsupportedFileType")
     tt = text(o["texttype"]).lower() if "texttype" in o else "char"
     if tt not in ("char", "string"):
         raise _err("TextType must be 'char' or 'string'.", "MATLAB:readtable:InvalidTextType")
-    p, lines = _open_text(name, "detectImportOptions")
+    rng = None
+    if "range" in o:
+        _check_text_file(name, "detectImportOptions")
+        rng = _parse_range(o["range"])
+    if rng is not None:
+        return _detect_ranged(name, o, tt, rng)
+    p, lines = _text_lines(name, "detectImportOptions")
     vline, data_line = _locate(o, lines)
     tokens = _placeholders(o["treatasmissing"]) if "treatasmissing" in o else frozenset()
     if "delimiter" in o:
@@ -368,9 +407,12 @@ def _setvaropts(args, *, nargout=1):
 
 
 def _import(name, opts, data_line):
-    _p, lines = _open_text(name, "readtable")
-    body = [ln for ln in lines[max(data_line, 1) - 1:] if ln.strip()]
+    _p, lines = _text_lines(name, "readtable")
+    end = len(lines) if opts.data_end is None else opts.data_end
+    body = [ln for ln in lines[max(data_line, 1) - 1:end] if ln.strip()]
     rows = _split_fields(body, opts.delimiter)
+    if opts.col_end is not None:
+        rows = [_slice_fields(r, opts.col_start, opts.col_end) for r in rows]
     nvars = len(opts.variables)
     width = max((len(r) for r in rows), default=0)
     if width > nvars:
