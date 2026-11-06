@@ -16,6 +16,17 @@ def _bool(b):
     return NDArrayValue(np.array([[bool(b)]]))
 
 
+def _name_token(a, allowed):
+    """A parameter name is one row of text. A char matrix is a table variable."""
+    if not is_text(a):
+        return False
+    if not getattr(a, "is_string", False):
+        shape = getattr(a, "shape", None)
+        if shape is not None and shape[0] != 1:
+            return False
+    return text(a).lower() in allowed
+
+
 def _split_opts(args, allowed):
     """Trailing Name,Value pairs (names from ``allowed``) -> (data args, {lower name: value})."""
     args = list(args)
@@ -24,7 +35,7 @@ def _split_opts(args, allowed):
     data = []
     while i < len(args):
         a = args[i]
-        if is_text(a) and text(a).lower() in allowed and i + 1 < len(args):
+        if _name_token(a, allowed) and i + 1 < len(args):
             opts[text(a).lower()] = args[i + 1]
             i += 2
             continue

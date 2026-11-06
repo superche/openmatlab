@@ -192,6 +192,13 @@ use_cases:
     features: [libs.table_io, libs.import_options]
     priority: p1
 
+  - id: uc.writetable_quotestrings
+    title: Choose how delimited text quotes text, categories, dates, and durations
+    actor: scientific user
+    goal: writetable and writecell QuoteStrings is minimal, all, or none on a delimited text file
+    features: [libs.table_io]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2796,6 +2803,24 @@ test_cases:
     features: [libs.table_io, libs.import_options]
     use_cases: [uc.readtable_column_types]
     impl: tests/bdd/test_readtable_column_types_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.writetable_quotestrings
+    kind: unit
+    title: writetable and writecell QuoteStrings for delimited text (#1047)
+    features: [libs.table_io]
+    use_cases: [uc.writetable_quotestrings]
+    impl: tests/unit/test_writetable_quotestrings.py
+    status: active
+    env: unit
+
+  - id: tc.writetable_quotestrings_bdd
+    kind: bdd
+    title: writetable and writecell QuoteStrings Gherkin (#1047)
+    features: [libs.table_io]
+    use_cases: [uc.writetable_quotestrings]
+    impl: tests/bdd/test_writetable_quotestrings_bdd.py
     status: active
     env: unit
 
