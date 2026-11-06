@@ -44,6 +44,10 @@ property empty. See ``docs/design/ISSUE-1045-readtable-variabledescriptions.md``
 ``setvaropts`` ``Type`` also accepts ``duration``, ``categorical``, and
 ``logical``. ``%T`` / ``%{fmt}T`` and ``%C`` are the textscan specifiers for
 duration and categorical. See ``docs/design/ISSUE-1046-readtable-column-types.md``.
+
+``'QuoteStrings'`` (#1047) on delimited-text ``writetable`` and ``writecell``
+is ``'minimal'`` (default), ``'all'``, or ``'none'``. See
+``docs/design/ISSUE-1047-writetable-quotestrings.md``.
 """
 
 from __future__ import annotations
@@ -1261,10 +1265,40 @@ def _readtable(args, *, nargout=1):
 
 
 # ----------------------------------------------------------------- writing
-def _quote(s, delim):
-    if any(ch in s for ch in (delim, '"', "\n", "\r")):
-        return '"' + s.replace('"', '""') + '"'
-    return s
+_QUOTE_MODES = ("minimal", "all", "none")
+# 'all' encloses these and no others. 'minimal' looks at the characters instead.
+_QUOTED_KINDS = frozenset({"text", "categorical", "datetime", "duration"})
+
+
+def _quote_mode(name, fn, o):
+    """``minimal`` (default), ``all``, or ``none``. A spreadsheet extension is rejected first."""
+    _check_text_file(name, fn)
+    if "quotestrings" not in o:
+        return "minimal"
+    v = o["quotestrings"]
+    if not is_text(v) or text(v).lower() not in _QUOTE_MODES:
+        raise _err("QuoteStrings must be 'minimal', 'all', or 'none'.", f"MATLAB:{fn}:InvalidQuoteStrings")
+    return text(v).lower()
+
+
+def _enclose(s):
+    """Wrap a field. An embedded double quote is doubled, which ``readtable`` already reads."""
+    return '"' + s.replace('"', '""') + '"'
+
+
+class _Quoter:
+    def __init__(self, delim, mode):
+        self.delim = delim
+        self.mode = mode
+
+    def __call__(self, s, kind="text"):
+        if self.mode == "none" or kind == "missing":
+            return s
+        if self.mode == "all":
+            return _enclose(s) if kind in _QUOTED_KINDS else s
+        if any(ch in s for ch in (self.delim, '"', "\n", "\r")):
+            return _enclose(s)
+        return s
 
 
 def _num_text(x):
@@ -1278,63 +1312,77 @@ def _num_text(x):
     return "%.15g" % x
 
 
-def _cells_of(v, n, delim):
+def _cells_of(v, n, q):
     """A table variable -> n rows of field strings (one per column of the variable)."""
     from openmatlab.runtime.cell_value import CellValue
     from openmatlab.runtime.char_value import CharValue
     from openmatlab.runtime.objects import DatetimeValue, DurationValue, _java_to_datestr, datestr_format
 
     if isinstance(v, CellValue):
-        return [[_scalar_field(e, delim) for e in row] for row in v.rows]
+        return [[_scalar_field(e, q) for e in row] for row in v.rows]
     if getattr(v, "is_string", False):
         from openmatlab.runtime import string_array as sa
 
         g = np.asarray(sa.to_grid(v), dtype=object).reshape(n, -1)
-        return [["" if x is None else _quote(str(x), delim) for x in row] for row in g]
+        return [[q("", "missing") if x is None else q(str(x), "text") for x in row] for row in g]
     if getattr(v, "is_categorical", False):
-        labs = np.array(["" if s == "<undefined>" else s for s in v.labels()], dtype=object)
-        return [[_quote(x, delim) for x in row] for row in labs.reshape(v.shape, order="F")]
+        def one(s):
+            if s == "<undefined>":
+                return q("", "missing")
+            return q(s, "categorical")
+
+        labs = np.array([one(s) for s in v.labels()], dtype=object)
+        return [list(row) for row in labs.reshape(v.shape, order="F")]
     if isinstance(v, DatetimeValue):
         fmt = _java_to_datestr(v.fmt) if v.fmt else None
 
         def one(x):
             if np.isnan(x):
-                return ""
+                return q("", "missing")
             if fmt:
-                return datestr_format(x, fmt)
-            return datestr_format(x, "dd-mmm-yyyy HH:MM:SS" if x != int(x) else "dd-mmm-yyyy")
+                raw = datestr_format(x, fmt)
+            else:
+                raw = datestr_format(x, "dd-mmm-yyyy HH:MM:SS" if x != int(x) else "dd-mmm-yyyy")
+            return q(raw, "datetime")
         return [[one(x) for x in row] for row in v.v.reshape(n, -1)]
     if isinstance(v, DurationValue):
-        return [[_quote(v._like(v, np.array([[x]])).display_text().strip(), delim) for x in row]
+        return [[q(v._like(v, np.array([[x]])).display_text().strip(), "duration") for x in row]
                 for row in v.v.reshape(n, -1)]
     if isinstance(v, CharValue):
-        rows = v.text.split("\n") if v.shape[0] > 1 else [v.text]
-        return [[_quote(r, delim)] for r in rows]
+        rows = list(v.rows) if v.rows else [""]
+        return [[q(r, "text")] for r in rows]
     if hasattr(v, "backend_buffer") and not getattr(v, "is_object", False):
         a = np.asarray(v.backend_buffer())
         if np.iscomplexobj(a):
-            return [[_num_text(z.real) + ("+" if z.imag >= 0 else "-") + _num_text(abs(z.imag)) + "i" for z in row]
-                    for row in a.reshape(n, -1)]
-        return [[_num_text(x) for x in row] for row in a.reshape(n, -1)]
+            return [[q(_num_text(z.real) + ("+" if z.imag >= 0 else "-") + _num_text(abs(z.imag)) + "i", "other")
+                     for z in row] for row in a.reshape(n, -1)]
+        return [[q(_num_text(x), "other") for x in row] for row in a.reshape(n, -1)]
     raise _err(f"writetable: variables of class '{v.matlab_class()}' cannot be written to a text file.",
                "MATLAB:table:write:UnsupportedVarType")
 
 
-def _scalar_field(e, delim):
+def _scalar_field(e, q):
     from openmatlab.runtime.char_value import CharValue
 
     if getattr(e, "is_missing_value", False):
-        return ""
-    if isinstance(e, CharValue) or getattr(e, "is_string", False):
-        return _quote(text(e) if is_text(e) else "", delim)
+        return q("", "missing")
+    if getattr(e, "is_string", False):
+        from openmatlab.runtime import string_array as sa
+
+        g = np.asarray(sa.to_grid(e), dtype=object).reshape(-1)
+        if g.size == 1 and g[0] is not None:
+            return q(str(g[0]), "text")
+        return q("", "missing")
+    if isinstance(e, CharValue):
+        return q(e.text, "text")
     if hasattr(e, "backend_buffer") and not getattr(e, "is_object", False):
         a = np.asarray(e.backend_buffer()).reshape(-1)
         if a.size == 0:
-            return ""
+            return q("", "other")
         if a.size == 1:
-            return _num_text(a[0])
+            return q(_num_text(a[0]), "other")
     if getattr(e, "is_object", False) and getattr(e, "numel", lambda: 0)() == 1:
-        return _cells_of(e, 1, delim)[0][0]
+        return _cells_of(e, 1, q)[0][0]
     raise _err("Cell elements must be scalars or text to be written to a text file.",
                "MATLAB:table:write:NestedCellNotSupported")
 
@@ -1357,19 +1405,21 @@ def _writetable(args, *, nargout=1):
         name = text(rest.pop(0))
     _n, o = _opts([_cv(name)] + rest, "writetable", ("delimiter", "writevariablenames", "writerownames",
                                                        "filetype", "quotestrings"))
+    mode = _quote_mode(name, "writetable", o)
     delim = _delim(o["delimiter"]) if "delimiter" in o else ("\t" if Path(name).suffix.lower() == ".tsv" else ",")
+    q = _Quoter(delim, mode)
     hdr = _flag(o["writevariablenames"]) if "writevariablenames" in o else True
     rown = (_flag(o["writerownames"]) if "writerownames" in o else False) and bool(t.rownames)
     body = [[] for _ in range(t.nrows)]
     head = ["Row"] if rown else []
     if rown:
         for r in range(t.nrows):
-            body[r].append(_quote(t.rownames[r], delim))
+            body[r].append(q(t.rownames[r], "text"))
     for nm, v in zip(t.names, t.cols):
         if getattr(v, "is_table", False):
             raise _err("writetable: nested tables cannot be written to a text file.",
                        "MATLAB:table:write:NestedTableNotSupported")
-        cells = _cells_of(v, t.nrows, delim)
+        cells = _cells_of(v, t.nrows, q)
         w = len(cells[0]) if cells else 1
         head += [nm] if w == 1 else [f"{nm}_{k + 1}" for k in range(w)]
         for r in range(t.nrows):
@@ -1414,10 +1464,12 @@ def _writecell(args, *, nargout=1):
     rest = list(args[1:])
     name = text(rest.pop(0)) if rest and is_text(rest[0]) and len(rest) % 2 == 1 else "cell.txt"
     _n, o = _opts([_cv(name)] + rest, "writecell", ("delimiter", "filetype", "quotestrings"))
+    mode = _quote_mode(name, "writecell", o)
     delim = _delim(o["delimiter"]) if "delimiter" in o else ","
+    q = _Quoter(delim, mode)
     if getattr(c, "nd", False):
         raise _err("writecell: only 2-D cell arrays can be written.", "MATLAB:writecell:NDCell")
-    _write(name, "writecell", [[_scalar_field(e, delim) for e in row] for row in c.rows], delim)
+    _write(name, "writecell", [[_scalar_field(e, q) for e in row] for row in c.rows], delim)
     return ()
 
 
