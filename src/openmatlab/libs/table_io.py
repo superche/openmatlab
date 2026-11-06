@@ -25,6 +25,11 @@ for delimited text. See ``docs/design/ISSUE-1042-readtable-format.md``.
 a detected datetime column as char or string, following ``TextType``.
 ``'exceldatenum'`` is rejected for text. See
 ``docs/design/ISSUE-1043-readtable-datetimetype.md``.
+
+``'VariableNamingRule'`` (#1044) is ``'modify'`` (default) or ``'preserve'``
+on ``readtable`` and ``detectImportOptions`` for delimited text. ``'preserve'``
+keeps the header text, including names that are not valid identifiers. See
+``docs/design/ISSUE-1044-readtable-variablenamingrule.md``.
 """
 
 from __future__ import annotations
@@ -86,12 +91,48 @@ def _split_fields(lines, delim):
     return [list(r) for r in csv.reader(io.StringIO("\n".join(lines)), delimiter=delim)]
 
 
-def _names_from_header(header, ncol):
-    """makeValidName headers, with ``_1`` suffixes for duplicates. ``changed`` is true when any name differs from the file."""
+_NAMING_RULES = ("modify", "preserve")
+
+
+def _naming_rule_value(v):
+    """``'modify'`` or ``'preserve'``. Any other value is an ``EvalError``."""
+    if not is_text(v) or text(v).lower() not in _NAMING_RULES:
+        raise _err("VariableNamingRule must be 'modify' or 'preserve'.",
+                   "MATLAB:readtable:InvalidVariableNamingRule")
+    return text(v).lower()
+
+
+def _naming_rule(o):
+    if "variablenamingrule" not in o:
+        return "modify"
+    return _naming_rule_value(o["variablenamingrule"])
+
+
+def _naming_rule_for(name, fn, o):
+    """Extension check first, so a spreadsheet still raises before the value is judged."""
+    if "variablenamingrule" not in o:
+        return "modify"
+    _check_text_file(name, fn)
+    return _naming_rule_value(o["variablenamingrule"])
+
+
+def _preserved_name(s, k):
+    """Header text as the variable name. A blank header cannot be a table name."""
+    return s if s else f"Var{k + 1}"
+
+
+def _names_from_header(header, ncol, rule="modify"):
+    """Headers as variable names, with ``_1`` suffixes for duplicates.
+
+    ``'modify'`` (the default) is the existing makeValidName path. ``'preserve'``
+    keeps the header text, including names that are not valid identifiers.
+    ``changed`` is true when that step differs from the file, before the suffix.
+    """
     header = list(header) + [""] * (ncol - len(header))
     names, seen, changed = [], set(), False
+    pick = _valid_name if rule != "preserve" else _preserved_name
     for k, h in enumerate(header[:ncol]):
-        n = _valid_name(h, k)
+        n = pick(h, k)
         changed = changed or n != h
         base, j = n, 1
         while n in seen:
@@ -702,7 +743,7 @@ def _convert_fields(fields, conv, tokens, text_type, datetime_type="datetime"):
     return _column_as(fields, "double", tokens)
 
 
-def _names_for(header, n, supplied):
+def _names_for(header, n, supplied, rule="modify"):
     if supplied is not None:
         names = texts(supplied)
         if names is None or len(names) != n:
@@ -710,7 +751,7 @@ def _names_for(header, n, supplied):
                        "MATLAB:table:IncorrectNumberOfVarNames")
         return names
     if header is not None:
-        names, changed = _names_from_header(list(header) + [""] * (n - len(header)), n)
+        names, changed = _names_from_header(list(header) + [""] * (n - len(header)), n, rule)
         if changed:
             _warn_modified_names()
         return names
@@ -850,7 +891,7 @@ def _window_rows(rows, rng):
     return [_slice_fields(r, *bounds) for r in rows]
 
 
-def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt):
+def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule="modify"):
     rows = _window_rows(_split_fields(kept, delim), rng)
     header = rows.pop(0) if (readnames and rows) else None
     nspec = len(spec)
@@ -859,11 +900,11 @@ def _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt):
     cols = [_convert_fields([_field_text(r[i], spec[i]) for r in data], spec[i], tokens, tt, dt)
             for i in out_idx]
     picked = None if header is None else [header[i] if i < len(header) else "" for i in out_idx]
-    names = _names_for(picked, len(out_idx), supplied)
+    names = _names_for(picked, len(out_idx), supplied, rule)
     return (TableValue(names, cols, len(data)),)
 
 
-def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt):
+def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt, rule="modify"):
     """``'Format','auto'``. A blank or a quoted field forces text. Unequal field counts are an error.
 
     ``12abc`` stays one field. Splitting the numeric prefix off the trailing text would insert a
@@ -885,19 +926,20 @@ def _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt):
     cols = [_column_as([r[k][0] for r in detailed],
                        _dated_kind(_auto_kind([r[k] for r in detailed], tokens, tt), dt, tt), tokens)
             for k in range(width)]
-    return (TableValue(_names_for(header, width, supplied), cols, len(detailed)),)
+    return (TableValue(_names_for(header, width, supplied, rule), cols, len(detailed)),)
 
 
 def _read_formatted(name, o):
     """``readtable(file, 'Format', ...)`` for delimited text. The file is not opened for a spreadsheet extension."""
     _check_text_file(name, "readtable")
+    rule = _naming_rule(o)
     spec = _format_value(o["format"])
     delim, hdr, readnames, tt, tokens, rng, supplied = _read_opts(o)
     dt = _datetime_type(o)
     kept, delim = _kept_lines(name, "readtable", delim, hdr, rng)
     if spec == "auto":
-        return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt)
-    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt)
+        return _read_auto(kept, delim, rng, readnames, tt, tokens, supplied, dt, rule)
+    return _read_spec(kept, delim, rng, spec, readnames, tt, tokens, supplied, dt, rule)
 
 
 def _readtable(args, *, nargout=1):
@@ -907,11 +949,12 @@ def _readtable(args, *, nargout=1):
         return read_with_options(args)
     name, o = _opts(args, "readtable", ("delimiter", "readvariablenames", "variablenames", "numheaderlines",
                                          "texttype", "filetype", "headerlines", "treatasmissing", "range", "format",
-                                         "datetimetype"))
+                                         "datetimetype", "variablenamingrule"))
     if "filetype" in o and text(o["filetype"]).lower() not in ("text", "delimitedtext"):
         raise _err("readtable: only 'FileType','text' is supported.", "MATLAB:readtable:UnsupportedFileType")
     if "format" in o:
         return _read_formatted(name, o)
+    rule = _naming_rule_for(name, "readtable", o)
     delim = _delim(o["delimiter"]) if "delimiter" in o else None
     hdr = int(np.asarray(o.get("numheaderlines", o.get("headerlines")).backend_buffer()).reshape(-1)[0]) \
         if ("numheaderlines" in o or "headerlines" in o) else 0
@@ -938,7 +981,7 @@ def _readtable(args, *, nargout=1):
             raise _err("The VariableNames property must contain one name for each variable in the table.",
                        "MATLAB:table:IncorrectNumberOfVarNames")
     elif header:
-        names, changed = _names_from_header(header, ncol)
+        names, changed = _names_from_header(header, ncol, rule)
         if changed:
             _warn_modified_names()
     else:

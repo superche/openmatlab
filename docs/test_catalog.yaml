@@ -171,6 +171,13 @@ use_cases:
     features: [libs.table_io, libs.import_options]
     priority: p1
 
+  - id: uc.readtable_variablenamingrule
+    title: Choose whether delimited text keeps original variable names
+    actor: scientific user
+    goal: readtable and detectImportOptions VariableNamingRule modify or preserve headers, including names that are not valid identifiers
+    features: [libs.table_io, libs.import_options]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2721,6 +2728,24 @@ test_cases:
     features: [libs.table_io, libs.import_options]
     use_cases: [uc.readtable_datetimetype]
     impl: tests/bdd/test_readtable_datetimetype_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_variablenamingrule
+    kind: unit
+    title: readtable and detectImportOptions VariableNamingRule for delimited text (#1044)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_variablenamingrule]
+    impl: tests/unit/test_readtable_variablenamingrule.py
+    status: active
+    env: unit
+
+  - id: tc.readtable_variablenamingrule_bdd
+    kind: bdd
+    title: readtable VariableNamingRule Gherkin for delimited text (#1044)
+    features: [libs.table_io, libs.import_options]
+    use_cases: [uc.readtable_variablenamingrule]
+    impl: tests/bdd/test_readtable_variablenamingrule_bdd.py
     status: active
     env: unit
 

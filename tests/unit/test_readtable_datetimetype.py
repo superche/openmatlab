@@ -197,7 +197,4 @@ def test_spreadsheet_is_rejected_before_the_file_is_opened(run):
     with pytest.raises(EvalError) as ei:
         run("opts.DatetimeType = 'text';")
     assert ei.value.identifier == "MATLAB:noPublicFieldForClass"
-    with pytest.raises(EvalError) as ei:
-        run("readtable(fullfile(d,'a.csv'), 'VariableNamingRule', 'preserve')")
-    assert ei.value.identifier == "MATLAB:textio:textio:UnknownParameter"
     assert s.workspace.get("opts").matlab_class() == "DelimitedTextImportOptions"

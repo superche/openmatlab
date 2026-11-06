@@ -164,14 +164,3 @@ def test_bad_treat_as_missing_is_eval_error(run, code):
         run(code)
     assert ei.value.identifier == "MATLAB:readtable:InvalidTreatAsMissing"
     assert "Traceback" not in str(ei.value) and "internal error" not in str(ei.value)
-
-
-# 'Format' is #1042 and 'DatetimeType' is #1043. This name stays unknown.
-@pytest.mark.parametrize("name", ["VariableNamingRule"])
-def test_unsupported_option_is_eval_error(run, name):
-    (run.dir / "a.csv").write_text("v\n1\n")
-    with pytest.raises(EvalError) as ei:
-        run(f"readtable(fullfile(d,'a.csv'), '{name}', 'x')")
-    assert name in str(ei.value)
-    assert "Traceback" not in str(ei.value) and "internal error" not in str(ei.value)
-    assert ei.value.identifier == "MATLAB:textio:textio:UnknownParameter"
