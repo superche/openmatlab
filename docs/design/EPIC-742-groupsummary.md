@@ -22,10 +22,10 @@ With the flag on, the output groups are the Cartesian product of each grouping v
 
 Columns stay in the existing order: grouping variables, `GroupCount`, then for each data variable the methods in the order given (`mean_x`, `sum_x`, `mean_y`, `sum_y`). A single function handle is still `fun1_<var>`.
 
-A bad flag, an unknown method, group bins, `'VariableNamingRule'`, `'IncludedEdge'`, a non-table input, and a multi-column grouping variable with this flag raise `EvalError`. A 0-row numeric table has no groups. A 0-row categorical with the flag on returns one row per category.
+A bad flag and an unknown method raise `EvalError`. A 0-row numeric table has no groups. A 0-row categorical with the flag on returns one row per category. Group bins, array input, `'VariableNamingRule'`, and a multi-column grouping variable are #1053 (`docs/design/EPIC-1053-groupsummary.md`). `'IncludedEdge'` without bins is still an error.
 
 One existing assertion had to move. `test_errors_are_matlab_errors` listed `IncludeEmptyGroups', true` on a plain numeric group variable, which used to be the unsupported error. MATLAB accepts that call and adds no rows. The success result is `test_plain_numeric_group_adds_no_rows`. No other existing expected value changed.
 
 ## Non-goals
 
-Group bins. `groupsummary` on arrays. Multi-output function methods. `groupcounts` empty groups. `grouptransform` / `groupfilter`. `findgroups` missing-group options. `splitapply` of a table-valued function. Join key options. `'VariableNamingRule'`. Char-matrix blanks as missing group keys (#1058).
+`groupcounts` empty groups. `grouptransform` / `groupfilter`. `findgroups` missing-group options. `splitapply` of a table-valued function. Join key options. Char-matrix blanks as missing group keys (#1058). The #1053 slice (bins, array input, `'VariableNamingRule'`, multi-output methods) is `docs/design/EPIC-1053-groupsummary.md`.

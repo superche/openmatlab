@@ -311,12 +311,11 @@ def test_counts_only_when_no_method_is_given():
     "groupsummary(table([1;1],[2;3]), 'Var1', 'numel')",
     "groupsummary(table([1;1],[2;3]), 'Var1', 'sum', 'IncludeEmptyGroups', 'yes')",
     "groupsummary(table([1;1],[2;3]), 'Var1', 'sum', 'IncludeEmptyGroups', [1 0])",
-    "groupsummary(table([1;1],[2;3]), 'Var1', 'mean', 'Var2', 'VariableNamingRule', 'noprefix')",
     "groupsummary(table([1;1],[2;3]), 'Var1', 'mean', 'Var2', 'IncludedEdge', 'right')",
-    "groupsummary(table([1;1;2],[4;5;6]), 'Var1', [0 10], 'sum', 'Var2')",
-    "T = table([1 2; 3 4], [5;6], 'VariableNames', {'g','x'}); groupsummary(T, 'g', 'sum', 'IncludeEmptyGroups', true)",
+    "groupsummary(table([1;1],[2;3]), 'Var1', 'mean', 'Var2', 'VariableNamingRule', 'fancy')",
+    "groupsummary(table(datetime(2020,1,1), 1), 'Var1', 'year', 'sum')",
     "groupcounts(table([1;1;2],[4;5;6]), 'Var1', 'IncludeEmptyGroups', true)",
-    "groupsummary(5, [1;1], 'sum')",
+    "groupsummary([1;2], [1], 'sum')",
 ])
 def test_unsupported_groupsummary_inputs_are_matlab_errors(code):
     with pytest.raises(EvalError):
