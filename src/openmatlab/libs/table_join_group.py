@@ -20,6 +20,12 @@ A multi-column grouping variable is one key — the whole row — so the flag do
 Cartesian product of its columns (#1053). Numeric bin edges, a positive bin count, and the
 datetime schemes whose labels the documentation names (``dayname``, ``monthname``, and the
 ``*of*`` units) run before that grouping. Array input returns ``[B,BG,BC]``.
+
+``join`` accepts ``'KeepOneCopy'`` (also ``innerjoin`` / ``outerjoin``) and ``'KeepKeys'``.
+``'Keys','RowNames'`` (and ``'Row'``) matches row names. Cellstr and string keys compare as
+text; double and integer keys compare as numbers (#1052). A duplicate non-key name is
+suffixed with the input's variable name, or ``_left`` / ``_right`` when that input is an
+expression (#1056).
 """
 
 from __future__ import annotations
@@ -96,16 +102,51 @@ def _arg_names(k):
     return _caller_arg_names(k)
 
 
+# ``None`` in a key list is the row-name vector (``'Row'`` / ``'RowNames'``), not a variable.
+_ROW_KEY = None
+
+
+def _is_row_key_name(name):
+    return name in ("Row", "RowNames")
+
+
+def _key_label(T, item):
+    return "Row" if item is _ROW_KEY else T.names[item]
+
+
+def _as_keys(T, spec, fn):
+    """Variable indices, with ``None`` where the spec names the row-name vector."""
+    names = texts(spec)
+    if names is None:
+        return T.var_sel(spec)
+    out = []
+    for s in names:
+        if _is_row_key_name(s):
+            if not T.rownames:
+                raise _err(f"{fn}: the table has no row names to use as a key.", f"MATLAB:table:{fn}:NoRowNames")
+            out.append(_ROW_KEY)
+        else:
+            out.append(T.var_index(s))
+    return out
+
+
 def _key_spec(A, B, opts, fn):
     if "keys" in opts and ("leftkeys" in opts or "rightkeys" in opts):
         raise _err(f"{fn}: specify 'Keys', or 'LeftKeys' and 'RightKeys', not both.", f"MATLAB:table:{fn}:ConflictingKeys")
     if "keys" in opts:
-        lk = A.var_sel(opts["keys"])
-        rk = [B.var_index(A.names[i]) for i in lk]
+        lk = _as_keys(A, opts["keys"], fn)
+        rk = []
+        for item in lk:
+            if item is _ROW_KEY:
+                if not B.rownames:
+                    raise _err(f"{fn}: the table has no row names to use as a key.", f"MATLAB:table:{fn}:NoRowNames")
+                rk.append(_ROW_KEY)
+            else:
+                rk.append(B.var_index(A.names[item]))
     elif "leftkeys" in opts or "rightkeys" in opts:
         if not ("leftkeys" in opts and "rightkeys" in opts):
             raise _err(f"{fn}: 'LeftKeys' and 'RightKeys' must be given together.", f"MATLAB:table:{fn}:MissingKeys")
-        lk, rk = A.var_sel(opts["leftkeys"]), B.var_sel(opts["rightkeys"])
+        lk, rk = _as_keys(A, opts["leftkeys"], fn), _as_keys(B, opts["rightkeys"], fn)
     else:
         common = [n for n in A.names if n in B.names]
         if not common:
@@ -118,17 +159,27 @@ def _key_spec(A, B, opts, fn):
     return lk, rk
 
 
+def _row_name_col(T):
+    from openmatlab.runtime.table_value import cellstr_col
+
+    return cellstr_col(T.rownames)
+
+
+def _key_col(T, item):
+    return _row_name_col(T) if item is _ROW_KEY else T.cols[item]
+
+
 def _keys_as(T, idx, names):
-    return TableValue(list(names), [T.cols[i] for i in idx], T.nrows)
+    return TableValue(list(names), [_key_col(T, i) for i in idx], T.nrows)
 
 
 def _match(A, B, lk, rk, fn):
     knames = [f"k{j}" for j in range(len(lk))]
     KA, KB = _keys_as(A, lk, knames), _keys_as(B, rk, knames)
     for j in range(len(lk)):
-        if _row_key_kind(A.cols[lk[j]]) != _row_key_kind(B.cols[rk[j]]):
-            raise _err(f"{fn}: the key variables '{A.names[lk[j]]}' and '{B.names[rk[j]]}' have incompatible types.",
-                       f"MATLAB:table:{fn}:KeyTypeMismatch")
+        if _row_key_kind(KA.cols[j]) != _row_key_kind(KB.cols[j]):
+            raise _err(f"{fn}: the key variables '{_key_label(A, lk[j])}' and '{_key_label(B, rk[j])}' "
+                       "have incompatible types.", f"MATLAB:table:{fn}:KeyTypeMismatch")
     return KA, KB, _row_keys(KA), _row_keys(KB)
 
 
@@ -148,10 +199,53 @@ def _row_key_kind(c):
     return "num"
 
 
+def _text_key_col(c, n):
+    """One string column per cellstr key, so it can be concatenated with a string key."""
+    from openmatlab.runtime import string_array as sa
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    if getattr(c, "is_string", False) or n == 0 or not isinstance(c, CellValue):
+        return c
+    w = max(c.shape[1], 1)
+    grid = np.empty((n, w), dtype=object)
+    for r in range(n):
+        for j in range(w):
+            e = c.rows[r][j]
+            grid[r, j] = e.text if isinstance(e, CharValue) else ""
+    return sa.make(grid)
+
+
+def _same_text_storage(a, b):
+    if getattr(a, "is_string", False) or getattr(b, "is_string", False):
+        return getattr(a, "is_string", False) and getattr(b, "is_string", False)
+    return type(a) is type(b)
+
+
+def _align_text_keys(KA, KB):
+    """Homogenize mixed text keys before the sort concatenates them.
+
+    Double and integer keys already concatenate. Cellstr and string do not:
+    the combined column is no longer a cell array of character vectors, and
+    ranking rejects it. Matching itself already compares both as text.
+    """
+    cols_a, cols_b, changed = [], [], False
+    for ca, cb in zip(KA.cols, KB.cols):
+        if _row_key_kind(ca) == "text" and not _same_text_storage(ca, cb):
+            ca, cb = _text_key_col(ca, KA.nrows), _text_key_col(cb, KB.nrows)
+            changed = True
+        cols_a.append(ca)
+        cols_b.append(cb)
+    if not changed:
+        return KA, KB
+    return TableValue(list(KA.names), cols_a, KA.nrows), TableValue(list(KB.names), cols_b, KB.nrows)
+
+
 def _sorted_pairs(pairs, KA, KB):
     """Sort (ia, ib) pairs by their key values (MATLAB orders join output by key)."""
     if not pairs:
         return pairs
+    KA, KB = _align_text_keys(KA, KB)
     both = _ev().concat_values([[KA], [KB]])
     ranks = [r for c in both.cols for r in rank_columns(c, both.nrows)]
     src = np.array([ia if ia >= 0 else KA.nrows + ib for ia, ib in pairs])
@@ -168,8 +262,18 @@ def _unique_names(names):
 
 
 def _suffix_names(left, right, an, bn, rename_all=()):
-    sa = "_" + (an or "left")
-    sb = "_" + (bn or "right")
+    """Suffix a name that occurs on both sides.
+
+    The suffix is the caller's variable name (``Var1_A`` beside ``Var1_B`` in
+    the ``join`` examples). An expression has no name (``inputname`` is empty),
+    so it uses ``left`` or ``right``. When both suffixes are the same string,
+    as in ``join(T, T)``, the left one gains ``_1``.
+    """
+    sa = an or "left"
+    sb = bn or "right"
+    if sa == sb:
+        sa = sa + "_1"
+    sa, sb = "_" + sa, "_" + sb
     L, R = list(left), list(right)
     for i, n in enumerate(L):
         if n in R or n in rename_all:
@@ -180,12 +284,75 @@ def _suffix_names(left, right, an, bn, rename_all=()):
     return L, R
 
 
+def _kept_names(A, B, opts, fn):
+    """``'KeepOneCopy'`` names: drop the right-hand copy of each."""
+    if "keeponecopy" not in opts:
+        return set()
+    names = texts(opts["keeponecopy"])
+    if not names:
+        raise _err(f"{fn}: 'KeepOneCopy' must name at least one variable.", f"MATLAB:table:{fn}:KeepOneCopy")
+    for n in names:
+        if n not in A.names or n not in B.names:
+            raise _err(f"{fn}: 'KeepOneCopy' variable '{n}' must occur in both tables.",
+                       f"MATLAB:table:{fn}:KeepOneCopy")
+    return set(names)
+
+
+def _drop_kept(idx, T, kept):
+    return [j for j in idx if T.names[j] not in kept] if kept else list(idx)
+
+
+def _nonkey(idx, keys):
+    ban = {i for i in keys if i is not _ROW_KEY}
+    return [j for j in idx if j not in ban]
+
+
+def _result_rownames(A, B, lk, rk, ia, ib):
+    """Row names of a join whose key list uses the row-name vector.
+
+    ``join`` keeps the left table's row names itself. ``innerjoin`` and
+    ``outerjoin`` attach them only when row names are a key: the left name
+    when that row is present, otherwise the right name.
+    """
+    left = any(i is _ROW_KEY for i in lk)
+    right = any(i is _ROW_KEY for i in rk)
+    if not left and not right:
+        return None
+    out = []
+    for i, j in zip(np.asarray(ia).tolist(), np.asarray(ib).tolist()):
+        if left and i >= 0:
+            out.append(A.rownames[i])
+        elif right and j >= 0:
+            out.append(B.rownames[j])
+        else:
+            return None
+    return out
+
+
+def _cast_text_fill(dst, src):
+    """Write a text key into ``dst``'s storage when the other side differs."""
+    if _row_key_kind(dst) != "text" or _row_key_kind(src) != "text" or _same_text_storage(dst, src):
+        return src
+    n = height_of(src)
+    if getattr(dst, "is_string", False):
+        return _text_key_col(src, n)
+    from openmatlab.runtime import string_array as sa
+    from openmatlab.runtime.cell_value import CellValue
+    from openmatlab.runtime.char_value import CharValue
+
+    g = np.asarray(sa.to_grid(src), dtype=object).reshape(n, -1)
+    rows = tuple(tuple(CharValue("" if g[r, j] is None else str(g[r, j])) for j in range(g.shape[1]))
+                 for r in range(n))
+    return CellValue(rows=rows) if rows else CellValue(rows=())
+
+
 def _vars_opt(T, opts, key, default):
     return T.var_sel(opts[key]) if key in opts else default
 
 
 def _innerjoin(args, *, nargout=1):
-    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables"), "innerjoin")
+    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables", "keeponecopy"),
+                       "innerjoin")
     if len(data) != 2 or not (_is_table(data[0]) and _is_table(data[1])):
         raise _err("innerjoin: the first two inputs must be tables.", "MATLAB:table:innerjoin:InvalidInput")
     A, B = data
@@ -197,19 +364,20 @@ def _innerjoin(args, *, nargout=1):
         pos.setdefault(k, []).append(j)
     pairs = [(i, j) for i, k in enumerate(ka) for j in pos.get(k, [])]
     pairs = _sorted_pairs(pairs, KA, KB)
+    kept = _kept_names(A, B, opts, "innerjoin")
     lv = _vars_opt(A, opts, "leftvariables", list(range(len(A.names))))
-    rv = _vars_opt(B, opts, "rightvariables", [j for j in range(len(B.names)) if j not in rk])
+    rv = _drop_kept(_vars_opt(B, opts, "rightvariables", _nonkey(range(len(B.names)), rk)), B, kept)
     ia = np.array([p[0] for p in pairs], dtype=int)
     ib = np.array([p[1] for p in pairs], dtype=int)
     Ln, Rn = _suffix_names([A.names[i] for i in lv], [B.names[j] for j in rv], an, bn)
     cols = [take_filled(A.cols[i], A.nrows, ia) for i in lv] + [take_filled(B.cols[j], B.nrows, ib) for j in rv]
-    out = TableValue(_unique_names(Ln + Rn), cols, len(pairs))
+    out = TableValue(_unique_names(Ln + Rn), cols, len(pairs), _result_rownames(A, B, lk, rk, ia, ib))
     return (out, _num_col(ia + 1), _num_col(ib + 1))[:max(1, nargout)]
 
 
 def _outerjoin(args, *, nargout=1):
-    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables", "type", "mergekeys"),
-                       "outerjoin")
+    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables", "type", "mergekeys",
+                              "keeponecopy"), "outerjoin")
     if len(data) != 2 or not (_is_table(data[0]) and _is_table(data[1])):
         raise _err("outerjoin: the first two inputs must be tables.", "MATLAB:table:outerjoin:InvalidInput")
     A, B = data
@@ -238,15 +406,20 @@ def _outerjoin(args, *, nargout=1):
     pairs = _sorted_pairs(pairs, KA, KB)
     ia = np.array([p[0] for p in pairs], dtype=int)
     ib = np.array([p[1] for p in pairs], dtype=int)
+    kept = _kept_names(A, B, opts, "outerjoin")
     lv = _vars_opt(A, opts, "leftvariables", list(range(len(A.names))))
-    rv = _vars_opt(B, opts, "rightvariables", list(range(len(B.names))))
+    rv = _drop_kept(_vars_opt(B, opts, "rightvariables", list(range(len(B.names)))), B, kept)
     names, cols = [], []
+    # A row-name key is not a variable. Only variable/variable pairs become one merged column.
+    var_pairs = [(i, j) for i, j in zip(lk, rk) if i is not _ROW_KEY and j is not _ROW_KEY]
     if merge:
-        lv_nokey = [i for i in lv if i not in lk]
-        rv_nokey = [j for j in rv if j not in rk]
-        key_names = [A.names[i] if A.names[i] == B.names[j] else f"{A.names[i]}_{B.names[j]}" for i, j in zip(lk, rk)]
+        left_keys = {i for i, _j in var_pairs}
+        right_keys = {j for _i, j in var_pairs}
+        lv_nokey = [i for i in lv if i not in left_keys]
+        rv_nokey = [j for j in rv if j not in right_keys]
+        key_names = [A.names[i] if A.names[i] == B.names[j] else f"{A.names[i]}_{B.names[j]}" for i, j in var_pairs]
         key_cols = []
-        for i, j in zip(lk, rk):
+        for i, j in var_pairs:
             from_a = take_filled(A.cols[i], A.nrows, ia)
             from_b = take_filled(B.cols[j], B.nrows, ib)
             need_b = np.flatnonzero(ia < 0)
@@ -254,7 +427,7 @@ def _outerjoin(args, *, nargout=1):
                 from openmatlab.runtime.table_subs import ix_asgn
                 from openmatlab.runtime.table_value import _idx_value
 
-                sub = _col_rows(from_b, need_b)
+                sub = _cast_text_fill(from_a, _col_rows(from_b, need_b))
                 from_a = ix_asgn(_ev(), from_a, [_idx_value(need_b), None], sub)
             key_cols.append(from_a)
         Ln, Rn = _suffix_names([A.names[i] for i in lv_nokey], [B.names[j] for j in rv_nokey], an, bn)
@@ -265,12 +438,13 @@ def _outerjoin(args, *, nargout=1):
         Ln, Rn = _suffix_names([A.names[i] for i in lv], [B.names[j] for j in rv], an, bn)
         names = Ln + Rn
         cols = [take_filled(A.cols[i], A.nrows, ia) for i in lv] + [take_filled(B.cols[j], B.nrows, ib) for j in rv]
-    out = TableValue(_unique_names(names), cols, len(pairs))
+    out = TableValue(_unique_names(names), cols, len(pairs), _result_rownames(A, B, lk, rk, ia, ib))
     return (out, _num_col(np.where(ia < 0, 0, ia + 1)), _num_col(np.where(ib < 0, 0, ib + 1)))[:max(1, nargout)]
 
 
 def _join(args, *, nargout=1):
-    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables", "keepkeys"), "join")
+    data, opts = _opts(args, ("keys", "leftkeys", "rightkeys", "leftvariables", "rightvariables", "keepkeys",
+                              "keeponecopy"), "join")
     if len(data) != 2 or not (_is_table(data[0]) and _is_table(data[1])):
         raise _err("join: the first two inputs must be tables.", "MATLAB:table:join:InvalidInput")
     A, B = data
@@ -290,8 +464,11 @@ def _join(args, *, nargout=1):
                        "innerjoin or outerjoin to drop or fill unmatched rows.", "MATLAB:table:join:LeftKeyValueNotFound")
         ib.append(pos[k])
     ib = np.array(ib, dtype=int)
+    kept = _kept_names(A, B, opts, "join")
+    # Default right variables omit the key. 'KeepKeys' keeps those columns too.
+    right_default = list(range(len(B.names))) if _flag(opts, "keepkeys", False, "join") else _nonkey(range(len(B.names)), rk)
     lv = _vars_opt(A, opts, "leftvariables", list(range(len(A.names))))
-    rv = _vars_opt(B, opts, "rightvariables", [j for j in range(len(B.names)) if j not in rk])
+    rv = _drop_kept(_vars_opt(B, opts, "rightvariables", right_default), B, kept)
     Ln, Rn = _suffix_names([A.names[i] for i in lv], [B.names[j] for j in rv], an, bn)
     cols = [A.cols[i] for i in lv] + [take_filled(B.cols[j], B.nrows, ib) for j in rv]
     out = TableValue(_unique_names(Ln + Rn), cols, A.nrows, A.rownames)
@@ -491,7 +668,8 @@ def _numeric_data(c, name, fn):
     return np.asarray(c.backend_buffer()).astype(float)
 
 
-_FLAG_LABEL = {"includemissinggroups": "IncludeMissingGroups", "includeemptygroups": "IncludeEmptyGroups"}
+_FLAG_LABEL = {"includemissinggroups": "IncludeMissingGroups", "includeemptygroups": "IncludeEmptyGroups",
+               "keepkeys": "KeepKeys"}
 
 
 def _flag(opts, key, default, fn):

@@ -33,3 +33,14 @@ def row_eq(ctx, name, vals):
     expected = [float(x.strip()) for x in vals.split(",")]
     got = np.asarray(ctx["session"].workspace.get(name).backend_buffer()).reshape(-1)
     assert list(got) == expected
+
+
+@then(parsers.parse('variable "{name}" equals texts [{vals}]'))
+def texts_eq(ctx, name, vals):
+    expected = [x.strip() for x in vals.split(",")]
+    got = ctx["session"].workspace.get(name)
+    if len(got.rows) == 1:
+        actual = [c.text for c in got.rows[0]]
+    else:
+        actual = [row[0].text for row in got.rows]
+    assert actual == expected
