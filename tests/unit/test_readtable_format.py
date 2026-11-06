@@ -260,7 +260,6 @@ def test_empty_auto_and_bad_format_are_eval_errors(run):
         ("readtable(fullfile(d,'a.csv'), 'Range', 'A1:B1', 'HeaderLines', 1, 'Format', '%f')",
          "MATLAB:textio:textio:InvalidRange"),
         ("readtable(fullfile(d,'a.csv'), 'MultipleDelimsAsOne', 1)", "MATLAB:textio:textio:UnknownParameter"),
-        ("readtable(fullfile(d,'a.csv'), 'DatetimeType', 'text')", "MATLAB:textio:textio:UnknownParameter"),
     ]
     for code, ident in cases:
         with pytest.raises(EvalError) as ei:

@@ -166,8 +166,8 @@ def test_bad_treat_as_missing_is_eval_error(run, code):
     assert "Traceback" not in str(ei.value) and "internal error" not in str(ei.value)
 
 
-# 'Format' is a readtable parameter (#1042). These two stay unknown.
-@pytest.mark.parametrize("name", ["DatetimeType", "VariableNamingRule"])
+# 'Format' is #1042 and 'DatetimeType' is #1043. This name stays unknown.
+@pytest.mark.parametrize("name", ["VariableNamingRule"])
 def test_unsupported_option_is_eval_error(run, name):
     (run.dir / "a.csv").write_text("v\n1\n")
     with pytest.raises(EvalError) as ei:

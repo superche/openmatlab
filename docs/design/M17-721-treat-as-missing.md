@@ -21,7 +21,7 @@ A blank field is already missing for double and datetime. Listing `''` also make
 
 The name-value is read in `libs/table_io.py` on the delimited-text path (the csv module, so a `.csv` keeps empty fields). `.xls` / `.xlsx` / `.xlsm` / `.xlsb` / `.ods` still raise `MATLAB:readtable:UnsupportedFileType`. Delimited-text `detectImportOptions` / `setvaropts` is a later slice: [`ISSUE-1040-import-options.md`](ISSUE-1040-import-options.md).
 
-A value that is not text, a multi-row char matrix, or a `<missing>` string raises `MATLAB:readtable:InvalidTreatAsMissing`. Name-value options this slice does not implement (`'Format'`, `'DatetimeType'`, `'VariableNamingRule'`, …) stay unknown parameters and raise `MATLAB:textio:textio:UnknownParameter`. Both are `EvalError`s. `'Range'` is #1041.
+A value that is not text, a multi-row char matrix, or a `<missing>` string raises `MATLAB:readtable:InvalidTreatAsMissing`. Name-value options this slice does not implement raise `MATLAB:textio:textio:UnknownParameter`. Both are `EvalError`s. Later issues accepted `'Range'` (#1041), `'Format'` (#1042), and `'DatetimeType'` (#1043). `'VariableNamingRule'` is still unknown.
 
 ## #1039
 
@@ -36,7 +36,7 @@ The delimited-text `detectImportOptions` / `setvaropts` slice has since landed (
 | `detectImportOptions` / `setvaropts` for delimited text | [#1040](https://github.com/superche/openmatlab/issues/1040), [`ISSUE-1040-import-options.md`](ISSUE-1040-import-options.md) |
 | `'Range'` | #1041 |
 | `'Format'` | #1042 |
-| `'DatetimeType'` | #1043 |
+| `'DatetimeType'` | #1043 (delimited text; see [ISSUE-1043-readtable-datetimetype.md](ISSUE-1043-readtable-datetimetype.md)) |
 | `'VariableNamingRule','preserve'` | #1044 |
 | original headers not saved in `VariableDescriptions` | #1045 |
 | duration, categorical, logical, and further date formats | #1046 |

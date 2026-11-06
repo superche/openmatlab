@@ -49,4 +49,4 @@ A file with no non-blank line is `MATLAB:readtable:NoData` for `'auto'`. A heade
 
 ## What still rejects the file
 
-A spreadsheet extension (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`) raises `MATLAB:readtable:UnsupportedFileType` before the file is opened, whether or not `Format` is also passed. `'FileType','spreadsheet'` does the same. `'MultipleDelimsAsOne'`, `'DatetimeType'`, and `'VariableNamingRule'` are still unknown parameters.
+A spreadsheet extension (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`) raises `MATLAB:readtable:UnsupportedFileType` before the file is opened, whether or not `Format` is also passed. `'FileType','spreadsheet'` does the same. `'MultipleDelimsAsOne'` and `'VariableNamingRule'` are still unknown parameters. `'DatetimeType'` is #1043 ([ISSUE-1043-readtable-datetimetype.md](ISSUE-1043-readtable-datetimetype.md)).
