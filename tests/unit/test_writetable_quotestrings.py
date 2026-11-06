@@ -123,7 +123,6 @@ def test_typed_columns_and_writecell(run):
     ("writetable(T, fullfile(d,'a.csv'), 'QuoteStrings', 'nope')", "MATLAB:writetable:InvalidQuoteStrings"),
     ("writetable(T, fullfile(d,'a.csv'), 'QuoteStrings', 1)", "MATLAB:writetable:InvalidQuoteStrings"),
     ("writecell({'a'}, fullfile(d,'a.csv'), 'QuoteStrings', false)", "MATLAB:writecell:InvalidQuoteStrings"),
-    ("writetable(T, fullfile(d,'a.csv'), 'WriteMode', 'append')", "MATLAB:textio:textio:UnknownParameter"),
 ])
 def test_rejected_values_write_no_file(run, code, ident):
     run("T = table({'NY';'CA'});")

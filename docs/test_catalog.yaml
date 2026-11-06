@@ -199,6 +199,13 @@ use_cases:
     features: [libs.table_io]
     priority: p1
 
+  - id: uc.writetable_writemode
+    title: Append rows to a delimited text file with writetable
+    actor: scientific user
+    goal: writetable WriteMode is overwrite or append on delimited text, and append keeps the existing bytes
+    features: [libs.table_io]
+    priority: p1
+
   - id: uc.analyst_groupsummary
     title: Summarize a cleaned table by group, including empty groups
     actor: scientific user
@@ -2821,6 +2828,24 @@ test_cases:
     features: [libs.table_io]
     use_cases: [uc.writetable_quotestrings]
     impl: tests/bdd/test_writetable_quotestrings_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.writetable_writemode
+    kind: unit
+    title: writetable WriteMode overwrite and append for delimited text (#1048)
+    features: [libs.table_io]
+    use_cases: [uc.writetable_writemode]
+    impl: tests/unit/test_writetable_writemode.py
+    status: active
+    env: unit
+
+  - id: tc.writetable_writemode_bdd
+    kind: bdd
+    title: writetable WriteMode Gherkin (#1048)
+    features: [libs.table_io]
+    use_cases: [uc.writetable_writemode]
+    impl: tests/bdd/test_writetable_writemode_bdd.py
     status: active
     env: unit
 
