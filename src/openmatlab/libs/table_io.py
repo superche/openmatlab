@@ -48,6 +48,11 @@ duration and categorical. See ``docs/design/ISSUE-1046-readtable-column-types.md
 ``'QuoteStrings'`` (#1047) on delimited-text ``writetable`` and ``writecell``
 is ``'minimal'`` (default), ``'all'``, or ``'none'``. See
 ``docs/design/ISSUE-1047-writetable-quotestrings.md``.
+
+``'WriteMode'`` (#1048) on delimited-text ``writetable`` is ``'overwrite'``
+(default) or ``'append'``. ``'append'`` adds rows and is rejected when
+``WriteVariableNames`` is true. ``writecell`` does not accept it. See
+``docs/design/ISSUE-1048-writetable-writemode.md``.
 """
 
 from __future__ import annotations
@@ -1268,6 +1273,19 @@ def _readtable(args, *, nargout=1):
 _QUOTE_MODES = ("minimal", "all", "none")
 # 'all' encloses these and no others. 'minimal' looks at the characters instead.
 _QUOTED_KINDS = frozenset({"text", "categorical", "datetime", "duration"})
+# Delimited text only. Spreadsheet modes are not accepted on this path (#1049).
+_WRITE_MODES = ("overwrite", "append")
+
+
+def _write_mode(name, fn, o):
+    """``overwrite`` (default) or ``append``. A spreadsheet extension is rejected first."""
+    _check_text_file(name, fn)
+    if "writemode" not in o:
+        return "overwrite"
+    v = o["writemode"]
+    if not is_text(v) or text(v).lower() not in _WRITE_MODES:
+        raise _err("WriteMode must be 'overwrite' or 'append'.", f"MATLAB:{fn}:InvalidWriteMode")
+    return text(v).lower()
 
 
 def _quote_mode(name, fn, o):
@@ -1387,10 +1405,24 @@ def _scalar_field(e, q):
                "MATLAB:table:write:NestedCellNotSupported")
 
 
-def _write(name, fn, lines, delim):
+def _write(name, fn, lines, delim, mode="overwrite"):
+    """Write delimited rows. ``append`` keeps existing bytes and starts new rows on their own line."""
     _check_text_file(name, fn)
+    text_out = "".join(delim.join(r) + "\n" for r in lines)
+    path = Path(name).expanduser()
     try:
-        Path(name).expanduser().write_text("".join(delim.join(r) + "\n" for r in lines), encoding=ENC)
+        if mode == "append" and path.is_file():
+            if text_out:
+                data = text_out.encode(ENC)
+                with path.open("r+b") as fh:
+                    fh.seek(0, 2)
+                    if fh.tell():
+                        fh.seek(-1, 2)
+                        if fh.read(1) not in (b"\n", b"\r"):
+                            fh.write(b"\n")
+                    fh.write(data)
+            return
+        path.write_text(text_out, encoding=ENC)
     except OSError:
         raise _err(f"Unable to open file '{name}' for writing.", f"MATLAB:{fn}:FileOpenError") from None
 
@@ -1404,11 +1436,15 @@ def _writetable(args, *, nargout=1):
     if rest and is_text(rest[0]) and (len(rest) % 2 == 1):
         name = text(rest.pop(0))
     _n, o = _opts([_cv(name)] + rest, "writetable", ("delimiter", "writevariablenames", "writerownames",
-                                                       "filetype", "quotestrings"))
-    mode = _quote_mode(name, "writetable", o)
-    delim = _delim(o["delimiter"]) if "delimiter" in o else ("\t" if Path(name).suffix.lower() == ".tsv" else ",")
-    q = _Quoter(delim, mode)
+                                                       "filetype", "quotestrings", "writemode"))
+    write_mode = _write_mode(name, "writetable", o)
     hdr = _flag(o["writevariablenames"]) if "writevariablenames" in o else True
+    if write_mode == "append" and hdr:
+        raise _err("WriteMode 'append' is not supported when WriteVariableNames is true.",
+                   "MATLAB:writetable:AppendNotSupported")
+    quote = _quote_mode(name, "writetable", o)
+    delim = _delim(o["delimiter"]) if "delimiter" in o else ("\t" if Path(name).suffix.lower() == ".tsv" else ",")
+    q = _Quoter(delim, quote)
     rown = (_flag(o["writerownames"]) if "writerownames" in o else False) and bool(t.rownames)
     body = [[] for _ in range(t.nrows)]
     head = ["Row"] if rown else []
@@ -1424,7 +1460,7 @@ def _writetable(args, *, nargout=1):
         head += [nm] if w == 1 else [f"{nm}_{k + 1}" for k in range(w)]
         for r in range(t.nrows):
             body[r] += cells[r]
-    _write(name, "writetable", ([head] if hdr else []) + body, delim)
+    _write(name, "writetable", ([head] if hdr else []) + body, delim, write_mode)
     return ()
 
 
