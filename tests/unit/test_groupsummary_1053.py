@@ -185,8 +185,6 @@ def test_multicolumn_group_keeps_observed_rows_only():
     "groupsummary(table([1;2],[3;4]), 'Var1', 'mean', 'Var2', 'VariableNamingRule', 'fancy')",
     "groupsummary(table([1;2],[3;4]), 'Var1', {'min','max'}, 'Var2', 'VariableNamingRule', 'noprefix')",
     "groupsummary([1;2;3], [1;1;2], 'mean', 'VariableNamingRule', 'noprefix')",
-    "groupsummary(table(datetime(2020,1,1), 1), 'Var1', 'year', 'sum')",
-    "groupsummary(table(datetime(2020,1,1), 1), 'Var1', 'week', 'sum')",
     "groupsummary([1;2], [1], 'sum')",
     "T = table([1;1;2],[3;4;5],[6;7;8],'VariableNames',{'a','b','x'}); groupsummary(T, {'a','b'}, {[0 1],[0 1 2],[0 10]}, 'sum', 'x')",
 ])

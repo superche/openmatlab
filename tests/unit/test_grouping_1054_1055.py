@@ -196,8 +196,6 @@ def test_groupcounts_on_several_vectors_and_bin_edges():
         days + "C = groupcounts(T, 't', 'dayname', 'IncludeEmptyGroups', true); v = C.GroupCount';",
         [[0, 0, 2, 2, 1, 2, 3]],
     )
-    with pytest.raises(EvalError, match="not supported yet"):
-        run("groupcounts(table(datetime(2020,1,1), 'VariableNames', {'t'}), 't', 'year')")
     with pytest.raises(EvalError, match="IncludeEmptyGroups' must be 1"):
         run("groupcounts([1;2], 'IncludeEmptyGroups', 'yes')")
 

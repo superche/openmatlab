@@ -313,7 +313,6 @@ def test_counts_only_when_no_method_is_given():
     "groupsummary(table([1;1],[2;3]), 'Var1', 'sum', 'IncludeEmptyGroups', [1 0])",
     "groupsummary(table([1;1],[2;3]), 'Var1', 'mean', 'Var2', 'IncludedEdge', 'right')",
     "groupsummary(table([1;1],[2;3]), 'Var1', 'mean', 'Var2', 'VariableNamingRule', 'fancy')",
-    "groupsummary(table(datetime(2020,1,1), 1), 'Var1', 'year', 'sum')",
     "groupsummary([1;2], [1], 'sum')",
 ])
 def test_unsupported_groupsummary_inputs_are_matlab_errors(code):

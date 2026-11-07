@@ -1,0 +1,278 @@
+"""Calendar-width bins, datetime edges, and several schemes on one variable (#1070).
+
+The four group* functions share ``_bin_columns``. Labels follow the discretize
+categorical formats on the public page read 2026-11-07.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from openmatlab.host.repl import ReplSession
+from openmatlab.runtime.evaluator import EvalError
+from openmatlab.runtime.session import Session
+
+pytestmark = [pytest.mark.unit, pytest.mark.needs_numpy]
+
+
+def run(code):
+    s = Session.create_default()
+    ReplSession(s).run_line(code)
+    return s
+
+
+def rows(code, name="v"):
+    return np.asarray(run(code).workspace.get(name).backend_buffer(), float)
+
+
+def assert_rows(code, expected, name="v"):
+    got = rows(code, name)
+    exp = np.asarray(expected, float)
+    assert got.shape == exp.shape, (got.tolist(), exp.tolist())
+    assert np.allclose(got, exp, equal_nan=True)
+
+
+_SPAN = (
+    "t = datetime([2016 12 31; 2017 1 1; 2017 6 1]);"
+    "x = [1; 10; 4];"
+    "T = table(t, x);"
+)
+
+
+def test_year_bins_follow_the_calendar_and_the_included_edge():
+    code = _SPAN + "S = groupsummary(T, 't', 'year', 'sum', 'x');"
+    s = run(code)
+    assert s.workspace.get("S").names == ["year_t", "GroupCount", "sum_x"]
+    assert s.workspace.get("S").cols[0].labels() == ["2016", "2017"]
+    assert_rows(code + "v = [S.GroupCount S.sum_x];", [[1, 1], [2, 14]])
+    # 2017-01-01 is the shared edge, so 'right' keeps it with 2016.
+    right = _SPAN + "S = groupsummary(T, 't', 'year', 'sum', 'x', 'IncludedEdge', 'right');"
+    assert run(right).workspace.get("S").cols[0].labels() == ["2016", "2017"]
+    assert_rows(right + "v = [S.GroupCount S.sum_x];", [[2, 11], [1, 4]])
+    # 2016-12-31 stays in 2016, including the leap day, rather than a 365.2425-day width.
+    leap = (
+        "t = datetime([2016 2 29; 2016 12 31; 2017 1 1]); x = [1; 2; 4]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'year', 'sum', 'x'); v = S.sum_x';"
+    )
+    assert_rows(leap, [[3, 4]])
+
+
+def test_month_week_day_hour_quarter_and_decade_labels():
+    months = (
+        "t = datetime([2017 1 15; 2017 1 20; 2017 3 1]); x = [1; 2; 4]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'month', 'sum', 'x', 'IncludeEmptyGroups', true);"
+    )
+    assert run(months).workspace.get("S").cols[0].labels() == ["Jan-2017", "Feb-2017", "Mar-2017"]
+    assert_rows(months + "v = [S.GroupCount S.sum_x];", [[2, 3], [0, 0], [1, 4]])
+    # 24-Jan-2016 and 31-Jan-2016 are Sundays. The label is the week's first and last day.
+    weeks = (
+        "t = datetime([2016 1 24; 2016 1 31]); x = [1; 2]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'week', 'sum', 'x');"
+    )
+    assert run(weeks).workspace.get("S").cols[0].labels() == [
+        "[24-Jan-2016, 30-Jan-2016)", "[31-Jan-2016, 06-Feb-2016]",
+    ]
+    assert_rows(weeks + "v = S.sum_x';", [[1, 2]])
+    moved = weeks + "S = groupsummary(T, 't', 'week', 'sum', 'x', 'IncludedEdge', 'right');"
+    assert run(moved).workspace.get("S").cols[0].labels() == ["[24-Jan-2016, 30-Jan-2016]"]
+    assert_rows(moved + "v = S.sum_x;", [[3]])
+    days = (
+        "t = [datetime(2017,3,4,0,0,0); datetime(2017,3,4,23,0,0); datetime(2017,3,5,0,0,0)];"
+        "T = table(t, [1; 2; 4], 'VariableNames', {'t','x'});"
+        "S = groupsummary(T, 't', 'day', 'sum', 'x');"
+    )
+    assert run(days).workspace.get("S").cols[0].labels() == ["04-Mar-2017", "05-Mar-2017"]
+    assert_rows(days + "v = S.sum_x';", [[3, 4]])
+    hours = (
+        "t = [datetime(2017,3,4,10,30,0); datetime(2017,3,4,10,59,0); datetime(2017,3,4,11,0,0)];"
+        "T = table(t, [1; 2; 4], 'VariableNames', {'t','x'});"
+        "S = groupsummary(T, 't', 'hour', 'sum', 'x');"
+    )
+    assert run(hours).workspace.get("S").cols[0].labels() == [
+        "04-Mar-2017 10:00:00", "04-Mar-2017 11:00:00",
+    ]
+    quarters = (
+        "t = datetime([2017 2 1; 2017 5 1]); T = table(t, [1; 2], 'VariableNames', {'t','x'});"
+        "S = groupsummary(T, 't', 'quarter', 'sum', 'x');"
+    )
+    assert run(quarters).workspace.get("S").cols[0].labels() == ["Q1 2017", "Q2 2017"]
+    decades = (
+        "t = datetime([2016 6 1; 2021 1 1]); T = table(t, [1; 2], 'VariableNames', {'t','x'});"
+        "S = groupsummary(T, 't', 'decade', 'sum', 'x');"
+    )
+    assert run(decades).workspace.get("S").cols[0].labels() == ["[2010, 2020)", "[2020, 2030]"]
+    assert_rows(decades + "v = S.sum_x';", [[1, 2]])
+
+
+def test_duration_width_and_calendar_duration_width():
+    # days(1) is one fixed day. Multiples of that width are midnights, so membership matches
+    # 'day', and the label is the interval rather than the named unit's point label.
+    code = (
+        "t = [datetime(2017,1,1,10,0,0); datetime(2017,1,2,9,0,0); datetime(2017,1,2,10,0,0)];"
+        "x = [1; 2; 4]; T = table(t, x);"
+    )
+    named = run(code + "S = groupsummary(T, 't', 'day', 'sum', 'x');")
+    assert named.workspace.get("S").names[0] == "day_t"
+    assert named.workspace.get("S").cols[0].labels() == ["01-Jan-2017", "02-Jan-2017"]
+    width = run(code + "S = groupsummary(T, 't', days(1), 'sum', 'x');")
+    assert width.workspace.get("S").names[0] == "disc_t"
+    assert width.workspace.get("S").cols[0].labels() == [
+        "[01-Jan-2017, 02-Jan-2017)", "[02-Jan-2017, 03-Jan-2017]",
+    ]
+    assert_rows(code + "S = groupsummary(T, 't', days(1), 'sum', 'x'); v = S.sum_x';", [[1, 6]])
+    # calmonths(1) starts at the first timestamp. 'month' starts at the first of the month.
+    cal = (
+        "t = datetime([2017 1 15; 2017 2 14; 2017 2 15]); x = [1; 2; 4]; T = table(t, x);"
+        "S = groupsummary(T, 't', calmonths(1), 'sum', 'x');"
+    )
+    assert run(cal).workspace.get("S").cols[0].labels() == [
+        "[15-Jan-2017, 15-Feb-2017)", "[15-Feb-2017, 15-Mar-2017]",
+    ]
+    assert_rows(cal + "v = S.sum_x';", [[3, 4]])
+    # On a duration, 'hour' is a fixed hour from 0 and 'year' is 365.2425 days.
+    hours = (
+        "d = hours([0.5; 1.5; 3]); T = table(d, [1; 2; 4], 'VariableNames', {'d','x'});"
+        "S = groupsummary(T, 'd', 'hour', 'sum', 'x');"
+    )
+    assert run(hours).workspace.get("S").names[0] == "hour_d"
+    assert run(hours).workspace.get("S").cols[0].labels() == ["[0 hr, 1 hr)", "[1 hr, 2 hr)", "[3 hr, 4 hr]"]
+    assert_rows(hours + "v = S.sum_x';", [[1, 2, 4]])
+    years = (
+        "d = days([0; 100; 400]); T = table(d, [1; 2; 4], 'VariableNames', {'d','x'});"
+        "S = groupsummary(T, 'd', 'year', 'sum', 'x');"
+    )
+    assert run(years).workspace.get("S").cols[0].labels() == [
+        "[0 days, 365.2 days)", "[365.2 days, 730.5 days]",
+    ]
+    same = (
+        "d = days([0; 100; 400]); T = table(d, [1; 2; 4], 'VariableNames', {'d','x'});"
+        "A = groupsummary(T, 'd', 'year', 'sum', 'x');"
+        "B = groupsummary(T, 'd', calyears(1), 'sum', 'x');"
+        "v = [A.sum_x' B.sum_x'];"
+    )
+    assert_rows(same, [[3, 4, 3, 4]])
+
+
+def test_datetime_edges_use_discretize_intervals():
+    code = (
+        "edges = [datetime(2017,1,1) datetime(2017,6,1) datetime(2018,1,1)];"
+        "t = [datetime(2017,1,15); datetime(2017,5,31); datetime(2017,6,1); datetime(2017,12,31); datetime(2018,1,1)];"
+        "x = [1; 2; 4; 8; 16]; T = table(t, x);"
+    )
+    left = run(code + "S = groupsummary(T, 't', edges, 'sum', 'x');")
+    assert left.workspace.get("S").names[0] == "disc_t"
+    assert left.workspace.get("S").cols[0].labels() == [
+        "[01-Jan-2017, 01-Jun-2017)", "[01-Jun-2017, 01-Jan-2018]",
+    ]
+    assert_rows(code + "S = groupsummary(T, 't', edges, 'sum', 'x'); v = [S.GroupCount S.sum_x];",
+                [[2, 3], [3, 28]])
+    right = code + "S = groupsummary(T, 't', edges, 'sum', 'x', 'IncludedEdge', 'right');"
+    assert run(right).workspace.get("S").cols[0].labels() == [
+        "[01-Jan-2017, 01-Jun-2017]", "(01-Jun-2017, 01-Jan-2018]",
+    ]
+    assert_rows(right + "v = S.sum_x';", [[7, 24]])
+    outside = (
+        "edges = [datetime(2017,1,1) datetime(2017,2,1)];"
+        "t = [datetime(2016,12,31); datetime(2017,1,15)]; T = table(t, [1; 2], 'VariableNames', {'t','x'});"
+        "S = groupsummary(T, 't', edges, 'sum', 'x');"
+    )
+    assert run(outside).workspace.get("S").cols[0].labels() == ["[01-Jan-2017, 01-Feb-2017]", "<undefined>"]
+    assert_rows(outside + "v = S.sum_x';", [[2, 1]])
+
+
+def test_several_schemes_on_one_variable_and_one_scheme_per_variable():
+    two = (
+        "t = datetime([2016 3 1; 2016 5 1; 2017 3 1]); x = [1; 2; 4]; T = table(t, x);"
+        "S = groupsummary(T, 't', {'year','month'}, 'sum', 'x');"
+    )
+    s = run(two)
+    assert s.workspace.get("S").names == ["year_t", "month_t", "GroupCount", "sum_x"]
+    assert s.workspace.get("S").cols[0].labels() == ["2016", "2016", "2017"]
+    assert s.workspace.get("S").cols[1].labels() == ["Mar-2016", "May-2016", "Mar-2017"]
+    assert_rows(two + "v = S.sum_x';", [[1, 2, 4]])
+    # A cell the same length as the grouping variables is still one scheme each.
+    paired = (
+        "g = [1; 1; 2; 2]; t = datetime([2016 1 1; 2016 5 1; 2017 1 1; 2017 2 1]);"
+        "x = [10; 20; 30; 40]; T = table(g, t, x);"
+        "S = groupsummary(T, {'g','t'}, {'none','year'}, 'sum', 'x');"
+    )
+    assert run(paired).workspace.get("S").names == ["g", "year_t", "GroupCount", "sum_x"]
+    assert_rows(paired + "v = [S.g S.sum_x];", [[1, 30], [2, 70]])
+    # Two edge vectors on one numeric variable. The second name takes the _1 suffix.
+    edges = (
+        "g = [1; 3; 4]; x = [10; 20; 30]; T = table(g, x);"
+        "S = groupsummary(T, 'g', {[0 2 5],[0 10]}, 'sum', 'x');"
+    )
+    got = run(edges)
+    assert got.workspace.get("S").names == ["disc_g", "disc_g_1", "GroupCount", "sum_x"]
+    assert got.workspace.get("S").cols[0].labels() == ["[0, 2)", "[2, 5]"]
+    assert got.workspace.get("S").cols[1].labels() == ["[0, 10]", "[0, 10]"]
+    assert_rows(edges + "v = [S.GroupCount S.sum_x];", [[1, 10], [2, 50]])
+    nested = (
+        "g = [1; 3]; t = datetime([2016 3 1; 2017 5 1]); x = [10; 20]; T = table(g, t, x);"
+        "S = groupsummary(T, {'g','t'}, {'none', {'year','month'}}, 'sum', 'x');"
+    )
+    assert run(nested).workspace.get("S").names == ["g", "year_t", "month_t", "GroupCount", "sum_x"]
+    assert_rows(nested + "v = S.sum_x';", [[10, 20]])
+
+
+def test_all_four_group_functions_share_the_year_bins():
+    base = (
+        "t = datetime([2016 1 1; 2016 6 1; 2017 1 1]);"
+        "x = [1; 3; 10]; T = table(t, x);"
+    )
+    summary = run(base + "S = groupsummary(T, 't', 'year', 'sum', 'x');")
+    assert summary.workspace.get("S").cols[0].labels() == ["2016", "2017"]
+    counts = run(base + "C = groupcounts(T, 't', 'year');")
+    assert counts.workspace.get("C").names == ["year_t", "GroupCount", "Percent"]
+    assert counts.workspace.get("C").cols[0].labels() == ["2016", "2017"]
+    assert_rows(base + "C = groupcounts(T, 't', 'year'); v = [C.GroupCount C.Percent];",
+                [[2, 200 / 3], [1, 100 / 3]])
+    transformed = run(base + "G = grouptransform(T, 't', 'year', 'meancenter', 'x');")
+    assert transformed.workspace.get("G").names == ["t", "x", "year_t"]
+    assert transformed.workspace.get("G").cols[2].labels() == ["2016", "2016", "2017"]
+    assert_rows(base + "G = grouptransform(T, 't', 'year', 'meancenter', 'x'); v = G.x';", [[-1, 1, 0]])
+    filtered = run(base + "G = groupfilter(T, 't', 'year', @(v) max(v) > 5);")
+    assert filtered.workspace.get("G").names == ["t", "x", "year_t"]
+    assert filtered.workspace.get("G").cols[2].labels() == ["2017"]
+    assert_rows(base + "G = groupfilter(T, 't', 'year', @(v) max(v) > 5); v = G.x;", [[10]])
+    # Array form: one grouping vector and two schemes come back as a row cell.
+    wide = run(base + "[B,BG,BC] = groupsummary(x, t, {'year','month'}, 'sum');")
+    assert wide.workspace.get("BG").shape == (1, 2)
+    assert wide.workspace.get("BG").get(0, 0).labels() == ["2016", "2016", "2017"]
+    assert wide.workspace.get("BG").get(0, 1).labels() == ["Jan-2016", "Jun-2016", "Jan-2017"]
+    assert_rows(base + "[B,BG,BC] = groupsummary(x, t, {'year','month'}, 'sum'); v = [B BC];",
+                [[1, 1], [3, 1], [10, 1]])
+    counted = run(base + "[B,BG] = groupcounts(t, 'year');")
+    assert counted.workspace.get("BG").labels() == ["2016", "2017"]
+    assert_rows(base + "[B,BG] = groupcounts(t, 'year'); v = B;", [[2], [1]])
+
+
+def test_missing_datetime_stays_its_own_group():
+    code = (
+        "t = [datetime(2017,3,1); NaT]; x = [5; 9]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'year', 'sum', 'x');"
+    )
+    assert run(code).workspace.get("S").cols[0].labels() == ["2017", "<undefined>"]
+    assert_rows(code + "v = [S.GroupCount S.sum_x];", [[1, 5], [1, 9]])
+    assert_rows(
+        "t = [datetime(2017,3,1); NaT]; x = [5; 9]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'year', 'sum', 'x', 'IncludeMissingGroups', false); v = S.sum_x;",
+        [[5]],
+    )
+
+
+@pytest.mark.parametrize("code", [
+    "groupsummary(table([1;2],[3;4],'VariableNames',{'g','x'}), 'g', 'week', 'sum', 'x')",
+    "groupsummary(table(days([1;2]), [3;4], 'VariableNames', {'d','x'}), 'd', 'week', 'sum', 'x')",
+    "groupsummary(table([1;2],[3;4],'VariableNames',{'g','x'}), 'g', datetime(2017,1,[1 2]), 'sum', 'x')",
+    "groupsummary(table(datetime(2017,1,1), 1), 'Var1', days([1 2]), 'sum')",
+    "groupsummary(table(datetime(2017,1,1), 1), 'Var1', days(0), 'sum')",
+    "groupsummary(table(datetime(2017,1,1), 1), 'Var1', calmonths(0), 'sum')",
+    "T = table([1;1;2],[3;4;5],[6;7;8],'VariableNames',{'a','b','x'});"
+    " groupsummary(T, {'a','b'}, {'year','month','day'}, 'sum', 'x')",
+])
+def test_bin_mismatches_are_eval_errors(code):
+    with pytest.raises(EvalError):
+        run(code)

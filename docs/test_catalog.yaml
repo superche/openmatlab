@@ -220,6 +220,13 @@ use_cases:
     features: [libs.table_join_group]
     priority: p1
 
+  - id: uc.group_bins_1070
+    title: Bin groups by calendar width, datetime edges, or several schemes
+    actor: scientific user
+    goal: groupsummary, groupcounts, grouptransform, and groupfilter accept calendar-width bins, datetime edges, and more than one bin scheme on one variable
+    features: [libs.table_join_group]
+    priority: p2
+
   - id: uc.analyst_story
     title: Wash a messy assay CSV and write the group summary
     actor: scientific user
@@ -2900,6 +2907,24 @@ test_cases:
     features: [libs.table_join_group]
     use_cases: [uc.grouping_1054]
     impl: tests/bdd/test_grouping_1054_1055_bdd.py
+    status: active
+    env: unit
+
+  - id: tc.group_bins_1070
+    kind: unit
+    title: calendar-width bins, datetime edges, and several schemes on one variable (#1070)
+    features: [libs.table_join_group]
+    use_cases: [uc.group_bins_1070]
+    impl: tests/unit/test_group_bins_1070.py
+    status: active
+    env: unit
+
+  - id: tc.group_bins_1070_bdd
+    kind: bdd
+    title: calendar-width bins and datetime edges Gherkin (#1070)
+    features: [libs.table_join_group]
+    use_cases: [uc.group_bins_1070]
+    impl: tests/bdd/test_group_bins_1070_bdd.py
     status: active
     env: unit
 
