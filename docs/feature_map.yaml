@@ -25,6 +25,15 @@ layers:
     package: openmatlab.qa
 
 features:
+  - id: host.desktop_distribution
+    layer: host
+    name: Native desktop distributions and signed release pipeline
+    status: partial
+    spec: docs/design/ISSUE-1081-desktop-distributions.md
+    tests: [tests/unit/test_desktop_packaging.py]
+    cases: [tc.desktop_distribution]
+    notes: "#1081: native frozen smoke and CI builds; production signing enrollment and clean-machine acceptance pending."
+
   # --- host ---
   - id: host.cli.status
     layer: host
