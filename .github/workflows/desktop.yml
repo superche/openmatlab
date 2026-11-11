@@ -1,0 +1,273 @@
+name: Desktop distributions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      sign_macos:
+        description: 'Sign and notarize macOS using the release environment (main only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: desktop-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]'
+      - name: Validate release version and ancestry
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          python -c 'import os,tomllib; from openmatlab import __version__; v=tomllib.load(open("pyproject.toml","rb"))["project"]["version"]; assert os.environ["GITHUB_REF_NAME"] == "v"+v; assert v == __version__'
+      - name: Unit and BDD gate
+        run: pytest -m 'unit or bdd' --cov=openmatlab --cov-fail-under=60
+      - name: Corpus release gate (exact tagged source)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          OPENMATLAB_CORPUS_CACHE: ${{ runner.temp }}/openmatlab-corpus
+        run: |
+          python -m openmatlab.qa.corpus restore-rosetta
+          python -m openmatlab.qa.corpus fetch
+          python -m openmatlab.qa.corpus run --out /tmp/release-corpus.json
+          python -m openmatlab.qa.corpus gate /tmp/release-corpus.json
+      - uses: actions/upload-artifact@v4
+        if: always() && startsWith(github.ref, 'refs/tags/')
+        with:
+          name: release-corpus-evidence
+          path: /tmp/release-corpus.json
+
+  build:
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            arch: x64
+            platform: windows-x64
+          - os: macos-15
+            arch: arm64
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    environment: ${{ (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.sign_macos && github.ref == 'refs/heads/main')) && 'release' || 'build' }}
+    env:
+      SIGN_MAC: ${{ matrix.arch == 'arm64' && (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.sign_macos && github.ref == 'refs/heads/main')) }}
+      SIGN_WINDOWS: ${{ matrix.arch == 'x64' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.arch }}
+      - name: Dependencies and native architecture
+        shell: bash
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          python -c 'import os,platform; assert platform.machine().lower() == {"x64":"amd64","arm64":"arm64"}[os.environ["EXPECTED_ARCH"]], platform.machine()'
+          python -m pip install -e '.[numpy,plot]' PyYAML -r packaging/requirements.txt
+          python -c 'import os,tomllib; v=tomllib.load(open("pyproject.toml","rb"))["project"]["version"]; open(os.environ["GITHUB_ENV"],"a").write("VERSION="+v+"\n")'
+      - name: Import Apple certificate
+        if: env.SIGN_MAC == 'true'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+        run: bash packaging/macos-sign.sh import
+      - name: Freeze desktop and CLI
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ env.SIGN_MAC == 'true' && vars.APPLE_SIGNING_IDENTITY || '' }}
+        run: python -m PyInstaller --noconfirm --clean packaging/openmatlab.spec
+      - name: Frozen smoke (Windows)
+        if: runner.os == 'Windows'
+        run: python packaging/smoke.py dist/OpenMATLAB --arch x64
+      - name: Frozen smoke (macOS)
+        if: runner.os == 'macOS'
+        run: python packaging/smoke.py dist/OpenMATLAB.app/Contents/MacOS --arch arm64
+      - name: SignPath configuration required for Windows release
+        if: env.SIGN_WINDOWS == 'true'
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          ORGANIZATION: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          POLICY: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        run: |
+          : "${TOKEN:?Configure SignPath before releasing Windows}" "${ORGANIZATION:?}" "${PROJECT:?}" "${POLICY:?}"
+      - uses: actions/upload-artifact@v4
+        id: unsigned-app
+        if: env.SIGN_WINDOWS == 'true'
+        with:
+          name: unsigned-windows-app
+          path: dist/OpenMATLAB/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Sign Windows application
+        if: env.SIGN_WINDOWS == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: windows-app
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
+          output-artifact-directory: signed-app
+      - name: Verify and use signed application
+        if: env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        run: |
+          foreach ($name in @('OpenMATLAB.exe', 'openmatlab-cli.exe')) {
+            $sig = Get-AuthenticodeSignature "signed-app/$name"
+            if ($sig.Status -ne 'Valid' -or !$sig.TimeStamperCertificate) { throw "Invalid or untimestamped signature: $name" }
+          }
+          Remove-Item dist/OpenMATLAB -Recurse -Force
+          Move-Item signed-app dist/OpenMATLAB
+          python packaging/smoke.py dist/OpenMATLAB --arch x64
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe" "/DVersion=$env:VERSION" packaging/windows.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        id: unsigned-installer
+        if: env.SIGN_WINDOWS == 'true'
+        with:
+          name: unsigned-windows-installer
+          path: dist/installers/*.exe
+          if-no-files-found: error
+          retention-days: 3
+      - name: Sign Windows installer
+        if: env.SIGN_WINDOWS == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: windows-installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
+          output-artifact-directory: signed-installer
+      - name: Verify and use signed installer
+        if: env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem signed-installer/*.exe)
+          if ($files.Count -ne 1) { throw 'Expected one signed installer' }
+          $sig = Get-AuthenticodeSignature $files[0].FullName
+          if ($sig.Status -ne 'Valid' -or !$sig.TimeStamperCertificate) { throw 'Invalid or untimestamped installer signature' }
+          Remove-Item dist/installers -Recurse -Force
+          Move-Item signed-installer dist/installers
+      - name: Notarize macOS app
+        if: env.SIGN_MAC == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+        run: bash packaging/macos-sign.sh notarize
+      - name: macOS disk image
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dist/installers dist/dmg
+          ditto dist/OpenMATLAB.app dist/dmg/OpenMATLAB.app
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname OpenMATLAB -srcfolder dist/dmg -ov -format UDZO "dist/installers/OpenMATLAB-${VERSION}-macos-arm64.dmg"
+      - name: Sign and notarize disk image
+        if: env.SIGN_MAC == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+        run: |
+          dmg="dist/installers/OpenMATLAB-${VERSION}-macos-arm64.dmg"
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$dmg"
+          xcrun notarytool submit "$dmg" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait --timeout 30m
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+          codesign --verify --strict "$dmg"
+      - name: Installed Windows smoke
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem dist/installers/*.exe).FullName
+          $target = Join-Path $env:RUNNER_TEMP 'OpenMATLAB-installed'
+          $process = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$target`"") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer exited $($process.ExitCode)" }
+          python packaging/smoke.py "$target" --arch x64
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Mounted macOS disk image smoke
+        if: runner.os == 'macOS'
+        run: |
+          mount="$RUNNER_TEMP/OpenMATLAB-mounted"
+          hdiutil attach "dist/installers/OpenMATLAB-${VERSION}-macos-arm64.dmg" -nobrowse -mountpoint "$mount"
+          trap 'hdiutil detach "$mount"' EXIT
+          python packaging/smoke.py "$mount/OpenMATLAB.app/Contents/MacOS" --arch arm64
+      - name: Name and checksum distributables
+        shell: bash
+        env:
+          SIGNED: ${{ env.SIGN_MAC == 'true' || env.SIGN_WINDOWS == 'true' }}
+        run: python packaging/checksums.py dist/installers
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ (env.SIGN_MAC == 'true' || env.SIGN_WINDOWS == 'true') && 'signed' || 'unsigned' }}-${{ matrix.platform }}
+          path: dist/installers/*
+          if-no-files-found: error
+      - name: Remove signing keychain
+        if: always() && runner.os == 'macOS' && env.SIGN_MAC == 'true'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/openmatlab-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/notarize.zip"
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [gate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: signed-*
+          path: release
+          merge-multiple: true
+      - name: Publish both verified platforms
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          test "$(find release -name '*.exe' | wc -l)" -eq 1
+          test "$(find release -name '*.dmg' | wc -l)" -eq 1
+          cd release
+          sha256sum -c *.sha256
+          gh release create "$GITHUB_REF_NAME" ./* --verify-tag --title "OpenMATLAB $GITHUB_REF_NAME" --generate-notes
