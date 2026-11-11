@@ -55,6 +55,9 @@ jobs:
           path: /tmp/release-corpus.json
 
   build:
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -66,7 +69,7 @@ jobs:
             arch: arm64
             platform: macos-arm64
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     environment: ${{ (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.sign_macos && github.ref == 'refs/heads/main')) && 'release' || 'build' }}
     env:
       SIGN_MAC: ${{ matrix.arch == 'arm64' && (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.sign_macos && github.ref == 'refs/heads/main')) }}
@@ -131,6 +134,7 @@ jobs:
           artifact-configuration-slug: windows-app
           github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
           wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
           output-artifact-directory: signed-app
       - name: Verify and use signed application
         if: env.SIGN_WINDOWS == 'true'
@@ -169,6 +173,7 @@ jobs:
           artifact-configuration-slug: windows-installer
           github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
           wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
           output-artifact-directory: signed-installer
       - name: Verify and use signed installer
         if: env.SIGN_WINDOWS == 'true'
