@@ -33,6 +33,8 @@ pytest -m "unit or bdd" --cov=openmatlab
 Agents: `AGENTS.md` · Readiness: `docs/READY.md` · Process: `docs/PROCESS.md` · `CONTRIBUTING.md`  
 QA: `docs/QA.md` · Issues = work · Gherkin `features/` · `docs/feature_map.yaml` (sync) · CI `.github/workflows/ci.yml`
 
+Desktop builds and signing setup: [Desktop releases](docs/DESKTOP-RELEASES.md).
+
 ### Non-goals
 
 - **No reverse engineering** of proprietary MATLAB binaries / internals

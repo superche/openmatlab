@@ -1,26 +1,37 @@
 """Native desktop and CLI, sharing one dependency directory. See #1081."""
 import os
 import sys
+import sysconfig
 import tomllib
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
 root = Path(SPECPATH).parent
 version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
 identity = os.environ.get("APPLE_SIGNING_IDENTITY") or None
+python_license = next(path for path in (
+    Path(sysconfig.get_path("stdlib")) / "LICENSE.txt",
+    Path(sys.base_prefix) / "LICENSE.txt",
+) if path.is_file())
 options = dict(
     pathex=[str(root / "src")],
     datas=[(str(root / "docs" / name), "docs") for name in
            ("feature_map.yaml", "test_catalog.yaml")] +
-          [(str(root / "LICENSE"), ".")] + collect_data_files("openmatlab"),
+          [(str(root / "LICENSE"), "."), (str(python_license), "licenses/python")] +
+          collect_data_files("openmatlab") + copy_metadata("matplotlib", recursive=True) +
+          copy_metadata("PyYAML"),
     hiddenimports=collect_submodules("openmatlab") + ["matplotlib.backends.backend_tkagg"],
     excludes=["pytest", "pytest_cov", "pytest_bdd"],
     hooksconfig={"matplotlib": {"backends": ["TkAgg", "Agg"]}},
 )
 cli = Analysis([str(root / "packaging/cli.py")], **options)
 gui = Analysis([str(root / "packaging/desktop.py")], **options)
-exe_options = dict(exclude_binaries=True, upx=False, codesign_identity=identity,
+exe_python_license = next(path for path in (
+    Path(sysconfig.get_path("stdlib")) / "LICENSE.txt",
+    Path(sys.base_prefix) / "LICENSE.txt",
+) if path.is_file())
+options = dict(exclude_binaries=True, upx=False, codesign_identity=identity,
                    target_arch="arm64" if sys.platform == "darwin" else None)
 if sys.platform == "win32":
     from PyInstaller.utils.win32.versioninfo import (
