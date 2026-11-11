@@ -27,11 +27,7 @@ options = dict(
 )
 cli = Analysis([str(root / "packaging/cli.py")], **options)
 gui = Analysis([str(root / "packaging/desktop.py")], **options)
-exe_python_license = next(path for path in (
-    Path(sysconfig.get_path("stdlib")) / "LICENSE.txt",
-    Path(sys.base_prefix) / "LICENSE.txt",
-) if path.is_file())
-options = dict(exclude_binaries=True, upx=False, codesign_identity=identity,
+exe_options = dict(exclude_binaries=True, upx=False, codesign_identity=identity,
                    target_arch="arm64" if sys.platform == "darwin" else None)
 if sys.platform == "win32":
     from PyInstaller.utils.win32.versioninfo import (
