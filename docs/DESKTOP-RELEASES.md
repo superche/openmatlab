@@ -72,7 +72,11 @@ App Store distribution and an enterprise account are unnecessary.
 
 Apply to [SignPath Foundation](https://signpath.org/) for open-source signing.
 It requires project approval and service configuration; no approval has yet been
-obtained for OpenMATLAB. Do not buy a USB-token certificate for a hosted runner.
+obtained for OpenMATLAB. Foundation signing uses the Foundation as certificate
+publisher and requires an already available application build, project reputation,
+a published signing policy/roles, and manual approval for each release. Prepare
+these in #1081 after the unsigned build is accepted; do not claim sponsorship before
+approval. See [eligibility and policy](https://signpath.org/terms). Do not buy a USB-token certificate for a hosted runner.
 
 After approval, connect this GitHub repository using SignPath's trusted build
 integration, restrict production signing to protected tags, and configure:
@@ -105,3 +109,7 @@ one Release with both installers and checksums. Existing nightly regressions
 must be diagnosed; do not edit baselines to obtain a release. A failure leaves
 workflow evidence/artifacts but publishes no Release. Existing Release assets
 are not overwritten. No version tag is created by this change.
+
+Developer-oriented CLI commands (`test`, `defects`, subprocess corpus `run`) are
+not part of standalone acceptance; they rely on a development checkout/tools.
+Broader frozen CLI support remains tracked by #1081.
