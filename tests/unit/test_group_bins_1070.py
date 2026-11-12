@@ -263,6 +263,60 @@ def test_missing_datetime_stays_its_own_group():
     )
 
 
+def test_exact_boundaries_stay_in_the_closed_bin():
+    # Repeated addition of 1/24 drifts off datetime(2017,1,1,2,0,0). IncludedEdge right
+    # must keep 02:00 with 01:30, and 03:00 in the bin that ends at 03:00.
+    hour = (
+        "t = [datetime(2017,1,1,0,0,0); datetime(2017,1,1,1,30,0); "
+        "datetime(2017,1,1,2,0,0); datetime(2017,1,1,3,0,0)];"
+    )
+    assert_rows(hour + "[B,BG] = groupcounts(t, 'hour', 'IncludedEdge', 'right'); v = B';", [[1, 2, 1]])
+    assert run(hour + "[B,BG] = groupcounts(t, 'hour', 'IncludedEdge', 'right');").workspace.get("BG").labels() == [
+        "01-Jan-2017 00:00:00", "01-Jan-2017 01:00:00", "01-Jan-2017 02:00:00",
+    ]
+    assert_rows(hour + "[B,BG] = groupcounts(t, 'hour', 'IncludedEdge', 'left'); v = B';", [[1, 1, 1, 1]])
+    assert_rows(hour + "[B,BG] = groupcounts(t, hours(1), 'IncludedEdge', 'right'); v = B';", [[1, 2, 1]])
+    # The same width anchored at 01:00, not at midnight. 02:00 and 05:00 are closed edges.
+    assert_rows(
+        "t = [datetime(2017,1,1,1,0,0); datetime(2017,1,1,2,0,0); datetime(2017,1,1,5,0,0)];"
+        "[B,BG] = groupcounts(t, hours(1), 'IncludedEdge', 'right'); v = B';",
+        [[2, 1]],
+    )
+    # The same edges on the shared path. 02:00 stays in the 01:00 bin, so its centered value
+    # is grouped with 01:30.
+    shared = (
+        hour + "x = [1; 2; 4; 8]; T = table(t, x);"
+        "S = groupsummary(T, 't', 'hour', 'sum', 'x', 'IncludedEdge', 'right');"
+        "G = grouptransform(T, 't', 'hour', 'meancenter', 'x', 'IncludedEdge', 'right');"
+    )
+    assert_rows(shared + "v = S.sum_x';", [[1, 6, 8]])
+    assert run(shared).workspace.get("G").cols[2].labels() == [
+        "01-Jan-2017 00:00:00", "01-Jan-2017 01:00:00", "01-Jan-2017 01:00:00", "01-Jan-2017 02:00:00",
+    ]
+    # A duration stores n*(1/24). Cumulative edges miss hours(6) from below and hours(10) from above.
+    assert_rows(
+        "d = hours([0; 5.5; 6; 7]); [B,BG] = groupcounts(d, hours(1), 'IncludedEdge', 'right'); v = B';",
+        [[1, 2, 1]],
+    )
+    assert_rows(
+        "d = hours([0; 9.5; 10; 11]); [B,BG] = groupcounts(d, 'hour', 'IncludedEdge', 'left'); v = B';",
+        [[1, 1, 1, 1]],
+    )
+    # Minute and second edges are clock times, not a running sum of 1/1440 or 1/86400.
+    assert_rows(
+        "t = [datetime(2017,1,1,10,59,0); datetime(2017,1,1,11,0,0); datetime(2017,1,1,11,0,30)];"
+        "[B,BG] = groupcounts(t, 'minute', 'IncludedEdge', 'right'); v = B';",
+        [[2, 1]],
+    )
+    seconds = (
+        "t = [datetime(2017,1,1,10,0,0); datetime(2017,1,1,10,1,4); datetime(2017,1,1,10,1,5)];"
+        "[B,BG] = groupcounts(t, 'second', 'IncludedEdge', 'left');"
+    )
+    assert run(seconds).workspace.get("BG").labels() == [
+        "01-Jan-2017 10:00:00", "01-Jan-2017 10:01:04", "01-Jan-2017 10:01:05",
+    ]
+
+
 @pytest.mark.parametrize("code", [
     "groupsummary(table([1;2],[3;4],'VariableNames',{'g','x'}), 'g', 'week', 'sum', 'x')",
     "groupsummary(table(days([1;2]), [3;4], 'VariableNames', {'d','x'}), 'd', 'week', 'sum', 'x')",

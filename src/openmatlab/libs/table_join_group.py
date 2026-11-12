@@ -1226,27 +1226,60 @@ def _calendar_step(unit, left, hi):
 def _walk_edges(left, hi, advance, fn, step=1):
     """Edges from ``left`` through the first edge strictly after ``hi``.
 
-    ``advance(cursor, step)`` must move forward by ``step`` widths. If ``step`` still needs more
-    than ``_MAX_BINS`` edges, it doubles, which is the larger width discretize uses past that cap.
+    ``advance(origin, n)`` is the edge ``n`` widths after ``origin``, computed from that origin
+    rather than from the previous edge. Repeated ``cursor + width`` drifts off a datetime or
+    duration that was built in one step, and an exact boundary then falls in the next bin.
+    If ``step`` still needs more than ``_MAX_BINS`` edges, it doubles, which is the larger width
+    discretize uses past that cap.
     """
     step = max(1, int(step))
+    origin = float(left)
     for _attempt in range(16):
-        edges = [float(left)]
-        cursor = float(left)
+        edges = [origin]
         covered = False
-        for _i in range(_MAX_BINS):
-            nxt = float(advance(cursor, step))
-            if not np.isfinite(nxt) or nxt <= cursor:
+        for i in range(1, _MAX_BINS + 1):
+            nxt = float(advance(origin, i * step))
+            if not np.isfinite(nxt) or nxt <= edges[-1]:
                 raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
             edges.append(nxt)
             if nxt > hi:
                 covered = True
                 break
-            cursor = nxt
         if covered:
             return np.asarray(edges, float)
         step *= 2
     raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+
+
+def _calendar_edge(origin, unit, n):
+    """Boundary ``n`` units after ``origin``, in the same formula ``datetime`` uses.
+
+    Hour, minute, and second edges are rebuilt from the clock time. Adding ``1/24`` onto the
+    previous edge does not equal ``datetime(y, mo, d, h, mi, s)`` once the additions repeat.
+    """
+    n = int(n)
+    if n == 0:
+        return float(origin)
+    if unit in ("year", "quarter", "month", "decade", "century", "week", "day"):
+        return float(_unit_add(float(origin), unit, n))
+    import datetime as _dt
+
+    from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
+
+    y, mo, d, h, mi, s = parts_from_datenum(origin)
+    if unit == "hour":
+        extra, h = divmod(int(h) + n, 24)
+        mi, sec = 0, 0
+    elif unit == "minute":
+        extra_h, mi = divmod(int(mi) + n, 60)
+        extra, h = divmod(int(h) + extra_h, 24)
+        sec = 0
+    else:
+        extra_m, sec = divmod(int(round(s)) + n, 60)
+        extra_h, mi = divmod(int(mi) + extra_m, 60)
+        extra, h = divmod(int(h) + extra_h, 24)
+    day = _dt.date(int(y), int(mo), int(d)) + _dt.timedelta(days=int(extra))
+    return datenum_from_parts(day.year, day.month, day.day, h, mi, sec)
 
 
 def _point_label(edge, unit):
@@ -1293,30 +1326,81 @@ def _bin_datetime_unit(col, name, unit, which, fn):
     lo, hi = float(finite.min()), float(finite.max())
     left = _unit_start(lo, unit)
 
-    def advance(cursor, step):
-        return _unit_add(cursor, unit, step)
+    def advance(origin, n):
+        return _calendar_edge(origin, unit, n)
 
     edges = _walk_edges(left, hi, advance, fn, _calendar_step(unit, left, hi))
     labels = _calendar_labels(edges, unit, which)
     return _categorical_bins(col.v, edges, labels, which), f"{unit}_{name}"
 
 
-def _fixed_edges(lo, hi, width, fn):
-    """Edges on multiples of ``width``. The first is the multiple at or before ``lo``."""
+def _fixed_edges(lo, hi, width, fn, match="scaled"):
+    """Edges on multiples of ``width``. The first is the multiple at or before ``lo``.
+
+    ``match='scaled'`` is ``(k0 + n) * width``. A duration value is stored as ``n * unit``, so the
+    edge has to use that same product. ``match='offset'`` is ``anchor + n * width``. A datetime an
+    hour later is ``midnight + 1/24``, which is not the same float as ``(k0 + 1) * (1/24)``.
+    """
     if not np.isfinite(width) or width <= 0:
         raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
     k0 = math.floor(lo / width + 1e-12)
     left = k0 * width
     if left > lo:
-        left -= width
+        k0 -= 1
+        left = k0 * width
     span = max(0.0, hi - left)
     n = max(1, int(math.ceil(span / width - 1e-9)) + 1)
     step = max(1, int(math.ceil(n / _MAX_BINS)))
 
-    def advance(cursor, k):
-        return cursor + width * k
+    def advance(origin, n):
+        if match == "offset":
+            return origin + width * n
+        return (k0 + n) * width
 
     return _walk_edges(left, hi, advance, fn, step)
+
+
+def _dn_from_seconds(total):
+    """Datenum of an absolute second count, via the same components ``datetime`` uses."""
+    from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
+
+    day, sod = divmod(int(total), 86400)
+    hh, rem = divmod(sod, 3600)
+    mm, ss = divmod(rem, 60)
+    y, mo, d = parts_from_datenum(float(day))[:3]
+    return datenum_from_parts(y, mo, d, hh, mm, ss)
+
+
+def _clock_edges(lo, hi, width, fn):
+    """Datetime edges for a duration width.
+
+    A whole number of seconds is rebuilt as a clock time. ``anchor + n * (1/24)`` matches
+    ``datetime`` only when the anchor is an exact midnight; an hour later in the same way does not.
+    Any other width falls back to ``anchor + n * width``, still from the anchor rather than from
+    the previous edge.
+    """
+    step_s = float(width) * 86400.0
+    nearest = round(step_s)
+    if nearest < 1 or abs(step_s - nearest) > 1e-6:
+        return _fixed_edges(lo, hi, width, fn, match="offset")
+    step_s = int(nearest)
+    k0 = int(math.floor(lo * 86400.0 / step_s + 1e-9))
+
+    def at(n):
+        return _dn_from_seconds((k0 + int(n)) * step_s)
+
+    for _guard in range(4):
+        if at(0) <= lo:
+            break
+        k0 -= 1
+    span_s = max(0.0, hi * 86400.0 - k0 * step_s)
+    nwidths = max(1, int(math.ceil(span_s / step_s - 1e-9)) + 1)
+    step = max(1, int(math.ceil(nwidths / _MAX_BINS)))
+
+    def advance(origin, n):
+        return at(n)
+
+    return _walk_edges(at(0), hi, advance, fn, step)
 
 
 def _duration_text(days, fmt):
@@ -1358,7 +1442,7 @@ def _bin_duration_width(col, name, width, which, fn):
         _flat, finite = _finite_time(col)
         if finite.size == 0:
             return _empty_time_bins(col, "disc_" + name)
-        edges = _fixed_edges(float(finite.min()), float(finite.max()), width, fn)
+        edges = _clock_edges(float(finite.min()), float(finite.max()), width, fn)
         fmt = col.fmt or default_datetime_format(edges)
         nb = len(edges) - 1
         labels = [_bracket(java_format(float(edges[i]), fmt), java_format(float(edges[i + 1]), fmt), i, nb, which)
