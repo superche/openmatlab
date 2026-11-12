@@ -23,9 +23,11 @@ omitted from the identifiers. ``splitapply`` stacks a table returned for each gr
 ``grouptransform`` and ``groupfilter`` keep the input row order (#1055).
 
 A multi-column grouping variable is one key — the whole row — so the flag does not invent a
-Cartesian product of its columns (#1053). Numeric bin edges, a positive bin count, and the
-datetime schemes whose labels the documentation names (``dayname``, ``monthname``, and the
-``*of*`` units) run before that grouping. Array input returns ``[B,BG,BC]``.
+Cartesian product of its columns (#1053). Binning runs before that grouping. The #1053 set is
+numeric edges, a positive bin count, ``IncludedEdge``, and the datetime schemes whose labels the
+documentation names (``dayname``, ``monthname``, and the ``*of*`` units). #1070 adds calendar-width
+units, a duration or calendarDuration width, datetime edges, and several schemes on one variable.
+Array input returns ``[B,BG,BC]``.
 
 ``join`` accepts ``'KeepOneCopy'`` (also ``innerjoin`` / ``outerjoin``) and ``'KeepKeys'``.
 ``'Keys','RowNames'`` (and ``'Row'``) matches row names. Cellstr and string keys compare as
@@ -37,6 +39,7 @@ expression (#1056).
 from __future__ import annotations
 
 import itertools
+import math
 
 import numpy as np
 
@@ -885,7 +888,9 @@ def _is_bin_spec(v):
     t = texts(v)
     if t is not None:
         return len(t) == 1 and t[0].lower() in _BIN_NAMES
-    if isinstance(v, (DatetimeValue, DurationValue)):
+    from openmatlab.runtime.calendar_duration import CalendarDurationValue
+
+    if isinstance(v, (DatetimeValue, DurationValue, CalendarDurationValue)):
         return True
     if getattr(v, "is_object", False) or is_text(v) or getattr(v, "is_string", False) or not hasattr(v, "backend_buffer"):
         return False
@@ -964,19 +969,35 @@ def _naming_rule(opts, is_table):
     return t[0].lower()
 
 
+def _schemes_of(item):
+    """One bin argument may itself be a cell of schemes for that one variable."""
+    inner = _cell_items(item)
+    return inner if inner is not None else [item]
+
+
 def _expand_schemes(spec, nvars, fn="groupsummary"):
+    """A list of schemes for each grouping variable.
+
+    A scalar scheme applies to every variable. A cell with one entry per variable assigns
+    each entry to that variable, and an entry that is itself a cell is several schemes for
+    that variable (R2024a). One variable and a cell of schemes is that same case: every
+    scheme applies to the variable. The public pages do not name an error id when the
+    lengths disagree; this uses the project id ``MATLAB:<fn>:InvalidBins``.
+    """
     if spec is None:
-        return [None] * nvars
+        return [[None]] * nvars
     items = _cell_items(spec)
     if items is None:
-        return [spec] * nvars
+        return [[spec]] * nvars
     if len(items) == 1:
-        return items * nvars
+        return [_schemes_of(items[0])] * nvars
+    if nvars == 1:
+        return [items]
     if len(items) != nvars:
-        raise _err(f"{fn}: group bins must be one scheme, or one scheme per grouping variable. "
-                   "Several schemes for a single variable are not supported.",
+        raise _err(f"{fn}: the number of binning schemes must match the number of grouping variables, "
+                   "or one of them must be scalar.",
                    f"MATLAB:{fn}:InvalidBins")
-    return items
+    return [_schemes_of(it) for it in items]
 
 
 def _fmt_edge(x):
@@ -1108,31 +1129,556 @@ def _time_codes(col, scheme):
     return codes.reshape(v.shape), cats
 
 
+# Calendar-width units from the groupsummary / discretize tables (read 2026-11-07).
+# discretize caps a duration binning at 2**16 bins and widens the step past that.
+_MAX_BINS = 65536
+_CAL_WIDTH = ("second", "minute", "hour", "day", "week", "month", "quarter", "year", "decade", "century")
+# A duration has no calendar. 'year' is the fixed year the discretize page names; the others are fixed lengths.
+_YEAR_DAYS = 365.2425
+_DURATION_WIDTH = {
+    "second": 1.0 / 86400.0, "minute": 1.0 / 1440.0, "hour": 1.0 / 24.0, "day": 1.0, "year": _YEAR_DAYS,
+}
+
+
+def _bracket(a, b, i, nb, which):
+    if which == "left":
+        return f"[{a}, {b}]" if i == nb - 1 else f"[{a}, {b})"
+    return f"[{a}, {b}]" if i == 0 else f"({a}, {b}]"
+
+
+def _finite_time(col):
+    flat = np.asarray(col.v, float).reshape(-1)
+    return flat, flat[np.isfinite(flat)]
+
+
+def _empty_time_bins(col, name):
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    shape = np.asarray(col.v, float).shape
+    return CategoricalValue(np.zeros(shape, dtype=np.int64), [], ordinal=True), name
+
+
+def _categorical_bins(values, edges, labels, which):
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    codes = _codes_for_edges(np.asarray(values, float), np.asarray(edges, float), which)
+    return CategoricalValue(codes, labels, ordinal=True)
+
+
+def _unit_start(dn, unit):
+    from openmatlab.libs.datetime_arrays import _start
+    from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
+
+    if unit == "decade":
+        y = parts_from_datenum(dn)[0]
+        return datenum_from_parts(y - (y % 10), 1, 1)
+    if unit == "century":
+        y = parts_from_datenum(dn)[0]
+        return datenum_from_parts(y - (y % 100), 1, 1)
+    return _start(dn, unit)
+
+
+def _unit_add(dn, unit, n):
+    from openmatlab.libs.datetime_arrays import _add
+
+    if n == 0:
+        return dn
+    if unit == "decade":
+        return _add(dn, "year", 10 * n)
+    if unit == "century":
+        return _add(dn, "year", 100 * n)
+    return _add(dn, unit, n)
+
+
+def _calendar_step(unit, left, hi):
+    """How many natural bins to fuse so the result stays within ``_MAX_BINS``."""
+    from openmatlab.runtime.objects import parts_from_datenum
+
+    def month_index(dn):
+        y, mo = parts_from_datenum(dn)[:2]
+        return y * 12 + (mo - 1)
+
+    span = hi - left
+    if unit == "second":
+        n = span * 86400.0
+    elif unit == "minute":
+        n = span * 1440.0
+    elif unit == "hour":
+        n = span * 24.0
+    elif unit == "day":
+        n = span
+    elif unit == "week":
+        n = span / 7.0
+    elif unit == "month":
+        n = month_index(hi) - month_index(left)
+    elif unit == "quarter":
+        n = (month_index(hi) - month_index(left)) / 3.0
+    elif unit == "year":
+        n = parts_from_datenum(hi)[0] - parts_from_datenum(left)[0]
+    elif unit == "decade":
+        n = (parts_from_datenum(hi)[0] - parts_from_datenum(left)[0]) / 10.0
+    else:
+        n = (parts_from_datenum(hi)[0] - parts_from_datenum(left)[0]) / 100.0
+    n = max(1, int(math.ceil(n - 1e-9)) + 1)
+    return max(1, int(math.ceil(n / _MAX_BINS)))
+
+
+def _walk_edges(left, hi, advance, fn, step=1):
+    """Edges from ``left`` through the first edge strictly after ``hi``.
+
+    ``advance(origin, n)`` is the edge ``n`` widths after ``origin``, computed from that origin
+    rather than from the previous edge. Repeated ``cursor + width`` drifts off a datetime or
+    duration that was built in one step, and an exact boundary then falls in the next bin.
+    If ``step`` still needs more than ``_MAX_BINS`` edges, it doubles, which is the larger width
+    discretize uses past that cap.
+    """
+    step = max(1, int(step))
+    origin = float(left)
+    for _attempt in range(16):
+        edges = [origin]
+        covered = False
+        for i in range(1, _MAX_BINS + 1):
+            nxt = float(advance(origin, i * step))
+            if not np.isfinite(nxt) or nxt <= edges[-1]:
+                raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
+            edges.append(nxt)
+            if nxt > hi:
+                covered = True
+                break
+        if covered:
+            return np.asarray(edges, float)
+        step *= 2
+    raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+
+
+def _calendar_edge(origin, unit, n):
+    """Boundary ``n`` units after ``origin``, in the same formula ``datetime`` uses.
+
+    Hour, minute, and second edges are rebuilt from the clock time. Adding ``1/24`` onto the
+    previous edge does not equal ``datetime(y, mo, d, h, mi, s)`` once the additions repeat.
+    """
+    n = int(n)
+    if n == 0:
+        return float(origin)
+    if unit in ("year", "quarter", "month", "decade", "century", "week", "day"):
+        return float(_unit_add(float(origin), unit, n))
+    import datetime as _dt
+
+    from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
+
+    y, mo, d, h, mi, s = parts_from_datenum(origin)
+    if unit == "hour":
+        extra, h = divmod(int(h) + n, 24)
+        mi, sec = 0, 0
+    elif unit == "minute":
+        extra_h, mi = divmod(int(mi) + n, 60)
+        extra, h = divmod(int(h) + extra_h, 24)
+        sec = 0
+    else:
+        extra_m, sec = divmod(int(round(s)) + n, 60)
+        extra_h, mi = divmod(int(mi) + extra_m, 60)
+        extra, h = divmod(int(h) + extra_h, 24)
+    day = _dt.date(int(y), int(mo), int(d)) + _dt.timedelta(days=int(extra))
+    return datenum_from_parts(day.year, day.month, day.day, h, mi, sec)
+
+
+def _point_label(edge, unit):
+    from openmatlab.runtime.objects import java_format, parts_from_datenum
+
+    y, mo = parts_from_datenum(edge)[:2]
+    if unit == "year":
+        return f"{y:04d}"
+    if unit == "month":
+        return java_format(edge, "MMM-yyyy")
+    if unit == "quarter":
+        return f"Q{(mo - 1) // 3 + 1} {y}"
+    if unit == "day":
+        return java_format(edge, "dd-MMM-yyyy")
+    return java_format(edge, "dd-MMM-yyyy HH:mm:ss")
+
+
+def _calendar_labels(edges, unit, which):
+    """Category names from the discretize ``dur,'categorical'`` table."""
+    from openmatlab.runtime.objects import java_format, parts_from_datenum
+
+    nb = len(edges) - 1
+    labels = []
+    for i in range(nb):
+        left, right = float(edges[i]), float(edges[i + 1])
+        if unit == "week":
+            # The published example labels a week by its first day and its last day.
+            a = java_format(left, "dd-MMM-yyyy")
+            b = java_format(right - 1.0, "dd-MMM-yyyy")
+            labels.append(_bracket(a, b, i, nb, which))
+        elif unit in ("decade", "century"):
+            a = str(parts_from_datenum(left)[0])
+            b = str(parts_from_datenum(right)[0])
+            labels.append(_bracket(a, b, i, nb, which))
+        else:
+            labels.append(_point_label(left, unit))
+    return labels
+
+
+def _bin_datetime_unit(col, name, unit, which, fn):
+    _flat, finite = _finite_time(col)
+    if finite.size == 0:
+        return _empty_time_bins(col, f"{unit}_{name}")
+    lo, hi = float(finite.min()), float(finite.max())
+    left = _unit_start(lo, unit)
+
+    def advance(origin, n):
+        return _calendar_edge(origin, unit, n)
+
+    edges = _walk_edges(left, hi, advance, fn, _calendar_step(unit, left, hi))
+    labels = _calendar_labels(edges, unit, which)
+    return _categorical_bins(col.v, edges, labels, which), f"{unit}_{name}"
+
+
+def _fixed_edges(lo, hi, width, fn):
+    """Edges on multiples of ``width``.
+
+    ``width`` and the values are in one scale. For a duration that scale is canonical seconds,
+    because ``n * (1/1440)`` and ``(60*n) * (1/86400)`` are not the same day-float.
+    ``(k0 + n) * width`` is that scale's own product. ``anchor + n * width`` is a different float
+    once ``anchor`` is itself a rounded product.
+    """
+    if not np.isfinite(width) or width <= 0:
+        raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
+    k0 = math.floor(lo / width + 1e-12)
+    left = k0 * width
+    if left > lo:
+        k0 -= 1
+        left = k0 * width
+    span = max(0.0, hi - left)
+    n = max(1, int(math.ceil(span / width - 1e-9)) + 1)
+    step = max(1, int(math.ceil(n / _MAX_BINS)))
+
+    def advance(origin, n):
+        return (k0 + n) * width
+
+    return _walk_edges(left, hi, advance, fn, step)
+
+
+# Same scales as the duration constructors: count * scale, stored in days.
+# Milliseconds are a constructor scale; the named binning units do not include them.
+_CONSTRUCTOR_SCALES = (
+    (1.0 / 86400000.0, 0.001),
+    (1.0 / 86400.0, 1.0),
+    (1.0 / 1440.0, 60.0),
+    (1.0 / 24.0, 3600.0),
+    (1.0, 86400.0),
+    (_YEAR_DAYS, _YEAR_DAYS * 86400.0),
+)
+
+
+def _exact_scale_counts(width, scale):
+    """Floats ``c`` with ``c * scale == width`` exactly, next to ``width / scale``.
+
+    ``(count * scale) / scale`` does not always return ``count``. ``60 * (1/86400) / (1/86400)``
+    is ``59.99999999999999``, while ``60 * (1/86400)`` is still the stored value. The neighbors
+    are other exact multiplicands, not a tolerance on the timestamp.
+    """
+    quot = width / scale
+    if not math.isfinite(quot) or quot <= 0:
+        return []
+    start = quot
+    for _ in range(2):
+        start = math.nextafter(start, -math.inf)
+    found = []
+    count = start
+    for _ in range(5):
+        if count > 0 and count * scale == width:
+            found.append(count)
+        count = math.nextafter(count, math.inf)
+    return found
+
+
+def _duration_step_seconds(width):
+    """Seconds of clock time for a duration stored in days.
+
+    Pick the simplest constructor count that multiplies back to the stored bits, then apply the
+    integer factor between units. ``minutes(1)`` is one minute, which is 60 seconds.
+    ``seconds(60)`` is the same 60 seconds even though ``width * 86400`` is not 60 and the two
+    stored day values differ by one ulp. A sum that is not an exact preimage of either unit keeps
+    its own quotient.
+    """
+    best = None
+    for scale, per in _CONSTRUCTOR_SCALES:
+        for count in _exact_scale_counts(width, scale):
+            seconds = count * per
+            if not math.isfinite(seconds) or seconds <= 0:
+                continue
+            rank = (len(repr(count)), 0 if seconds == math.floor(seconds) else 1, len(repr(seconds)))
+            if best is None or rank < best[0]:
+                best = (rank, seconds)
+    if best is None:
+        return float(width) * 86400.0
+    return best[1]
+
+
+def _duration_key(day):
+    """Canonical seconds for one stored duration, including a negative length.
+
+    Zero stays zero. A negative value uses the same constructor preimage as its magnitude.
+    ``seconds(120)`` and ``minutes(2)`` are adjacent day-floats and both keys are 120.
+    The next day-float after that pair is not an exact preimage of either unit, so its key
+    is not 120.
+    """
+    day = float(day)
+    if not math.isfinite(day) or day == 0.0:
+        return day
+    mag = _duration_step_seconds(abs(day))
+    return -mag if day < 0.0 else mag
+
+
+def _exact_second_period(step):
+    """Smallest step count whose float product is an integer number of seconds.
+
+    ``1000 * 0.001 == 1`` in float, so a millisecond can be carried as whole seconds plus a
+    remainder below one second. The binary rational of ``0.001`` has a huge denominator;
+    multiplying that by an epoch-scale index is a different operation and is not used here.
+    """
+    if step >= 1 and step == math.floor(step):
+        return 1, int(step)
+    for seconds in range(1, 61):
+        count = int(round(seconds / step))
+        if count >= 1 and count * step == float(seconds):
+            return count, seconds
+    return None
+
+
+def _component_edges(lo, hi, width, fn):
+    """Datetime edges for any duration width, built with ``datenum_from_parts``.
+
+    Steps are counted from the local midnight, not from datenum 0. When an integer number of
+    steps is an exact integer number of seconds, those seconds are carried as integers and only
+    the short remainder is passed as the seconds field. ``Fraction(width * 86400)`` times the
+    absolute step index is not that field: for ``0.001`` the product moves the edge by about a
+    microsecond, which is one datenum ulp.
+    """
+    import datetime as _dt
+    from fractions import Fraction
+
+    from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
+
+    if not np.isfinite(width) or width <= 0:
+        raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
+    step = _duration_step_seconds(float(width))
+    if not np.isfinite(step) or step <= 0:
+        raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
+    period = _exact_second_period(step)
+    day_index = math.floor(float(lo))
+    y, mo, d = parts_from_datenum(float(day_index))[:3]
+    anchor = _dt.date(int(y), int(mo), int(d))
+    midnight = datenum_from_parts(anchor.year, anchor.month, anchor.day)
+    if midnight > lo:
+        anchor = anchor - _dt.timedelta(days=1)
+        midnight = datenum_from_parts(anchor.year, anchor.month, anchor.day)
+
+    def edge_at(n):
+        n = int(n)
+        if period is not None:
+            per, whole = period
+            chunks, rem = divmod(n, per)
+            frac = rem * step
+            frac_whole = int(math.floor(frac))
+            frac_f = frac - frac_whole
+            total = chunks * whole + frac_whole
+        else:
+            # No exact whole-second period. Stay on this midnight; do not scale by the epoch.
+            total_s = Fraction(step) * n
+            total = int(total_s)
+            frac_f = float(total_s - total)
+        hh, rem_s = divmod(int(total), 3600)
+        mm, ss = divmod(rem_s, 60)
+        extra, hh = divmod(hh, 24)
+        day = anchor + _dt.timedelta(days=int(extra))
+        return datenum_from_parts(day.year, day.month, day.day, int(hh), int(mm), ss + frac_f)
+
+    guess = max(0, int(math.floor((float(lo) - midnight) * 86400.0 / step)))
+    hi_k = guess
+    for _step in range(80):
+        if edge_at(hi_k) > lo:
+            break
+        hi_k = hi_k * 2 + 1
+    else:
+        raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+    lo_k = 0
+    while lo_k < hi_k:
+        mid = (lo_k + hi_k + 1) // 2
+        if edge_at(mid) <= lo:
+            lo_k = mid
+        else:
+            hi_k = mid - 1
+    k0 = lo_k
+    span = max(float(width), float(hi) - float(lo))
+    nwidths = max(1, int(math.ceil(span / float(width))) + 1)
+    fuse = max(1, int(math.ceil(nwidths / _MAX_BINS)))
+
+    def advance(origin, n):
+        return edge_at(k0 + int(n))
+
+    return _walk_edges(edge_at(k0), hi, advance, fn, fuse)
+
+
+def _duration_text(days, fmt):
+    from openmatlab.runtime.objects import DurationValue
+
+    return DurationValue(np.array([[float(days)]]), fmt).display_text().strip()
+
+
+def _bin_fixed_width(values, width, which, fmt_edge, fn):
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    raw = np.asarray(values, float)
+    flat = raw.reshape(-1)
+    finite = flat[np.isfinite(flat)]
+    if finite.size == 0:
+        return CategoricalValue(np.zeros(raw.shape, dtype=np.int64), [], ordinal=True)
+    keys = np.array([_duration_key(v) for v in flat], float)
+    finite_keys = keys[np.isfinite(keys)]
+    width_s = _duration_step_seconds(float(width))
+    edges = _fixed_edges(float(finite_keys.min()), float(finite_keys.max()), width_s, fn)
+    # Labels stay on the width's own day product. Classification uses canonical seconds, so
+    # seconds(120) and minutes(2) meet on 120 even though their day-floats differ by one ulp.
+    day_edges = np.asarray(edges, float) * (float(width) / width_s)
+    nb = len(edges) - 1
+    labels = [_bracket(fmt_edge(day_edges[i]), fmt_edge(day_edges[i + 1]), i, nb, which) for i in range(nb)]
+    codes = _codes_for_edges(keys.reshape(raw.shape), edges, which)
+    return CategoricalValue(codes, labels, ordinal=True)
+
+
+def _cd_days(cd):
+    """Fixed length of a calendar duration, using the 365.2425-day year from the discretize page."""
+    m = float(np.asarray(cd.m, float).reshape(-1)[0])
+    d = float(np.asarray(cd.d, float).reshape(-1)[0])
+    t = float(np.asarray(cd.t, float).reshape(-1)[0])
+    return m * (_YEAR_DAYS / 12.0) + d + t
+
+
+def _require_scalar(v, fn, what):
+    if v.numel() != 1:
+        raise _err(f"{fn}: {what} must be a scalar.", f"MATLAB:{fn}:InvalidBins")
+
+
+def _bin_duration_width(col, name, width, which, fn):
+    from openmatlab.runtime.objects import DatetimeValue, DurationValue, default_datetime_format, java_format
+
+    if isinstance(col, DatetimeValue):
+        _flat, finite = _finite_time(col)
+        if finite.size == 0:
+            return _empty_time_bins(col, "disc_" + name)
+        edges = _component_edges(float(finite.min()), float(finite.max()), width, fn)
+        fmt = col.fmt or default_datetime_format(edges)
+        nb = len(edges) - 1
+        labels = [_bracket(java_format(float(edges[i]), fmt), java_format(float(edges[i + 1]), fmt), i, nb, which)
+                  for i in range(nb)]
+        return _categorical_bins(col.v, edges, labels, which), "disc_" + name
+    if isinstance(col, DurationValue):
+        binned = _bin_fixed_width(col.v, width, which, lambda z: _duration_text(z, col.fmt), fn)
+        return binned, "disc_" + name
+    raise _err(f"{fn}: a duration bin width requires a datetime or duration grouping variable.",
+               f"MATLAB:{fn}:InvalidBins")
+
+
+def _bin_calendar_width(col, name, cd, which, fn):
+    """A calendarDuration width. On a datetime it steps by calendar addition from the earliest value.
+
+    On a duration there is no calendar, so the width becomes the fixed length above (a calendar
+    year is 365.2425 days, and a month is one twelfth of that). Month-end clamping is the
+    calendar addition this project already uses; end-of-month is not preserved.
+    """
+    from openmatlab.runtime.calendar_duration import shift, CalendarDurationValue
+    from openmatlab.runtime.objects import DatetimeValue, DurationValue, default_datetime_format, java_format
+
+    _require_scalar(cd, fn, "a calendarDuration bin width")
+    if isinstance(col, DurationValue):
+        return _bin_duration_width(col, name, _cd_days(cd), which, fn)
+    if not isinstance(col, DatetimeValue):
+        raise _err(f"{fn}: a calendarDuration bin width requires a datetime or duration grouping variable.",
+                   f"MATLAB:{fn}:InvalidBins")
+    _flat, finite = _finite_time(col)
+    if finite.size == 0:
+        return _empty_time_bins(col, "disc_" + name)
+    lo, hi = float(finite.min()), float(finite.max())
+
+    def advance(cursor, step):
+        stepped = CalendarDurationValue(cd.m * step, cd.d * step, cd.t * step)
+        return float(np.asarray(shift(np.array([[cursor]]), stepped), float).reshape(-1)[0])
+
+    probe = advance(lo, 1)
+    step0 = 1
+    if probe > lo:
+        n = max(1, int(math.ceil((hi - lo) / (probe - lo) - 1e-9)) + 1)
+        step0 = max(1, int(math.ceil(n / _MAX_BINS)))
+    edges = _walk_edges(lo, hi, advance, fn, step0)
+    fmt = col.fmt or default_datetime_format(edges)
+    nb = len(edges) - 1
+    labels = [_bracket(java_format(float(edges[i]), fmt), java_format(float(edges[i + 1]), fmt), i, nb, which)
+              for i in range(nb)]
+    return _categorical_bins(col.v, edges, labels, which), "disc_" + name
+
+
+def _bin_datetime_edges(col, name, edges_dt, which, fn):
+    from openmatlab.runtime.objects import DatetimeValue, default_datetime_format, java_format
+
+    ev = np.asarray(edges_dt.v, float).reshape(-1)
+    if ev.size < 2 or not np.all(np.isfinite(ev)) or np.any(np.diff(ev) <= 0):
+        raise _err(f"{fn}: datetime bin edges must be a finite, strictly increasing vector.",
+                   f"MATLAB:{fn}:InvalidBins")
+    if not isinstance(col, DatetimeValue):
+        raise _err(f"{fn}: datetime bin edges require a datetime grouping variable.", f"MATLAB:{fn}:InvalidBins")
+    fmt = edges_dt.fmt or default_datetime_format(edges_dt.v)
+    nb = ev.size - 1
+    labels = [_bracket(java_format(float(ev[i]), fmt), java_format(float(ev[i + 1]), fmt), i, nb, which)
+              for i in range(nb)]
+    return _categorical_bins(col.v, ev, labels, which), "disc_" + name
+
+
 def _apply_bin(col, name, scheme, which, fn="groupsummary"):
     """Return ``(binned column, output name)``. ``scheme`` None or ``'none'`` keeps the column."""
+    from openmatlab.runtime.calendar_duration import CalendarDurationValue
     from openmatlab.runtime.objects import DatetimeValue, DurationValue
 
     if scheme is None:
         return col, name
-    if isinstance(scheme, DurationValue) or isinstance(scheme, DatetimeValue):
-        raise _err(f"{fn}: duration bin widths and datetime bin edges are not supported yet.",
-                   f"MATLAB:{fn}:Unsupported")
+    if isinstance(scheme, DatetimeValue):
+        return _bin_datetime_edges(col, name, scheme, which, fn)
+    if isinstance(scheme, CalendarDurationValue):
+        return _bin_calendar_width(col, name, scheme, which, fn)
+    if isinstance(scheme, DurationValue):
+        _require_scalar(scheme, fn, "a duration bin width")
+        width = float(np.asarray(scheme.v, float).reshape(-1)[0])
+        return _bin_duration_width(col, name, width, which, fn)
     t = texts(scheme)
     if t is not None:
         key = t[0].lower()
         if key == "none":
             return col, name
-        if key not in _TIME_CATEGORICAL:
-            raise _err(f"{fn}: binning scheme '{key}' is not supported yet.", f"MATLAB:{fn}:Unsupported")
-        if not isinstance(col, DatetimeValue):
-            raise _err(f"{fn}: binning scheme '{key}' requires a datetime grouping variable.",
-                       f"MATLAB:{fn}:InvalidBins")
-        from openmatlab.runtime.categorical_value import CategoricalValue
+        if key in _TIME_CATEGORICAL:
+            if not isinstance(col, DatetimeValue):
+                raise _err(f"{fn}: binning scheme '{key}' requires a datetime grouping variable.",
+                           f"MATLAB:{fn}:InvalidBins")
+            from openmatlab.runtime.categorical_value import CategoricalValue
 
-        codes, cats = _time_codes(col, key)
-        return CategoricalValue(codes, cats, ordinal=True), f"{key}_{name}"
+            codes, cats = _time_codes(col, key)
+            return CategoricalValue(codes, cats, ordinal=True), f"{key}_{name}"
+        if key in _CAL_WIDTH:
+            if isinstance(col, DatetimeValue):
+                return _bin_datetime_unit(col, name, key, which, fn)
+            if isinstance(col, DurationValue):
+                if key not in _DURATION_WIDTH:
+                    raise _err(f"{fn}: binning scheme '{key}' requires a datetime grouping variable.",
+                               f"MATLAB:{fn}:InvalidBins")
+                binned = _bin_fixed_width(col.v, _DURATION_WIDTH[key], which,
+                                          lambda z: _duration_text(z, col.fmt), fn)
+                return binned, f"{key}_{name}"
+            raise _err(f"{fn}: binning scheme '{key}' requires a datetime or duration grouping variable.",
+                       f"MATLAB:{fn}:InvalidBins")
+        raise _err(f"{fn}: binning scheme '{key}' is not supported yet.", f"MATLAB:{fn}:Unsupported")
     kind, payload = _numeric_edges(scheme, fn)
-    if isinstance(col, DatetimeValue) or getattr(col, "is_object", False) or is_text(col) or not hasattr(col, "backend_buffer"):
+    if isinstance(col, (DatetimeValue, DurationValue)) or getattr(col, "is_object", False) or is_text(col) \
+            or not hasattr(col, "backend_buffer"):
         raise _err(f"{fn}: numeric bin edges require a numeric grouping variable.", f"MATLAB:{fn}:InvalidBins")
     if kind == "count":
         x = np.asarray(col.backend_buffer(), float)
@@ -1357,12 +1903,13 @@ def _array_pairs(A, methods):
 
 
 def _bin_columns(cols, names, bins, which, fn="groupsummary"):
-    schemes = _expand_schemes(bins, len(cols), fn)
-    out_c, out_n = [], []
-    for c, n, s in zip(cols, names, schemes):
-        bc, bn = _apply_bin(c, n, s, which, fn)
-        out_c.append(bc)
-        out_n.append(bn)
+    per_var = _expand_schemes(bins, len(cols), fn)
+    out_c, out_n, taken = [], [], set()
+    for c, n, schemes in zip(cols, names, per_var):
+        for s in schemes:
+            bc, bn = _apply_bin(c, n, s, which, fn)
+            out_c.append(bc)
+            out_n.append(_fresh(bn, taken))
     return out_c, out_n
 
 
@@ -1554,7 +2101,9 @@ def _prepare_groups(cols, names, n, bins, which, opts, fn):
     grouped = TableValue(gnames, gcols, n)
     # Missing keys stay one group so a row-aligned result still has every input row.
     G, _firsts, _keys, _counts = _group_table(grouped, list(range(len(gcols))), fn, opts, allow_empty=False)
-    extra = [(bn, bc) for orig, bc, bn in zip(cols, gcols, gnames) if bc is not orig]
+    # 'none' returns the original column. Every other scheme is a bin column to append.
+    orig = {id(c) for c in cols}
+    extra = [(bn, bc) for bc, bn in zip(gcols, gnames) if id(bc) not in orig]
     return G, gcols, extra
 
 
