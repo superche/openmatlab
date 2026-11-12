@@ -1357,51 +1357,79 @@ def _fixed_edges(lo, hi, width, fn):
     return _walk_edges(left, hi, advance, fn, step)
 
 
+def _exact_second_period(step):
+    """Smallest step count whose float product is an integer number of seconds.
+
+    ``1000 * 0.001 == 1`` in float, so a millisecond can be carried as whole seconds plus a
+    remainder below one second. The binary rational of ``0.001`` has a huge denominator;
+    multiplying that by an epoch-scale index is a different operation and is not used here.
+    """
+    if step >= 1 and step == math.floor(step):
+        return 1, int(step)
+    for seconds in range(1, 61):
+        count = int(round(seconds / step))
+        if count >= 1 and count * step == float(seconds):
+            return count, seconds
+    return None
+
+
 def _component_edges(lo, hi, width, fn):
     """Datetime edges for any duration width, built with ``datenum_from_parts``.
 
-    A datetime is ``day + h/24 + mi/1440 + s/86400``. Adding ``n * width`` to a datenum is not
-    that value, for a half-second width as well as for an hour. The width is carried as an exact
-    rational number of seconds, then split into clock components. There is no whole-second gate
-    and no day-offset fallback.
+    Steps are counted from the local midnight, not from datenum 0. When an integer number of
+    steps is an exact integer number of seconds, those seconds are carried as integers and only
+    the short remainder is passed as the seconds field. ``Fraction(width * 86400)`` times the
+    absolute step index is not that field: for ``0.001`` the product moves the edge by about a
+    microsecond, which is one datenum ulp.
     """
+    import datetime as _dt
     from fractions import Fraction
 
     from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
 
     if not np.isfinite(width) or width <= 0:
         raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
-    width_s = Fraction(float(width) * 86400.0)
-    if width_s <= 0:
+    step = float(width) * 86400.0
+    if not np.isfinite(step) or step <= 0:
         raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
+    period = _exact_second_period(step)
+    day_index = math.floor(float(lo))
+    y, mo, d = parts_from_datenum(float(day_index))[:3]
+    anchor = _dt.date(int(y), int(mo), int(d))
+    midnight = datenum_from_parts(anchor.year, anchor.month, anchor.day)
+    if midnight > lo:
+        anchor = anchor - _dt.timedelta(days=1)
+        midnight = datenum_from_parts(anchor.year, anchor.month, anchor.day)
 
-    def edge_at(k):
-        total = width_s * int(k)
-        day = int(total // 86400)
-        sod = total - day * 86400
-        whole = int(sod)
-        frac = float(sod - whole)
-        hh, rem = divmod(whole, 3600)
-        mm, ss = divmod(rem, 60)
-        y, mo, d = parts_from_datenum(float(day))[:3]
-        return datenum_from_parts(y, mo, d, hh, mm, ss + frac)
+    def edge_at(n):
+        n = int(n)
+        if period is not None:
+            per, whole = period
+            chunks, rem = divmod(n, per)
+            frac = rem * step
+            frac_whole = int(math.floor(frac))
+            frac_f = frac - frac_whole
+            total = chunks * whole + frac_whole
+        else:
+            # No exact whole-second period. Stay on this midnight; do not scale by the epoch.
+            total_s = Fraction(step) * n
+            total = int(total_s)
+            frac_f = float(total_s - total)
+        hh, rem_s = divmod(int(total), 3600)
+        mm, ss = divmod(rem_s, 60)
+        extra, hh = divmod(hh, 24)
+        day = anchor + _dt.timedelta(days=int(extra))
+        return datenum_from_parts(day.year, day.month, day.day, int(hh), int(mm), ss + frac_f)
 
-    guess = int(math.floor(float(lo) * 86400.0 / float(width_s)))
-    lo_k, hi_k = guess, guess
-    # The guess uses day-offset division, which is not the component value. Expand until the
-    # component edges bracket ``lo``, then take the greatest edge that is still <= ``lo``.
-    for _step in range(64):
-        if edge_at(lo_k) <= lo:
-            break
-        lo_k -= max(1, hi_k - lo_k + 1)
-    else:
-        raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
-    for _step in range(64):
+    guess = max(0, int(math.floor((float(lo) - midnight) * 86400.0 / step)))
+    hi_k = guess
+    for _step in range(80):
         if edge_at(hi_k) > lo:
             break
-        hi_k += max(1, hi_k - lo_k + 1)
+        hi_k = hi_k * 2 + 1
     else:
         raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+    lo_k = 0
     while lo_k < hi_k:
         mid = (lo_k + hi_k + 1) // 2
         if edge_at(mid) <= lo:
@@ -1411,12 +1439,12 @@ def _component_edges(lo, hi, width, fn):
     k0 = lo_k
     span = max(float(width), float(hi) - float(lo))
     nwidths = max(1, int(math.ceil(span / float(width))) + 1)
-    step = max(1, int(math.ceil(nwidths / _MAX_BINS)))
+    fuse = max(1, int(math.ceil(nwidths / _MAX_BINS)))
 
     def advance(origin, n):
         return edge_at(k0 + int(n))
 
-    return _walk_edges(edge_at(k0), hi, advance, fn, step)
+    return _walk_edges(edge_at(k0), hi, advance, fn, fuse)
 
 
 def _duration_text(days, fmt):
