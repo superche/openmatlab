@@ -1335,10 +1335,12 @@ def _bin_datetime_unit(col, name, unit, which, fn):
 
 
 def _fixed_edges(lo, hi, width, fn):
-    """Edges on multiples of ``width`` for a duration value.
+    """Edges on multiples of ``width``.
 
-    A duration is stored as ``n * unit``, so the edge is the same product ``(k0 + n) * width``.
-    ``anchor + n * width`` is a different float once ``anchor`` is itself a rounded product.
+    ``width`` and the values are in one scale. For a duration that scale is canonical seconds,
+    because ``n * (1/1440)`` and ``(60*n) * (1/86400)`` are not the same day-float.
+    ``(k0 + n) * width`` is that scale's own product. ``anchor + n * width`` is a different float
+    once ``anchor`` is itself a rounded product.
     """
     if not np.isfinite(width) or width <= 0:
         raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
@@ -1412,6 +1414,21 @@ def _duration_step_seconds(width):
     if best is None:
         return float(width) * 86400.0
     return best[1]
+
+
+def _duration_key(day):
+    """Canonical seconds for one stored duration, including a negative length.
+
+    Zero stays zero. A negative value uses the same constructor preimage as its magnitude.
+    ``seconds(120)`` and ``minutes(2)`` are adjacent day-floats and both keys are 120.
+    The next day-float after that pair is not an exact preimage of either unit, so its key
+    is not 120.
+    """
+    day = float(day)
+    if not math.isfinite(day) or day == 0.0:
+        return day
+    mag = _duration_step_seconds(abs(day))
+    return -mag if day < 0.0 else mag
 
 
 def _exact_second_period(step):
@@ -1511,16 +1528,24 @@ def _duration_text(days, fmt):
 
 
 def _bin_fixed_width(values, width, which, fmt_edge, fn):
-    flat = np.asarray(values, float).reshape(-1)
+    from openmatlab.runtime.categorical_value import CategoricalValue
+
+    raw = np.asarray(values, float)
+    flat = raw.reshape(-1)
     finite = flat[np.isfinite(flat)]
     if finite.size == 0:
-        from openmatlab.runtime.categorical_value import CategoricalValue
-
-        return CategoricalValue(np.zeros(np.asarray(values, float).shape, dtype=np.int64), [], ordinal=True)
-    edges = _fixed_edges(float(finite.min()), float(finite.max()), width, fn)
+        return CategoricalValue(np.zeros(raw.shape, dtype=np.int64), [], ordinal=True)
+    keys = np.array([_duration_key(v) for v in flat], float)
+    finite_keys = keys[np.isfinite(keys)]
+    width_s = _duration_step_seconds(float(width))
+    edges = _fixed_edges(float(finite_keys.min()), float(finite_keys.max()), width_s, fn)
+    # Labels stay on the width's own day product. Classification uses canonical seconds, so
+    # seconds(120) and minutes(2) meet on 120 even though their day-floats differ by one ulp.
+    day_edges = np.asarray(edges, float) * (float(width) / width_s)
     nb = len(edges) - 1
-    labels = [_bracket(fmt_edge(edges[i]), fmt_edge(edges[i + 1]), i, nb, which) for i in range(nb)]
-    return _categorical_bins(values, edges, labels, which)
+    labels = [_bracket(fmt_edge(day_edges[i]), fmt_edge(day_edges[i + 1]), i, nb, which) for i in range(nb)]
+    codes = _codes_for_edges(keys.reshape(raw.shape), edges, which)
+    return CategoricalValue(codes, labels, ordinal=True)
 
 
 def _cd_days(cd):

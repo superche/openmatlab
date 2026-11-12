@@ -709,6 +709,147 @@ def test_duration_millisecond_width_stays_on_the_scaled_grid():
     )
 
 
+def test_n_times_unit_does_not_match_every_equivalent_constructor():
+    """``n * minute`` is not ``seconds(60*n)`` for every n, and the two floats are adjacent.
+
+    Both are exact constructor values of the same number of seconds. The day-float just outside
+    that pair is not an exact preimage of either unit, so it is not 120 seconds. Reconciling the
+    constructors does not swallow that neighbor.
+    """
+    from openmatlab.libs.table_join_group import _duration_step_seconds
+
+    seconds_scale = 1.0 / 86400.0
+    minutes_scale = 1.0 / 1440.0
+    hours_scale = 1.0 / 24.0
+    stored_120 = 120.0 * seconds_scale
+    two_minutes = 2.0 * minutes_scale
+    assert stored_120 != two_minutes
+    assert math.nextafter(stored_120, math.inf) == two_minutes
+    assert _duration_step_seconds(stored_120) == 120.0
+    assert _duration_step_seconds(two_minutes) == 120.0
+    assert _duration_step_seconds(math.nextafter(stored_120, -math.inf)) != 120.0
+    assert _duration_step_seconds(math.nextafter(two_minutes, math.inf)) != 120.0
+    # The other direction: minutes(60) sits one ulp above hours(1).
+    assert 60.0 * minutes_scale != hours_scale
+    assert 60.0 * minutes_scale > hours_scale
+    assert _duration_step_seconds(60.0 * minutes_scale) == 3600.0
+    assert _duration_step_seconds(hours_scale) == 3600.0
+
+
+def test_adjacent_duration_float_stays_off_the_equivalent_edge():
+    from openmatlab.libs.table_join_group import _bin_fixed_width
+
+    seconds_scale = 1.0 / 86400.0
+    minutes_scale = 1.0 / 1440.0
+    stored_120 = 120.0 * seconds_scale
+    two_minutes = 2.0 * minutes_scale
+    below = math.nextafter(stored_120, -math.inf)
+    above = math.nextafter(two_minutes, math.inf)
+    samples = np.array([[below], [stored_120], [two_minutes], [above]])
+    left = _bin_fixed_width(samples, minutes_scale, "left", lambda z: "e", "groupcounts")
+    right = _bin_fixed_width(samples, minutes_scale, "right", lambda z: "e", "groupcounts")
+    # Left: the float below 120 seconds is the previous bin. Both constructors open the next one.
+    assert left.codes.reshape(-1).tolist() == [1, 2, 2, 2]
+    # Right: both constructors close the bin. The float above that pair opens the next one.
+    assert right.codes.reshape(-1).tolist() == [1, 1, 1, 2]
+
+
+_DURATION_MINUTE = (
+    "seconds([0;90;120;180])",
+    "[seconds(0); seconds(90); seconds(90)+seconds(30); minutes(3)]",
+    "minutes([0;1.5;2;3])",
+)
+_DURATION_MINUTE_WIDTH = ("'minute'", "minutes(1)", "seconds(60)", "(minutes(2)-minutes(1))")
+
+
+@pytest.mark.parametrize("data", _DURATION_MINUTE)
+@pytest.mark.parametrize("width", _DURATION_MINUTE_WIDTH)
+@pytest.mark.parametrize("which, expected", [("left", [[1, 1, 1, 1]]), ("right", [[1, 2, 1]])])
+def test_duration_inputs_share_minute_edges_across_constructors(data, width, which, expected):
+    assert_rows(
+        f"d = {data}; [B,BG] = groupcounts(d, {width}, 'IncludedEdge', '{which}'); v = B';",
+        expected,
+    )
+
+
+@pytest.mark.parametrize("data", ("minutes([0;30;60;90])", "hours([0;0.5;1;1.5])", "seconds([0;1800;3600;5400])"))
+@pytest.mark.parametrize("width", ("'hour'", "hours(1)", "minutes(60)", "seconds(3600)"))
+@pytest.mark.parametrize("which, expected", [("left", [[2, 2]]), ("right", [[3, 1]])])
+def test_duration_inputs_share_hour_edges_across_constructors(data, width, which, expected):
+    assert_rows(
+        f"d = {data}; [B,BG] = groupcounts(d, {width}, 'IncludedEdge', '{which}'); v = B';",
+        expected,
+    )
+
+
+@pytest.mark.parametrize("data", ("seconds([0;15;30;60])", "minutes([0;0.25;0.5;1])"))
+@pytest.mark.parametrize("width", ("seconds(30)", "minutes(0.5)"))
+@pytest.mark.parametrize("which, expected", [("left", [[2, 1, 1]]), ("right", [[3, 1]])])
+def test_fractional_duration_units_share_edges(data, width, which, expected):
+    assert_rows(
+        f"d = {data}; [B,BG] = groupcounts(d, {width}, 'IncludedEdge', '{which}'); v = B';",
+        expected,
+    )
+
+
+@pytest.mark.parametrize("data", ("seconds([0;0.0005;0.001;0.002])", "milliseconds([0;0.5;1;2])"))
+@pytest.mark.parametrize("width", ("seconds(0.001)", "milliseconds(1)"))
+@pytest.mark.parametrize("which, expected", [("left", [[2, 1, 1]]), ("right", [[3, 1]])])
+def test_millisecond_duration_inputs_share_edges(data, width, which, expected):
+    assert_rows(
+        f"d = {data}; [B,BG] = groupcounts(d, {width}, 'IncludedEdge', '{which}'); v = B';",
+        expected,
+    )
+
+
+def test_negative_durations_and_zero_crossing_use_the_same_minute_edges():
+    assert_rows(
+        "d = seconds([-180;-120;-90;0]); [B,BG] = groupcounts(d, 'minute', 'IncludedEdge', 'left'); v = B';",
+        [[1, 2, 1]],
+    )
+    assert_rows(
+        "d = seconds([-180;-120;-90;0]); [B,BG] = groupcounts(d, minutes(1), 'IncludedEdge', 'right'); v = B';",
+        [[2, 1, 1]],
+    )
+    assert_rows(
+        "d = seconds([-30;0;30;60]); [B,BG] = groupcounts(d, 'minute', 'IncludedEdge', 'left'); v = B';",
+        [[1, 2, 1]],
+    )
+    assert_rows(
+        "d = seconds([-30;0;30;60]); [B,BG] = groupcounts(d, seconds(60), 'IncludedEdge', 'right'); v = B';",
+        [[2, 2]],
+    )
+
+
+def test_arithmetic_duration_is_not_pulled_onto_seconds_61():
+    # Right: 0 and seconds(61) close one bin. The sum is one ulp of a second past 61, so it opens the next.
+    assert_rows(
+        "d = [seconds(0); seconds(61); seconds(1)+minutes(1)];"
+        "[B,BG] = groupcounts(d, seconds(61), 'IncludedEdge', 'right'); v = B';",
+        [[2, 1]],
+    )
+    assert_rows(
+        "d = [seconds(0); seconds(61); seconds(1)+minutes(1)];"
+        "[B,BG] = groupcounts(d, seconds(61), 'IncludedEdge', 'left'); v = B';",
+        [[1, 2]],
+    )
+
+
+def test_four_group_functions_share_duration_minute_bins():
+    code = (
+        "d = seconds([0;90;120;180]); x = [1;2;4;8]; T = table(d, x);"
+    )
+    assert_rows(code + "[B,BG] = groupcounts(d, 'minute'); v = B';", [[1, 1, 1, 1]])
+    assert_rows(code + "S = groupsummary(T, 'd', 'minute', 'sum', 'x'); v = S.sum_x';", [[1, 2, 4, 8]])
+    kept = run(code + "G = groupfilter(T, 'd', 'minute', @(v) sum(v) == 2);")
+    assert kept.workspace.get("G").shape[0] == 1
+    assert_rows(code + "G = groupfilter(T, 'd', 'minute', @(v) sum(v) == 2); v = G.x';", [[2]])
+    assert_rows(
+        code + "H = grouptransform(T, 'd', 'minute', 'meancenter', 'x'); v = H.x';",
+        [[0, 0, 0, 0]],
+    )
+
+
 @pytest.mark.parametrize("code", [
     "groupsummary(table([1;2],[3;4],'VariableNames',{'g','x'}), 'g', 'week', 'sum', 'x')",
     "groupsummary(table(days([1;2]), [3;4], 'VariableNames', {'d','x'}), 'd', 'week', 'sum', 'x')",
