@@ -1357,6 +1357,63 @@ def _fixed_edges(lo, hi, width, fn):
     return _walk_edges(left, hi, advance, fn, step)
 
 
+# Same scales as the duration constructors: count * scale, stored in days.
+# Milliseconds are a constructor scale; the named binning units do not include them.
+_CONSTRUCTOR_SCALES = (
+    (1.0 / 86400000.0, 0.001),
+    (1.0 / 86400.0, 1.0),
+    (1.0 / 1440.0, 60.0),
+    (1.0 / 24.0, 3600.0),
+    (1.0, 86400.0),
+    (_YEAR_DAYS, _YEAR_DAYS * 86400.0),
+)
+
+
+def _exact_scale_counts(width, scale):
+    """Floats ``c`` with ``c * scale == width`` exactly, next to ``width / scale``.
+
+    ``(count * scale) / scale`` does not always return ``count``. ``60 * (1/86400) / (1/86400)``
+    is ``59.99999999999999``, while ``60 * (1/86400)`` is still the stored value. The neighbors
+    are other exact multiplicands, not a tolerance on the timestamp.
+    """
+    quot = width / scale
+    if not math.isfinite(quot) or quot <= 0:
+        return []
+    start = quot
+    for _ in range(2):
+        start = math.nextafter(start, -math.inf)
+    found = []
+    count = start
+    for _ in range(5):
+        if count > 0 and count * scale == width:
+            found.append(count)
+        count = math.nextafter(count, math.inf)
+    return found
+
+
+def _duration_step_seconds(width):
+    """Seconds of clock time for a duration stored in days.
+
+    Pick the simplest constructor count that multiplies back to the stored bits, then apply the
+    integer factor between units. ``minutes(1)`` is one minute, which is 60 seconds.
+    ``seconds(60)`` is the same 60 seconds even though ``width * 86400`` is not 60 and the two
+    stored day values differ by one ulp. A sum that is not an exact preimage of either unit keeps
+    its own quotient.
+    """
+    best = None
+    for scale, per in _CONSTRUCTOR_SCALES:
+        for count in _exact_scale_counts(width, scale):
+            seconds = count * per
+            if not math.isfinite(seconds) or seconds <= 0:
+                continue
+            rank = (len(repr(count)), 0 if seconds == math.floor(seconds) else 1, len(repr(seconds)))
+            if best is None or rank < best[0]:
+                best = (rank, seconds)
+    if best is None:
+        return float(width) * 86400.0
+    return best[1]
+
+
 def _exact_second_period(step):
     """Smallest step count whose float product is an integer number of seconds.
 
@@ -1389,7 +1446,7 @@ def _component_edges(lo, hi, width, fn):
 
     if not np.isfinite(width) or width <= 0:
         raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
-    step = float(width) * 86400.0
+    step = _duration_step_seconds(float(width))
     if not np.isfinite(step) or step <= 0:
         raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
     period = _exact_second_period(step)

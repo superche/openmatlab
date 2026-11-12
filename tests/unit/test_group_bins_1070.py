@@ -529,6 +529,173 @@ def test_nonbinary_widths_roll_over_midnight(width, day, which):
     )
 
 
+def test_day_width_times_86400_is_not_the_constructor_count():
+    """``width * 86400`` does not recover every constructor argument.
+
+    ``seconds(60)`` is stored as ``60 * (1/86400)``. Dividing that by the same scale, or
+    multiplying by 86400, yields ``59.99999999999999``. ``minutes(1)`` is ``1/1440``, one ulp
+    away, and that value does convert to 60. The integer 60 is still an exact multiplicand of
+    the seconds scale.
+    """
+    seconds_scale = 1.0 / 86400.0
+    minutes_scale = 1.0 / 1440.0
+    width = 60.0 * seconds_scale
+    assert width * 86400.0 == 59.99999999999999
+    assert width / seconds_scale == 59.99999999999999
+    assert 60.0 * seconds_scale == width
+    assert minutes_scale != width
+    assert minutes_scale - width == math.ulp(width)
+    assert minutes_scale * 86400.0 == 60.0
+
+
+_MINUTE = ("seconds(60)", "minutes(1)", "(seconds(30)+seconds(30))", "(minutes(2)-minutes(1))")
+_HOUR = ("seconds(3600)", "minutes(60)", "hours(1)")
+_DAY = ("days(1)", "hours(24)", "minutes(1440)", "seconds(86400)")
+_HALF_MINUTE = ("seconds(30)", "minutes(0.5)")
+_HALF_HOUR = ("seconds(1800)", "minutes(30)", "hours(0.5)", "(hours(1)/2)")
+_SIX_SECONDS = ("seconds(6)", "minutes(0.1)")
+
+
+def _counts(times, width, which):
+    vec = "; ".join(times)
+    return (
+        f"t = [{vec}]; [B,BG] = groupcounts(t, {width}, 'IncludedEdge', '{which}'); v = B';"
+    )
+
+
+@pytest.mark.parametrize("width", _MINUTE)
+@pytest.mark.parametrize("which, expected", [("right", [[1, 2, 1]]), ("left", [[1, 1, 1, 1]])])
+def test_equivalent_minute_widths_share_the_clock_minute(width, which, expected):
+    times = [
+        "datetime(2017,1,1,0,0,0)",
+        "datetime(2017,1,1,0,1,30)",
+        "datetime(2017,1,1,0,2,0)",
+        "datetime(2017,1,1,0,3,0)",
+    ]
+    assert_rows(_counts(times, width, which), expected)
+
+
+def test_minute_right_edge_keeps_the_two_minute_sample_with_the_previous_bin():
+    code = (
+        "t = [datetime(2017,1,1,0,0,0); datetime(2017,1,1,0,1,30); "
+        "datetime(2017,1,1,0,2,0); datetime(2017,1,1,0,3,0)];"
+        "x = [1; 2; 4; 8]; T = table(t, x);"
+    )
+    kept = run(
+        code + "G = groupfilter(T, 't', seconds(60), @(v) sum(v) == 6, 'IncludedEdge', 'right');"
+    )
+    assert kept.workspace.get("G").shape[0] == 2
+    assert_rows(
+        code + "G = groupfilter(T, 't', seconds(60), @(v) sum(v) == 6, 'IncludedEdge', 'right'); v = G.x';",
+        [[2, 4]],
+    )
+    from openmatlab.libs.table_join_group import _component_edges
+    from openmatlab.runtime.objects import datenum_from_parts
+
+    lo = datenum_from_parts(2017, 1, 1)
+    hi = datenum_from_parts(2017, 1, 1, 0, 3, 0)
+    seconds_edges = _component_edges(lo, hi, 60.0 * (1.0 / 86400.0), "groupcounts")
+    minute_edges = _component_edges(lo, hi, 1.0 / 1440.0, "groupcounts")
+    boundary = datenum_from_parts(2017, 1, 1, 0, 2, 0)
+    assert np.array_equal(seconds_edges, minute_edges)
+    assert any(float(edge) == boundary for edge in seconds_edges)
+    assert all(float(edge) != np.nextafter(boundary, -np.inf) for edge in seconds_edges)
+    _assert_component_neighbors(lo, boundary, hi, 60.0)
+
+
+@pytest.mark.parametrize("width", _HOUR)
+@pytest.mark.parametrize("which, expected", [("right", [[1, 2, 1]]), ("left", [[1, 1, 1, 1]])])
+def test_equivalent_hour_widths_share_the_clock_hour(width, which, expected):
+    times = [
+        "datetime(2017,1,1,0,0,0)",
+        "datetime(2017,1,1,1,30,0)",
+        "datetime(2017,1,1,2,0,0)",
+        "datetime(2017,1,1,3,0,0)",
+    ]
+    assert_rows(_counts(times, width, which), expected)
+
+
+@pytest.mark.parametrize("width", _DAY)
+@pytest.mark.parametrize("which, expected", [("right", [[3, 1]]), ("left", [[2, 1, 1]])])
+def test_equivalent_day_widths_share_midnight(width, which, expected):
+    # Right includes the opening midnight in the bin that closes at the next midnight,
+    # so noon and that next midnight stay with it.
+    times = [
+        "datetime(2017,1,1,0,0,0)",
+        "datetime(2017,1,1,12,0,0)",
+        "datetime(2017,1,2,0,0,0)",
+        "datetime(2017,1,3,0,0,0)",
+    ]
+    assert_rows(_counts(times, width, which), expected)
+
+
+@pytest.mark.parametrize("width", _HALF_MINUTE + _SIX_SECONDS)
+@pytest.mark.parametrize("which, expected", [("right", [[3, 1]]), ("left", [[2, 1, 1]])])
+def test_fractional_units_match_the_equivalent_second_count(width, which, expected):
+    if width in _HALF_MINUTE:
+        times = [
+            "datetime(2017,1,1,0,0,0)",
+            "datetime(2017,1,1,0,0,15)",
+            "datetime(2017,1,1,0,0,30)",
+            "datetime(2017,1,1,0,1,0)",
+        ]
+    else:
+        times = [
+            "datetime(2017,1,1,0,0,0)",
+            "datetime(2017,1,1,0,0,3)",
+            "datetime(2017,1,1,0,0,6)",
+            "datetime(2017,1,1,0,0,12)",
+        ]
+    assert_rows(_counts(times, width, which), expected)
+
+
+@pytest.mark.parametrize("width", _HALF_HOUR)
+@pytest.mark.parametrize("which, expected", [("right", [[3, 1]]), ("left", [[2, 1, 1]])])
+def test_half_hour_widths_share_the_thirty_minute_grid(width, which, expected):
+    times = [
+        "datetime(2017,1,1,0,0,0)",
+        "datetime(2017,1,1,0,15,0)",
+        "datetime(2017,1,1,0,30,0)",
+        "datetime(2017,1,1,1,0,0)",
+    ]
+    assert_rows(_counts(times, width, which), expected)
+
+
+def test_millisecond_constructor_matches_the_one_millisecond_second_width():
+    code = (
+        "t = [datetime(2017,1,1,0,0,0); datetime(2017,1,1,0,0,0.0005); "
+        "datetime(2017,1,1,0,0,0.001); datetime(2017,1,1,0,0,0.002)];"
+    )
+    assert_rows(code + "[B,BG] = groupcounts(t, milliseconds(1), 'IncludedEdge', 'left'); v = B';", [[2, 1, 1]])
+    assert_rows(code + "[B,BG] = groupcounts(t, milliseconds(1), 'IncludedEdge', 'right'); v = B';", [[3, 1]])
+
+
+def test_sum_of_one_second_and_one_minute_is_not_rounded_onto_a_neighbor():
+    """``seconds(1)+minutes(1)`` is not the stored value of ``seconds(61)``.
+
+    The recovered step stays ``61.00000000000001``. ``datenum_from_parts`` of that step lands on
+    the 61-second component because the extra is below a datenum ulp. The next representable
+    datenum stays on its own side of the edge.
+    """
+    from openmatlab.libs.table_join_group import _component_edges, _duration_step_seconds
+    from openmatlab.runtime.objects import datenum_from_parts
+
+    seconds_scale = 1.0 / 86400.0
+    minutes_scale = 1.0 / 1440.0
+    summed = seconds_scale + minutes_scale
+    assert summed != 61.0 * seconds_scale
+    assert _duration_step_seconds(summed) == 61.00000000000001
+    assert _duration_step_seconds(61.0 * seconds_scale) == 61.0
+    lo = datenum_from_parts(2017, 1, 1)
+    boundary = datenum_from_parts(2017, 1, 1, 0, 1, 1)
+    hi = datenum_from_parts(2017, 1, 1, 0, 2, 2)
+    _assert_component_neighbors(lo, boundary, hi, 61.0)
+    edges = _component_edges(lo, hi, summed, "groupcounts")
+    assert any(float(edge) == boundary for edge in edges)
+    assert all(float(edge) != np.nextafter(boundary, -np.inf) for edge in edges)
+    assert all(float(edge) != np.nextafter(boundary, np.inf) for edge in edges)
+
+
 def test_duration_millisecond_width_stays_on_the_scaled_grid():
     assert_rows(
         "d = seconds([0; 0.0005; 0.001; 0.002]);"
