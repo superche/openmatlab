@@ -1334,12 +1334,11 @@ def _bin_datetime_unit(col, name, unit, which, fn):
     return _categorical_bins(col.v, edges, labels, which), f"{unit}_{name}"
 
 
-def _fixed_edges(lo, hi, width, fn, match="scaled"):
-    """Edges on multiples of ``width``. The first is the multiple at or before ``lo``.
+def _fixed_edges(lo, hi, width, fn):
+    """Edges on multiples of ``width`` for a duration value.
 
-    ``match='scaled'`` is ``(k0 + n) * width``. A duration value is stored as ``n * unit``, so the
-    edge has to use that same product. ``match='offset'`` is ``anchor + n * width``. A datetime an
-    hour later is ``midnight + 1/24``, which is not the same float as ``(k0 + 1) * (1/24)``.
+    A duration is stored as ``n * unit``, so the edge is the same product ``(k0 + n) * width``.
+    ``anchor + n * width`` is a different float once ``anchor`` is itself a rounded product.
     """
     if not np.isfinite(width) or width <= 0:
         raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
@@ -1353,54 +1352,71 @@ def _fixed_edges(lo, hi, width, fn, match="scaled"):
     step = max(1, int(math.ceil(n / _MAX_BINS)))
 
     def advance(origin, n):
-        if match == "offset":
-            return origin + width * n
         return (k0 + n) * width
 
     return _walk_edges(left, hi, advance, fn, step)
 
 
-def _dn_from_seconds(total):
-    """Datenum of an absolute second count, via the same components ``datetime`` uses."""
+def _component_edges(lo, hi, width, fn):
+    """Datetime edges for any duration width, built with ``datenum_from_parts``.
+
+    A datetime is ``day + h/24 + mi/1440 + s/86400``. Adding ``n * width`` to a datenum is not
+    that value, for a half-second width as well as for an hour. The width is carried as an exact
+    rational number of seconds, then split into clock components. There is no whole-second gate
+    and no day-offset fallback.
+    """
+    from fractions import Fraction
+
     from openmatlab.runtime.objects import datenum_from_parts, parts_from_datenum
 
-    day, sod = divmod(int(total), 86400)
-    hh, rem = divmod(sod, 3600)
-    mm, ss = divmod(rem, 60)
-    y, mo, d = parts_from_datenum(float(day))[:3]
-    return datenum_from_parts(y, mo, d, hh, mm, ss)
+    if not np.isfinite(width) or width <= 0:
+        raise _err(f"{fn}: the bin width must be a positive duration.", f"MATLAB:{fn}:InvalidBins")
+    width_s = Fraction(float(width) * 86400.0)
+    if width_s <= 0:
+        raise _err(f"{fn}: the bin width must move time forward.", f"MATLAB:{fn}:InvalidBins")
 
+    def edge_at(k):
+        total = width_s * int(k)
+        day = int(total // 86400)
+        sod = total - day * 86400
+        whole = int(sod)
+        frac = float(sod - whole)
+        hh, rem = divmod(whole, 3600)
+        mm, ss = divmod(rem, 60)
+        y, mo, d = parts_from_datenum(float(day))[:3]
+        return datenum_from_parts(y, mo, d, hh, mm, ss + frac)
 
-def _clock_edges(lo, hi, width, fn):
-    """Datetime edges for a duration width.
-
-    A whole number of seconds is rebuilt as a clock time. ``anchor + n * (1/24)`` matches
-    ``datetime`` only when the anchor is an exact midnight; an hour later in the same way does not.
-    Any other width falls back to ``anchor + n * width``, still from the anchor rather than from
-    the previous edge.
-    """
-    step_s = float(width) * 86400.0
-    nearest = round(step_s)
-    if nearest < 1 or abs(step_s - nearest) > 1e-6:
-        return _fixed_edges(lo, hi, width, fn, match="offset")
-    step_s = int(nearest)
-    k0 = int(math.floor(lo * 86400.0 / step_s + 1e-9))
-
-    def at(n):
-        return _dn_from_seconds((k0 + int(n)) * step_s)
-
-    for _guard in range(4):
-        if at(0) <= lo:
+    guess = int(math.floor(float(lo) * 86400.0 / float(width_s)))
+    lo_k, hi_k = guess, guess
+    # The guess uses day-offset division, which is not the component value. Expand until the
+    # component edges bracket ``lo``, then take the greatest edge that is still <= ``lo``.
+    for _step in range(64):
+        if edge_at(lo_k) <= lo:
             break
-        k0 -= 1
-    span_s = max(0.0, hi * 86400.0 - k0 * step_s)
-    nwidths = max(1, int(math.ceil(span_s / step_s - 1e-9)) + 1)
+        lo_k -= max(1, hi_k - lo_k + 1)
+    else:
+        raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+    for _step in range(64):
+        if edge_at(hi_k) > lo:
+            break
+        hi_k += max(1, hi_k - lo_k + 1)
+    else:
+        raise _err(f"{fn}: the bin width does not cover the grouping values.", f"MATLAB:{fn}:InvalidBins")
+    while lo_k < hi_k:
+        mid = (lo_k + hi_k + 1) // 2
+        if edge_at(mid) <= lo:
+            lo_k = mid
+        else:
+            hi_k = mid - 1
+    k0 = lo_k
+    span = max(float(width), float(hi) - float(lo))
+    nwidths = max(1, int(math.ceil(span / float(width))) + 1)
     step = max(1, int(math.ceil(nwidths / _MAX_BINS)))
 
     def advance(origin, n):
-        return at(n)
+        return edge_at(k0 + int(n))
 
-    return _walk_edges(at(0), hi, advance, fn, step)
+    return _walk_edges(edge_at(k0), hi, advance, fn, step)
 
 
 def _duration_text(days, fmt):
@@ -1442,7 +1458,7 @@ def _bin_duration_width(col, name, width, which, fn):
         _flat, finite = _finite_time(col)
         if finite.size == 0:
             return _empty_time_bins(col, "disc_" + name)
-        edges = _clock_edges(float(finite.min()), float(finite.max()), width, fn)
+        edges = _component_edges(float(finite.min()), float(finite.max()), width, fn)
         fmt = col.fmt or default_datetime_format(edges)
         nb = len(edges) - 1
         labels = [_bracket(java_format(float(edges[i]), fmt), java_format(float(edges[i + 1]), fmt), i, nb, which)

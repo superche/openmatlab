@@ -6,6 +6,8 @@ categorical formats on the public page read 2026-11-07.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
@@ -315,6 +317,62 @@ def test_exact_boundaries_stay_in_the_closed_bin():
     assert run(seconds).workspace.get("BG").labels() == [
         "01-Jan-2017 10:00:00", "01-Jan-2017 10:01:04", "01-Jan-2017 10:01:05",
     ]
+
+
+def test_day_offset_is_not_a_datetime_component():
+    """7681 half-seconds after midnight is 01:04:00.5 in real arithmetic, and not as a datenum.
+
+    ``midnight + n * width`` and ``datenum_from_parts`` are different floats. Datetime edges have
+    to use the component formula. This locks that fact so a later change does not treat them as
+    interchangeable.
+    """
+    from openmatlab.runtime.objects import datenum_from_parts
+
+    midnight = datenum_from_parts(2017, 1, 1)
+    width = 0.5 / 86400.0
+    # 01:04:00.5 is 7681 half-seconds after midnight. The day offset is one ulp above the component.
+    assert midnight + 7681 * width != datenum_from_parts(2017, 1, 1, 1, 4, 0.5)
+    # Anchoring the same width at the previous grid point and adding one step misses 23:59:00.5.
+    anchor = math.floor(datenum_from_parts(2017, 1, 1, 23, 59, 0) / width) * width
+    assert anchor + width != datenum_from_parts(2017, 1, 1, 23, 59, 0.5)
+
+
+def test_fractional_second_edges_match_datetime_components():
+    # Right edge: 23:59:00, 00.25 and 00.5 share the bin that closes on 00.5. The next second
+    # is its own bin. Day-offset edges put 00.5 into the following bin.
+    right = (
+        "t = [datetime(2017,1,1,23,59,0); datetime(2017,1,1,23,59,0.25); "
+        "datetime(2017,1,1,23,59,0.5); datetime(2017,1,1,23,59,1)];"
+        "x = [1; 2; 4; 8]; T = table(t, x);"
+    )
+    assert_rows(right + "[B,BG] = groupcounts(t, seconds(0.5), 'IncludedEdge', 'right'); v = B';", [[3, 1]])
+    # The boundary row stays with the two earlier rows, so the group sum is 7 and the last row drops.
+    kept = run(right + "G = groupfilter(T, 't', seconds(0.5), @(v) sum(v) == 7, 'IncludedEdge', 'right');")
+    assert_rows(right + "G = groupfilter(T, 't', seconds(0.5), @(v) sum(v) == 7, 'IncludedEdge', 'right'); v = G.x';",
+                [[1, 2, 4]])
+    assert kept.workspace.get("G").shape[0] == 3
+    # Left edge, not at midnight: 01:04:00 and 00.25, then 00.5 alone, then 1 alone.
+    assert_rows(
+        "t = [datetime(2017,1,1,1,4,0); datetime(2017,1,1,1,4,0.25); "
+        "datetime(2017,1,1,1,4,0.5); datetime(2017,1,1,1,4,1)];"
+        "[B,BG] = groupcounts(t, seconds(0.5)); v = B';",
+        [[2, 1, 1]],
+    )
+    # The half-second grid crosses midnight. 23:59:59.5 is the right edge of its bin; 00:00 is the next.
+    assert_rows(
+        "t = [datetime(2017,1,1,23,59,59); datetime(2017,1,1,23,59,59.5); datetime(2017,1,2,0,0,0)];"
+        "[B,BG] = groupcounts(t, seconds(0.5), 'IncludedEdge', 'right'); v = B';",
+        [[2, 1]],
+    )
+    # A duration stores n*unit, so its edges stay on that product, including a half-second width.
+    assert_rows(
+        "d = seconds([0; 0.25; 0.5; 1]); [B,BG] = groupcounts(d, seconds(0.5), 'IncludedEdge', 'right'); v = B';",
+        [[3, 1]],
+    )
+    assert_rows(
+        "d = seconds([0; 0.25; 0.5; 1]); [B,BG] = groupcounts(d, seconds(0.5)); v = B';",
+        [[2, 1, 1]],
+    )
 
 
 @pytest.mark.parametrize("code", [
