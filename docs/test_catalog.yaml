@@ -242,6 +242,14 @@ use_cases:
     priority: p0
 
 test_cases:
+  - id: tc.desktop_distribution
+    kind: unit
+    title: Native binary architecture, unsigned labeling, checksums and release gates
+    features: [host.desktop_distribution]
+    impl: tests/unit/test_desktop_packaging.py
+    status: active
+    env: unit
+
   - id: tc.arch_session_composition
     kind: unit
     title: Session wires workspace, path, display, plots
