@@ -170,3 +170,102 @@ def test_function_functions():
     assert np.isclose(_v(s, "g").item(), np.sqrt(np.pi), atol=1e-6)
     with pytest.raises(EvalError, match="differ in sign"):
         _run("fzero(@(x) x.^2 + 1, [0 1])")
+
+
+def test_polyfit_exact_polynomial_within_10_eps():
+    """Low-degree exact fits stay inside the corpus 10*eps bar, row or column."""
+    s = _run("x = [-2 -1 0 1 2]; p2 = polyfit(x, 3*x.^2 + 2*x + 1, 2); "
+             "p3 = polyfit(x, x.^2 + 2*x + 3, 3); "
+             "xc = [-2; -1; 0; 1; 2]; pc = polyfit(xc, 3*xc.^2 + 2*xc + 1, 2);")
+    lim = 10 * np.finfo(float).eps
+    assert np.max(np.abs(_v(s, "p2") - np.array([[3.0, 2.0, 1.0]]))) <= lim
+    assert np.max(np.abs(_v(s, "p3") - np.array([[0.0, 1.0, 2.0, 3.0]]))) <= lim
+    assert _v(s, "p2").shape == (1, 3) and _v(s, "p3").shape == (1, 4)
+    assert np.max(np.abs(_v(s, "pc") - _v(s, "p2"))) <= lim
+
+
+def test_polyfit_rank_deficient_and_ill_conditioned_keep_svd():
+    """Minimum-norm SVD stays where unpivoted QR is unstable or ill-conditioned."""
+    s = _run("u = polyfit([0 1], [4 5], 3); d = polyfit([0 0 1 1], [1 2 3 4], 2);")
+    assert np.allclose(_v(s, "u"), [[1 / 3, 1 / 3, 1 / 3, 4]])
+    assert np.allclose(_v(s, "d"), [[1.0, 1.0, 1.5]])
+    x = np.linspace(0.0, 1.0, 20)
+    y = np.sin(x)
+    from openmatlab.libs.math_builtins import _polyfit
+    from openmatlab.numerics.ndarray_value import NDArrayValue
+
+    got = _polyfit([
+        NDArrayValue(x.reshape(1, -1)),
+        NDArrayValue(y.reshape(1, -1)),
+        NDArrayValue(np.array([[15.0]])),
+    ])[0].backend_buffer().reshape(-1)
+    svd, *_ = np.linalg.lstsq(np.vander(x, 16), y, rcond=None)
+    q, r = np.linalg.qr(np.vander(x, 16), mode="reduced")
+    triangular = np.linalg.solve(r, q.T @ y)
+    assert np.max(np.abs(got - svd)) < 1e-12
+    assert np.max(np.abs(got - triangular)) > 1e-6
+
+
+def test_polyfit_complex_fit_and_single_output():
+    s = _run("p = polyfit([0 1 2], [3-1i, 5, 7+1i], 1);")
+    lim = 10 * np.finfo(float).eps
+    assert np.max(np.abs(_v(s, "p") - np.array([[2 + 1j, 3 - 1j]]))) <= lim
+    assert _v(s, "p").shape == (1, 2)
+    with pytest.raises(EvalError, match="expected 2 outputs"):
+        _run("[p, S] = polyfit([0 1 2], [1 3 7], 2);")
+    with pytest.raises(EvalError, match="same number of elements"):
+        _run("polyfit([1 2], [1 2 3], 1);")
+
+
+def test_polyfit_huge_degree0_stays_finite():
+    """A finite constant fit must not lose to an overflowed QR residual."""
+    from decimal import Decimal, getcontext
+
+    s = _run("p = polyfit([0 1 2], [1.1e308 1.2e308 1.3e308], 0); "
+             "q = polyfit([0 1 2], [1.1e200 1.2e200 1.3e200], 0); "
+             "t = polyfit([0 1 2], [1e-320 2e-320 3e-320], 0);")
+    getcontext().prec = 50
+
+    def ref(*samples):
+        vals = [Decimal.from_float(float(v)) for v in samples]
+        return float(sum(vals) / Decimal(len(vals)))
+
+    got = _v(s, "p")
+    huge = ref(1.1e308, 1.2e308, 1.3e308)
+    assert got.shape == (1, 1) and np.isfinite(got).all()
+    assert abs(float(got.item()) - huge) <= 4 * np.spacing(huge)
+    mid = ref(1.1e200, 1.2e200, 1.3e200)
+    q = _v(s, "q")
+    assert q.shape == (1, 1) and np.isfinite(q).all()
+    assert abs(float(q.item()) - mid) <= 4 * np.spacing(mid)
+    tiny = ref(1e-320, 2e-320, 3e-320)
+    t = _v(s, "t")
+    assert t.shape == (1, 1) and np.isfinite(t).all()
+    assert abs(float(t.item()) - tiny) <= 4 * np.spacing(tiny)
+
+
+def test_polyfit_unrepresentable_residual_keeps_svd():
+    """Overflow while scoring a residual keeps the finite SVD coefficient."""
+    import warnings
+    from decimal import Decimal, getcontext
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        s = _run("p = polyfit([0 1 2], [1.7e308 -1.7e308 -1.7e308], 0); "
+                 "c = polyfit([0 1 2], [1.7e308+1.7e308i, -1.7e308-1.7e308i, 0], 0);")
+    getcontext().prec = 50
+    samples = [Decimal.from_float(v) for v in (1.7e308, -1.7e308, -1.7e308)]
+    ref = float(sum(samples) / Decimal(3))
+    got = _v(s, "p")
+    assert got.shape == (1, 1) and np.isfinite(got).all()
+    assert abs(float(got.item()) - ref) <= 4 * np.spacing(abs(ref))
+    y = np.array([1.7e308 + 1.7e308j, -1.7e308 - 1.7e308j, 0j])
+    svd, *_ = np.linalg.lstsq(np.ones((3, 1)), y, rcond=None)
+    assert np.array_equal(_v(s, "c").reshape(-1), svd.reshape(-1), equal_nan=True)
+
+
+def test_polyfit_underdetermined_warns():
+    from openmatlab.runtime import warnings as _w
+
+    _run("p = polyfit([0 1], [4 5], 3);")
+    assert _w.last_id() == "MATLAB:polyfit:PolyNotUnique"
