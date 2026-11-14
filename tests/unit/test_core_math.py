@@ -244,6 +244,26 @@ def test_polyfit_huge_degree0_stays_finite():
     assert abs(float(t.item()) - tiny) <= 4 * np.spacing(tiny)
 
 
+def test_polyfit_unrepresentable_residual_keeps_svd():
+    """Overflow while scoring a residual keeps the finite SVD coefficient."""
+    import warnings
+    from decimal import Decimal, getcontext
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        s = _run("p = polyfit([0 1 2], [1.7e308 -1.7e308 -1.7e308], 0); "
+                 "c = polyfit([0 1 2], [1.7e308+1.7e308i, -1.7e308-1.7e308i, 0], 0);")
+    getcontext().prec = 50
+    samples = [Decimal.from_float(v) for v in (1.7e308, -1.7e308, -1.7e308)]
+    ref = float(sum(samples) / Decimal(3))
+    got = _v(s, "p")
+    assert got.shape == (1, 1) and np.isfinite(got).all()
+    assert abs(float(got.item()) - ref) <= 4 * np.spacing(abs(ref))
+    y = np.array([1.7e308 + 1.7e308j, -1.7e308 - 1.7e308j, 0j])
+    svd, *_ = np.linalg.lstsq(np.ones((3, 1)), y, rcond=None)
+    assert np.array_equal(_v(s, "c").reshape(-1), svd.reshape(-1), equal_nan=True)
+
+
 def test_polyfit_underdetermined_warns():
     from openmatlab.runtime import warnings as _w
 

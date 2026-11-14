@@ -966,7 +966,11 @@ _POLYFIT_QR_COND = 1e3
 
 
 def _entry_abs(v):
-    """Magnitude of each entry. Complex ``abs`` is scaled so hypot does not overflow."""
+    """Magnitude of each entry.
+
+    Complex magnitude divides by the larger part before ``hypot``. The
+    product is finite only when that magnitude fits in float64.
+    """
     v = np.asarray(v)
     if not np.iscomplexobj(v):
         return np.abs(v)
@@ -978,7 +982,13 @@ def _entry_abs(v):
 
 
 def _scaled_norm(v):
-    """Euclidean norm. Finite vectors whose squares overflow stay finite."""
+    """Euclidean norm scaled by the largest magnitude.
+
+    Scaling keeps squares of finite entries inside float64 when the norm
+    itself fits. A product that does not fit is nonfinite, and the score
+    is then unavailable. This is not a claim that every finite vector has
+    a finite norm.
+    """
     a = _entry_abs(np.asarray(v).reshape(-1))
     if a.size == 0:
         return 0.0
@@ -991,7 +1001,11 @@ def _scaled_norm(v):
 
 
 def _residual_score(V, p, y):
-    """Finite residual norm, or None when the coefficient or residual is nonfinite."""
+    """Scaled residual norm, or None when that score cannot be formed.
+
+    A nonfinite coefficient, a nonfinite residual, or a magnitude that
+    does not fit in float64 leaves the score unavailable.
+    """
     if p is None or not np.all(np.isfinite(p)):
         return None
     resid = V @ p - y
@@ -1011,17 +1025,17 @@ def _vandermonde_coeffs(V, y):
     if not well:
         return coeffs
     q, r = np.linalg.qr(V, mode="reduced")
+    # Optional QR. Projection, the triangular solve, residual formation,
+    # and complex magnitude scaling share one boundary. Unrepresentable
+    # arithmetic drops the optional comparison and keeps the SVD solve.
+    # A smaller residual is a heuristic, not a coefficient-accuracy claim.
     with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
         try:
             solved = np.linalg.solve(r, q.conj().T @ y)
-        except np.linalg.LinAlgError:
+            qr_score = _residual_score(V, solved, y)
+            svd_score = _residual_score(V, coeffs, y)
+        except (np.linalg.LinAlgError, ArithmeticError, RuntimeWarning):
             return coeffs
-    # QR and SVD can each be a few ulps closer on different builds.
-    # A nonfinite candidate loses. Residual norms are scaled: an
-    # unscaled square overflows to Inf and then Inf <= Inf keeps a
-    # worse solve.
-    qr_score = _residual_score(V, solved, y)
-    svd_score = _residual_score(V, coeffs, y)
     if qr_score is not None and (svd_score is None or qr_score <= svd_score):
         return solved
     return coeffs
