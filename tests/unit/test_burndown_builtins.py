@@ -76,3 +76,16 @@ def test_rat_legendre_and_elementary():
 def test_errors(bad, msg):
     with pytest.raises(Exception, match=msg):
         _run(bad)
+
+
+def test_strtok_empty_token_shape():
+    """A delimiter-only char row yields a 1×0 token; ``''`` and an empty remainder stay 0×0."""
+    s = _run("[t, r] = strtok(' '); e = strtok(''); "
+             "[t2, r2] = strtok(' ', 'jklmnop '); "
+             "[tok, rem] = strtok('this'); [a, b] = strtok('a,b', ',');")
+    assert s.workspace.get("t").shape == (1, 0) and s.workspace.get("t").text == ""
+    assert s.workspace.get("r").shape == (0, 0)
+    assert s.workspace.get("e").shape == (0, 0)
+    assert s.workspace.get("t2").shape == (1, 0) and s.workspace.get("r2").shape == (0, 0)
+    assert _t(s, "tok") == "this" and s.workspace.get("rem").shape == (0, 0)
+    assert _t(s, "a") == "a" and _t(s, "b") == ",b"

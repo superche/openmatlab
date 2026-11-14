@@ -34,6 +34,15 @@ def _cv(s):
     return CharValue(s)
 
 
+def _token_char(src, text):
+    """Token from a char row. An empty token of a row is 1×0; ``''`` stays 0×0."""
+    if text == "" and getattr(src, "shape", (0, 0))[0] == 1:
+        from openmatlab.runtime.char_value import CharValue
+
+        return CharValue(rows=("",))
+    return _cv(text)
+
+
 def _is_text(v):
     from openmatlab.runtime.char_value import CharValue
 
@@ -110,8 +119,12 @@ def _strtok(args, *, nargout=1):
         raise _err("strtok: first argument must be a character vector, string or cell array of character vectors.",
                    "MATLAB:strtok:InvalidInput")
     t, r = _tok(s.text, delims)
-    mk = type(s) if getattr(s, "is_string", False) else _cv
-    return (mk(t), mk(r))[:max(nargout, 1)]
+    if getattr(s, "is_string", False):
+        mk = type(s)
+        return (mk(t), mk(r))[:max(nargout, 1)]
+    # Remainder of a fully consumed row stays 0×0 (``''``). Only the token
+    # takes the 1×0 empty-row shape.
+    return (_token_char(s, t), _cv(r))[:max(nargout, 1)]
 
 
 def _tok(s, delims):
