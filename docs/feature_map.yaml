@@ -408,7 +408,7 @@ features:
     name: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset
     status: done
     depends_on: []
-    notes: "MATLAB error control and Refine output; iterated Gauss-Kronrod; Brent fminbnd; M3-E3. ode45/ode23 raise on a nonempty unimplemented option, including a case alias or a nonscalar options struct (#1085); Events, Mass, and stiff solvers remain #1088, #1089, #1090"
+    notes: "MATLAB error control and Refine output; iterated Gauss-Kronrod; Brent fminbnd; M3-E3. ode45/ode23 raise on a nonempty unimplemented option, including a case alias or a nonscalar options struct; odeset copies with the same shape and alias rule, and an explicit name-value still clears; InitialStep is resolved before f(t, y) (#1085); Events, Mass, and stiff solvers remain #1088, #1089, #1090"
     tests: [tests/unit/test_ode_quad_opt.py, tests/bdd/test_ode_quad_opt_bdd.py]
 
   - id: numerics.stats_m3

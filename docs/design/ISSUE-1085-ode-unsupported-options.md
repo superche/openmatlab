@@ -30,6 +30,23 @@ A structure with more than one element is `OpenMATLAB:<solver>:OptionsNotStructu
 
 The fourth argument is the only options entry on the solver. Omitted, `[]`, or any other empty non-structure means no options. A nonempty non-structure (including a name/value pair placed on `ode45` itself) errors. `odeset` remains the place that builds the structure.
 
+`RelTol`, `AbsTol`, `Refine`, `MaxStep`, and `InitialStep` are all read before `f(t, y)`. A disagreeing `InitialStep` alias is `AmbiguousOption` with the right-hand side still uncalled.
+
+## Copying an old structure
+
+`odeset(old)` and `odeset(old, new)` use the same shape and alias rules as the solver. The copy does not read element 1 and does not keep whichever spelling was written last.
+
+| Input | Result |
+|---|---|
+| `numel` 0, including `o(:) = []` | no values. Field names stay on the type and are not indexed |
+| `numel` greater than 1 | `OpenMATLAB:odeset:OptionsNotStructure` |
+| one set spelling, or several spellings that agree | that value is stored under the canonical name. A lone `mass` or `events` is still there for the solver to reject |
+| two set spellings that differ | `OpenMATLAB:odeset:AmbiguousOption` |
+| a later structure | replaces a single kept value. An empty field in that structure does not clear |
+| an explicit name-value pair | always wins, including `odeset(old, 'Events', [])` and `odeset(old, 'NormControl', 'off')`. The pair is applied even when the old structure names that option twice |
+
+`optimset` does not use this copy. `odeset` still stores a handle or a `Mass` matrix; it does not reject unimplemented values. The solver does, when the call is made.
+
 ## What stays a success
 
 A call that only sets applied options, or that leaves unimplemented fields empty, integrates as before. The five switches above may also be `'off'`. That includes `odeset()` with every field still `[]`, `odeset(old, 'Events', [])` after clearing a handle, a partial `struct('RelTol', ...)`, and one case spelling of an applied option beside an empty canonical field (`o.refine = 1` after `odeset()`).

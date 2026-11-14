@@ -256,3 +256,152 @@ def test_case_alias_of_applied_option_and_empty_struct_still_integrate():
     assert np.allclose(_n(g("t4")), bare_t) and np.allclose(_n(g("y4")), bare_y)
     assert np.allclose(_n(g("u3")), _n(g("u0"))) and np.allclose(_n(g("z3")), _n(g("z0")))
     assert np.allclose(_n(g("t5")), bare_t) and np.allclose(_n(g("y5")), bare_y)
+
+
+# RHS records a base-workspace side effect and then errors. Either effect means it ran.
+_CHAIN_RHS = "@(t, y) eval('assignin(''base'',''saw'',1); error(''integrated'')')"
+
+
+def _chain(setup, call):
+    code = (
+        "saw = 0; "
+        f"{setup} "
+        f"try, {call} "
+        "ok = 1; id = ''; msg = ''; catch err, ok = 0; id = err.identifier; msg = err.message; end; "
+        "kept = exist('t', 'var') + exist('y', 'var');"
+    )
+    s = _caught(code)
+    return (
+        _n(s.workspace.get("ok"))[0, 0],
+        s.workspace.get("id").text,
+        s.workspace.get("msg").text,
+        _n(s.workspace.get("kept"))[0, 0],
+        _n(s.workspace.get("saw"))[0, 0],
+    )
+
+
+def test_odeset_copy_preserves_the_option_entry_chain():
+    """Copy, explicit override, and the solver are one chain. A set value is not dropped."""
+    rhs = _CHAIN_RHS
+    toggles = ("NormControl", "Stats", "BDF", "Vectorized", "JConstant")
+    for opt in toggles:
+        low = opt.lower()
+        for setup in (
+            f"o = struct('{low}', 'on'); o.{opt} = 'off';",
+            f"o = struct('{opt}', 'off'); o.{low} = 'on';",
+        ):
+            for solver in ("ode45", "ode23"):
+                ok, ident, msg, kept, saw = _chain(
+                    setup, f"p = odeset(o); [t, y] = {solver}({rhs}, [0 1], 1, p);"
+                )
+                assert ok == 0 and kept == 0 and saw == 0, setup
+                assert ident == "OpenMATLAB:odeset:AmbiguousOption", (setup, ident, msg)
+                assert "more than once" in msg and f"option '{opt}'" in msg
+                assert "integrated" not in msg
+
+    for setup in (
+        "o = odeset(); o(2) = odeset('Mass', 1);",
+        "o = odeset('Mass', 1); o(2) = odeset();",
+        "o = odeset(); o(2) = odeset();",
+    ):
+        for solver in ("ode45", "ode23"):
+            ok, ident, msg, kept, saw = _chain(
+                setup, f"p = odeset(o); [t, y] = {solver}({rhs}, [0 1], 1, p);"
+            )
+            assert ok == 0 and kept == 0 and saw == 0, setup
+            assert ident == "OpenMATLAB:odeset:OptionsNotStructure", (setup, ident, msg)
+            assert "scalar structure" in msg and "integrated" not in msg
+
+    for solver, setup, fragment in (
+        ("ode23", "o = odeset(); o.mass = 1;", "option 'Mass'"),
+        ("ode45", "o = struct('events', @(t, y) y);", "option 'Events'"),
+        ("ode23", "o = struct('mass', 1); o.Mass = 1;", "option 'Mass'"),
+        ("ode45", "o = struct('normcontrol', 'on'); o.NormControl = 'ON';", "option 'NormControl'"),
+    ):
+        ok, ident, msg, kept, saw = _chain(
+            setup, f"p = odeset(o); [t, y] = {solver}({rhs}, [0 1], 1, p);"
+        )
+        assert ok == 0 and kept == 0 and saw == 0, setup
+        assert ident == f"OpenMATLAB:{solver}:UnsupportedOption", (setup, ident, msg)
+        assert fragment in msg and "integrated" not in msg
+
+    for setup in (
+        "o = odeset('Events', @(t, y) y); o.events = @(t, y) 1;",
+        "o = odeset('InitialStep', 0.01); o.initialstep = 0.02;",
+        "o = struct('initialstep', 0.02); o.InitialStep = 0.01;",
+    ):
+        ok, ident, msg, kept, saw = _chain(setup, "p = odeset(o);")
+        assert ok == 0 and kept == 0 and saw == 0, setup
+        assert ident == "OpenMATLAB:odeset:AmbiguousOption", (setup, ident, msg)
+        assert "integrated" not in msg
+
+    # An explicit pair wins, including a pair that clears. A later structure's [] does not.
+    g = _ws(
+        "[t0, y0] = ode45(@(t, y) -y, [0 1], 1); "
+        "o = odeset('Events', @(t, y) y); o.events = @(t, y) 1; "
+        "c = odeset(o, 'Events', []); [t1, y1] = ode45(@(t, y) -y, [0 1], 1, c); "
+        "n = struct('normcontrol', 'on'); n.NormControl = 'off'; "
+        "d = odeset(n, 'NormControl', 'off'); [t2, y2] = ode45(@(t, y) -y, [0 1], 1, d); "
+        "z = odeset('Mass', 1); z(:) = []; p = odeset(z); "
+        "[t3, y3] = ode45(@(t, y) -y, [0 1], 1, p); "
+        "[u3, z3] = ode23(@(t, y) -y, [0 1], 1, p); "
+        "q = odeset(z, 'RelTol', 1e-6); rq = odeget(q, 'RelTol'); "
+        "[t4, y4] = ode45(@(t, y) -y, [0 1], 1, q); "
+        "[t5, y5] = ode45(@(t, y) -y, [0 1], 1, odeset('RelTol', 1e-6)); "
+        "a = odeset('Mass', 1); b = odeset(); "
+        "try, [tm, ym] = ode23(@(t, y) error('integrated'), [0 1], 1, odeset(a, b)); "
+        "mid = ''; mmsg = ''; catch err, mid = err.identifier; mmsg = err.message; end; "
+        "e = odeset(a, 'Mass', []); [t6, y6] = ode23(@(t, y) -y, [0 1], 1, e); "
+        "[u0, v0] = ode23(@(t, y) -y, [0 1], 1); "
+        "s1 = odeset('RelTol', 1e-4); s2 = odeset('RelTol', 1e-8); "
+        "rr = odeget(odeset(s1, s2), 'RelTol'); "
+        "h = odeset(); h.initialstep = 0.25; hp = odeget(odeset(h), 'InitialStep'); "
+        "[ti, yi] = ode45(@(t, y) -y, [0 1], 1, odeset(h)); "
+        "[tj, yj] = ode45(@(t, y) -y, [0 1], 1, odeset('InitialStep', 0.25)); "
+        "w = struct('normcontrol', 'off'); w.NormControl = 'Off'; "
+        "[t7, y7] = ode45(@(t, y) -y, [0 1], 1, odeset(w)); "
+        "r = struct('reltol', 1e-6); r.RelTol = []; rgot = odeget(odeset(r), 'RelTol'); "
+        "rf = odeset(); rf.refine = 1; "
+        "[t8, y8] = ode45(@(t, y) -y, [0 1], 1, odeset(rf)); "
+        "[t9, y9] = ode45(@(t, y) -y, [0 1], 1, odeset('Refine', 1));"
+    )
+    bare_t, bare_y = _n(g("t0")), _n(g("y0"))
+    for name in ("t1", "t2", "t3", "t7"):
+        assert np.allclose(_n(g(name)), bare_t)
+    for name in ("y1", "y2", "y3", "y7"):
+        assert np.allclose(_n(g(name)), bare_y)
+    assert np.allclose(_n(g("u3")), _n(g("u0"))) and np.allclose(_n(g("z3")), _n(g("v0")))
+    assert _n(g("rq"))[0, 0] == 1e-6
+    assert np.allclose(_n(g("t4")), _n(g("t5"))) and np.allclose(_n(g("y4")), _n(g("y5")))
+    assert g("mid").text == "OpenMATLAB:ode23:UnsupportedOption"
+    assert "option 'Mass'" in g("mmsg").text and "integrated" not in g("mmsg").text
+    assert np.allclose(_n(g("t6")), _n(g("u0"))) and np.allclose(_n(g("y6")), _n(g("v0")))
+    assert _n(g("rr"))[0, 0] == 1e-8
+    assert _n(g("hp"))[0, 0] == 0.25
+    assert np.allclose(_n(g("ti")), _n(g("tj"))) and np.allclose(_n(g("yi")), _n(g("yj")))
+    assert _n(g("rgot"))[0, 0] == 1e-6
+    assert _n(g("t8")).shape != bare_t.shape
+    assert np.allclose(_n(g("t8")), _n(g("t9"))) and np.allclose(_n(g("y8")), _n(g("y9")))
+
+    ok, ident, msg, kept, saw = _chain(
+        "o = struct('normcontrol', 'on'); o.NormControl = 'off';",
+        f"p = odeset(o, 'NormControl', 'on'); [t, y] = ode45({rhs}, [0 1], 1, p);",
+    )
+    assert ok == 0 and kept == 0 and saw == 0
+    assert ident == "OpenMATLAB:ode45:UnsupportedOption"
+    assert "option 'NormControl'" in msg and "integrated" not in msg
+
+
+def test_initialstep_alias_is_checked_before_the_first_rhs():
+    """Disagreeing InitialStep spellings error before the RHS side effect or its error."""
+    rhs = _CHAIN_RHS
+    for solver in ("ode45", "ode23"):
+        for setup in (
+            "o = odeset('InitialStep', 0.01); o.initialstep = 0.02;",
+            "o = struct('initialstep', 0.02); o.InitialStep = 0.01;",
+        ):
+            ok, ident, msg, kept, saw = _chain(setup, f"[t, y] = {solver}({rhs}, [0 1], 1, o);")
+            assert ok == 0 and kept == 0 and saw == 0, (solver, setup, ident, msg)
+            assert ident == f"OpenMATLAB:{solver}:AmbiguousOption", (solver, setup, ident)
+            assert "option 'InitialStep'" in msg and "more than once" in msg
+            assert "integrated" not in msg

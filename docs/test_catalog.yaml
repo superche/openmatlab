@@ -1643,7 +1643,7 @@ test_cases:
 
   - id: tc.ode_quad_opt
     kind: unit
-    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset (Epic #627; #1085 unimplemented options)
+    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset (Epic #627; #1085 unimplemented options and copy chain)
     features: [numerics.ode_quad_opt]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_ode_quad_opt.py
