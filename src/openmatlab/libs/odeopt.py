@@ -8,7 +8,9 @@ Hermite dense output). Also odeset/odeget, optimset/optimget, fminbnd (MATLAB's
 golden-section + parabolic Brent), quad (adaptive Simpson), integral2
 (iterated adaptive Gauss-Kronrod, y-limits may be functions of x), and
 integral 'ArrayValued' (vector Gauss-Kronrod). Other integral calls delegate to
-the core implementation.
+the core implementation. ode45 and ode23 apply RelTol, AbsTol, Refine, MaxStep,
+and InitialStep. Any other nonempty odeset field is an error before the step
+loop (#1085). Empty defaults are left as they are.
 """
 
 from __future__ import annotations
@@ -119,6 +121,79 @@ def _opt(s, name, default):
     return default
 
 
+# Applied options are read by the step loop. Any other nonempty ODE_FIELDS value
+# is refused before f(t, y) is called. 'off' on an on/off switch is the path
+# already used. Public odeset/ode45 pages name the fields and do not publish an
+# identifier for this gap, so the id is OpenMATLAB's.
+_APPLIED_OPTIONS = frozenset({"AbsTol", "InitialStep", "MaxStep", "Refine", "RelTol"})
+# An explicit off selects the path already taken: componentwise error control,
+# no statistics printout, no BDF, no vectorized Jacobian, Jacobian not constant.
+_OFF_DEFAULT_OPTIONS = frozenset({"BDF", "JConstant", "NormControl", "Stats", "Vectorized"})
+_OPTION_CHECK_ORDER = ("Events", "Mass") + tuple(
+    f for f in ODE_FIELDS if f not in _APPLIED_OPTIONS and f not in ("Events", "Mass")
+)
+
+
+def _is_function_handle(v) -> bool:
+    kind = getattr(v, "matlab_class", None)
+    return callable(kind) and kind() == "function_handle"
+
+
+def _value_unset(v) -> bool:
+    """True for the odeset placeholder ``[]`` and for blank text. A function handle is set."""
+    if v is None:
+        return True
+    if _is_function_handle(v):
+        return False
+    numel = getattr(v, "numel", None)
+    if callable(numel) and numel() == 0:
+        return True
+    try:
+        text = _text(v)
+    except ValueError:
+        return False
+    return text is not None and text == ""
+
+
+def _is_off(v) -> bool:
+    try:
+        text = _text(v)
+    except ValueError:
+        return False
+    return text is not None and text.lower() == "off"
+
+
+def _struct_field(opts, name):
+    for f in opts.fields:
+        if f.lower() == name.lower():
+            return opts.get(f)
+    return None
+
+
+def _reject_unimplemented_options(name, opts):
+    """Refuse a requested option this solver does not apply, before any f(t, y) call."""
+    if opts is None:
+        return
+    if not getattr(opts, "is_struct", False):
+        numel = getattr(opts, "numel", None)
+        if callable(numel) and numel() == 0:
+            return
+        raise _err(
+            f"{name}: the options argument must be a structure created with odeset, or [].",
+            f"OpenMATLAB:{name}:OptionsNotStructure",
+        )
+    for opt in _OPTION_CHECK_ORDER:
+        v = _struct_field(opts, opt)
+        if v is None or _value_unset(v):
+            continue
+        if opt in _OFF_DEFAULT_OPTIONS and _is_off(v):
+            continue
+        raise _err(
+            f"{name}: option '{opt}' is not supported.",
+            f"OpenMATLAB:{name}:UnsupportedOption",
+        )
+
+
 # -- ODE solvers ---------------------------------------------------------------------------
 _DP = dict(
     c=np.array([0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1]),
@@ -152,9 +227,10 @@ def _solver(name, tab):
         if len(args) < 3:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
         fh = args[0]
+        opts = args[3] if len(args) > 3 else None
+        _reject_unimplemented_options(name, opts)
         tspan = _arr(args[1]).reshape(-1)
         y0 = _arr(args[2]).reshape(-1)
-        opts = args[3] if len(args) > 3 else None
         if tspan.size < 2:
             raise _err("The time vector TSPAN must have at least two elements.", f"MATLAB:{name}:TspanLength")
         if tspan[0] == tspan[-1]:
