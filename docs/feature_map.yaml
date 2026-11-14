@@ -304,8 +304,9 @@ features:
     name: core math, statistics, random numbers, timing
     status: done
     depends_on: [runtime.evaluator]
-    notes: "Epic #534: fix rem sign hypot log2(2-out) log1p expm1 nthroot diff cumprod cummax cummin gcd lcm primes factor isprime nchoosek factorial round(x,n[,'significant']); median mode var std (weights, dims, omitnan, all) cov corrcoef range bounds; rng/rand (bit-identical MATLAB twister stream) randn randi randperm; tic toc pause; isnan isinf isfinite; degree trig, atan2, sec csc cot; cross dot kron trapz cumtrapz; polyfit polyval roots conv deconv filter interp1 histcounts accumarray; fzero fminsearch integral. Integer classes saturate. Residual 581"
-    tests: [tests/unit/test_core_math.py, tests/bdd/test_core_math_bdd.py]
+    notes: "Epic #534: fix rem sign hypot log2(2-out) log1p expm1 nthroot diff cumprod cummax cummin gcd lcm primes factor isprime nchoosek factorial round(x,n[,'significant']); median mode var std (weights, dims, omitnan, all) cov corrcoef range bounds; rng/rand (bit-identical MATLAB twister stream) randn randi randperm; tic toc pause; isnan isinf isfinite; degree trig, atan2, sec csc cot; cross dot kron trapz cumtrapz; polyfit polyval roots conv deconv filter interp1 histcounts accumarray; fzero fminsearch integral. Integer classes saturate. Residual 581. The six polyfit nodes below are the #1093 regressions now in this tree. This row stays done."
+    tests: [tests/unit/test_core_math.py, tests/bdd/test_core_math_bdd.py, tests/unit/test_core_math.py::test_polyfit_exact_polynomial_within_10_eps, tests/unit/test_core_math.py::test_polyfit_rank_deficient_and_ill_conditioned_keep_svd, tests/unit/test_core_math.py::test_polyfit_complex_fit_and_single_output, tests/unit/test_core_math.py::test_polyfit_huge_degree0_stays_finite, tests/unit/test_core_math.py::test_polyfit_unrepresentable_residual_keeps_svd, tests/unit/test_core_math.py::test_polyfit_underdetermined_warns]
+    cases: [tc.polyfit_exact_polynomial_within_10_eps, tc.polyfit_rank_deficient_and_ill_conditioned_keep_svd, tc.polyfit_complex_fit_and_single_output, tc.polyfit_huge_degree0_stays_finite, tc.polyfit_unrepresentable_residual_keeps_svd, tc.polyfit_underdetermined_warns]
 
   - id: libs.arrays_sets
     layer: libs
@@ -320,8 +321,9 @@ features:
     name: core string functions
     status: done
     depends_on: [libs.core_math]
-    notes: "strsplit/strjoin/strfind/strcat/strvcat/str2num, mat2str/int2str, base conversions, blanks/deblank, flip on char/cell"
-    tests: [tests/unit/test_strfun.py, tests/bdd/test_strfun_bdd.py]
+    notes: "strsplit/strjoin/strfind/strcat/strvcat/str2num, mat2str/int2str, base conversions, blanks/deblank, flip on char/cell. Home for the #1093 empty character-row strtok node, now in this tree. The rest of test_burndown_builtins.py stays uncatalogued."
+    tests: [tests/unit/test_strfun.py, tests/bdd/test_strfun_bdd.py, tests/unit/test_burndown_builtins.py::test_strtok_empty_token_shape]
+    cases: [tc.strtok_empty_token_shape]
 
   - id: libs.handle_graphics
     layer: libs
