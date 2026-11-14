@@ -1364,56 +1364,56 @@ test_cases:
 
   - id: tc.polyfit_exact_polynomial_within_10_eps
     kind: unit
-    title: "polyfit exact low-degree fit within 10*eps (pending #1093, not on this tree)"
+    title: "polyfit exact low-degree fit within 10*eps (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_exact_polynomial_within_10_eps
-    status: planned
+    status: active
     env: unit
 
   - id: tc.polyfit_rank_deficient_and_ill_conditioned_keep_svd
     kind: unit
-    title: "polyfit rank-deficient and ill-conditioned fits keep SVD (pending #1093, not on this tree)"
+    title: "polyfit rank-deficient and ill-conditioned fits keep SVD (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_rank_deficient_and_ill_conditioned_keep_svd
-    status: planned
+    status: active
     env: unit
 
   - id: tc.polyfit_complex_fit_and_single_output
     kind: unit
-    title: "polyfit complex fit and single output (pending #1093, not on this tree)"
+    title: "polyfit complex fit and single output (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_complex_fit_and_single_output
-    status: planned
+    status: active
     env: unit
 
   - id: tc.polyfit_huge_degree0_stays_finite
     kind: unit
-    title: "polyfit huge degree-0 fit stays finite (pending #1093, not on this tree)"
+    title: "polyfit huge degree-0 fit stays finite (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_huge_degree0_stays_finite
-    status: planned
+    status: active
     env: unit
 
   - id: tc.polyfit_unrepresentable_residual_keeps_svd
     kind: unit
-    title: "polyfit unrepresentable residual keeps SVD (pending #1093, not on this tree)"
+    title: "polyfit unrepresentable residual keeps SVD (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_unrepresentable_residual_keeps_svd
-    status: planned
+    status: active
     env: unit
 
   - id: tc.polyfit_underdetermined_warns
     kind: unit
-    title: "polyfit underdetermined fit warns (pending #1093, not on this tree)"
+    title: "polyfit underdetermined fit warns (#1093)"
     features: [libs.core_math]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_core_math.py::test_polyfit_underdetermined_warns
-    status: planned
+    status: active
     env: unit
 
   - id: tc.arrays_sets
@@ -1454,11 +1454,11 @@ test_cases:
 
   - id: tc.strtok_empty_token_shape
     kind: unit
-    title: "strtok empty character-row token shape (pending #1093, not on this tree)"
+    title: "strtok empty character-row token shape (#1093)"
     features: [libs.strfun]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_burndown_builtins.py::test_strtok_empty_token_shape
-    status: planned
+    status: active
     env: unit
 
   - id: tc.handle_graphics
