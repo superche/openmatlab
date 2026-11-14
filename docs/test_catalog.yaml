@@ -1643,7 +1643,7 @@ test_cases:
 
   - id: tc.ode_quad_opt
     kind: unit
-    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset (Epic #627)
+    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset (Epic #627; #1085 unimplemented options and copy chain)
     features: [numerics.ode_quad_opt]
     use_cases: [uc.matrix_first_repl]
     impl: tests/unit/test_ode_quad_opt.py
@@ -1652,7 +1652,7 @@ test_cases:
 
   - id: tc.ode_quad_opt_bdd
     kind: bdd
-    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset Gherkin scenarios (Epic #627)
+    title: ode45/ode23, odeset, integral2, quad, integral ArrayValued, fminbnd, optimset Gherkin scenarios (Epic #627; #1085 unimplemented options)
     features: [numerics.ode_quad_opt]
     use_cases: [uc.matrix_first_repl]
     impl: tests/bdd/test_ode_quad_opt_bdd.py

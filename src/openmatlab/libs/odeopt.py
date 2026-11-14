@@ -8,7 +8,15 @@ Hermite dense output). Also odeset/odeget, optimset/optimget, fminbnd (MATLAB's
 golden-section + parabolic Brent), quad (adaptive Simpson), integral2
 (iterated adaptive Gauss-Kronrod, y-limits may be functions of x), and
 integral 'ArrayValued' (vector Gauss-Kronrod). Other integral calls delegate to
-the core implementation.
+the core implementation. ode45 and ode23 apply RelTol, AbsTol, Refine, MaxStep,
+and InitialStep. Any other nonempty odeset field is an error before the step
+loop (#1085), including a second case spelling and a nonscalar structure.
+odeset itself uses that same shape and alias rule when it copies an old
+structure, so a later element or an earlier spelling cannot disappear before
+the solver sees it. An explicit name-value pair still overwrites, including [].
+Every applied option, including InitialStep, is read before the first f(t, y).
+Empty defaults are left as they are. Only NormControl, Stats, BDF, Vectorized,
+and JConstant accept off.
 """
 
 from __future__ import annotations
@@ -58,31 +66,99 @@ ODE_FIELDS = ("AbsTol", "BDF", "Events", "InitialStep", "Jacobian", "JConstant",
 OPT_FIELDS = ("Display", "MaxFunEvals", "MaxIter", "TolFun", "TolX", "FunValCheck", "OutputFcn", "PlotFcns")
 
 
+def _legacy_setter(fname, fields, args):
+    """optimset path: first case match on element 1. ODE options do not use this."""
+    from openmatlab.runtime.struct_value import StructValue
+
+    empty = NDArrayValue(np.zeros((0, 0)))
+    vals = {f: empty for f in fields}
+    while args and getattr(args[0], "is_struct", False):
+        old = args.pop(0)
+        for f in old.fields:
+            canon = next((c for c in fields if c.lower() == f.lower()), f)
+            v = old.get(f)
+            if not (getattr(v, "numel", None) and v.numel() == 0 and not hasattr(v, "text")):
+                vals[canon] = v
+    if len(args) % 2:
+        raise _err("Arguments must occur in name-value pairs.", f"MATLAB:{fname}:NoValueForProp")
+    for k in range(0, len(args), 2):
+        name = _text(args[k])
+        if name is None:
+            raise _err("Expected argument to be a string property name.", f"MATLAB:{fname}:NoPropName")
+        hits = [c for c in fields if c.lower() == name.lower()] or [c for c in fields if c.lower().startswith(name.lower())]
+        if len(hits) != 1:
+            raise _err(f"Unrecognized property name '{name}'.", f"MATLAB:{fname}:InvalidPropName")
+        vals[hits[0]] = args[k + 1]
+    return [StructValue.scalar([(f, vals[f]) for f in fields] + [(f, v) for f, v in vals.items() if f not in fields])]
+
+
+def _name_value_pairs(fname, fields, args):
+    if len(args) % 2:
+        raise _err("Arguments must occur in name-value pairs.", f"MATLAB:{fname}:NoValueForProp")
+    pairs = []
+    for k in range(0, len(args), 2):
+        name = _text(args[k])
+        if name is None:
+            raise _err("Expected argument to be a string property name.", f"MATLAB:{fname}:NoPropName")
+        hits = [c for c in fields if c.lower() == name.lower()] or [c for c in fields if c.lower().startswith(name.lower())]
+        if len(hits) != 1:
+            raise _err(f"Unrecognized property name '{name}'.", f"MATLAB:{fname}:InvalidPropName")
+        pairs.append((hits[0], args[k + 1]))
+    return pairs
+
+
+def _absorb_ode_struct(old, vals, overridden):
+    """Copy one old structure into ``vals``.
+
+    Shape and alias conflicts use the same helpers as the solver. A zero-element
+    structure contributes nothing. A later structure may replace a single kept
+    value (documented struct merge). An empty field does not clear a value
+    already kept. ``overridden`` names are left for the explicit name-value
+    pair, which is how ``odeset(old, 'Events', [])`` clears a handle even when
+    the old structure names that option twice.
+    """
+    scalar = _scalar_option_struct("odeset", old)
+    if scalar is None:
+        return
+    known = {c.lower() for c in ODE_FIELDS}
+    for canon in ODE_FIELDS:
+        if canon in overridden:
+            continue
+        v = _distinct_set_value("odeset", scalar, canon)
+        if v is not None:
+            vals[canon] = v
+    for f in scalar.fields:
+        if f.lower() in known:
+            continue
+        v = scalar.get(f)
+        if _value_unset(v):
+            continue
+        vals[f] = v
+
+
+def _build_odeset(args):
+    from openmatlab.runtime.struct_value import StructValue
+
+    empty = NDArrayValue(np.zeros((0, 0)))
+    vals = {f: empty for f in ODE_FIELDS}
+    structs = []
+    while args and getattr(args[0], "is_struct", False):
+        structs.append(args.pop(0))
+    pairs = _name_value_pairs("odeset", ODE_FIELDS, args)
+    overridden = {canon for canon, _v in pairs}
+    for old in structs:
+        _absorb_ode_struct(old, vals, overridden)
+    for canon, v in pairs:
+        vals[canon] = v
+    return [StructValue.scalar([(f, vals[f]) for f in ODE_FIELDS] + [(f, v) for f, v in vals.items() if f not in ODE_FIELDS])]
+
+
 def _setter(fname, fields):
     def fn(args, *, nargout=1):
-        from openmatlab.runtime.struct_value import StructValue
-
-        empty = NDArrayValue(np.zeros((0, 0)))
-        vals = {f: empty for f in fields}
         args = list(args)
-        while args and getattr(args[0], "is_struct", False):
-            old = args.pop(0)
-            for f in old.fields:
-                canon = next((c for c in fields if c.lower() == f.lower()), f)
-                v = old.get(f)
-                if not (getattr(v, "numel", None) and v.numel() == 0 and not hasattr(v, "text")):
-                    vals[canon] = v
-        if len(args) % 2:
-            raise _err("Arguments must occur in name-value pairs.", f"MATLAB:{fname}:NoValueForProp")
-        for k in range(0, len(args), 2):
-            name = _text(args[k])
-            if name is None:
-                raise _err("Expected argument to be a string property name.", f"MATLAB:{fname}:NoPropName")
-            hits = [c for c in fields if c.lower() == name.lower()] or [c for c in fields if c.lower().startswith(name.lower())]
-            if len(hits) != 1:
-                raise _err(f"Unrecognized property name '{name}'.", f"MATLAB:{fname}:InvalidPropName")
-            vals[hits[0]] = args[k + 1]
-        return [StructValue.scalar([(f, vals[f]) for f in fields] + [(f, v) for f, v in vals.items() if f not in fields])]
+        if fname != "odeset":
+            return _legacy_setter(fname, fields, args)
+        return _build_odeset(args)
 
     return fn
 
@@ -104,6 +180,7 @@ def _getter(fname):
 
 
 def _opt(s, name, default):
+    """First case-insensitive match. ODE solvers do not use this: a later alias would be hidden."""
     if s is None or not getattr(s, "is_struct", False):
         return default
     for f in s.fields:
@@ -117,6 +194,166 @@ def _opt(s, name, default):
             a = _arr(v).reshape(-1)
             return a if a.size > 1 else float(a[0])
     return default
+
+
+# Applied options are read by the step loop. Any other nonempty ODE_FIELDS value
+# is refused before f(t, y) is called. Only the five switches below treat 'off'
+# as that same path. Every other unimplemented field must be empty. Public
+# odeset/ode45 pages name the fields and do not publish an identifier for this
+# gap, so the id is OpenMATLAB's.
+_APPLIED_OPTIONS = frozenset({"AbsTol", "InitialStep", "MaxStep", "Refine", "RelTol"})
+_OFF_DEFAULT_OPTIONS = frozenset({"BDF", "JConstant", "NormControl", "Stats", "Vectorized"})
+_OPTION_CHECK_ORDER = ("Events", "Mass") + tuple(
+    f for f in ODE_FIELDS if f not in _APPLIED_OPTIONS and f not in ("Events", "Mass")
+)
+
+
+def _is_function_handle(v) -> bool:
+    kind = getattr(v, "matlab_class", None)
+    return callable(kind) and kind() == "function_handle"
+
+
+def _value_unset(v) -> bool:
+    """True for the odeset placeholder ``[]`` and for blank text. A function handle is set."""
+    if v is None:
+        return True
+    if _is_function_handle(v):
+        return False
+    numel = getattr(v, "numel", None)
+    if callable(numel) and numel() == 0:
+        return True
+    try:
+        text = _text(v)
+    except ValueError:
+        return False
+    return text is not None and text == ""
+
+
+def _is_off(v) -> bool:
+    try:
+        text = _text(v)
+    except ValueError:
+        return False
+    return text is not None and text.lower() == "off"
+
+
+def _scalar_option_struct(name, opts):
+    """The one element that carries option values, or None when nothing is set.
+
+    A struct array keeps every field name on the type even after ``o(:) = []``,
+    but then it has no element to read. Indexing element 0 would raise. More
+    than one element is not a scalar options structure: reading only the first
+    would drop a value stored later.
+    """
+    if opts is None:
+        return None
+    if not getattr(opts, "is_struct", False):
+        numel = getattr(opts, "numel", None)
+        if callable(numel) and numel() == 0:
+            return None
+        raise _err(
+            f"{name}: the options argument must be a structure created with odeset, or [].",
+            f"OpenMATLAB:{name}:OptionsNotStructure",
+        )
+    n = opts.numel()
+    if n == 0:
+        return None
+    if n != 1:
+        raise _err(
+            f"{name}: the options argument must be a scalar structure created with odeset, or [].",
+            f"OpenMATLAB:{name}:OptionsNotStructure",
+        )
+    return opts
+
+
+def _matching_fields(opts, opt):
+    return [opts.get(f) for f in opts.fields if f.lower() == opt.lower()]
+
+
+def _value_key(v):
+    """Equality for two set spellings of one option. Text ignores case; numbers do not."""
+    if _is_function_handle(v):
+        return ("fh", id(v))
+    try:
+        text = _text(v)
+    except ValueError:
+        text = None
+    if text is not None:
+        return ("text", text.lower())
+    buf = getattr(v, "backend_buffer", None)
+    if callable(buf):
+        a = np.asarray(buf(), dtype=float).reshape(-1)
+        return ("num", tuple(float(x) for x in a))
+    return ("obj", id(v))
+
+
+def _distinct_set_value(who, opts, opt):
+    """The one set value among case spellings, or None when every spelling is unset.
+
+    ``opts`` is a scalar structure. Two set values that are not equal raise
+    AmbiguousOption for ``who`` (the solver, or odeset when it is copying).
+    """
+    chosen = None
+    key = None
+    for v in _matching_fields(opts, opt):
+        if _value_unset(v):
+            continue
+        got = _value_key(v)
+        if chosen is None:
+            chosen, key = v, got
+            continue
+        if key != got:
+            raise _err(
+                f"{who}: option '{opt}' is specified more than once with different values.",
+                f"OpenMATLAB:{who}:AmbiguousOption",
+            )
+    return chosen
+
+
+def _extract_applied(v):
+    try:
+        text = _text(v)
+    except ValueError:
+        text = None
+    if text is not None:
+        return ("text", text)
+    a = _arr(v).reshape(-1)
+    if a.size > 1:
+        return ("vec", tuple(float(x) for x in a))
+    return ("num", float(a[0]))
+
+
+def _applied_option(name, opts, opt, default):
+    """Every case spelling of an applied option. Disagreeing set values are an error."""
+    if opts is None:
+        return default
+    chosen = _distinct_set_value(name, opts, opt)
+    if chosen is None:
+        return default
+    kind, value = _extract_applied(chosen)
+    if kind == "vec":
+        return np.asarray(value, dtype=float)
+    return value
+
+
+def _reject_unimplemented_options(name, opts):
+    """Refuse a requested option this solver does not apply, before any f(t, y) call.
+
+    Every case spelling is inspected. An empty canonical field does not hide
+    ``events`` or ``mass``. Only ``_OFF_DEFAULT_OPTIONS`` may be the text off.
+    """
+    if opts is None:
+        return
+    for opt in _OPTION_CHECK_ORDER:
+        for v in _matching_fields(opts, opt):
+            if _value_unset(v):
+                continue
+            if opt in _OFF_DEFAULT_OPTIONS and _is_off(v):
+                continue
+            raise _err(
+                f"{name}: option '{opt}' is not supported.",
+                f"OpenMATLAB:{name}:UnsupportedOption",
+            )
 
 
 # -- ODE solvers ---------------------------------------------------------------------------
@@ -152,21 +389,24 @@ def _solver(name, tab):
         if len(args) < 3:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
         fh = args[0]
+        opts = _scalar_option_struct(name, args[3] if len(args) > 3 else None)
+        _reject_unimplemented_options(name, opts)
         tspan = _arr(args[1]).reshape(-1)
         y0 = _arr(args[2]).reshape(-1)
-        opts = args[3] if len(args) > 3 else None
         if tspan.size < 2:
             raise _err("The time vector TSPAN must have at least two elements.", f"MATLAB:{name}:TspanLength")
         if tspan[0] == tspan[-1]:
             raise _err("The last entry in tspan must be different from the first entry.", "MATLAB:odearguments:TspanEndpointsNotDistinct")
-        rtol = float(_opt(opts, "RelTol", 1e-3))
-        atol = np.asarray(_opt(opts, "AbsTol", 1e-6), dtype=float)
+        rtol = float(_applied_option(name, opts, "RelTol", 1e-3))
+        atol = np.asarray(_applied_option(name, opts, "AbsTol", 1e-6), dtype=float)
         if rtol < 100 * np.finfo(float).eps:
             rtol = 100 * np.finfo(float).eps
-        refine = int(_opt(opts, "Refine", tab["refine"]))
+        refine = int(_applied_option(name, opts, "Refine", tab["refine"]))
         t0, tf = float(tspan[0]), float(tspan[-1])
         direction = np.sign(tf - t0)
-        maxstep = float(_opt(opts, "MaxStep", 0.1 * abs(tf - t0)))
+        maxstep = float(_applied_option(name, opts, "MaxStep", 0.1 * abs(tf - t0)))
+        # Every applied option is resolved here, before the first RHS call.
+        h_user = float(_applied_option(name, opts, "InitialStep", 0.0))
         n = y0.size
 
         def f(t, y):
@@ -179,7 +419,7 @@ def _solver(name, tab):
         thresh = atol / rtol
         y, t = y0.astype(float), t0
         fy = f(t, y)
-        h = float(_opt(opts, "InitialStep", 0.0))
+        h = h_user
         if h <= 0:  # MATLAB's initial step heuristic
             rh = np.max(np.abs(fy) / np.maximum(np.abs(y), thresh)) / (0.8 * rtol ** (1 / tab["order"]))
             h = min(maxstep, abs(tf - t0))
