@@ -1,5 +1,21 @@
 # C-MAPSS FD001 (M14 V-E1)
 
+## What this demo is
+
+This directory analyzes published NASA C-MAPSS FD001 tables. A runtime download from Zenodo places `train_FD001.txt`, `test_FD001.txt`, and `RUL_FD001.txt` in a gitignored cache. `story_fd001.m` then filters, summarizes, and plots those columns. It does not integrate an engine model, and it does not generate the FD001 time series.
+
+The citation below names the source paper. That paper's title contains the word Simulation. The commands in this directory read the published files.
+
+[中文](#这个演示是什么). Milestone intent: [`docs/milestones/M14-cmapss-vertical.md`](../../docs/milestones/M14-cmapss-vertical.md#intent).
+
+## 这个演示是什么
+
+本目录分析已发表的 NASA C-MAPSS FD001 表。从 Zenodo 的运行时下载把 `train_FD001.txt`、`test_FD001.txt` 和 `RUL_FD001.txt` 放进被 gitignore 的缓存。`story_fd001.m` 接着过滤、汇总并绘制这些列。它不对发动机模型做积分，也不生成 FD001 时间序列。
+
+下面的引文给出源论文。该论文标题里有 Simulation 一词。本目录中的命令读取已发表的文件。
+
+[English](#what-this-demo-is). 里程碑意图：[`docs/milestones/M14-cmapss-vertical.md`](../../docs/milestones/M14-cmapss-vertical.md#intent)。
+
 Runtime download of NASA C-MAPSS from Zenodo and a `readtable` load of FD001.
 The zip and the extracted text are cached under `downloads/cmapss/` and are
 not part of the repository.

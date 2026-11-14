@@ -17,6 +17,18 @@ Four minimal, **stdlib-first** stubs that informed the locked
 Contract-aligned sample: **`community.signal/`** (criterion P07).
 Historical option stubs remain under `option-{a,b,c,d}/`.
 
+## Control examples in this directory
+
+`tf` and `step` in [`option-b/toolboxes/control_tb/commands.py`](option-b/toolboxes/control_tb/commands.py) return the strings `tf(...)` and `step(...)`. [`option-d/bundles/control_mfe/__init__.py`](option-d/bundles/control_mfe/__init__.py) registers `step` the same way and returns a panel-label string. These are architectural stubs from the plugin-shape samples. They do not build a transfer-function value, and they do not compute a step response. This is not a computational control toolbox.
+
+[中文](#本目录里的控制示例).
+
+## 本目录里的控制示例
+
+[`option-b/toolboxes/control_tb/commands.py`](option-b/toolboxes/control_tb/commands.py) 里的 `tf` 与 `step` 返回字符串 `tf(...)` 和 `step(...)`。[`option-d/bundles/control_mfe/__init__.py`](option-d/bundles/control_mfe/__init__.py) 以同样方式注册 `step`，并返回一段面板标签字符串。它们是插件形态示例里的架构桩。它们不构造传递函数的值，也不计算阶跃响应。这不是可计算的控制工具箱。
+
+[English](#control-examples-in-this-directory).
+
 ```bash
 cd /workspace/openmatlab
 . .venv/bin/activate   # optional; demos need only stdlib (+ PyYAML for B)
