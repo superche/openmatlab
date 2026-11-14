@@ -7,7 +7,7 @@ Criterion **T03** (`m3_t03_calculus_ode_opt`) in [M3](../milestones/M3-domain-to
 - **Error control (MATLAB's).** `err = max(|est| ./ max(max(|y|,|ynew|), AbsTol/RelTol))`, and a step is accepted when `err <= RelTol`. Defaults are RelTol 1e-3 and AbsTol 1e-6, with `MaxStep = |tf-t0|/10` and MATLAB's initial-step heuristic. The step factor is clamped to [0.1 (or 0.2 after an accepted step), 5] with a safety factor of 0.8.
 - **Output.** For `[t0 tf]`, every step is output with `Refine` (4 for ode45, 1 for ode23). For a longer `tspan` vector, output is at exactly those times, using cubic Hermite dense output. Integration may run backwards in time.
 - **Results.** `[t, y]` gives a column `t` and one row of `y` per time. A single output gives a sol struct (`solver`, `x`, `y`).
-- **Options.** `odeset`/`odeget` use the full MATLAB field list, case-insensitive with unique-prefix matching, and `odeset(old, ...)` merges.
+- **Options.** `odeset`/`odeget` use the full MATLAB field list, case-insensitive with unique-prefix matching, and `odeset(old, ...)` merges. `ode45`/`ode23` raise before stepping when an option they do not apply is nonempty (#1085). `odeset` still stores the field. See [ISSUE-1085](ISSUE-1085-ode-unsupported-options.md).
 
 ## Quadrature
 - `integral(..., 'ArrayValued', true)` uses vector G7–K15. Every other `integral` call goes to the existing core implementation unchanged: AbsTol/RelTol, Inf limits.
