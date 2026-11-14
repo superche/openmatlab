@@ -965,6 +965,44 @@ def _polyval(args, *, nargout=1):
 _POLYFIT_QR_COND = 1e3
 
 
+def _entry_abs(v):
+    """Magnitude of each entry. Complex ``abs`` is scaled so hypot does not overflow."""
+    v = np.asarray(v)
+    if not np.iscomplexobj(v):
+        return np.abs(v)
+    re, im = np.abs(v.real), np.abs(v.imag)
+    m = np.maximum(re, im)
+    safe = np.where(m == 0, 1.0, m)
+    scaled = safe * np.hypot(re / safe, im / safe)
+    return np.where(m == 0, 0.0, scaled)
+
+
+def _scaled_norm(v):
+    """Euclidean norm. Finite vectors whose squares overflow stay finite."""
+    a = _entry_abs(np.asarray(v).reshape(-1))
+    if a.size == 0:
+        return 0.0
+    if not np.all(np.isfinite(a)):
+        return np.inf
+    m = float(np.max(a))
+    if m == 0.0:
+        return 0.0
+    return m * float(np.linalg.norm(a / m))
+
+
+def _residual_score(V, p, y):
+    """Finite residual norm, or None when the coefficient or residual is nonfinite."""
+    if p is None or not np.all(np.isfinite(p)):
+        return None
+    resid = V @ p - y
+    if not np.all(np.isfinite(resid)):
+        return None
+    score = _scaled_norm(resid)
+    if not np.isfinite(score):
+        return None
+    return score
+
+
 def _vandermonde_coeffs(V, y):
     coeffs, _, rank, sv = np.linalg.lstsq(V, y, rcond=None)
     ncoef = V.shape[1]
@@ -973,13 +1011,18 @@ def _vandermonde_coeffs(V, y):
     if not well:
         return coeffs
     q, r = np.linalg.qr(V, mode="reduced")
-    try:
-        solved = np.linalg.solve(r, q.conj().T @ y)
-    except np.linalg.LinAlgError:
-        return coeffs
-    # Unpivoted QR and SVD each win by a few ulps on different LAPACK
-    # builds. Keep QR only when its residual is no larger.
-    if np.linalg.norm(V @ solved - y) <= np.linalg.norm(V @ coeffs - y):
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        try:
+            solved = np.linalg.solve(r, q.conj().T @ y)
+        except np.linalg.LinAlgError:
+            return coeffs
+    # QR and SVD can each be a few ulps closer on different builds.
+    # A nonfinite candidate loses. Residual norms are scaled: an
+    # unscaled square overflows to Inf and then Inf <= Inf keeps a
+    # worse solve.
+    qr_score = _residual_score(V, solved, y)
+    svd_score = _residual_score(V, coeffs, y)
+    if qr_score is not None and (svd_score is None or qr_score <= svd_score):
         return solved
     return coeffs
 

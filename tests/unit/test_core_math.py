@@ -217,6 +217,33 @@ def test_polyfit_complex_fit_and_single_output():
         _run("polyfit([1 2], [1 2 3], 1);")
 
 
+def test_polyfit_huge_degree0_stays_finite():
+    """A finite constant fit must not lose to an overflowed QR residual."""
+    from decimal import Decimal, getcontext
+
+    s = _run("p = polyfit([0 1 2], [1.1e308 1.2e308 1.3e308], 0); "
+             "q = polyfit([0 1 2], [1.1e200 1.2e200 1.3e200], 0); "
+             "t = polyfit([0 1 2], [1e-320 2e-320 3e-320], 0);")
+    getcontext().prec = 50
+
+    def ref(*samples):
+        vals = [Decimal.from_float(float(v)) for v in samples]
+        return float(sum(vals) / Decimal(len(vals)))
+
+    got = _v(s, "p")
+    huge = ref(1.1e308, 1.2e308, 1.3e308)
+    assert got.shape == (1, 1) and np.isfinite(got).all()
+    assert abs(float(got.item()) - huge) <= 4 * np.spacing(huge)
+    mid = ref(1.1e200, 1.2e200, 1.3e200)
+    q = _v(s, "q")
+    assert q.shape == (1, 1) and np.isfinite(q).all()
+    assert abs(float(q.item()) - mid) <= 4 * np.spacing(mid)
+    tiny = ref(1e-320, 2e-320, 3e-320)
+    t = _v(s, "t")
+    assert t.shape == (1, 1) and np.isfinite(t).all()
+    assert abs(float(t.item()) - tiny) <= 4 * np.spacing(tiny)
+
+
 def test_polyfit_underdetermined_warns():
     from openmatlab.runtime import warnings as _w
 
