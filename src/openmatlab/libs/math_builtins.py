@@ -977,7 +977,11 @@ def _vandermonde_coeffs(V, y):
         solved = np.linalg.solve(r, q.conj().T @ y)
     except np.linalg.LinAlgError:
         return coeffs
-    return solved
+    # Unpivoted QR and SVD each win by a few ulps on different LAPACK
+    # builds. Keep QR only when its residual is no larger.
+    if np.linalg.norm(V @ solved - y) <= np.linalg.norm(V @ coeffs - y):
+        return solved
+    return coeffs
 
 
 def _polyfit(args, *, nargout=1):

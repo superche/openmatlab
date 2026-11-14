@@ -208,10 +208,7 @@ def test_polyfit_rank_deficient_and_ill_conditioned_keep_svd():
 
 def test_polyfit_complex_fit_and_single_output():
     s = _run("p = polyfit([0 1 2], [3-1i, 5, 7+1i], 1);")
-    # Real exact fits stay at 10*eps. On numpy 2.5.4 this complex line
-    # was 2.29e-15, just past that bar. 100*eps is still under the
-    # corpus complex tolerance of 1000*eps.
-    lim = 100 * np.finfo(float).eps
+    lim = 10 * np.finfo(float).eps
     assert np.max(np.abs(_v(s, "p") - np.array([[2 + 1j, 3 - 1j]]))) <= lim
     assert _v(s, "p").shape == (1, 2)
     with pytest.raises(EvalError, match="expected 2 outputs"):
