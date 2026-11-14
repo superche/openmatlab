@@ -957,17 +957,41 @@ def _polyval(args, *, nargout=1):
     return (_out(np.polyval(p, x) if p.size else np.zeros(x.shape)),)
 
 
+# Full column rank and cond(V) at or below this: reduced QR for V\y.
+# Above it, or when lstsq reports a rank deficiency, keep the minimum-norm
+# SVD solution. Unpivoted QR on a rank-deficient Vandermonde (repeated nodes,
+# degree 2) returned coefficients around 1e15 on the same points where SVD
+# returns a small minimum-norm polynomial.
+_POLYFIT_QR_COND = 1e3
+
+
+def _vandermonde_coeffs(V, y):
+    coeffs, _, rank, sv = np.linalg.lstsq(V, y, rcond=None)
+    ncoef = V.shape[1]
+    well = (rank == ncoef and sv.size == ncoef and sv[-1] != 0
+            and (sv[0] / sv[-1]) <= _POLYFIT_QR_COND)
+    if not well:
+        return coeffs
+    q, r = np.linalg.qr(V, mode="reduced")
+    try:
+        solved = np.linalg.solve(r, q.conj().T @ y)
+    except np.linalg.LinAlgError:
+        return coeffs
+    return solved
+
+
 def _polyfit(args, *, nargout=1):
     x, y, n = _vec(args[0], "polyfit"), _vec(args[1], "polyfit"), int(_s(args[2], "polyfit"))
     if x.size != y.size:
         raise _err("The first two inputs must have the same number of elements.", "MATLAB:polyfit:XYSizeMismatch")
-    V = np.vander(x, n + 1)
-    p, *_ = np.linalg.lstsq(V, y, rcond=None)
+    # One coefficient row, in the original variable. A second or third
+    # output (fit statistics, normalization) is not produced.
+    p = _vandermonde_coeffs(np.vander(x, n + 1), y)
     if x.size <= n:
         from openmatlab.runtime import warnings as _w
 
         _w.emit("Polynomial is not unique; degree >= number of data points.", "MATLAB:polyfit:PolyNotUnique")
-    return (_out(np.real_if_close(p).reshape(1, -1)),)
+    return (_out(np.real_if_close(p).reshape(1, -1)),)[:max(1, nargout)]
 
 
 def _roots(args, *, nargout=1):
