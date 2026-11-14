@@ -161,3 +161,98 @@ def test_supported_ode_options_still_integrate():
     assert g("k").text == "ode45"
     assert abs(_n(g("py"))[0, 0] - np.exp(-1)) < 1e-5
     assert g("mid").text == "MATLAB:odeset:InvalidPropName"
+
+
+def _rejected(solver, setup):
+    code = (
+        f"{setup} try, [t, y] = {solver}(@(t, y) error('integrated'), [0 1], 1, o); "
+        "ok = 1; id = ''; msg = ''; catch err, ok = 0; id = err.identifier; msg = err.message; end; "
+        "kept = exist('t', 'var') + exist('y', 'var');"
+    )
+    s = _caught(code)
+    assert _n(s.workspace.get("ok"))[0, 0] == 0, (solver, setup)
+    assert "integrated" not in s.workspace.get("msg").text, (solver, setup)
+    assert _n(s.workspace.get("kept"))[0, 0] == 0, (solver, setup)
+    return s.workspace.get("id").text, s.workspace.get("msg").text
+
+
+def test_case_alias_and_nonscalar_options_error_before_integration():
+    """An empty canonical field must not hide another spelling, and only element 1 is not enough."""
+    toggles = ("NormControl", "Stats", "BDF", "Vectorized", "JConstant")
+    for solver in ("ode45", "ode23"):
+        for opt in toggles:
+            low = opt.lower()
+            for setup in (
+                f"o = odeset('{opt}', 'off'); o.{low} = 'on';",
+                f"o = struct('{low}', 'on'); o.{opt} = 'off';",
+            ):
+                ident, msg = _rejected(solver, setup)
+                assert ident == f"OpenMATLAB:{solver}:UnsupportedOption", setup
+                assert f"option '{opt}'" in msg, setup
+        for setup in (
+            "o = odeset(); o.events = @(t, y) y;",
+            "o = struct('events', @(t, y) y); o.Events = [];",
+            "o = odeset(); o.mass = 1;",
+            "o = struct('mass', 1); o.Mass = [];",
+        ):
+            ident, msg = _rejected(solver, setup)
+            assert ident == f"OpenMATLAB:{solver}:UnsupportedOption", setup
+            assert "option 'Events'" in msg or "option 'Mass'" in msg, setup
+        for setup in (
+            "o = odeset('Refine', 1); o.refine = 4;",
+            "o = struct('refine', 4); o.Refine = 1;",
+            "o = odeset('RelTol', 1e-6); o.reltol = 1e-2;",
+            "o = struct('reltol', 1e-2); o.RelTol = 1e-6;",
+        ):
+            ident, msg = _rejected(solver, setup)
+            assert ident == f"OpenMATLAB:{solver}:AmbiguousOption", setup
+            assert "more than once" in msg, setup
+        for setup in (
+            "o = odeset(); o(2) = odeset('Mass', 1);",
+            "o = odeset('Mass', 1); o(2) = odeset();",
+            "o = odeset(); o(2) = odeset();",
+        ):
+            ident, msg = _rejected(solver, setup)
+            assert ident == f"OpenMATLAB:{solver}:OptionsNotStructure", setup
+            assert "scalar structure" in msg, setup
+        code = (
+            f"o = odeset(); o.events = @(t, y) y; "
+            f"try, sol = {solver}(@(t, y) error('integrated'), [0 1], 1, o); "
+            "ok = 1; id = ''; msg = ''; catch err, ok = 0; id = err.identifier; msg = err.message; end; "
+            "kept = exist('sol', 'var');"
+        )
+        s = _caught(code)
+        assert s.workspace.get("id").text == f"OpenMATLAB:{solver}:UnsupportedOption"
+        assert "integrated" not in s.workspace.get("msg").text
+        assert _n(s.workspace.get("kept"))[0, 0] == 0
+
+
+def test_case_alias_of_applied_option_and_empty_struct_still_integrate():
+    g = _ws(
+        "[t0, y0] = ode45(@(t, y) -y, [0 1], 1); "
+        "[tr, yr] = ode45(@(t, y) -y, [0 1], 1, odeset('Refine', 1)); "
+        "a = odeset(); a.refine = 1; [t1, y1] = ode45(@(t, y) -y, [0 1], 1, a); "
+        "b = struct('refine', 1); b.Refine = []; [t2, y2] = ode45(@(t, y) -y, [0 1], 1, b); "
+        "[u0, z0] = ode23(@(t, y) -y, [0 1], 1); "
+        "[um, zm] = ode23(@(t, y) -y, [0 1], 1, odeset('MaxStep', 0.05)); "
+        "c = odeset(); c.maxstep = 0.05; [u1, z1] = ode23(@(t, y) -y, [0 1], 1, c); "
+        "d = struct('maxstep', 0.05); d.MaxStep = []; [u2, z2] = ode23(@(t, y) -y, [0 1], 1, d); "
+        "e = odeset(); e(:) = []; [t3, y3] = ode45(@(t, y) -y, [0 1], 1, e); "
+        "f = odeset('Events', @(t, y) y); f(:) = []; [t4, y4] = ode45(@(t, y) -y, [0 1], 1, f); "
+        "g = odeset(); g(:) = []; [u3, z3] = ode23(@(t, y) -y, [0 1], 1, g); "
+        "h = odeset('NormControl', 'off'); h.normcontrol = 'off'; "
+        "[t5, y5] = ode45(@(t, y) -y, [0 1], 1, h);"
+    )
+    bare_t, bare_y = _n(g("t0")), _n(g("y0"))
+    explicit_t, explicit_y = _n(g("tr")), _n(g("yr"))
+    assert explicit_t.shape != bare_t.shape
+    assert np.allclose(_n(g("t1")), explicit_t) and np.allclose(_n(g("y1")), explicit_y)
+    assert np.allclose(_n(g("t2")), explicit_t) and np.allclose(_n(g("y2")), explicit_y)
+    step_t, step_y = _n(g("um")), _n(g("zm"))
+    assert step_t.shape != _n(g("u0")).shape
+    assert np.allclose(_n(g("u1")), step_t) and np.allclose(_n(g("z1")), step_y)
+    assert np.allclose(_n(g("u2")), step_t) and np.allclose(_n(g("z2")), step_y)
+    assert np.allclose(_n(g("t3")), bare_t) and np.allclose(_n(g("y3")), bare_y)
+    assert np.allclose(_n(g("t4")), bare_t) and np.allclose(_n(g("y4")), bare_y)
+    assert np.allclose(_n(g("u3")), _n(g("u0"))) and np.allclose(_n(g("z3")), _n(g("z0")))
+    assert np.allclose(_n(g("t5")), bare_t) and np.allclose(_n(g("y5")), bare_y)

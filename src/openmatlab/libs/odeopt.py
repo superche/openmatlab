@@ -10,7 +10,9 @@ golden-section + parabolic Brent), quad (adaptive Simpson), integral2
 integral 'ArrayValued' (vector Gauss-Kronrod). Other integral calls delegate to
 the core implementation. ode45 and ode23 apply RelTol, AbsTol, Refine, MaxStep,
 and InitialStep. Any other nonempty odeset field is an error before the step
-loop (#1085). Empty defaults are left as they are.
+loop (#1085), including a second case spelling and a nonscalar structure.
+Empty defaults are left as they are. Only NormControl, Stats, BDF, Vectorized,
+and JConstant accept off.
 """
 
 from __future__ import annotations
@@ -106,6 +108,7 @@ def _getter(fname):
 
 
 def _opt(s, name, default):
+    """First case-insensitive match. ODE solvers do not use this: a later alias would be hidden."""
     if s is None or not getattr(s, "is_struct", False):
         return default
     for f in s.fields:
@@ -122,12 +125,11 @@ def _opt(s, name, default):
 
 
 # Applied options are read by the step loop. Any other nonempty ODE_FIELDS value
-# is refused before f(t, y) is called. 'off' on an on/off switch is the path
-# already used. Public odeset/ode45 pages name the fields and do not publish an
-# identifier for this gap, so the id is OpenMATLAB's.
+# is refused before f(t, y) is called. Only the five switches below treat 'off'
+# as that same path. Every other unimplemented field must be empty. Public
+# odeset/ode45 pages name the fields and do not publish an identifier for this
+# gap, so the id is OpenMATLAB's.
 _APPLIED_OPTIONS = frozenset({"AbsTol", "InitialStep", "MaxStep", "Refine", "RelTol"})
-# An explicit off selects the path already taken: componentwise error control,
-# no statistics printout, no BDF, no vectorized Jacobian, Jacobian not constant.
 _OFF_DEFAULT_OPTIONS = frozenset({"BDF", "JConstant", "NormControl", "Stats", "Vectorized"})
 _OPTION_CHECK_ORDER = ("Events", "Mass") + tuple(
     f for f in ODE_FIELDS if f not in _APPLIED_OPTIONS and f not in ("Events", "Mass")
@@ -163,35 +165,95 @@ def _is_off(v) -> bool:
     return text is not None and text.lower() == "off"
 
 
-def _struct_field(opts, name):
-    for f in opts.fields:
-        if f.lower() == name.lower():
-            return opts.get(f)
-    return None
+def _scalar_option_struct(name, opts):
+    """The one element that carries option values, or None when nothing is set.
 
-
-def _reject_unimplemented_options(name, opts):
-    """Refuse a requested option this solver does not apply, before any f(t, y) call."""
+    A struct array keeps every field name on the type even after ``o(:) = []``,
+    but then it has no element to read. Indexing element 0 would raise. More
+    than one element is not a scalar options structure: reading only the first
+    would drop a value stored later.
+    """
     if opts is None:
-        return
+        return None
     if not getattr(opts, "is_struct", False):
         numel = getattr(opts, "numel", None)
         if callable(numel) and numel() == 0:
-            return
+            return None
         raise _err(
             f"{name}: the options argument must be a structure created with odeset, or [].",
             f"OpenMATLAB:{name}:OptionsNotStructure",
         )
-    for opt in _OPTION_CHECK_ORDER:
-        v = _struct_field(opts, opt)
-        if v is None or _value_unset(v):
-            continue
-        if opt in _OFF_DEFAULT_OPTIONS and _is_off(v):
-            continue
+    n = opts.numel()
+    if n == 0:
+        return None
+    if n != 1:
         raise _err(
-            f"{name}: option '{opt}' is not supported.",
-            f"OpenMATLAB:{name}:UnsupportedOption",
+            f"{name}: the options argument must be a scalar structure created with odeset, or [].",
+            f"OpenMATLAB:{name}:OptionsNotStructure",
         )
+    return opts
+
+
+def _matching_fields(opts, opt):
+    return [opts.get(f) for f in opts.fields if f.lower() == opt.lower()]
+
+
+def _extract_applied(v):
+    try:
+        text = _text(v)
+    except ValueError:
+        text = None
+    if text is not None:
+        return ("text", text)
+    a = _arr(v).reshape(-1)
+    if a.size > 1:
+        return ("vec", tuple(float(x) for x in a))
+    return ("num", float(a[0]))
+
+
+def _applied_option(name, opts, opt, default):
+    """Every case spelling of an applied option. Disagreeing set values are an error."""
+    if opts is None:
+        return default
+    chosen = None
+    for v in _matching_fields(opts, opt):
+        if _value_unset(v):
+            continue
+        got = _extract_applied(v)
+        if chosen is None:
+            chosen = got
+            continue
+        if chosen != got:
+            raise _err(
+                f"{name}: option '{opt}' is specified more than once with different values.",
+                f"OpenMATLAB:{name}:AmbiguousOption",
+            )
+    if chosen is None:
+        return default
+    kind, value = chosen
+    if kind == "vec":
+        return np.asarray(value, dtype=float)
+    return value
+
+
+def _reject_unimplemented_options(name, opts):
+    """Refuse a requested option this solver does not apply, before any f(t, y) call.
+
+    Every case spelling is inspected. An empty canonical field does not hide
+    ``events`` or ``mass``. Only ``_OFF_DEFAULT_OPTIONS`` may be the text off.
+    """
+    if opts is None:
+        return
+    for opt in _OPTION_CHECK_ORDER:
+        for v in _matching_fields(opts, opt):
+            if _value_unset(v):
+                continue
+            if opt in _OFF_DEFAULT_OPTIONS and _is_off(v):
+                continue
+            raise _err(
+                f"{name}: option '{opt}' is not supported.",
+                f"OpenMATLAB:{name}:UnsupportedOption",
+            )
 
 
 # -- ODE solvers ---------------------------------------------------------------------------
@@ -227,7 +289,7 @@ def _solver(name, tab):
         if len(args) < 3:
             raise _err("Not enough input arguments.", "MATLAB:minrhs")
         fh = args[0]
-        opts = args[3] if len(args) > 3 else None
+        opts = _scalar_option_struct(name, args[3] if len(args) > 3 else None)
         _reject_unimplemented_options(name, opts)
         tspan = _arr(args[1]).reshape(-1)
         y0 = _arr(args[2]).reshape(-1)
@@ -235,14 +297,14 @@ def _solver(name, tab):
             raise _err("The time vector TSPAN must have at least two elements.", f"MATLAB:{name}:TspanLength")
         if tspan[0] == tspan[-1]:
             raise _err("The last entry in tspan must be different from the first entry.", "MATLAB:odearguments:TspanEndpointsNotDistinct")
-        rtol = float(_opt(opts, "RelTol", 1e-3))
-        atol = np.asarray(_opt(opts, "AbsTol", 1e-6), dtype=float)
+        rtol = float(_applied_option(name, opts, "RelTol", 1e-3))
+        atol = np.asarray(_applied_option(name, opts, "AbsTol", 1e-6), dtype=float)
         if rtol < 100 * np.finfo(float).eps:
             rtol = 100 * np.finfo(float).eps
-        refine = int(_opt(opts, "Refine", tab["refine"]))
+        refine = int(_applied_option(name, opts, "Refine", tab["refine"]))
         t0, tf = float(tspan[0]), float(tspan[-1])
         direction = np.sign(tf - t0)
-        maxstep = float(_opt(opts, "MaxStep", 0.1 * abs(tf - t0)))
+        maxstep = float(_applied_option(name, opts, "MaxStep", 0.1 * abs(tf - t0)))
         n = y0.size
 
         def f(t, y):
@@ -255,7 +317,7 @@ def _solver(name, tab):
         thresh = atol / rtol
         y, t = y0.astype(float), t0
         fy = f(t, y)
-        h = float(_opt(opts, "InitialStep", 0.0))
+        h = float(_applied_option(name, opts, "InitialStep", 0.0))
         if h <= 0:  # MATLAB's initial step heuristic
             rh = np.max(np.abs(fy) / np.maximum(np.abs(y), thresh)) / (0.8 * rtol ** (1 / tab["order"]))
             h = min(maxstep, abs(tf - t0))
