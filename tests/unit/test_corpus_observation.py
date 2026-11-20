@@ -6,8 +6,12 @@ import inspect
 import json
 import os
 import statistics
+import subprocess
+import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -446,23 +450,227 @@ def test_four_hop_whitelist_reaches_saved_record(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(pipeline.M, "cache_dir", lambda: cache)
     monkeypatch.setattr(pipeline.os, "cpu_count", lambda: (_ for _ in ()).throw(AssertionError("cpu")))
+    import numpy as np
+
+    version, npy_file = np.__version__, np.__file__
+    saved_numpy = sys.modules.pop("numpy", None)
     obs = {}
-    records = pipeline.run_corpus(Manifest({}, {}, [entry]), jobs=1, timeout=20, obs=obs)
+    try:
+        records = pipeline.run_corpus(Manifest({}, {}, [entry]), jobs=1, timeout=20, obs=obs)
+    finally:
+        if saved_numpy is not None:
+            sys.modules["numpy"] = saved_numpy
     assert len(records) == 1 and records[0]["status"] == "pass"
     assert set(RECORD_OBS_KEYS) <= set(records[0])
     assert records[0]["cpu_pre_verdict_timepoint"] == "pre-verdict-write"
     assert records[0]["cpu_pre_verdict_scope"] == _SELF_SCOPE
+    assert records[0]["numpy_child_reason"] == "observed-child-sys-modules"
+    assert records[0]["numpy_child_version"] == version
+    assert records[0]["numpy_child_file"] == npy_file
+    assert records[0]["numpy_child_timepoint"] == "pre-verdict-write"
+    assert records[0]["numpy_child_scope"] == "child-process-sys-modules"
     assert obs["effective_workers"] == 1
     assert obs["cpu_count_observed"] is None
     assert obs["cpu_count_reason"] == "not-evaluated-jobs-truthy"
     assert obs["cpu_effective_quota_reason"] == "effective-quota-unresolved"
+    assert obs["numpy_reason"] == "numpy-not-loaded-in-parent"
+    assert obs["numpy_version"] is None and obs["numpy_file"] is None
     saved = results.slim(records)[0]
     assert set(RECORD_OBS_KEYS) <= set(saved)
+    assert saved["numpy_child_version"] == version
+    assert saved["numpy_child_file"] == npy_file
+    assert saved["numpy_child_reason"] == "observed-child-sys-modules"
     dest = tmp_path / "out.json"
     results.save(records, full_run=False, timeout=20, dest=dest, observation=obs)
     doc = json.loads(dest.read_text())
     assert set(RECORD_OBS_KEYS) <= set(doc["records"][0])
+    assert doc["records"][0]["numpy_child_version"] == version
+    assert doc["records"][0]["numpy_child_file"] == npy_file
+    assert doc["records"][0]["numpy_child_reason"] == "observed-child-sys-modules"
     assert doc["observation"]["timepoint"] == "pool-construction"
+    assert doc["observation"]["numpy_reason"] == "numpy-not-loaded-in-parent"
+    assert doc["observation"]["numpy_version"] is None
+
+
+def test_nonzero_cpu_with_verdict(tmp_path):
+    (tmp_path / "b.m").write_text("s = 0;\nfor i = 1:300000\n s = s + 1;\nend\ndisp(s);\n")
+    result = run_one(tmp_path / "b.m", timeout=20)
+    assert result.status == "pass" and result.returncode == 0
+    assert result.stdout.strip() == "300000"
+    assert result.cpu_pre_verdict_reason == "observed"
+    assert result.cpu_pre_verdict_timepoint == "pre-verdict-write"
+    assert result.cpu_pre_verdict_scope == _SELF_SCOPE
+    user, system = result.cpu_pre_verdict_user_s, result.cpu_pre_verdict_system_s
+    if user is None or system is None or user + system <= 0:
+        pytest.skip(
+            "RUSAGE_SELF stayed %r/%r after a 300000-iteration loop on this host"
+            % (user, system)
+        )
+    assert user > 0 and system >= 0
+    assert result.cpu_terminal_user_s is None and result.cpu_terminal_system_s is None
+    assert result.cpu_descendants_reason == "not-sampled-descendants"
+    assert result.cpu_group_reason == "not-sampled-process-group"
+
+
+def test_busy_timeout_keeps_null_cpu_without_a_verdict(tmp_path):
+    (tmp_path / "h.m").write_text("while true\nend\n")
+    result = run_one(tmp_path / "h.m", timeout=1)
+    assert result.status == "timeout"
+    assert result.message == "timed out after 1 s"
+    assert result.returncode not in (0, None)
+    assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
+    assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
+    assert result.cpu_pre_verdict_timepoint == "not-sampled"
+    assert result.numpy_child_reason == "timeout-return-before-verdict-read"
+    assert result.numpy_child_version is None and result.numpy_child_file is None
+    assert result.cpu_terminal_reason == "not-sampled-terminal"
+    assert result.cpu_descendants_reason == "not-sampled-descendants"
+    assert result.cpu_group_reason == "not-sampled-process-group"
+
+
+def test_waiting_timeout_keeps_the_absent_row(tmp_path):
+    (tmp_path / "w.m").write_text("pause(30);\n")
+    result = run_one(tmp_path / "w.m", timeout=1)
+    assert result.status == "timeout"
+    assert result.message == "timed out after 1 s"
+    assert result.returncode not in (0, None)
+    assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
+    assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
+    assert result.numpy_child_reason == "timeout-return-before-verdict-read"
+    assert result.cpu_terminal_user_s is None
+    assert result.cpu_group_reason == "not-sampled-process-group"
+
+
+def test_corrupt_verdict_json_is_unparsable(tmp_path, monkeypatch):
+    real = Path.read_text
+
+    def wrapped(self, *args, **kwargs):
+        if getattr(self, "name", "") == ".openmatlab-result.json":
+            self.write_bytes(b"{")
+            return "{"
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", wrapped)
+    (tmp_path / "a.m").write_text("disp(1)\n")
+    result = run_one(tmp_path / "a.m", timeout=20)
+    assert result.status == "crash" and result.returncode == 0
+    assert "without a result" in result.message
+    assert result.cpu_pre_verdict_reason == "verdict-unparsable"
+    assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
+    assert result.cpu_pre_verdict_timepoint == "not-sampled"
+    assert result.numpy_child_reason == "verdict-unparsable"
+    assert result.numpy_child_version is None
+    assert result.cpu_terminal_reason == "not-sampled-terminal"
+
+
+def test_sigxcpu_uses_the_absent_row(tmp_path, monkeypatch):
+    import resource
+    import signal
+
+    from openmatlab.qa.corpus import runner
+
+    real_limits = runner._limits
+
+    def tight(cpu_seconds):
+        base = real_limits(cpu_seconds)
+
+        def apply():
+            if base:
+                base()
+            resource.setrlimit(resource.RLIMIT_CPU, (1, 2))
+
+        return apply
+
+    monkeypatch.setattr(runner, "_limits", tight)
+    (tmp_path / "c.m").write_text("s = 0;\nwhile true\n s = s + 1;\nend\n")
+    result = run_one(tmp_path / "c.m", timeout=8)
+    if "CPU budget" not in result.message:
+        pytest.skip(
+            "SIGXCPU was not delivered on this host: status=%s message=%r returncode=%s"
+            % (result.status, result.message, result.returncode)
+        )
+    assert result.status == "timeout"
+    assert result.returncode == -signal.SIGXCPU
+    assert result.message == "CPU budget exceeded (8 s)"
+    assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
+    assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
+    assert result.numpy_child_reason == "timeout-return-before-verdict-read"
+    assert result.cpu_terminal_reason == "not-sampled-terminal"
+    assert "int(cpu_seconds) + 5" in inspect.getsource(real_limits)
+
+
+def test_same_group_descendant_stays_out_of_the_snapshot(tmp_path, monkeypatch):
+    from openmatlab.qa.corpus import runner
+    from openmatlab.qa.corpus._child import _attach_observation as attach
+
+    pidfile = tmp_path / "descendant.pid"
+    real_popen = subprocess.Popen
+
+    def popen(cmd, **kwargs):
+        pre = kwargs.get("preexec_fn")
+
+        def wrapped():
+            if pre:
+                pre()
+            pid = os.fork()
+            if pid == 0:
+                try:
+                    pidfile.write_text(str(os.getpid()))
+                except Exception:
+                    pass
+                deadline = time.time() + 2
+                total = 0
+                while time.time() < deadline:
+                    total += 1
+                os._exit(0)
+
+        kwargs["preexec_fn"] = wrapped
+        return real_popen(cmd, **kwargs)
+
+    monkeypatch.setattr(runner.subprocess, "Popen", popen)
+    (tmp_path / "d.m").write_text("disp(1)\n")
+    result = run_one(tmp_path / "d.m", timeout=20)
+    if result.status != "pass" or not pidfile.is_file():
+        pytest.skip(
+            "same-group descendant was not created on this host: status=%s message=%r pidfile=%s"
+            % (result.status, result.message, pidfile.is_file())
+        )
+    assert result.returncode == 0
+    assert result.cpu_pre_verdict_timepoint == "pre-verdict-write"
+    assert result.cpu_pre_verdict_scope == _SELF_SCOPE
+    assert result.cpu_descendants_timepoint == "not-sampled"
+    assert result.cpu_descendants_scope == "descendants"
+    assert result.cpu_descendants_reason == "not-sampled-descendants"
+    assert result.cpu_group_timepoint == "not-sampled"
+    assert result.cpu_group_scope == "process-group"
+    assert result.cpu_group_reason == "not-sampled-process-group"
+    assert not hasattr(result, "cpu_descendants_user_s")
+    descendant = int(pidfile.read_text())
+    with pytest.raises(ProcessLookupError):
+        os.kill(descendant, 0)
+    blob = inspect.getsource(attach)
+    assert "RUSAGE_SELF" in blob and "RUSAGE_CHILDREN" not in blob
+
+
+def test_concurrent_run_one_observations_stay_isolated(tmp_path):
+    from openmatlab.qa.corpus import runner
+
+    blob = inspect.getsource(runner._cpu_from_verdict) + inspect.getsource(runner._apply_observation)
+    for banned in ("RUSAGE_CHILDREN", "waitid", "killpg", "os.kill", ".poll("):
+        assert banned not in blob
+    (tmp_path / "a.m").write_text("disp(1)\n")
+    (tmp_path / "b.m").write_text("while true\nend\n")
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        passed = pool.submit(run_one, tmp_path / "a.m", timeout=20)
+        hung = pool.submit(run_one, tmp_path / "b.m", timeout=1)
+        ok, timeout = passed.result(), hung.result()
+    assert ok.status == "pass" and ok.returncode == 0
+    assert ok.cpu_pre_verdict_timepoint == "pre-verdict-write"
+    assert ok.cpu_pre_verdict_scope == _SELF_SCOPE
+    assert timeout.status == "timeout" and timeout.message == "timed out after 1 s"
+    assert timeout.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
+    assert timeout.cpu_pre_verdict_user_s is None
+    assert ok.cpu_pre_verdict_reason != timeout.cpu_pre_verdict_reason
 
 
 def _samples(fn, count=30):
@@ -479,32 +687,114 @@ def _samples(fn, count=30):
     return median
 
 
-def test_overhead_budgets_keep_every_sample(monkeypatch, tmp_path, capsys):
+def _full_parent_record():
+    import numpy as np
+
+    row = {key: "text" for key in results.KEEP}
+    row.update(
+        id="demo/full",
+        source="local",
+        kind="script",
+        role="script",
+        notes=["kept"],
+        t0="pass",
+        t1="pass",
+        t2="pass",
+        t2_blocks="1/1",
+        t3="pass",
+        oracle="golden:matlab",
+        sha256="a" * 64,
+        status="pass",
+        category="ok",
+        key="none",
+        error_id="none:id",
+        message="disp",
+        elapsed=1.25,
+        cpu_pre_verdict_user_s=1.5,
+        cpu_pre_verdict_system_s=0.25,
+        cpu_pre_verdict_timepoint="pre-verdict-write",
+        cpu_pre_verdict_scope=_SELF_SCOPE,
+        cpu_pre_verdict_reason="observed",
+        numpy_child_version=np.__version__,
+        numpy_child_file=np.__file__,
+        numpy_child_reason="observed-child-sys-modules",
+        numpy_child_timepoint="pre-verdict-write",
+        numpy_child_scope="child-process-sys-modules",
+        cpu_terminal_user_s=None,
+        cpu_terminal_system_s=None,
+        cpu_terminal_timepoint="not-sampled",
+        cpu_terminal_scope="terminal-direct-process",
+        cpu_terminal_reason="not-sampled-terminal",
+        cpu_descendants_timepoint="not-sampled",
+        cpu_descendants_scope="descendants",
+        cpu_descendants_reason="not-sampled-descendants",
+        cpu_group_timepoint="not-sampled",
+        cpu_group_scope="process-group",
+        cpu_group_reason="not-sampled-process-group",
+    )
+    return row
+
+
+def _full_observation_header():
+    import numpy as np
+
+    return {
+        "timepoint": "pool-construction",
+        "jobs_requested": 4,
+        "jobs_requested_reason": "jobs-truthy",
+        "cpu_count_observed": None,
+        "cpu_count_reason": "not-evaluated-jobs-truthy",
+        "effective_workers": 4,
+        "effective_workers_formula": "jobs or max(1, os.cpu_count() or 2)",
+        "cpu_limit_raw": "max 100000\n",
+        "cpu_limit_path": "/sys/fs/cgroup/user.slice/session.scope/cpu.max",
+        "cpu_limit_reason": "raw-limit-observed",
+        "cpu_limit_kind": "max-token",
+        "cpu_effective_quota": None,
+        "cpu_effective_quota_reason": "effective-quota-unresolved",
+        "numpy_version": np.__version__,
+        "numpy_file": np.__file__,
+        "numpy_reason": "observed-parent-sys-modules",
+        "runner_env": [
+            {"name": name, "value": "observed-value", "reason": "observed"}
+            for name in ("ImageOS", "ImageVersion", "RUNNER_OS", "RUNNER_ARCH", "RUNNER_NAME", "RUNNER_ENVIRONMENT")
+        ],
+    }
+
+
+def test_overhead_budgets_keep_every_sample(capsys):
     assert _samples(lambda: _attach_observation({"status": "pass", "error_id": "", "message": "", "kind": ""})) <= 1
     assert _samples(lambda: _cpu_from_verdict(_verdict(cpu_pre_verdict_user_s=2**1024))) <= 1
     assert _samples(pipeline._parent_numpy) <= 1
 
-    def fast_proc(path):
-        if path.endswith("mountinfo"):
-            return _mount("/", "/sys/fs/cgroup")
-        return b"0::/user.slice/session.scope\n"
-
-    def success(path):
-        if path.endswith("cpu.cfs_quota_us"):
-            raise AssertionError("extra read")
-        return b"max 100000\n"
-
-    monkeypatch.setattr(pipeline, "_read_proc", fast_proc)
-    monkeypatch.setattr(pipeline, "_read_quota", success)
-    assert _samples(lambda: pipeline.build_run_observation(4, 4, [])) <= 5
-
-    def fallback(path):
-        if path.endswith("/cpu.max"):
-            raise FileNotFoundError(path)
-        return b"100000\n"
-
-    monkeypatch.setattr(pipeline, "_read_quota", fallback)
-    assert _samples(lambda: pipeline.build_run_observation(4, 4, [])) <= 5
+    proc = subprocess.run(
+        ["unshare", "--mount", "--user", "--map-root-user", sys.executable, str(Path(__file__).resolve())],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if proc.returncode == 77:
+        pytest.skip(proc.stderr.strip() or proc.stdout.strip() or "user mount namespace is not available")
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    print(proc.stdout, end="")
+    timings = []
+    proofs = []
+    for line in proc.stdout.splitlines():
+        if "OBS_TIMING " in line:
+            timings.append(json.loads(line.split("OBS_TIMING ", 1)[1]))
+        elif "OBS_REAL " in line:
+            proofs.append(json.loads(line.split("OBS_REAL ", 1)[1]))
+    assert [item["branch"] for item in proofs] == ["D", "E"]
+    assert proofs[0]["opens"][-1].endswith("/cpu.max") and proofs[0]["kind"] == "max-token"
+    assert proofs[0]["raw"] == "max 100000\n" and proofs[0]["reason"] == "raw-limit-observed"
+    assert len(proofs[0]["opens"]) == 3
+    assert proofs[1]["opens"][-2].endswith("/cpu.max") and proofs[1]["opens"][-1].endswith("/cpu.cfs_quota_us")
+    assert proofs[1]["kind"] == "quota-only" and proofs[1]["raw"] == "100000\n"
+    assert len(proofs[1]["opens"]) == 4
+    assert len(timings) == 2
+    for row in timings:
+        assert row["n"] == 30 and len(row["samples"]) == 30
+        assert row["median"] <= 5
 
     out = {"status": "pass", "error_id": "", "message": "", "kind": ""}
     _attach_observation(out)
@@ -517,11 +807,21 @@ def test_overhead_budgets_keep_every_sample(monkeypatch, tmp_path, capsys):
         handle.flush()
 
     assert _samples(dump_child) <= 5
-    record = {key: records_value(key) for key in results.KEEP}
-    header = pipeline.build_run_observation(4, 4, [])
+    full = _full_parent_record()
+    header = _full_observation_header()
+    preview = results.slim([full])[0]
+    assert set(preview) == set(results.KEEP)
+    assert preview["cpu_pre_verdict_user_s"] == 1.5
+    assert preview["cpu_pre_verdict_reason"] == "observed"
+    assert preview["numpy_child_version"] == header["numpy_version"]
+    assert preview["message"] == "disp" and preview["elapsed"] == 1.25
+    assert {key for key, value in preview.items() if value is None} == {
+        "cpu_terminal_user_s",
+        "cpu_terminal_system_s",
+    }
 
     def dump_parent():
-        json.dumps(record)
+        json.dumps(results.slim([full])[0])
         json.dumps(header)
 
     assert _samples(dump_parent) <= 2
@@ -530,5 +830,92 @@ def test_overhead_budgets_keep_every_sample(monkeypatch, tmp_path, capsys):
     print(captured)
 
 
-def records_value(key: str):
-    return "a" if key == "id" else None
+def _run_real_cgroup_probe() -> int:
+    """Real bounded reads of temporary mountinfo, cgroup, and quota files."""
+    import builtins
+    import shutil
+
+    td = Path(tempfile.mkdtemp(prefix="om-cg-"))
+    real_open = builtins.open
+    try:
+        mount = td / "point"
+        scope = mount / "user.slice" / "session.scope"
+        scope.mkdir(parents=True)
+        cpu_max = scope / "cpu.max"
+        cpu_max.write_bytes(b"max 100000\n")
+        mountinfo = td / "mountinfo"
+        cgroup = td / "cgroup"
+        mountinfo.write_bytes(("36 35 0:27 / %s rw - cgroup2 cgroup2 rw\n" % mount).encode())
+        cgroup.write_bytes(b"0::/user.slice/session.scope\n")
+        pid = str(os.getpid())
+        try:
+            subprocess.check_call(["mount", "--bind", str(mountinfo), "/proc/%s/mountinfo" % pid])
+            subprocess.check_call(["mount", "--bind", str(cgroup), "/proc/%s/cgroup" % pid])
+        except (OSError, subprocess.CalledProcessError) as exc:
+            print("bind mount over /proc/%s failed: %s" % (pid, exc), file=sys.stderr)
+            return 77
+        calls = []
+
+        def counting(path, *args, **kwargs):
+            calls.append(os.fspath(path))
+            return real_open(path, *args, **kwargs)
+
+        builtins.open = counting
+        expected = ["/proc/self/mountinfo", "/proc/self/cgroup", str(cpu_max)]
+        calls.clear()
+        doc = pipeline._cpu_limit()
+        if calls != expected or doc["cpu_limit_reason"] != "raw-limit-observed":
+            print("branch D mismatch", calls, doc, file=sys.stderr)
+            return 1
+        if doc["cpu_limit_kind"] != "max-token" or doc["cpu_limit_raw"] != "max 100000\n":
+            print("branch D values", doc, file=sys.stderr)
+            return 1
+        if doc["cpu_limit_path"] != str(cpu_max) or doc["cpu_effective_quota"] is not None:
+            print("branch D path", doc, file=sys.stderr)
+            return 1
+        print("OBS_REAL " + json.dumps({
+            "branch": "D", "opens": calls, "path": doc["cpu_limit_path"],
+            "raw": doc["cpu_limit_raw"], "kind": doc["cpu_limit_kind"], "reason": doc["cpu_limit_reason"],
+        }))
+
+        def time_success(kind, opens):
+            def fn():
+                before = len(calls)
+                seen = pipeline.build_run_observation(4, 4, [])
+                opened = calls[before:]
+                if seen["cpu_limit_reason"] != "raw-limit-observed" or seen["cpu_limit_kind"] != kind:
+                    raise AssertionError("not the success branch: %s" % seen.get("cpu_limit_reason"))
+                if opened != opens or seen["cpu_effective_quota"] is not None:
+                    raise AssertionError(repr(opened))
+
+            median = _samples(fn)
+            if median > 5:
+                print("median %s ms over 5" % median, file=sys.stderr)
+                raise SystemExit(1)
+
+        time_success("max-token", expected)
+        cpu_max.unlink()
+        quota = scope / "cpu.cfs_quota_us"
+        quota.write_bytes(b"100000\n")
+        expected_e = ["/proc/self/mountinfo", "/proc/self/cgroup", str(cpu_max), str(quota)]
+        calls.clear()
+        doc = pipeline._cpu_limit()
+        if calls != expected_e or doc["cpu_limit_kind"] != "quota-only" or doc["cpu_limit_raw"] != "100000\n":
+            print("branch E mismatch", calls, doc, file=sys.stderr)
+            return 1
+        if doc["cpu_limit_reason"] != "raw-limit-observed" or doc["cpu_limit_path"] != str(quota):
+            print("branch E path", doc, file=sys.stderr)
+            return 1
+        print("OBS_REAL " + json.dumps({
+            "branch": "E", "opens": calls, "path": doc["cpu_limit_path"],
+            "raw": doc["cpu_limit_raw"], "kind": doc["cpu_limit_kind"], "reason": doc["cpu_limit_reason"],
+        }))
+        time_success("quota-only", expected_e)
+        return 0
+    finally:
+        builtins.open = real_open
+        shutil.rmtree(td, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(_run_real_cgroup_probe())
