@@ -845,14 +845,19 @@ def test_overhead_budgets_keep_every_sample(capsys):
     assert _samples(lambda: _cpu_from_verdict(_verdict(cpu_pre_verdict_user_s=2**1024))) <= 1
     assert _samples(pipeline._parent_numpy) <= 1
 
-    proc = subprocess.run(
-        ["unshare", "--mount", "--user", "--map-root-user", sys.executable, str(Path(__file__).resolve())],
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    if proc.returncode == 77:
-        pytest.skip(proc.stderr.strip() or proc.stdout.strip() or "user mount namespace is not available")
+    try:
+        proc = subprocess.run(
+            ["unshare", "--mount", "--user", "--map-root-user", sys.executable, str(Path(__file__).resolve())],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except FileNotFoundError as exc:
+        pytest.skip("unshare is not available: %s" % exc)
+    detail = (proc.stderr or proc.stdout or "").strip()
+    # unshare itself failed before the probe. A probe failure still asserts below.
+    if proc.returncode not in (0,) and (proc.returncode == 77 or detail.startswith("unshare:")):
+        pytest.skip(detail or "user mount namespace is not available")
     assert proc.returncode == 0, proc.stderr + proc.stdout
     print(proc.stdout, end="")
     timings = []
