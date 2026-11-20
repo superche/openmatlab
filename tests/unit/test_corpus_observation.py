@@ -492,32 +492,83 @@ def test_four_hop_whitelist_reaches_saved_record(tmp_path, monkeypatch):
     assert doc["observation"]["numpy_version"] is None
 
 
-def test_nonzero_cpu_with_verdict(tmp_path):
-    (tmp_path / "b.m").write_text("s = 0;\nfor i = 1:300000\n s = s + 1;\nend\ndisp(s);\n")
-    result = run_one(tmp_path / "b.m", timeout=20)
-    assert result.status == "pass" and result.returncode == 0
-    assert result.stdout.strip() == "300000"
-    assert result.cpu_pre_verdict_reason == "observed"
-    assert result.cpu_pre_verdict_timepoint == "pre-verdict-write"
-    assert result.cpu_pre_verdict_scope == _SELF_SCOPE
-    user, system = result.cpu_pre_verdict_user_s, result.cpu_pre_verdict_system_s
-    if user is None or system is None or user + system <= 0:
-        pytest.skip(
-            "RUSAGE_SELF stayed %r/%r after a 300000-iteration loop on this host"
-            % (user, system)
-        )
-    assert user > 0 and system >= 0
+def _prepend_pythonpath(directory: Path) -> str:
+    current = os.environ.get("PYTHONPATH", "")
+    return str(directory) if not current else str(directory) + os.pathsep + current
+
+
+def _assert_fixed_unknown(result):
     assert result.cpu_terminal_user_s is None and result.cpu_terminal_system_s is None
+    assert result.cpu_terminal_timepoint == "not-sampled"
+    assert result.cpu_terminal_scope == "terminal-direct-process"
+    assert result.cpu_terminal_reason == "not-sampled-terminal"
+    assert result.cpu_descendants_timepoint == "not-sampled"
+    assert result.cpu_descendants_scope == "descendants"
     assert result.cpu_descendants_reason == "not-sampled-descendants"
+    assert result.cpu_group_timepoint == "not-sampled"
+    assert result.cpu_group_scope == "process-group"
     assert result.cpu_group_reason == "not-sampled-process-group"
 
 
+def test_exit_17_with_and_without_a_verdict(tmp_path, monkeypatch):
+    """Ordinary process status 17 through the real runner, not error() and not a signal."""
+    import numpy as np
+
+    if sys.flags.no_site:
+        pytest.skip("this interpreter was started with -S, so sitecustomize is not imported")
+    probe = subprocess.run(
+        [sys.executable, "-c", "import atexit, os, sys\natexit.register(lambda: os._exit(17))\nsys.exit(0)"],
+        timeout=10,
+    )
+    if probe.returncode != 17:
+        pytest.skip("CPython atexit os._exit probe returned %s, not 17" % probe.returncode)
+    kept = tmp_path / "kept"
+    kept.mkdir()
+    (kept / "sitecustomize.py").write_text("import atexit, os\natexit.register(lambda: os._exit(17))\n")
+    (tmp_path / "ok.m").write_text("disp(1)\n")
+    monkeypatch.setenv("PYTHONPATH", _prepend_pythonpath(kept))
+    held = run_one(tmp_path / "ok.m", timeout=20)
+    assert held.returncode == 17
+    assert (held.status, held.kind, held.message) == ("pass", "", "")
+    assert held.stdout.strip() == "1"
+    assert held.cpu_pre_verdict_reason == "observed"
+    assert held.cpu_pre_verdict_timepoint == "pre-verdict-write"
+    assert held.cpu_pre_verdict_scope == _SELF_SCOPE
+    assert held.cpu_pre_verdict_user_s >= 0 and held.cpu_pre_verdict_system_s >= 0
+    assert held.numpy_child_reason == "observed-child-sys-modules"
+    assert held.numpy_child_version == np.__version__
+    assert held.numpy_child_file == np.__file__
+    assert held.numpy_child_timepoint == "pre-verdict-write"
+    assert held.numpy_child_scope == "child-process-sys-modules"
+    _assert_fixed_unknown(held)
+
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    (bare / "sitecustomize.py").write_text("import os\nos._exit(17)\n")
+    monkeypatch.setenv("PYTHONPATH", _prepend_pythonpath(bare))
+    gone = run_one(tmp_path / "ok.m", timeout=20)
+    assert gone.returncode == 17
+    assert (gone.status, gone.kind, gone.message) == (
+        "crash", "internal", "child exited with code 17 without a result",
+    )
+    assert gone.cpu_pre_verdict_user_s is None and gone.cpu_pre_verdict_system_s is None
+    assert gone.cpu_pre_verdict_reason == "no-verdict-file"
+    assert gone.cpu_pre_verdict_timepoint == "not-sampled"
+    assert gone.cpu_pre_verdict_scope == "not-sampled"
+    assert gone.numpy_child_version is None and gone.numpy_child_file is None
+    assert gone.numpy_child_reason == "no-verdict-file"
+    assert gone.numpy_child_timepoint == "not-sampled"
+    assert gone.numpy_child_scope == "not-sampled"
+    _assert_fixed_unknown(gone)
+
+
 def test_busy_timeout_keeps_null_cpu_without_a_verdict(tmp_path):
+    import signal
+
     (tmp_path / "h.m").write_text("while true\nend\n")
     result = run_one(tmp_path / "h.m", timeout=1)
-    assert result.status == "timeout"
-    assert result.message == "timed out after 1 s"
-    assert result.returncode not in (0, None)
+    assert result.returncode == -signal.SIGKILL
+    assert (result.status, result.kind, result.message) == ("timeout", "timeout", "timed out after 1 s")
     assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
     assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert result.cpu_pre_verdict_timepoint == "not-sampled"
@@ -529,11 +580,12 @@ def test_busy_timeout_keeps_null_cpu_without_a_verdict(tmp_path):
 
 
 def test_waiting_timeout_keeps_the_absent_row(tmp_path):
+    import signal
+
     (tmp_path / "w.m").write_text("pause(30);\n")
     result = run_one(tmp_path / "w.m", timeout=1)
-    assert result.status == "timeout"
-    assert result.message == "timed out after 1 s"
-    assert result.returncode not in (0, None)
+    assert result.returncode == -signal.SIGKILL
+    assert (result.status, result.kind, result.message) == ("timeout", "timeout", "timed out after 1 s")
     assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
     assert result.numpy_child_reason == "timeout-return-before-verdict-read"
@@ -581,17 +633,20 @@ def test_sigxcpu_uses_the_absent_row(tmp_path, monkeypatch):
 
         return apply
 
+    try:
+        probe = subprocess.run(
+            [sys.executable, "-c", "import resource\nresource.setrlimit(resource.RLIMIT_CPU, (1, 2))\nwhile True:\n    pass\n"],
+            timeout=8,
+        )
+    except subprocess.TimeoutExpired as exc:
+        pytest.skip("RLIMIT_CPU probe did not exit: %s" % exc)
+    if probe.returncode != -signal.SIGXCPU:
+        pytest.skip("RLIMIT_CPU probe did not deliver SIGXCPU: returncode=%s" % probe.returncode)
     monkeypatch.setattr(runner, "_limits", tight)
     (tmp_path / "c.m").write_text("s = 0;\nwhile true\n s = s + 1;\nend\n")
     result = run_one(tmp_path / "c.m", timeout=8)
-    if "CPU budget" not in result.message:
-        pytest.skip(
-            "SIGXCPU was not delivered on this host: status=%s message=%r returncode=%s"
-            % (result.status, result.message, result.returncode)
-        )
-    assert result.status == "timeout"
     assert result.returncode == -signal.SIGXCPU
-    assert result.message == "CPU budget exceeded (8 s)"
+    assert (result.status, result.kind, result.message) == ("timeout", "timeout", "CPU budget exceeded (8 s)")
     assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
     assert result.numpy_child_reason == "timeout-return-before-verdict-read"
@@ -600,11 +655,31 @@ def test_sigxcpu_uses_the_absent_row(tmp_path, monkeypatch):
 
 
 def test_same_group_descendant_stays_out_of_the_snapshot(tmp_path, monkeypatch):
+    import signal
+
     from openmatlab.qa.corpus import runner
     from openmatlab.qa.corpus._child import _attach_observation as attach
 
+    probe = subprocess.run(
+        [sys.executable, "-c",
+         "import os, sys\n"
+         "pid = os.fork()\n"
+         "if pid == 0:\n"
+         "    os._exit(0)\n"
+         "_, status = os.waitpid(pid, 0)\n"
+         "sys.exit(0 if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0 else 3)\n"],
+        timeout=5,
+    )
+    if probe.returncode != 0:
+        pytest.skip("os.fork probe failed: returncode=%s" % probe.returncode)
     pidfile = tmp_path / "descendant.pid"
+    seen = {}
     real_popen = subprocess.Popen
+    real_killpg = os.killpg
+
+    def killpg(pid, sig):
+        seen.setdefault("killpg", []).append((pid, sig))
+        return real_killpg(pid, sig)
 
     def popen(cmd, **kwargs):
         pre = kwargs.get("preexec_fn")
@@ -616,26 +691,26 @@ def test_same_group_descendant_stays_out_of_the_snapshot(tmp_path, monkeypatch):
             if pid == 0:
                 try:
                     pidfile.write_text(str(os.getpid()))
-                except Exception:
-                    pass
-                deadline = time.time() + 2
-                total = 0
-                while time.time() < deadline:
-                    total += 1
-                os._exit(0)
+                    deadline = time.time() + 2
+                    total = 0
+                    while time.time() < deadline:
+                        total += 1
+                finally:
+                    os._exit(0)
 
         kwargs["preexec_fn"] = wrapped
-        return real_popen(cmd, **kwargs)
+        proc = real_popen(cmd, **kwargs)
+        seen["child"] = proc.pid
+        return proc
 
+    monkeypatch.setattr(runner.os, "killpg", killpg)
     monkeypatch.setattr(runner.subprocess, "Popen", popen)
     (tmp_path / "d.m").write_text("disp(1)\n")
     result = run_one(tmp_path / "d.m", timeout=20)
-    if result.status != "pass" or not pidfile.is_file():
-        pytest.skip(
-            "same-group descendant was not created on this host: status=%s message=%r pidfile=%s"
-            % (result.status, result.message, pidfile.is_file())
-        )
+    assert pidfile.is_file()
     assert result.returncode == 0
+    assert (result.status, result.kind, result.message) == ("pass", "", "")
+    assert seen["killpg"] == [(seen["child"], signal.SIGKILL)]
     assert result.cpu_pre_verdict_timepoint == "pre-verdict-write"
     assert result.cpu_pre_verdict_scope == _SELF_SCOPE
     assert result.cpu_descendants_timepoint == "not-sampled"
@@ -653,6 +728,8 @@ def test_same_group_descendant_stays_out_of_the_snapshot(tmp_path, monkeypatch):
 
 
 def test_concurrent_run_one_observations_stay_isolated(tmp_path):
+    import signal
+
     from openmatlab.qa.corpus import runner
 
     blob = inspect.getsource(runner._cpu_from_verdict) + inspect.getsource(runner._apply_observation)
@@ -667,7 +744,8 @@ def test_concurrent_run_one_observations_stay_isolated(tmp_path):
     assert ok.status == "pass" and ok.returncode == 0
     assert ok.cpu_pre_verdict_timepoint == "pre-verdict-write"
     assert ok.cpu_pre_verdict_scope == _SELF_SCOPE
-    assert timeout.status == "timeout" and timeout.message == "timed out after 1 s"
+    assert timeout.returncode == -signal.SIGKILL
+    assert (timeout.status, timeout.kind, timeout.message) == ("timeout", "timeout", "timed out after 1 s")
     assert timeout.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert timeout.cpu_pre_verdict_user_s is None
     assert ok.cpu_pre_verdict_reason != timeout.cpu_pre_verdict_reason
