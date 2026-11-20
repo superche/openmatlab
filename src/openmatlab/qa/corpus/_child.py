@@ -12,6 +12,57 @@ import os
 import sys
 
 
+def _finite_seconds(value):
+    if isinstance(value, bool) or not isinstance(value, float):
+        return None
+    if value < 0 or value != value or value in (float("inf"), float("-inf")):
+        return None
+    return value
+
+
+def _attach_observation(out: dict) -> None:
+    """Pre-verdict RUSAGE_SELF and already-loaded NumPy. Never changes status."""
+    try:
+        import resource
+
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        user = _finite_seconds(usage.ru_utime)
+        system = _finite_seconds(usage.ru_stime)
+        if user is None or system is None:
+            reason, user, system = "cpu-value-rejected", None, None
+        else:
+            reason = "observed"
+    except Exception:
+        reason, user, system = "rusage-self-failed", None, None
+    out.update(
+        cpu_pre_verdict_user_s=user,
+        cpu_pre_verdict_system_s=system,
+        cpu_pre_verdict_timepoint="pre-verdict-write",
+        cpu_pre_verdict_scope="rusage-self-direct-process-all-threads",
+        cpu_pre_verdict_reason=reason,
+    )
+    try:
+        mod = sys.modules.get("numpy")
+        if mod is None:
+            version, path, nreason = None, None, "numpy-not-loaded-in-child"
+        else:
+            version = getattr(mod, "__version__", None)
+            path = getattr(mod, "__file__", None)
+            if isinstance(version, str) and version and isinstance(path, str) and path:
+                nreason = "observed-child-sys-modules"
+            else:
+                version, path, nreason = None, None, "value-rejected"
+    except Exception:
+        version, path, nreason = None, None, "numpy-inspect-failed"
+    out.update(
+        numpy_child_version=version,
+        numpy_child_file=path,
+        numpy_child_reason=nreason,
+        numpy_child_timepoint="pre-verdict-write",
+        numpy_child_scope="child-process-sys-modules",
+    )
+
+
 def main(argv) -> int:
     path, mode = argv[0], (argv[1] if len(argv) > 1 else "run")
     folder = argv[2] if len(argv) > 2 else os.path.dirname(os.path.abspath(path))
@@ -55,6 +106,7 @@ def main(argv) -> int:
         pass
     res = os.environ.get("OPENMATLAB_RESULT")
     if res:
+        _attach_observation(out)
         with open(res, "w", encoding="utf-8") as fh:
             json.dump(out, fh)
     return 0

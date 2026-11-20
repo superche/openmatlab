@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -27,7 +28,7 @@ from .classify import classify_features, features
 from .preprocess import prepare
 from . import goldens as G
 from . import selfcheck
-from .runner import DEFAULT_TIMEOUT, run_one
+from .runner import DEFAULT_TIMEOUT, RECORD_OBS_KEYS, run_one
 
 MSG_CAP = 240
 SELF_CHECKING = ("selftest", "acid-scene")  # chebfun tests assert all(pass); matlab2tikz ACID scenes
@@ -119,6 +120,9 @@ class _Job:
             cat, key = classify_features(r, feats)
             rec.update(category=cat, key=key, status=r["status"], run_kind=r["kind"], features=feats, error_id=r["error_id"], message=(r["message"] or "")[:MSG_CAP],
                        elapsed=r["elapsed"])
+            for obs_key in RECORD_OBS_KEYS:
+                if obs_key in r:
+                    rec[obs_key] = r[obs_key]
             # T3: MATLAB-transcript golden (C03 deprompted >> output). Octave-runtime goldens are
             # attached separately when a MATLAB doc URL is configured for the entry.
             if (role == "script" and p is not None and p.transcript
@@ -172,8 +176,264 @@ def jobs_for(m: M.Manifest, cache: Optional[Path] = None, ids: Optional[set] = N
     return out
 
 
+_PROC_CAP = 65537
+_QUOTA_CAP = 129
+_CPU_MAX = re.compile(r"^(max|\d+)\s+(\d+)\n?$")
+_QUOTA_US = re.compile(r"^(-?\d+)\n?$")
+_FORMULA = "jobs or max(1, os.cpu_count() or 2)"
+_ENV_NAMES = ("ImageOS", "ImageVersion", "RUNNER_OS", "RUNNER_ARCH", "RUNNER_NAME", "RUNNER_ENVIRONMENT")
+
+
+def _read_proc(path: str) -> bytes:
+    with open(path, "rb") as fh:
+        return fh.read(_PROC_CAP)
+
+
+def _read_quota(path: str) -> bytes:
+    with open(path, "rb") as fh:
+        return fh.read(_QUOTA_CAP)
+
+
+def _unescape(field: str) -> Optional[str]:
+    out = []
+    index = 0
+    while index < len(field):
+        if field[index] != "\\":
+            out.append(field[index])
+            index += 1
+            continue
+        digits = field[index + 1:index + 4]
+        if len(digits) != 3 or any(ch not in "01234567" for ch in digits):
+            return None
+        value = int(digits, 8)
+        if value > 255:
+            return None
+        out.append(chr(value))
+        index += 4
+    return "".join(out)
+
+
+def _components(path: str) -> Optional[List[str]]:
+    """Absolute path components. ``/`` is an empty list. Internal empties, ``.`` and ``..`` are rejected."""
+    if not isinstance(path, str) or "\x00" in path or not path.startswith("/"):
+        return None
+    rest = path[1:]
+    if rest == "":
+        return []
+    parts = rest.split("/")
+    if any(part == "" or part == "." or part == ".." for part in parts):
+        return None
+    return parts
+
+
+def _map_cgroup(root: str, mount: str, cgroup_path: str) -> Optional[str]:
+    """Quota directory, or None when the mapping is unreliable. No string-prefix join."""
+    if cgroup_path == "":
+        return None
+    root_parts = _components(root)
+    mount_parts = _components(mount)
+    cgroup_parts = _components(cgroup_path)
+    if root_parts is None or mount_parts is None or cgroup_parts is None or mount_parts == []:
+        return None
+    if cgroup_parts[:len(root_parts)] != root_parts:
+        return None
+    joined = mount_parts + cgroup_parts[len(root_parts):]
+    if joined[:len(mount_parts)] != mount_parts:
+        return None
+    return "/" + "/".join(joined)
+
+
+def _split_fields(line: str) -> Optional[List[str]]:
+    fields = []
+    for raw in line.split(" "):
+        text = _unescape(raw)
+        if text is None:
+            return None
+        fields.append(text)
+    return fields
+
+
+def _one_cgroup2(blob: bytes) -> Optional[tuple]:
+    found = []
+    for line in blob.decode("utf-8", "replace").splitlines():
+        if not line:
+            continue
+        fields = _split_fields(line)
+        if fields is None:
+            return None
+        if "-" not in fields:
+            continue
+        sep = fields.index("-")
+        if sep + 1 >= len(fields) or fields[sep + 1] != "cgroup2":
+            continue
+        if sep < 5:
+            return None
+        found.append((fields[3], fields[4]))
+    if len(found) != 1:
+        return None
+    return found[0]
+
+
+def _one_cgroup_path(blob: bytes):
+    rows = []
+    for line in blob.decode("utf-8", "replace").splitlines():
+        if line.startswith("0::"):
+            rows.append(line[3:])
+    if len(rows) != 1:
+        return False
+    return rows[0]
+
+
+def _limit(raw, path, reason: str, kind: str) -> dict:
+    return {
+        "cpu_limit_raw": raw,
+        "cpu_limit_path": path,
+        "cpu_limit_reason": reason,
+        "cpu_limit_kind": kind,
+        "cpu_effective_quota": None,
+        "cpu_effective_quota_reason": "effective-quota-unresolved",
+    }
+
+
+def _interpret_quota(data: bytes, path: str, *, v1: bool) -> dict:
+    if len(data) >= _QUOTA_CAP:
+        return _limit(data[:128].decode("utf-8", "replace"), path, "limit-file-unparsed", "unparsed")
+    raw = data.decode("utf-8", "replace")
+    if v1:
+        kind = "quota-only" if _QUOTA_US.fullmatch(raw) else None
+    else:
+        match = _CPU_MAX.fullmatch(raw)
+        if match is None:
+            kind = None
+        elif match.group(1) == "max":
+            kind = "max-token"
+        else:
+            kind = "integer-pair"
+    if kind is None:
+        return _limit(raw, path, "limit-file-unparsed", "unparsed")
+    return _limit(raw, path, "raw-limit-observed", kind)
+
+
+def _read_limit_file(directory: str) -> dict:
+    cpu_max = directory + "/cpu.max"
+    try:
+        data = _read_quota(cpu_max)
+    except FileNotFoundError:
+        alt = directory + "/cpu.cfs_quota_us"
+        try:
+            data = _read_quota(alt)
+        except FileNotFoundError:
+            return _limit(None, None, "limit-file-missing", "unparsed")
+        except OSError:
+            return _limit(None, None, "limit-file-unreadable", "unparsed")
+        return _interpret_quota(data, alt, v1=True)
+    except OSError:
+        return _limit(None, None, "limit-file-unreadable", "unparsed")
+    return _interpret_quota(data, cpu_max, v1=False)
+
+
+def _cpu_limit() -> dict:
+    """Raw cgroup limit at pool construction. Effective quota stays unknown."""
+    unresolved = _limit(None, None, "location-unresolved", "unparsed")
+    try:
+        try:
+            mount_blob = _read_proc("/proc/self/mountinfo")
+        except OSError:
+            return unresolved
+        if len(mount_blob) >= _PROC_CAP:
+            return unresolved
+        parsed = _one_cgroup2(mount_blob)
+        if parsed is None:
+            return unresolved
+        root, mount = parsed
+        if _components(root) is None or _components(mount) in (None, []):
+            return unresolved
+        try:
+            cgroup_blob = _read_proc("/proc/self/cgroup")
+        except OSError:
+            return unresolved
+        if len(cgroup_blob) >= _PROC_CAP:
+            return unresolved
+        cgroup_path = _one_cgroup_path(cgroup_blob)
+        if cgroup_path is False:
+            return unresolved
+        directory = _map_cgroup(root, mount, cgroup_path)
+        if directory is None:
+            return unresolved
+        return _read_limit_file(directory)
+    except Exception:
+        return unresolved
+
+
+def _parent_numpy() -> dict:
+    try:
+        mod = sys.modules.get("numpy")
+        if mod is None:
+            return {"numpy_version": None, "numpy_file": None, "numpy_reason": "numpy-not-loaded-in-parent"}
+        version = getattr(mod, "__version__", None)
+        path = getattr(mod, "__file__", None)
+        if isinstance(version, str) and version and isinstance(path, str) and path:
+            return {"numpy_version": version, "numpy_file": path, "numpy_reason": "observed-parent-sys-modules"}
+        return {"numpy_version": None, "numpy_file": None, "numpy_reason": "numpy-inspect-failed"}
+    except Exception:
+        return {"numpy_version": None, "numpy_file": None, "numpy_reason": "numpy-inspect-failed"}
+
+
+def _runner_env() -> list:
+    rows = []
+    for name in _ENV_NAMES:
+        if name not in os.environ:
+            rows.append({"name": name, "value": None, "reason": "env-unset"})
+            continue
+        value = os.environ.get(name)
+        if isinstance(value, str) and value:
+            rows.append({"name": name, "value": value, "reason": "observed"})
+        else:
+            rows.append({"name": name, "value": None, "reason": "value-rejected"})
+    return rows
+
+
+def build_run_observation(jobs: Optional[int], effective_workers: int, cpu_seen: List) -> dict:
+    if not cpu_seen:
+        cpu_count, cpu_reason = None, "not-evaluated-jobs-truthy"
+    elif cpu_seen[0] is None:
+        cpu_count, cpu_reason = None, "os-cpu-count-returned-none"
+    elif isinstance(cpu_seen[0], int) and not isinstance(cpu_seen[0], bool):
+        cpu_count, cpu_reason = cpu_seen[0], "observed"
+    else:
+        cpu_count, cpu_reason = None, "os-cpu-count-returned-none"
+    if jobs is None:
+        jobs_reason = "jobs-none"
+    elif not jobs:
+        jobs_reason = "jobs-falsy"
+    else:
+        jobs_reason = "jobs-truthy"
+    doc = {
+        "timepoint": "pool-construction",
+        "jobs_requested": jobs,
+        "jobs_requested_reason": jobs_reason,
+        "cpu_count_observed": cpu_count,
+        "cpu_count_reason": cpu_reason,
+        "effective_workers": effective_workers,
+        "effective_workers_formula": _FORMULA,
+    }
+    try:
+        doc.update(_cpu_limit())
+    except Exception:
+        doc.update(_limit(None, None, "location-unresolved", "unparsed"))
+    try:
+        doc.update(_parent_numpy())
+    except Exception:
+        doc.update({"numpy_version": None, "numpy_file": None, "numpy_reason": "numpy-inspect-failed"})
+    try:
+        doc["runner_env"] = _runner_env()
+    except Exception:
+        doc["runner_env"] = [{"name": name, "value": None, "reason": "env-unset"} for name in _ENV_NAMES]
+    return doc
+
+
 def run_corpus(m: Optional[M.Manifest] = None, *, ids: Optional[set] = None, timeout: float = DEFAULT_TIMEOUT,
-               jobs: Optional[int] = None, t2: bool = True) -> List[dict]:
+               jobs: Optional[int] = None, t2: bool = True, obs: Optional[dict] = None) -> List[dict]:
     m = m or M.load()
     js = jobs_for(m, ids=ids)
 
@@ -187,5 +447,20 @@ def run_corpus(m: Optional[M.Manifest] = None, *, ids: Optional[set] = None, tim
         rec["t2_blocks"] = f"{sum(b['t2'] == 'pass' for b in blocks)}/{len(blocks)}"
         return [rec] + blocks
 
-    with ThreadPoolExecutor(max_workers=jobs or max(1, os.cpu_count() or 2)) as ex:
+    cpu_seen: List = []
+
+    def _cpu_count():
+        count = os.cpu_count()
+        cpu_seen.append(count)
+        return count
+
+    effective_workers = jobs or max(1, _cpu_count() or 2)
+    if obs is not None:
+        try:
+            obs.update(build_run_observation(jobs, effective_workers, cpu_seen))
+        except Exception:
+            obs.update(_limit(None, None, "location-unresolved", "unparsed"))
+            obs["effective_workers"] = effective_workers
+            obs["effective_workers_formula"] = _FORMULA
+    with ThreadPoolExecutor(max_workers=effective_workers) as ex:
         return [r for rs in ex.map(one, js) for r in rs]

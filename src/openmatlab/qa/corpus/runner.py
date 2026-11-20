@@ -15,6 +15,7 @@ The verdict travels through a side file, so whatever the script prints cannot fo
 from __future__ import annotations
 
 import json
+import math
 import os
 import shutil
 import signal
@@ -32,6 +33,158 @@ MEM_LIMIT = 4 * 1024**3
 OUTPUT_CAP = 64 * 1024  # bytes of stdout/stderr kept in the result
 FILE_LIMIT = 16 * 1024**2  # RLIMIT_FSIZE: a script printing forever is stopped here
 STATUSES = ("pass", "error", "timeout", "crash")
+_SELF_SCOPE = "rusage-self-direct-process-all-threads"
+_NUMPY_SCOPE = "child-process-sys-modules"
+_PRE = "pre-verdict-write"
+RECORD_OBS_KEYS = (
+    "cpu_pre_verdict_user_s",
+    "cpu_pre_verdict_system_s",
+    "cpu_pre_verdict_timepoint",
+    "cpu_pre_verdict_scope",
+    "cpu_pre_verdict_reason",
+    "numpy_child_version",
+    "numpy_child_file",
+    "numpy_child_reason",
+    "numpy_child_timepoint",
+    "numpy_child_scope",
+    "cpu_terminal_user_s",
+    "cpu_terminal_system_s",
+    "cpu_terminal_timepoint",
+    "cpu_terminal_scope",
+    "cpu_terminal_reason",
+    "cpu_descendants_timepoint",
+    "cpu_descendants_scope",
+    "cpu_descendants_reason",
+    "cpu_group_timepoint",
+    "cpu_group_scope",
+    "cpu_group_reason",
+)
+_FIXED_OBS = {
+    "cpu_terminal_user_s": None,
+    "cpu_terminal_system_s": None,
+    "cpu_terminal_timepoint": "not-sampled",
+    "cpu_terminal_scope": "terminal-direct-process",
+    "cpu_terminal_reason": "not-sampled-terminal",
+    "cpu_descendants_timepoint": "not-sampled",
+    "cpu_descendants_scope": "descendants",
+    "cpu_descendants_reason": "not-sampled-descendants",
+    "cpu_group_timepoint": "not-sampled",
+    "cpu_group_scope": "process-group",
+    "cpu_group_reason": "not-sampled-process-group",
+}
+
+
+def _seconds(value):
+    """Finite, non-negative seconds, or None. Never raises."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if isinstance(value, int) and value.bit_length() >= 1025:
+        return None
+    try:
+        number = float(value)
+    except (OverflowError, ValueError):
+        return None
+    if not math.isfinite(number) or number < 0:
+        return None
+    return number
+
+
+def _cpu_absent(reason: str) -> dict:
+    return {
+        "cpu_pre_verdict_user_s": None,
+        "cpu_pre_verdict_system_s": None,
+        "cpu_pre_verdict_timepoint": "not-sampled",
+        "cpu_pre_verdict_scope": "not-sampled",
+        "cpu_pre_verdict_reason": reason,
+    }
+
+
+def _cpu_matched(user, system, reason: str) -> dict:
+    return {
+        "cpu_pre_verdict_user_s": user,
+        "cpu_pre_verdict_system_s": system,
+        "cpu_pre_verdict_timepoint": _PRE,
+        "cpu_pre_verdict_scope": _SELF_SCOPE,
+        "cpu_pre_verdict_reason": reason,
+    }
+
+
+def _numpy_absent(reason: str) -> dict:
+    return {
+        "numpy_child_version": None,
+        "numpy_child_file": None,
+        "numpy_child_reason": reason,
+        "numpy_child_timepoint": "not-sampled",
+        "numpy_child_scope": "not-sampled",
+    }
+
+
+def _numpy_matched(version, path, reason: str) -> dict:
+    return {
+        "numpy_child_version": version,
+        "numpy_child_file": path,
+        "numpy_child_reason": reason,
+        "numpy_child_timepoint": _PRE,
+        "numpy_child_scope": _NUMPY_SCOPE,
+    }
+
+
+def _cpu_from_verdict(verdict: dict) -> dict:
+    keys = RECORD_OBS_KEYS[:5]
+    if any(key not in verdict for key in keys):
+        return _cpu_absent("key-absent")
+    if verdict.get("cpu_pre_verdict_timepoint") != _PRE:
+        return _cpu_absent("timepoint-invalid")
+    if verdict.get("cpu_pre_verdict_scope") != _SELF_SCOPE:
+        return _cpu_absent("scope-invalid")
+    reason = verdict.get("cpu_pre_verdict_reason")
+    if reason not in ("observed", "rusage-self-failed", "cpu-value-rejected"):
+        return _cpu_absent("reason-invalid")
+    if reason != "observed":
+        return _cpu_matched(None, None, reason)
+    user = _seconds(verdict.get("cpu_pre_verdict_user_s"))
+    system = _seconds(verdict.get("cpu_pre_verdict_system_s"))
+    if user is None or system is None:
+        return _cpu_matched(None, None, "cpu-value-rejected")
+    return _cpu_matched(user, system, "observed")
+
+
+def _numpy_from_verdict(verdict: dict) -> dict:
+    keys = RECORD_OBS_KEYS[5:10]
+    if any(key not in verdict for key in keys):
+        return _numpy_absent("key-absent")
+    if verdict.get("numpy_child_timepoint") != _PRE:
+        return _numpy_absent("timepoint-invalid")
+    if verdict.get("numpy_child_scope") != _NUMPY_SCOPE:
+        return _numpy_absent("scope-invalid")
+    reason = verdict.get("numpy_child_reason")
+    allowed = ("observed-child-sys-modules", "numpy-not-loaded-in-child", "numpy-inspect-failed", "value-rejected")
+    if reason not in allowed:
+        return _numpy_absent("reason-invalid")
+    version = verdict.get("numpy_child_version")
+    path = verdict.get("numpy_child_file")
+    if reason == "observed-child-sys-modules":
+        if isinstance(version, str) and version and isinstance(path, str) and path:
+            return _numpy_matched(version, path, reason)
+        return _numpy_matched(None, None, "value-rejected")
+    return _numpy_matched(None, None, reason)
+
+
+def _apply_observation(result: "RunResult", verdict: Optional[dict], absent: Optional[str]) -> "RunResult":
+    try:
+        if absent is not None or verdict is None:
+            rows = _cpu_absent(absent or "no-verdict-file")
+            rows.update(_numpy_absent(absent or "no-verdict-file"))
+        else:
+            rows = _cpu_from_verdict(verdict)
+            rows.update(_numpy_from_verdict(verdict))
+    except Exception:
+        rows = _cpu_absent("reason-invalid")
+        rows.update(_numpy_absent("reason-invalid"))
+    rows.update(_FIXED_OBS)
+    for key, value in rows.items():
+        setattr(result, key, value)
+    return result
 
 
 @dataclass
@@ -47,6 +200,27 @@ class RunResult:
     elapsed: float = 0.0
     returncode: Optional[int] = None
     extra: dict = field(default_factory=dict)
+    cpu_pre_verdict_user_s: Optional[float] = None
+    cpu_pre_verdict_system_s: Optional[float] = None
+    cpu_pre_verdict_timepoint: Optional[str] = None
+    cpu_pre_verdict_scope: Optional[str] = None
+    cpu_pre_verdict_reason: Optional[str] = None
+    numpy_child_version: Optional[str] = None
+    numpy_child_file: Optional[str] = None
+    numpy_child_reason: Optional[str] = None
+    numpy_child_timepoint: Optional[str] = None
+    numpy_child_scope: Optional[str] = None
+    cpu_terminal_user_s: Optional[float] = None
+    cpu_terminal_system_s: Optional[float] = None
+    cpu_terminal_timepoint: Optional[str] = None
+    cpu_terminal_scope: Optional[str] = None
+    cpu_terminal_reason: Optional[str] = None
+    cpu_descendants_timepoint: Optional[str] = None
+    cpu_descendants_scope: Optional[str] = None
+    cpu_descendants_reason: Optional[str] = None
+    cpu_group_timepoint: Optional[str] = None
+    cpu_group_scope: Optional[str] = None
+    cpu_group_reason: Optional[str] = None
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -126,10 +300,10 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
                       returncode=proc.returncode)
         if timed_out or proc.returncode == -signal.SIGXCPU:  # wall-clock or CPU-time budget exceeded
             r.status, r.kind, r.message = "timeout", "timeout", (f"timed out after {timeout:g} s" if timed_out else f"CPU budget exceeded ({timeout:g} s)")
-            return r
+            return _apply_observation(r, None, "timeout-return-before-verdict-read")
         if flooded:
             r.status, r.kind, r.message = "error", "output-limit", f"output exceeded {FILE_LIMIT // 1024**2} MB"
-            return r
+            return _apply_observation(r, None, "no-verdict-file")
         verdict = None
         if result.is_file():
             try:
@@ -139,12 +313,14 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
         if verdict is None:  # child died before reporting (signal, rlimit, interpreter crash)
             r.status, r.kind = "crash", "internal"
             r.message = f"child exited with code {proc.returncode} without a result"
+            absent = "verdict-unparsable" if result.is_file() else "no-verdict-file"
         else:
             r.status = verdict.get("status", "crash")
             r.kind, r.message, r.error_id = verdict.get("kind", ""), verdict.get("message", ""), verdict.get("error_id", "")
+            absent = None
         if "Traceback (most recent call last)" in se:
             r.status, r.kind = "crash", "internal"
-        return r
+        return _apply_observation(r, verdict, absent)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
