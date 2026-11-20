@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import inspect
 import sys
 
 
@@ -67,8 +68,16 @@ def main(argv=None) -> int:
 
             m = M.load()
             ids = {e.id for k, e in enumerate(sorted(m.entries, key=lambda e: e.id)) if not a.sample or k % a.sample == 0}
-            recs = pipeline.run_corpus(m, ids=ids, timeout=a.timeout, jobs=a.jobs)
-            out = results.save(recs, full_run=not a.sample, timeout=a.timeout, dest=Path(a.out) if a.out else None)
+            obs: dict = {}
+            kwargs = {"ids": ids, "timeout": a.timeout, "jobs": a.jobs}
+            # #1059's CLI stub does not accept obs. Pass the dict only when the callable declares it.
+            if "obs" in inspect.signature(pipeline.run_corpus).parameters:
+                kwargs["obs"] = obs
+            else:
+                obs = None  # type: ignore[assignment]
+            recs = pipeline.run_corpus(m, **kwargs)
+            out = results.save(recs, full_run=not a.sample, timeout=a.timeout,
+                               dest=Path(a.out) if a.out else None, observation=obs)
             c = collections.Counter(r["category"] for r in recs)
             print(f"wrote {out} ({len(recs)} records)")
             for k, n in c.most_common():

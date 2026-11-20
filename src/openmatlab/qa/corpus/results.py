@@ -11,9 +11,13 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional
 
+from openmatlab.qa.corpus.runner import RECORD_OBS_KEYS
 from openmatlab.qa.paths import repo_root
 
-KEEP = ("id", "source", "kind", "role", "notes", "t0", "t1", "t2", "t2_blocks", "t3", "oracle", "sha256", "status", "category", "key", "error_id", "message", "elapsed")
+KEEP = (
+    "id", "source", "kind", "role", "notes", "t0", "t1", "t2", "t2_blocks", "t3", "oracle", "sha256",
+    "status", "category", "key", "error_id", "message", "elapsed",
+) + RECORD_OBS_KEYS
 
 
 def path() -> Path:
@@ -24,7 +28,8 @@ def slim(records: List[dict]) -> List[dict]:
     return [{k: r[k] for k in KEEP if k in r} for r in records]
 
 
-def save(records: List[dict], *, full_run: bool, timeout: float, dest: Optional[Path] = None) -> Path:
+def save(records: List[dict], *, full_run: bool, timeout: float, dest: Optional[Path] = None,
+         observation: Optional[dict] = None) -> Path:
     try:
         sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_root(), capture_output=True, text=True).stdout.strip()
     except OSError:
@@ -32,6 +37,8 @@ def save(records: List[dict], *, full_run: bool, timeout: float, dest: Optional[
     doc = {"_doc": __doc__.strip().splitlines()[0], "full_run": full_run, "timeout": timeout, "commit": sha,
            "generated": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "records": sorted(slim(records), key=lambda r: r["id"])}
+    if observation is not None:
+        doc["observation"] = observation
     dest = dest or path()
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(doc, indent=0, ensure_ascii=False) + "\n", encoding="utf-8")
