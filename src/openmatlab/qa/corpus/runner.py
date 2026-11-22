@@ -253,6 +253,139 @@ def _cap(text: str) -> str:
     return text if len(text) <= OUTPUT_CAP else text[:OUTPUT_CAP] + "\n... [output truncated]\n"
 
 
+_STILL = object()
+_TERMINAL_SCOPE = "terminal-direct-process"
+_TERMINAL_REAP = "direct-child-reap"
+_TERMINAL_OBSERVED = "observed"
+_TERMINAL_WAIT4_FAILED = "wait4-failed"
+_TERMINAL_REJECTED = "cpu-value-rejected"
+
+
+def _store_exit(proc, sts) -> None:
+    """Same ``returncode`` encoding as ``Popen._handle_exitstatus``."""
+    if os.WIFSTOPPED(sts):
+        proc.returncode = -os.WSTOPSIG(sts)
+    else:
+        proc.returncode = os.waitstatus_to_exitcode(sts)
+
+
+def _wait4_under_lock(proc, flags):
+    """One ``os.wait4``. Caller holds ``proc._waitpid_lock``.
+
+    Returns the rusage of this direct child, ``None`` when that sample is gone,
+    or ``_STILL`` when the child has not exited. Does not reap on ``WNOHANG``
+    while the child is running.
+    """
+    if proc.returncode is not None:
+        return None
+    try:
+        pid, sts, usage = os.wait4(proc.pid, flags)
+    except ChildProcessError:
+        if proc.returncode is None:
+            _store_exit(proc, 0)
+        return None
+    if pid != proc.pid:
+        return _STILL
+    _store_exit(proc, sts)
+    return usage
+
+
+def _fallback_wait(proc, timeout):
+    """``Popen.wait`` so a failed ``wait4`` still stores the same returncode."""
+    if proc.returncode is not None:
+        return
+    proc.wait(timeout=timeout)
+
+
+def _fallback_waitpid_locked(proc) -> None:
+    """Reap with ``waitpid`` while the caller already holds the waitpid lock."""
+    if proc.returncode is not None:
+        return
+    try:
+        pid, sts = os.waitpid(proc.pid, 0)
+    except ChildProcessError:
+        if proc.returncode is None:
+            _store_exit(proc, 0)
+        return
+    if pid == proc.pid and proc.returncode is None:
+        _store_exit(proc, sts)
+
+
+def _reap_direct(proc, timeout):
+    """``Popen.wait`` contract, reaping with ``wait4``.
+
+    Expiry raises ``TimeoutExpired`` and does not reap. A sample is the direct
+    child's rusage; ``None`` means ``wait4`` did not yield one. ``returncode``
+    still follows ``Popen.wait``.
+    """
+    started = time.monotonic()
+    try:
+        if proc.returncode is not None:
+            return None
+        end = time.monotonic() + timeout
+        delay = 0.0005  # same first step as Popen._wait
+        while True:
+            if proc._waitpid_lock.acquire(False):
+                try:
+                    sample = _wait4_under_lock(proc, os.WNOHANG)
+                finally:
+                    proc._waitpid_lock.release()
+                if sample is not _STILL:
+                    return sample
+            remaining = end - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(proc.args, timeout)
+            delay = min(delay * 2, remaining, 0.05)
+            time.sleep(delay)
+    except subprocess.TimeoutExpired:
+        raise
+    except Exception:
+        remaining = timeout - (time.monotonic() - started)
+        if remaining <= 0:
+            if proc.returncode is None:
+                raise subprocess.TimeoutExpired(proc.args, timeout)
+            return None
+        _fallback_wait(proc, remaining)
+        return None
+
+
+def _reap_direct_locked(proc):
+    """Blocking ``wait4``. Caller holds ``proc._waitpid_lock``."""
+    try:
+        while proc.returncode is None:
+            sample = _wait4_under_lock(proc, 0)
+            if sample is not _STILL:
+                return sample
+        return None
+    except Exception:
+        _fallback_waitpid_locked(proc)
+        return None
+
+
+def _stamp_terminal(result: "RunResult", usage) -> None:
+    """Write the five terminal keys from one ``wait4`` sample. Never raises."""
+    user = system = None
+    reason = _TERMINAL_WAIT4_FAILED
+    timepoint = "not-sampled"
+    if usage is not None:
+        user = _seconds(getattr(usage, "ru_utime", None))
+        system = _seconds(getattr(usage, "ru_stime", None))
+        if user is None or system is None:
+            user = system = None
+            reason = _TERMINAL_REJECTED
+        else:
+            reason = _TERMINAL_OBSERVED
+            timepoint = _TERMINAL_REAP
+    for key, value in {
+        "cpu_terminal_user_s": user,
+        "cpu_terminal_system_s": system,
+        "cpu_terminal_timepoint": timepoint,
+        "cpu_terminal_scope": _TERMINAL_SCOPE,
+        "cpu_terminal_reason": reason,
+    }.items():
+        setattr(result, key, value)
+
+
 def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "run", name: Optional[str] = None,
             input_lines: Optional[List[str]] = None) -> RunResult:
     """Run one ``.m`` file in a sandboxed child; never raises for script failures.
@@ -280,19 +413,31 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
         with open(fo, "wb") as ho, open(fe, "wb") as he:  # files, not pipes: memory stays bounded
             proc = subprocess.Popen(cmd, cwd=work, stdin=subprocess.DEVNULL, stdout=ho, stderr=he,
                                     env=env, preexec_fn=_limits(timeout))
+            usage = None
             try:
-                proc.wait(timeout=timeout)
+                usage = _reap_direct(proc, timeout)
                 timed_out = False
             except subprocess.TimeoutExpired:
                 timed_out = True
-            if os.name == "posix":  # reap the whole group (system(), runaway children)
-                try:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                except (ProcessLookupError, PermissionError):
-                    pass
+            # Popen.kill() polls with waitpid. Hold its lock across that poll so
+            # the blocking wait4 below is the reap that keeps this child's rusage.
+            reap_lock = None
             if timed_out:
-                proc.kill()
-                proc.wait()
+                reap_lock = getattr(proc, "_waitpid_lock", None)
+                if reap_lock is not None:
+                    reap_lock.acquire()
+            try:
+                if os.name == "posix":  # reap the whole group (system(), runaway children)
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except (ProcessLookupError, PermissionError):
+                        pass
+                if timed_out:
+                    proc.kill()
+                    usage = _reap_direct_locked(proc)
+            finally:
+                if reap_lock is not None:
+                    reap_lock.release()
         elapsed = round(time.monotonic() - t0, 3)
         flooded = max(fo.stat().st_size, fe.stat().st_size) >= FILE_LIMIT
         so, se = (_cap(f.read_bytes()[: OUTPUT_CAP + 1].decode("utf-8", "replace")) for f in (fo, fe))
@@ -300,7 +445,9 @@ def run_one(path: Path | str, *, timeout: float = DEFAULT_TIMEOUT, mode: str = "
                       returncode=proc.returncode)
         if timed_out or proc.returncode == -signal.SIGXCPU:  # wall-clock or CPU-time budget exceeded
             r.status, r.kind, r.message = "timeout", "timeout", (f"timed out after {timeout:g} s" if timed_out else f"CPU budget exceeded ({timeout:g} s)")
-            return _apply_observation(r, None, "timeout-return-before-verdict-read")
+            r = _apply_observation(r, None, "timeout-return-before-verdict-read")
+            _stamp_terminal(r, usage)
+            return r
         if flooded:
             r.status, r.kind, r.message = "error", "output-limit", f"output exceeded {FILE_LIMIT // 1024**2} MB"
             return _apply_observation(r, None, "no-verdict-file")
