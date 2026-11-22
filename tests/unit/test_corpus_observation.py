@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import math
 import os
 import statistics
 import subprocess
@@ -192,7 +193,11 @@ def test_pass_error_and_timeout_rows(tmp_path):
     assert hung.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert hung.numpy_child_reason == "timeout-return-before-verdict-read"
     assert hung.cpu_pre_verdict_user_s is None
-    assert hung.cpu_terminal_reason == "not-sampled-terminal"
+    assert hung.cpu_terminal_reason == "observed"
+    assert hung.cpu_terminal_timepoint == "direct-child-reap"
+    assert hung.cpu_terminal_scope == "terminal-direct-process"
+    assert math.isfinite(hung.cpu_terminal_user_s) and hung.cpu_terminal_user_s >= 0
+    assert math.isfinite(hung.cpu_terminal_system_s) and hung.cpu_terminal_system_s >= 0
 
 
 def test_cleanup_block_is_unchanged_and_killpg_still_runs(tmp_path, monkeypatch):
@@ -574,7 +579,11 @@ def test_busy_timeout_keeps_null_cpu_without_a_verdict(tmp_path):
     assert result.cpu_pre_verdict_timepoint == "not-sampled"
     assert result.numpy_child_reason == "timeout-return-before-verdict-read"
     assert result.numpy_child_version is None and result.numpy_child_file is None
-    assert result.cpu_terminal_reason == "not-sampled-terminal"
+    assert math.isfinite(result.cpu_terminal_user_s) and result.cpu_terminal_user_s >= 0
+    assert math.isfinite(result.cpu_terminal_system_s) and result.cpu_terminal_system_s >= 0
+    assert result.cpu_terminal_reason == "observed"
+    assert result.cpu_terminal_timepoint == "direct-child-reap"
+    assert result.cpu_terminal_scope == "terminal-direct-process"
     assert result.cpu_descendants_reason == "not-sampled-descendants"
     assert result.cpu_group_reason == "not-sampled-process-group"
 
@@ -589,7 +598,9 @@ def test_waiting_timeout_keeps_the_absent_row(tmp_path):
     assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
     assert result.numpy_child_reason == "timeout-return-before-verdict-read"
-    assert result.cpu_terminal_user_s is None
+    assert math.isfinite(result.cpu_terminal_user_s) and result.cpu_terminal_user_s >= 0
+    assert math.isfinite(result.cpu_terminal_system_s) and result.cpu_terminal_system_s >= 0
+    assert result.cpu_terminal_reason == "observed"
     assert result.cpu_group_reason == "not-sampled-process-group"
 
 
@@ -650,7 +661,11 @@ def test_sigxcpu_uses_the_absent_row(tmp_path, monkeypatch):
     assert result.cpu_pre_verdict_reason == "timeout-return-before-verdict-read"
     assert result.cpu_pre_verdict_user_s is None and result.cpu_pre_verdict_system_s is None
     assert result.numpy_child_reason == "timeout-return-before-verdict-read"
-    assert result.cpu_terminal_reason == "not-sampled-terminal"
+    assert math.isfinite(result.cpu_terminal_user_s) and result.cpu_terminal_user_s >= 0
+    assert math.isfinite(result.cpu_terminal_system_s) and result.cpu_terminal_system_s >= 0
+    assert result.cpu_terminal_reason == "observed"
+    assert result.cpu_terminal_timepoint == "direct-child-reap"
+    assert result.cpu_terminal_scope == "terminal-direct-process"
     assert "int(cpu_seconds) + 5" in inspect.getsource(real_limits)
 
 
